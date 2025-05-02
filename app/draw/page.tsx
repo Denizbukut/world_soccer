@@ -6,9 +6,9 @@ import { drawCards } from "@/app/actions"
 import ProtectedRoute from "@/components/protected-route"
 import MobileNav from "@/components/mobile-nav"
 import { Button } from "@/components/ui/button"
-import { Ticket, Crown, ChevronLeft, ChevronRight } from "lucide-react"
+import { Ticket, Crown, Sparkles } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
-import { motion, AnimatePresence, useAnimation, type PanInfo } from "framer-motion"
+import { motion, AnimatePresence, useAnimation } from "framer-motion"
 import Image from "next/image"
 
 // Rarität definieren
@@ -41,6 +41,38 @@ const FALLBACK_CARDS = [
   },
 ]
 
+// Rarity color mapping
+const RARITY_COLORS = {
+  common: {
+    border: "border-gray-400",
+    bg: "from-gray-200 to-gray-50",
+    text: "text-gray-600",
+    glow: "bg-gray-300",
+    accent: "bg-gray-400",
+  },
+  rare: {
+    border: "border-blue-500",
+    bg: "from-blue-200 to-blue-50",
+    text: "text-blue-600",
+    glow: "bg-blue-300",
+    accent: "bg-blue-400",
+  },
+  epic: {
+    border: "border-purple-500",
+    bg: "from-purple-200 to-purple-50",
+    text: "text-purple-600",
+    glow: "bg-purple-300",
+    accent: "bg-purple-400",
+  },
+  legendary: {
+    border: "border-yellow-400",
+    bg: "from-yellow-200 to-yellow-50",
+    text: "text-yellow-600",
+    glow: "bg-yellow-300",
+    accent: "bg-yellow-400",
+  },
+}
+
 export default function DrawPage() {
   const { user, updateUserTickets } = useAuth()
   const [isDrawing, setIsDrawing] = useState(false)
@@ -54,13 +86,13 @@ export default function DrawPage() {
   const [packOpened, setPackOpened] = useState(false)
   const [showRarityText, setShowRarityText] = useState(false)
   const [showCards, setShowCards] = useState(false)
+  const [cardRevealed, setCardRevealed] = useState(false)
 
   // Hydration safety
   const [isClient, setIsClient] = useState(false)
 
-  // Card swiping states
+  // Card states
   const [currentCardIndex, setCurrentCardIndex] = useState(0)
-  const [direction, setDirection] = useState<"left" | "right" | null>(null)
   const controls = useAnimation()
 
   // Set isClient to true once component mounts
@@ -86,6 +118,7 @@ export default function DrawPage() {
     setShowPackSelection(false)
     setShowPackAnimation(true)
     setCurrentCardIndex(0)
+    setCardRevealed(false)
 
     try {
       const result = await drawCards(user.username, cardType, 1)
@@ -132,43 +165,13 @@ export default function DrawPage() {
       setTimeout(() => {
         setShowRarityText(false)
         setShowCards(true)
+
+        // Reveal card after a short delay
+        setTimeout(() => {
+          setCardRevealed(true)
+        }, 500)
       }, 2000) // Wait for rarity animation to complete
     }, 2500) // Increased from 1000ms to 2500ms for pack opening
-  }
-
-  const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
-    const threshold = 100
-    if (info.offset.x > threshold) {
-      // Swiped right
-      handleSwipe("right")
-    } else if (info.offset.x < -threshold) {
-      // Swiped left
-      handleSwipe("left")
-    } else {
-      // Reset position if not swiped far enough
-      controls.start({ x: 0, transition: { type: "spring", stiffness: 300, damping: 20 } })
-    }
-  }
-
-  const handleSwipe = async (dir: "left" | "right") => {
-    setDirection(dir)
-
-    // Animate the card off screen
-    await controls.start({
-      x: dir === "left" ? -window.innerWidth : window.innerWidth,
-      opacity: 0,
-      transition: { duration: 0.5 },
-    })
-
-    // Move to next card or finish
-    if (currentCardIndex < drawnCards.length - 1) {
-      setCurrentCardIndex((prev) => prev + 1)
-      controls.set({ x: 0, opacity: 1 }) // Reset position for next card
-      setDirection(null)
-    } else {
-      // All cards have been viewed
-      finishCardReview()
-    }
   }
 
   const finishCardReview = () => {
@@ -177,7 +180,7 @@ export default function DrawPage() {
     setPackOpened(false)
     setShowPackSelection(true)
     setDrawnCards([])
-    setDirection(null)
+    setCardRevealed(false)
 
     toast({
       title: "Card Added",
@@ -188,6 +191,10 @@ export default function DrawPage() {
 
   const getCurrentCard = () => {
     return drawnCards[currentCardIndex] || null
+  }
+
+  const getRarityStyles = (rarity: CardRarity) => {
+    return RARITY_COLORS[rarity] || RARITY_COLORS.common
   }
 
   // Render a simple loading state until client-side hydration is complete
@@ -579,7 +586,7 @@ export default function DrawPage() {
             )}
           </AnimatePresence>
 
-          {/* Card Swipe Screen */}
+          {/* Card Display Screen */}
           <AnimatePresence>
             {showCards && drawnCards.length > 0 && (
               <motion.div
@@ -591,137 +598,169 @@ export default function DrawPage() {
                 {/* Dark overlay */}
                 <div className="absolute inset-0 bg-black opacity-80" />
 
-                {/* Swipe Instructions */}
+                {/* Instructions */}
                 <div className="absolute top-16 left-0 right-0 flex justify-center z-20">
                   <div className="bg-white/10 px-4 py-2 rounded-lg text-white text-sm text-center">
-                    Click buttons below to add card to collection
+                    Click the button below to add card to your collection
                   </div>
                 </div>
 
                 {/* Card */}
                 <div className="relative z-10 flex flex-col items-center">
                   {getCurrentCard() && (
-                    <motion.div
-                      className="relative w-64 h-96 mb-8"
-                      animate={controls}
-                      initial={{ rotateY: 180, scale: 0.8 }}
-                      whileInView={{ rotateY: 0, scale: 1 }}
-                      transition={{
-                        type: "spring",
-                        stiffness: 70,
-                        damping: 12,
-                        duration: 1.5,
-                      }}
-                    >
-                      <div
-                        className={`w-full h-full rounded-lg overflow-hidden shadow-xl ${
-                          getCurrentCard()?.rarity === "legendary"
-                            ? "border-4 border-yellow-400 bg-gradient-to-b from-yellow-100 to-yellow-50"
-                            : getCurrentCard()?.rarity === "epic"
-                              ? "border-4 border-purple-500 bg-gradient-to-b from-purple-100 to-purple-50"
-                              : getCurrentCard()?.rarity === "rare"
-                                ? "border-4 border-blue-500 bg-gradient-to-b from-blue-100 to-blue-50"
-                                : "border-4 border-gray-400 bg-gradient-to-b from-gray-100 to-gray-50"
-                        }`}
+                    <div className="perspective-1000 mb-8">
+                      <motion.div
+                        className="relative w-72 h-96 preserve-3d"
+                        initial={{ rotateY: 180 }}
+                        animate={{ rotateY: cardRevealed ? 0 : 180 }}
+                        transition={{
+                          type: "spring",
+                          stiffness: 70,
+                          damping: 15,
+                          duration: 1.5,
+                        }}
                       >
-                        {/* Card Header */}
-                        <div className="p-2 flex justify-between items-center">
-                          <span className="font-bold text-gray-800 text-sm">{getCurrentCard()?.name}</span>
-                          <div
-                            className={`h-3 w-3 rounded-full ${
-                              getCurrentCard()?.rarity === "legendary"
-                                ? "bg-yellow-400"
-                                : getCurrentCard()?.rarity === "epic"
-                                  ? "bg-purple-400"
-                                  : getCurrentCard()?.rarity === "rare"
-                                    ? "bg-blue-400"
-                                    : "bg-gray-400"
-                            }`}
-                          ></div>
+                        {/* Card Back */}
+                        <div className="absolute w-full h-full backface-hidden rounded-xl bg-gradient-to-b from-blue-800 to-purple-900 border-4 border-yellow-500 flex items-center justify-center">
+                          <div className="text-white text-center">
+                            <h3 className="font-bold text-2xl">ANIME WORLD</h3>
+                          </div>
                         </div>
 
-                        {/* Card Image */}
-                        <div className="mx-2 bg-white p-1 rounded-sm border border-gray-300">
-                          <div className="aspect-[3/4] relative rounded-sm overflow-hidden">
-                            <Image
-                              src={getCurrentCard()?.image_url || "/placeholder.svg?height=300&width=200"}
-                              alt={getCurrentCard()?.name}
-                              fill
-                              className="object-cover"
-                              onError={(e) => {
-                                ;(e.target as HTMLImageElement).src = "/placeholder.svg?height=300&width=200"
+                        {/* Card Front */}
+                        <div className="absolute w-full h-full backface-hidden rounded-xl overflow-hidden rotateY-180">
+                          {/* Card Container with Rarity-based styling */}
+                          <div
+                            className={`w-full h-full relative ${
+                              getRarityStyles(getCurrentCard()?.rarity).border
+                            } border-4 shadow-xl`}
+                          >
+                            {/* Background gradient */}
+                            <div
+                              className={`absolute inset-0 bg-gradient-to-b ${getRarityStyles(getCurrentCard()?.rarity).bg}`}
+                            ></div>
+
+                            {/* Card Content */}
+                            <div className="relative z-10 h-full flex flex-col">
+                              {/* Card Header with Name and Rarity Indicator */}
+                              <div className="p-3 flex justify-between items-center">
+                                <div className="bg-white/90 px-2 py-1 rounded-md shadow-sm">
+                                  <h3 className="font-bold text-gray-800 text-sm">{getCurrentCard()?.name}</h3>
+                                </div>
+                                <div
+                                  className={`h-5 w-5 rounded-full ${getRarityStyles(getCurrentCard()?.rarity).accent} shadow-md flex items-center justify-center`}
+                                >
+                                  {getCurrentCard()?.rarity === "legendary" && (
+                                    <Sparkles className="h-3 w-3 text-white" />
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Card Image with Frame */}
+                              <div className="px-3">
+                                <div className="bg-gradient-to-b from-white to-gray-100 p-1 rounded-lg shadow-md">
+                                  <div className="aspect-[3/4] relative rounded-md overflow-hidden">
+                                    <Image
+                                      src={getCurrentCard()?.image_url || "/placeholder.svg?height=300&width=200"}
+                                      alt={getCurrentCard()?.name}
+                                      fill
+                                      className="object-cover"
+                                      onError={(e) => {
+                                        ;(e.target as HTMLImageElement).src = "/placeholder.svg?height=300&width=200"
+                                      }}
+                                    />
+
+                                    {/* Overlay gradient for better text contrast */}
+                                    <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-black/60 to-transparent"></div>
+
+                                    {/* Character name overlay */}
+                                    <div className="absolute bottom-2 left-2 right-2 text-white">
+                                      <div className="text-sm font-bold drop-shadow-md">
+                                        {getCurrentCard()?.character}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Card Info */}
+                              <div className="p-3 mt-auto">
+                                <div className="bg-white/90 p-2 rounded-lg shadow-md border border-gray-200">
+                                  <div className="flex justify-between items-center mb-1">
+                                    <span className="text-xs font-semibold">Type</span>
+                                    <span className="text-xs">{getCurrentCard()?.type || "Standard"}</span>
+                                  </div>
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-xs font-semibold">Rarity</span>
+                                    <span
+                                      className={`text-xs font-bold px-2 py-0.5 rounded-full ${getRarityStyles(getCurrentCard()?.rarity).text} bg-opacity-20 ${getRarityStyles(getCurrentCard()?.rarity).accent}`}
+                                    >
+                                      {getCurrentCard()?.rarity?.toUpperCase()}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Card Footer */}
+                              <div className="p-3 pt-0">
+                                <div className="flex justify-between items-center">
+                                  <div className="text-[10px] text-gray-600 bg-white/70 px-1 py-0.5 rounded">
+                                    #{getCurrentCard()?.id}
+                                  </div>
+                                  <div className="text-[10px] font-semibold text-gray-600 bg-white/70 px-1 py-0.5 rounded">
+                                    ANIME WORLD
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Shine effect */}
+                            <motion.div
+                              className="absolute inset-0 pointer-events-none"
+                              initial={{ backgroundPosition: "200% 0%" }}
+                              animate={{ backgroundPosition: ["-100% 0%", "200% 0%"] }}
+                              transition={{
+                                repeat: Number.POSITIVE_INFINITY,
+                                repeatDelay: 3,
+                                duration: 1.5,
+                              }}
+                              style={{
+                                background:
+                                  "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.8) 50%, transparent 100%)",
+                                backgroundSize: "200% 100%",
                               }}
                             />
-                          </div>
-                        </div>
 
-                        {/* Card Info */}
-                        <div className="p-2 mt-1">
-                          <div className="bg-white/80 p-2 rounded-sm border border-gray-300">
-                            <div className="flex justify-between mb-1">
-                              <span className="text-xs font-semibold">Character</span>
-                              <span className="text-xs">{getCurrentCard()?.character}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-xs font-semibold">Rarity</span>
-                              <span
-                                className={`text-xs font-bold ${
-                                  getCurrentCard()?.rarity === "legendary"
-                                    ? "text-yellow-600"
-                                    : getCurrentCard()?.rarity === "epic"
-                                      ? "text-purple-600"
-                                      : getCurrentCard()?.rarity === "rare"
-                                        ? "text-blue-600"
-                                        : "text-gray-600"
+                            {/* Special effects for legendary and epic cards */}
+                            {(getCurrentCard()?.rarity === "legendary" || getCurrentCard()?.rarity === "epic") && (
+                              <motion.div
+                                className={`absolute inset-0 pointer-events-none mix-blend-overlay rounded-xl ${
+                                  getCurrentCard()?.rarity === "legendary" ? "bg-yellow-300" : "bg-purple-300"
                                 }`}
-                              >
-                                {getCurrentCard()?.rarity?.toUpperCase()}
-                              </span>
-                            </div>
+                                animate={{
+                                  opacity: [0.1, 0.3, 0.1],
+                                }}
+                                transition={{
+                                  duration: 2,
+                                  repeat: Number.POSITIVE_INFINITY,
+                                  repeatType: "reverse",
+                                }}
+                              />
+                            )}
                           </div>
                         </div>
-
-                        {/* Glowing effect for legendary and epic cards */}
-                        {(getCurrentCard()?.rarity === "legendary" || getCurrentCard()?.rarity === "epic") && (
-                          <motion.div
-                            className={`absolute inset-0 pointer-events-none mix-blend-overlay rounded-lg ${
-                              getCurrentCard()?.rarity === "legendary" ? "bg-yellow-300" : "bg-purple-300"
-                            }`}
-                            animate={{
-                              opacity: [0.1, 0.3, 0.1],
-                            }}
-                            transition={{
-                              duration: 2,
-                              repeat: Number.POSITIVE_INFINITY,
-                              repeatType: "reverse",
-                            }}
-                          />
-                        )}
-
-                        {/* Swipe direction indicators */}
-                        <div
-                          className={`absolute inset-0 flex items-center justify-start pl-4 opacity-0 ${direction === "left" ? "opacity-100" : ""}`}
-                        >
-                          <ChevronLeft className="h-12 w-12 text-white drop-shadow-lg" />
-                        </div>
-                        <div
-                          className={`absolute inset-0 flex items-center justify-end pr-4 opacity-0 ${direction === "right" ? "opacity-100" : ""}`}
-                        >
-                          <ChevronRight className="h-12 w-12 text-white drop-shadow-lg" />
-                        </div>
-                      </div>
-                    </motion.div>
+                      </motion.div>
+                    </div>
                   )}
 
-                  {/* Buttons for adding card to collection */}
-                  <div className="flex gap-4">
-                    <Button
-                      onClick={() => finishCardReview()}
-                      className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
-                    >
-                      Add to Collection
-                    </Button>
-                  </div>
+                  {/* Button to add card to collection */}
+                  <Button
+                    onClick={() => finishCardReview()}
+                    className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 px-8"
+                    size="lg"
+                  >
+                    Add to Collection
+                  </Button>
                 </div>
               </motion.div>
             )}

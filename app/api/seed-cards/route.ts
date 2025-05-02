@@ -1,0 +1,213 @@
+import { NextResponse } from "next/server"
+import { getSupabaseServerClient } from "@/lib/supabase"
+
+const narutoCards = [
+  {
+    name: "Rasengan Master",
+    character: "Naruto Uzumaki",
+    image_url: "/naruto-card.png",
+    rarity: "legendary",
+    type: "wind",
+    hp: 95,
+    attack: 90,
+    defense: 75,
+    speed: 85,
+    special_attack: 95,
+    special_defense: 80,
+    description: "The Number One Hyperactive, Knucklehead Ninja with the power of the Nine-Tailed Fox.",
+  },
+  {
+    name: "Sharingan Prodigy",
+    character: "Sasuke Uchiha",
+    image_url: "/sasuke-card.png",
+    rarity: "legendary",
+    type: "fire",
+    hp: 90,
+    attack: 95,
+    defense: 85,
+    speed: 90,
+    special_attack: 90,
+    special_defense: 85,
+    description: "Last survivor of the Uchiha clan, seeking power and revenge.",
+  },
+  {
+    name: "Medical Ninja",
+    character: "Sakura Haruno",
+    image_url: "/sakura-card.png",
+    rarity: "rare",
+    type: "earth",
+    hp: 80,
+    attack: 75,
+    defense: 70,
+    speed: 75,
+    special_attack: 85,
+    special_defense: 90,
+    description: "Trained by Tsunade, she possesses incredible strength and medical ninjutsu.",
+  },
+  {
+    name: "Copy Ninja",
+    character: "Kakashi Hatake",
+    image_url: "/kakashi-card.png",
+    rarity: "ultra-rare",
+    type: "lightning",
+    hp: 85,
+    attack: 85,
+    defense: 80,
+    speed: 90,
+    special_attack: 90,
+    special_defense: 85,
+    description: "Known as the Copy Ninja for his Sharingan eye that can copy any jutsu.",
+  },
+  {
+    name: "Byakugan Princess",
+    character: "Hinata Hyuga",
+    image_url: "/hinata-card.png",
+    rarity: "uncommon",
+    type: "chakra",
+    hp: 75,
+    attack: 70,
+    defense: 75,
+    speed: 75,
+    special_attack: 80,
+    special_defense: 85,
+    description: "Heir to the Hyuga clan with the Byakugan, allowing her to see chakra points.",
+  },
+  {
+    name: "Shadow Tactician",
+    character: "Shikamaru Nara",
+    image_url: "/thoughtful-strategist.png",
+    rarity: "uncommon",
+    type: "earth",
+    hp: 70,
+    attack: 65,
+    defense: 75,
+    speed: 65,
+    special_attack: 95,
+    special_defense: 90,
+    description: "A genius strategist with an IQ over 200, master of shadow possession jutsu.",
+  },
+  {
+    name: "Taijutsu Expert",
+    character: "Rock Lee",
+    image_url: "/determined-martial-artist.png",
+    rarity: "uncommon",
+    type: "earth",
+    hp: 80,
+    attack: 90,
+    defense: 80,
+    speed: 95,
+    special_attack: 50,
+    special_defense: 70,
+    description: "A taijutsu specialist who cannot use ninjutsu or genjutsu.",
+  },
+  {
+    name: "Sand Manipulator",
+    character: "Gaara",
+    image_url: "/sand-gourd-warrior.png",
+    rarity: "rare",
+    type: "earth",
+    hp: 85,
+    attack: 80,
+    defense: 95,
+    speed: 70,
+    special_attack: 90,
+    special_defense: 95,
+    description: "Former jinchūriki of Shukaku, the One-Tail, with the ability to control sand.",
+  },
+  {
+    name: "Puppet Master",
+    character: "Kankuro",
+    image_url: "/puppet-master.png",
+    rarity: "uncommon",
+    type: "wind",
+    hp: 75,
+    attack: 80,
+    defense: 85,
+    speed: 70,
+    special_attack: 85,
+    special_defense: 75,
+    description: "A skilled puppeteer from the Sand Village.",
+  },
+  {
+    name: "Wind Mistress",
+    character: "Temari",
+    image_url: "/determined-ninja.png",
+    rarity: "uncommon",
+    type: "wind",
+    hp: 75,
+    attack: 85,
+    defense: 75,
+    speed: 80,
+    special_attack: 90,
+    special_defense: 75,
+    description: "A kunoichi from the Sand Village who uses a giant fan to create powerful wind attacks.",
+  },
+  {
+    name: "Akatsuki Leader",
+    character: "Pain",
+    image_url: "/placeholder.svg?height=400&width=300&query=anime%20pain%20nagato",
+    rarity: "ultra-rare",
+    type: "chakra",
+    hp: 90,
+    attack: 90,
+    defense: 90,
+    speed: 85,
+    special_attack: 95,
+    special_defense: 90,
+    description: "The leader of Akatsuki with the legendary Rinnegan eyes.",
+  },
+  {
+    name: "Uchiha Prodigy",
+    character: "Itachi Uchiha",
+    image_url: "/placeholder.svg?height=400&width=300&query=anime%20itachi%20uchiha",
+    rarity: "ultra-rare",
+    type: "fire",
+    hp: 85,
+    attack: 90,
+    defense: 85,
+    speed: 90,
+    special_attack: 95,
+    special_defense: 90,
+    description: "A prodigy of the Uchiha clan and master of the Mangekyo Sharingan.",
+  },
+]
+
+export async function GET() {
+  try {
+    const supabase = getSupabaseServerClient()
+
+    // Check if cards already exist
+    const { count, error: countError } = await supabase.from("cards").select("*", { count: "exact", head: true })
+
+    if (countError) {
+      console.error("Error checking cards:", countError)
+      return NextResponse.json({ error: countError.message }, { status: 500 })
+    }
+
+    // If we already have cards, don't add more
+    if (count && count > 0) {
+      return NextResponse.json({
+        success: true,
+        message: `Database already has ${count} cards. No new cards added.`,
+        count,
+      })
+    }
+
+    // Insert cards
+    const { data, error } = await supabase.from("cards").insert(narutoCards).select()
+
+    if (error) {
+      console.error("Error seeding cards:", error)
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: `Successfully added ${data.length} cards to the database`,
+      count: data.length,
+    })
+  } catch (error) {
+    console.error("Error in seed-cards route:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  }
+}

@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation"
 type User = {
   username: string
   tickets: number
+  legendary_tickets: number
   coins: number
   level: number
   experience: number
@@ -18,7 +19,7 @@ type AuthContextType = {
   loading: boolean
   login: (username: string) => Promise<{ success: boolean; error?: string }>
   logout: () => void
-  updateUserTickets: (newTicketCount: number) => void
+  updateUserTickets: (newTicketCount: number, newLegendaryTicketCount?: number) => void
   updateUserCoins: (newCoinCount: number) => void
   updateUserExp: (expToAdd: number) => void
 }
@@ -61,6 +62,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
         if (storedUser) {
           const parsedUser = JSON.parse(storedUser)
+
+          // Add legendary_tickets if it doesn't exist in stored user data (for backward compatibility)
+          if (parsedUser && !parsedUser.legendary_tickets) {
+            parsedUser.legendary_tickets = 2 // Default value
+          }
+
           console.log("Parsed user:", parsedUser)
           setUser(parsedUser)
           setIsAuthenticated(true)
@@ -83,6 +90,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const userData = {
         username,
         tickets: 5,
+        legendary_tickets: 2, // Initialize legendary tickets
         coins: 1000,
         level: 1,
         experience: 0,
@@ -126,9 +134,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const updateUserTickets = (newTicketCount: number) => {
+  const updateUserTickets = (newTicketCount: number, newLegendaryTicketCount?: number) => {
     if (user) {
+      // Create updated user with new ticket count
       const updatedUser = { ...user, tickets: newTicketCount }
+
+      // Update legendary tickets if provided
+      if (newLegendaryTicketCount !== undefined) {
+        updatedUser.legendary_tickets = newLegendaryTicketCount
+      }
+
+      // Update state and localStorage
       setUser(updatedUser)
       localStorage.setItem("animeworld_user", JSON.stringify(updatedUser))
     }

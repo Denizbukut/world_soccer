@@ -16,7 +16,7 @@ export async function claimDailyBonus(username: string) {
     // Get current user data
     const { data: userData, error: userError } = await supabase
       .from("users")
-      .select("username, tickets, last_login")
+      .select("username, tickets, last_login, legendary_tickets")
       .eq("username", username)
       .single()
 

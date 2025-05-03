@@ -1,6 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import type React from "react"
+
+import { useState, useEffect, useRef } from "react"
 import { useAuth } from "@/contexts/auth-context"
 import { drawCards } from "@/app/actions"
 import ProtectedRoute from "@/components/protected-route"
@@ -8,7 +10,7 @@ import MobileNav from "@/components/mobile-nav"
 import { Button } from "@/components/ui/button"
 import { Ticket, Crown, Sparkles } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
-import { motion, AnimatePresence, useAnimation } from "framer-motion"
+import { motion, AnimatePresence, useAnimation, useMotionValue, useTransform } from "framer-motion"
 import Image from "next/image"
 
 // Rarität definieren
@@ -44,32 +46,28 @@ const FALLBACK_CARDS = [
 // Rarity color mapping
 const RARITY_COLORS = {
   common: {
-    border: "border-gray-400",
-    bg: "from-gray-200 to-gray-50",
+    border: "card-border-common",
+    glow: "shadow-gray-300",
     text: "text-gray-600",
-    glow: "bg-gray-300",
-    accent: "bg-gray-400",
+    gradient: "from-gray-300/30 to-gray-100/30",
   },
   rare: {
-    border: "border-blue-500",
-    bg: "from-blue-200 to-blue-50",
+    border: "card-border-rare",
+    glow: "shadow-blue-300",
     text: "text-blue-600",
-    glow: "bg-blue-300",
-    accent: "bg-blue-400",
+    gradient: "from-blue-300/30 to-blue-100/30",
   },
   epic: {
-    border: "border-purple-500",
-    bg: "from-purple-200 to-purple-50",
+    border: "card-border-epic",
+    glow: "shadow-purple-300",
     text: "text-purple-600",
-    glow: "bg-purple-300",
-    accent: "bg-purple-400",
+    gradient: "from-purple-300/30 to-purple-100/30",
   },
   legendary: {
-    border: "border-yellow-400",
-    bg: "from-yellow-200 to-yellow-50",
+    border: "card-border-legendary",
+    glow: "shadow-yellow-300",
     text: "text-yellow-600",
-    glow: "bg-yellow-300",
-    accent: "bg-yellow-400",
+    gradient: "from-yellow-300/30 to-yellow-100/30",
   },
 }
 
@@ -95,6 +93,16 @@ export default function DrawPage() {
   const [currentCardIndex, setCurrentCardIndex] = useState(0)
   const controls = useAnimation()
 
+  // Card tilt effect
+  const cardRef = useRef<HTMLDivElement>(null)
+  const x = useMotionValue(0)
+  const y = useMotionValue(0)
+  const rotateX = useTransform(y, [-100, 100], [15, -15])
+  const rotateY = useTransform(x, [-100, 100], [-15, 15])
+  const reflectionX = useTransform(x, [-100, 100], ["30%", "70%"])
+  const reflectionY = useTransform(y, [-100, 100], ["30%", "70%"])
+  const reflectionOpacity = useTransform(x, [-100, 0, 100], [0.7, 0.3, 0.7])
+
   // Set isClient to true once component mounts
   useEffect(() => {
     setIsClient(true)
@@ -102,10 +110,47 @@ export default function DrawPage() {
 
   // Update legendary tickets when user changes
   useEffect(() => {
-    if (user?.tickets !== undefined) {
-      setLegendaryTickets(user.tickets)
+    if (user?.legendary_tickets !== undefined) {
+      setLegendaryTickets(user.legendary_tickets)
     }
   }, [user])
+
+  // Handle card tilt effect with improved sensitivity for reflections
+  const handleCardMove = (event: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
+    if (!cardRef.current || !cardRevealed) return
+
+    // Prevent default scrolling behavior
+    event.preventDefault()
+
+    const rect = cardRef.current.getBoundingClientRect()
+
+    // Get coordinates
+    let clientX, clientY
+
+    if ("touches" in event) {
+      // Touch event
+      clientX = event.touches[0].clientX
+      clientY = event.touches[0].clientY
+    } else {
+      // Mouse event
+      clientX = event.clientX
+      clientY = event.clientY
+    }
+
+    // Calculate position relative to card center with increased sensitivity
+    const xPos = ((clientX - rect.left) / rect.width - 0.5) * 200
+    const yPos = ((clientY - rect.top) / rect.height - 0.5) * 200
+
+    // Update motion values with spring effect for smoother transitions
+    x.set(xPos)
+    y.set(yPos)
+  }
+
+  const handleCardLeave = () => {
+    // Reset to center position with a smooth transition
+    x.set(0, true)
+    y.set(0, true)
+  }
 
   // Update the error handling in handleSelectPack to provide more information
   const handleSelectPack = async (cardType: string) => {
@@ -569,7 +614,7 @@ export default function DrawPage() {
                   }}
                 >
                   <div
-                    className={`text-5xl font-bold ${
+                    className={`text-5xl font-bold anime-text ${
                       drawnCards[0]?.rarity === "legendary"
                         ? "text-yellow-400"
                         : drawnCards[0]?.rarity === "epic"
@@ -600,8 +645,8 @@ export default function DrawPage() {
 
                 {/* Instructions */}
                 <div className="absolute top-16 left-0 right-0 flex justify-center z-20">
-                  <div className="bg-white/10 px-4 py-2 rounded-lg text-white text-sm text-center">
-                    Click the button below to add card to your collection
+                  <div className="bg-white/10 px-4 py-2 rounded-lg text-white text-sm text-center anime-text">
+                    Move your finger or mouse over the card to see the holographic effect
                   </div>
                 </div>
 
@@ -610,8 +655,9 @@ export default function DrawPage() {
                   {getCurrentCard() && (
                     <div className="perspective-1000 mb-8">
                       <motion.div
-                        className="relative w-72 h-96 preserve-3d"
-                        initial={{ rotateY: 180 }}
+                        ref={cardRef}
+                        className="relative w-64 h-96 preserve-3d cursor-pointer touch-none"
+                        initial={{ rotateY: 0 }}
                         animate={{ rotateY: cardRevealed ? 0 : 180 }}
                         transition={{
                           type: "spring",
@@ -619,134 +665,122 @@ export default function DrawPage() {
                           damping: 15,
                           duration: 1.5,
                         }}
+                        onMouseMove={handleCardMove}
+                        onMouseLeave={handleCardLeave}
+                        onTouchMove={handleCardMove}
+                        onTouchEnd={handleCardLeave}
+                        style={{
+                          transformStyle: "preserve-3d",
+                        }}
                       >
-                        {/* Card Back */}
-                        <div className="absolute w-full h-full backface-hidden rounded-xl bg-gradient-to-b from-blue-800 to-purple-900 border-4 border-yellow-500 flex items-center justify-center">
-                          <div className="text-white text-center">
-                            <h3 className="font-bold text-2xl">ANIME WORLD</h3>
+                        {/* Card Front - This will show after flip */}
+                        <motion.div
+                          className={`absolute w-full h-full backface-hidden rounded-xl overflow-hidden ${
+                            getRarityStyles(getCurrentCard()?.rarity).border
+                          }`}
+                          style={{
+                            rotateX: rotateX,
+                            rotateY: rotateY,
+                            transformStyle: "preserve-3d",
+                          }}
+                        >
+                          {/* Full art image takes up the entire card */}
+                          <div className="absolute inset-0 w-full h-full">
+                            <Image
+                              src={getCurrentCard()?.image_url || "/placeholder.svg?height=300&width=200"}
+                              alt={getCurrentCard()?.name}
+                              fill
+                              className="object-cover"
+                              onError={(e) => {
+                                ;(e.target as HTMLImageElement).src = "/placeholder.svg?height=300&width=200"
+                              }}
+                            />
                           </div>
-                        </div>
 
-                        {/* Card Front */}
-                        <div className="absolute w-full h-full backface-hidden rounded-xl overflow-hidden rotateY-180">
-                          {/* Card Container with Rarity-based styling */}
-                          <div
-                            className={`w-full h-full relative ${
-                              getRarityStyles(getCurrentCard()?.rarity).border
-                            } border-4 shadow-xl`}
-                          >
-                            {/* Background gradient */}
-                            <div
-                              className={`absolute inset-0 bg-gradient-to-b ${getRarityStyles(getCurrentCard()?.rarity).bg}`}
-                            ></div>
+                          {/* Dynamic light reflection effect - more responsive to tilt */}
+                          <motion.div
+                            className="absolute inset-0 mix-blend-overlay"
+                            style={{
+                              background:
+                                "radial-gradient(circle at 50% 50%, rgba(255,255,255,0.8) 0%, transparent 50%)",
+                              backgroundPosition: `${reflectionX}% ${reflectionY}%`,
+                              opacity: Math.max(
+                                0.1,
+                                reflectionOpacity.get() * (Math.abs(rotateX.get() / 15) + Math.abs(rotateY.get() / 15)),
+                              ),
+                            }}
+                          />
 
-                            {/* Card Content */}
-                            <div className="relative z-10 h-full flex flex-col">
-                              {/* Card Header with Name and Rarity Indicator */}
-                              <div className="p-3 flex justify-between items-center">
-                                <div className="bg-white/90 px-2 py-1 rounded-md shadow-sm">
-                                  <h3 className="font-bold text-gray-800 text-sm">{getCurrentCard()?.name}</h3>
-                                </div>
-                                <div
-                                  className={`h-5 w-5 rounded-full ${getRarityStyles(getCurrentCard()?.rarity).accent} shadow-md flex items-center justify-center`}
-                                >
-                                  {getCurrentCard()?.rarity === "legendary" && (
-                                    <Sparkles className="h-3 w-3 text-white" />
-                                  )}
-                                </div>
-                              </div>
+                          {/* Holographic overlay effect based on tilt */}
+                          <motion.div
+                            className="absolute inset-0 pointer-events-none"
+                            style={{
+                              background:
+                                "linear-gradient(45deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0.1) 100%)",
+                              backgroundPosition: `${reflectionX.get()}% ${reflectionY.get()}%`,
+                              backgroundSize: "200% 200%",
+                              opacity: Math.abs(rotateX.get() / 30) + Math.abs(rotateY.get() / 30),
+                            }}
+                          />
 
-                              {/* Card Image with Frame */}
-                              <div className="px-3">
-                                <div className="bg-gradient-to-b from-white to-gray-100 p-1 rounded-lg shadow-md">
-                                  <div className="aspect-[3/4] relative rounded-md overflow-hidden">
-                                    <Image
-                                      src={getCurrentCard()?.image_url || "/placeholder.svg?height=300&width=200"}
-                                      alt={getCurrentCard()?.name}
-                                      fill
-                                      className="object-cover"
-                                      onError={(e) => {
-                                        ;(e.target as HTMLImageElement).src = "/placeholder.svg?height=300&width=200"
-                                      }}
-                                    />
-
-                                    {/* Overlay gradient for better text contrast */}
-                                    <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-black/60 to-transparent"></div>
-
-                                    {/* Character name overlay */}
-                                    <div className="absolute bottom-2 left-2 right-2 text-white">
-                                      <div className="text-sm font-bold drop-shadow-md">
-                                        {getCurrentCard()?.character}
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-
-                              {/* Card Info */}
-                              <div className="p-3 mt-auto">
-                                <div className="bg-white/90 p-2 rounded-lg shadow-md border border-gray-200">
-                                  <div className="flex justify-between items-center mb-1">
-                                    <span className="text-xs font-semibold">Type</span>
-                                    <span className="text-xs">{getCurrentCard()?.type || "Standard"}</span>
-                                  </div>
-                                  <div className="flex justify-between items-center">
-                                    <span className="text-xs font-semibold">Rarity</span>
-                                    <span
-                                      className={`text-xs font-bold px-2 py-0.5 rounded-full ${getRarityStyles(getCurrentCard()?.rarity).text} bg-opacity-20 ${getRarityStyles(getCurrentCard()?.rarity).accent}`}
-                                    >
-                                      {getCurrentCard()?.rarity?.toUpperCase()}
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-
-                              {/* Card Footer */}
-                              <div className="p-3 pt-0">
-                                <div className="flex justify-between items-center">
-                                  <div className="text-[10px] text-gray-600 bg-white/70 px-1 py-0.5 rounded">
-                                    #{getCurrentCard()?.id}
-                                  </div>
-                                  <div className="text-[10px] font-semibold text-gray-600 bg-white/70 px-1 py-0.5 rounded">
-                                    ANIME WORLD
-                                  </div>
-                                </div>
+                          {/* Card Content Overlays - Improved styling with smaller backgrounds and better positioning */}
+                          <div className="absolute inset-0 flex flex-col justify-between">
+                            {/* Top section with name - smaller background, closer to top edge */}
+                            <div className="pt-1 pl-1">
+                              <div className="bg-gradient-to-r from-black/70 via-black/50 to-transparent px-2 py-1 rounded-lg max-w-[85%] backdrop-blur-sm inline-block">
+                                <h3 className="font-bold text-white text-lg drop-shadow-md anime-text">
+                                  {getCurrentCard()?.name}
+                                </h3>
                               </div>
                             </div>
 
-                            {/* Shine effect */}
+                            {/* Bottom section with rarity - smaller background, closer to bottom edge */}
+                            <div className="pb-1 pr-1 flex justify-end">
+                              <div className="bg-gradient-to-l from-black/70 via-black/50 to-transparent px-2 py-1 rounded-lg flex items-center gap-1 backdrop-blur-sm">
+                                <span className="text-white text-sm font-semibold anime-text">
+                                  {getCurrentCard()?.rarity?.toUpperCase()}
+                                </span>
+                                {getCurrentCard()?.rarity === "legendary" && (
+                                  <Sparkles className="h-4 w-4 text-yellow-400" />
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Special effects for legendary and epic cards */}
+                          {(getCurrentCard()?.rarity === "legendary" || getCurrentCard()?.rarity === "epic") && (
                             <motion.div
-                              className="absolute inset-0 pointer-events-none"
-                              initial={{ backgroundPosition: "200% 0%" }}
-                              animate={{ backgroundPosition: ["-100% 0%", "200% 0%"] }}
-                              transition={{
-                                repeat: Number.POSITIVE_INFINITY,
-                                repeatDelay: 3,
-                                duration: 1.5,
+                              className={`absolute inset-0 pointer-events-none mix-blend-overlay rounded-xl ${
+                                getCurrentCard()?.rarity === "legendary" ? "bg-yellow-300" : "bg-purple-300"
+                              }`}
+                              animate={{
+                                opacity: [0.1, 0.3, 0.1],
                               }}
-                              style={{
-                                background:
-                                  "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.8) 50%, transparent 100%)",
-                                backgroundSize: "200% 100%",
+                              transition={{
+                                duration: 2,
+                                repeat: Number.POSITIVE_INFINITY,
+                                repeatType: "reverse",
                               }}
                             />
+                          )}
 
-                            {/* Special effects for legendary and epic cards */}
-                            {(getCurrentCard()?.rarity === "legendary" || getCurrentCard()?.rarity === "epic") && (
-                              <motion.div
-                                className={`absolute inset-0 pointer-events-none mix-blend-overlay rounded-xl ${
-                                  getCurrentCard()?.rarity === "legendary" ? "bg-yellow-300" : "bg-purple-300"
-                                }`}
-                                animate={{
-                                  opacity: [0.1, 0.3, 0.1],
-                                }}
-                                transition={{
-                                  duration: 2,
-                                  repeat: Number.POSITIVE_INFINITY,
-                                  repeatType: "reverse",
-                                }}
-                              />
-                            )}
+                          {/* Shine effect based on tilt */}
+                          <motion.div
+                            className="absolute inset-0 pointer-events-none"
+                            style={{
+                              background:
+                                "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.8) 50%, transparent 100%)",
+                              backgroundSize: "200% 100%",
+                              backgroundPosition: `${reflectionX.get()}% 0%`,
+                              opacity: reflectionOpacity,
+                            }}
+                          />
+                        </motion.div>
+
+                        {/* Card Back - This will show first */}
+                        <div className="absolute w-full h-full backface-hidden rotateY-180 rounded-xl bg-gradient-to-b from-blue-800 to-purple-900 border-4 border-yellow-500 flex items-center justify-center">
+                          <div className="text-white text-center">
+                            <h3 className="font-bold text-2xl anime-text">ANIME WORLD</h3>
                           </div>
                         </div>
                       </motion.div>
@@ -756,7 +790,7 @@ export default function DrawPage() {
                   {/* Button to add card to collection */}
                   <Button
                     onClick={() => finishCardReview()}
-                    className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 px-8"
+                    className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 px-8 anime-text"
                     size="lg"
                   >
                     Add to Collection

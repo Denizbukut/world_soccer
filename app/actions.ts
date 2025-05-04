@@ -6,6 +6,8 @@ import { createClient } from "@/utils/supabase/server"
 // Card rarity types
 type CardRarity = "common" | "rare" | "epic" | "legendary"
 
+// Update the claimDailyBonus function to use a 12-hour cooldown instead of daily
+
 /**
  * Claims daily login bonus for a user
  */
@@ -16,7 +18,7 @@ export async function claimDailyBonus(username: string) {
     // Get current user data
     const { data: userData, error: userError } = await supabase
       .from("users")
-      .select("username, tickets, last_login, legendary_tickets")
+      .select("username, tickets, ticket_last_claimed")
       .eq("username", username)
       .single()
 
@@ -26,7 +28,7 @@ export async function claimDailyBonus(username: string) {
         username: username,
         tickets: 10,
         legendary_tickets: 2,
-        last_login: new Date().toISOString(),
+        ticket_last_claimed: new Date().toISOString(),
       })
 
       if (createError) {
@@ -37,19 +39,18 @@ export async function claimDailyBonus(username: string) {
       return { success: true, newTicketCount: 13 } // 10 initial + 3 bonus
     }
 
-    // Check if user has already claimed today
-    const lastLogin = new Date(userData.last_login)
-    const today = new Date()
+    // Check if user has already claimed within the last 12 hours
+    if (userData.ticket_last_claimed) {
+      const lastClaimed = new Date(userData.ticket_last_claimed)
+      const now = new Date()
+      const hoursSinceLastClaim = (now.getTime() - lastClaimed.getTime()) / (1000 * 60 * 60)
 
-    // Reset at midnight
-    const lastLoginDay = lastLogin.setHours(0, 0, 0, 0)
-    const todayDay = today.setHours(0, 0, 0, 0)
-
-    if (lastLoginDay === todayDay) {
-      return { success: false, error: "Already claimed today", alreadyClaimed: true }
+      if (hoursSinceLastClaim < 12) {
+        return { success: false, error: "Already claimed within the last 12 hours", alreadyClaimed: true }
+      }
     }
 
-    // Award tickets (3 tickets per day)
+    // Award tickets (3 tickets per claim)
     const newTicketCount = (userData.tickets || 0) + 3
 
     // Update user
@@ -57,7 +58,7 @@ export async function claimDailyBonus(username: string) {
       .from("users")
       .update({
         tickets: newTicketCount,
-        last_login: new Date().toISOString(),
+        ticket_last_claimed: new Date().toISOString(),
       })
       .eq("username", userData.username)
 

@@ -5,15 +5,16 @@ import { useAuth } from "@/contexts/auth-context"
 import { getSupabaseBrowserClient } from "@/lib/supabase"
 import CardItem from "@/components/card-item"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { motion, AnimatePresence } from "framer-motion"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "@/components/ui/use-toast"
-import { AlertCircle, Star, BookOpen } from "lucide-react"
+import { AlertCircle, Star, BookOpen, Search } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import MobileNav from "@/components/mobile-nav"
+import { Input } from "@/components/ui/input"
 
 export default function CollectionPage() {
   const { user } = useAuth()
@@ -21,6 +22,7 @@ export default function CollectionPage() {
   const [userCards, setUserCards] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState("all")
+  const [searchTerm, setSearchTerm] = useState("")
 
   // Fetch user's cards
   useEffect(() => {
@@ -106,10 +108,15 @@ export default function CollectionPage() {
     fetchUserCards()
   }, [user?.username])
 
-  // Filter cards based on active tab
+  // Filter cards based on active tab and search term
   const filteredCards = userCards.filter((card) => {
-    if (activeTab === "all") return true
-    return card.rarity === activeTab.toLowerCase()
+    const matchesSearch =
+      searchTerm === "" ||
+      card.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      card.character?.toLowerCase().includes(searchTerm.toLowerCase())
+
+    if (activeTab === "all") return matchesSearch
+    return matchesSearch && card.rarity === activeTab.toLowerCase()
   })
 
   // Group cards by level for better organization
@@ -127,16 +134,45 @@ export default function CollectionPage() {
     .map(Number)
     .sort((a, b) => b - a)
 
+  // Calculate collection stats
+  const collectionStats = userCards.reduce(
+    (acc, card) => {
+      acc.total += card.quantity || 0
+      if (card.rarity) {
+        acc[card.rarity] = (acc[card.rarity] || 0) + (card.quantity || 0)
+      }
+      return acc
+    },
+    { total: 0, common: 0, rare: 0, epic: 0, legendary: 0 },
+  )
+
   if (loading) {
     return (
-      <div className="container mx-auto p-4 pb-20">
-        <h1 className="text-2xl font-bold mb-6">My Collection</h1>
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
-          {Array.from({ length: 12 }).map((_, index) => (
-            <div key={index} className="aspect-[3/4]">
-              <Skeleton className="h-full w-full rounded-lg" />
+      <div className="min-h-screen bg-[#f8f9ff] pb-20">
+        <header className="sticky top-0 z-10 backdrop-blur-md bg-white/80 border-b border-gray-100">
+          <div className="max-w-lg mx-auto px-4 py-3">
+            <div className="flex justify-between items-center">
+              <h1 className="text-lg font-medium">My Collection</h1>
             </div>
-          ))}
+          </div>
+        </header>
+        <div className="p-4 max-w-lg mx-auto">
+          <div className="bg-white rounded-2xl shadow-sm mb-4 p-4">
+            <Skeleton className="h-6 w-32 mb-3" />
+            <div className="grid grid-cols-5 gap-2">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} className="h-16 rounded-lg" />
+              ))}
+            </div>
+          </div>
+          <Skeleton className="h-10 w-full mb-4" />
+          <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+            {Array.from({ length: 9 }).map((_, index) => (
+              <div key={index} className="aspect-[3/4]">
+                <Skeleton className="h-full w-full rounded-xl" />
+              </div>
+            ))}
+          </div>
         </div>
         <MobileNav />
       </div>
@@ -145,17 +181,30 @@ export default function CollectionPage() {
 
   if (userCards.length === 0) {
     return (
-      <div className="container mx-auto p-4 text-center pb-20">
-        <h1 className="text-2xl font-bold mb-6">My Collection</h1>
-        <div className="bg-gray-100 rounded-lg p-8 max-w-md mx-auto">
-          <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold mb-2">No Cards Yet</h2>
-          <p className="text-gray-600 mb-6">
-            You don't have any cards in your collection yet. Open some packs to get started!
-          </p>
-          <Button onClick={() => router.push("/draw")} className="bg-gradient-to-r from-blue-500 to-purple-500">
-            Open Card Packs
-          </Button>
+      <div className="min-h-screen bg-[#f8f9ff] pb-20">
+        <header className="sticky top-0 z-10 backdrop-blur-md bg-white/80 border-b border-gray-100">
+          <div className="max-w-lg mx-auto px-4 py-3">
+            <div className="flex justify-between items-center">
+              <h1 className="text-lg font-medium">My Collection</h1>
+            </div>
+          </div>
+        </header>
+        <div className="p-4 max-w-lg mx-auto">
+          <div className="bg-white rounded-2xl shadow-sm p-8 text-center">
+            <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+              <AlertCircle className="h-8 w-8 text-gray-400" />
+            </div>
+            <h2 className="text-xl font-medium mb-2">No Cards Yet</h2>
+            <p className="text-gray-500 mb-6 max-w-xs mx-auto">
+              You don't have any cards in your collection yet. Open some packs to get started!
+            </p>
+            <Button
+              onClick={() => router.push("/draw")}
+              className="bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 rounded-full"
+            >
+              Open Card Packs
+            </Button>
+          </div>
         </div>
         <MobileNav />
       </div>
@@ -163,33 +212,105 @@ export default function CollectionPage() {
   }
 
   return (
-    <div className="container mx-auto p-4 pb-20">
-      {/* Restructured header section */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold mb-4">My Collection</h1>
-
-        <div className="flex flex-wrap gap-2">
-          <Link href="/catalog">
-            <Button variant="outline" className="flex items-center gap-1">
-              <BookOpen className="h-4 w-4" />
-              <span>Catalog</span>
-            </Button>
-          </Link>
+    <div className="min-h-screen bg-[#f8f9ff] pb-20">
+      {/* Header */}
+      <header className="sticky top-0 z-10 backdrop-blur-md bg-white/80 border-b border-gray-100">
+        <div className="max-w-lg mx-auto px-4 py-3">
+          <div className="flex justify-between items-center">
+            <h1 className="text-lg font-medium">My Collection</h1>
+            <Link href="/catalog">
+              <Button variant="ghost" size="sm" className="text-violet-600 h-8 px-3">
+                <BookOpen className="h-4 w-4 mr-1" />
+                <span>Catalog</span>
+              </Button>
+            </Link>
+          </div>
         </div>
-      </div>
+      </header>
 
-      <Tabs defaultValue="all" className="w-full" onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-5 bg-white">
-          <TabsTrigger value="all">All</TabsTrigger>
-          <TabsTrigger value="legendary">Legendary</TabsTrigger>
-          <TabsTrigger value="epic">Epic</TabsTrigger>
-          <TabsTrigger value="rare">Rare</TabsTrigger>
-          <TabsTrigger value="common">Common</TabsTrigger>
-        </TabsList>
+      <main className="p-4 max-w-lg mx-auto">
+        {/* Collection Stats */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="bg-white rounded-2xl shadow-sm mb-4 overflow-hidden"
+        >
+          <div className="p-4">
+            <h2 className="text-sm font-medium mb-3">Collection Stats</h2>
+            <div className="grid grid-cols-5 gap-2 text-center">
+              <div className="bg-gray-50 rounded-lg p-2">
+                <div className="text-lg font-semibold">{collectionStats.total}</div>
+                <div className="text-xs text-gray-500">Total</div>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-2">
+                <div className="text-lg font-semibold text-gray-600">{collectionStats.common}</div>
+                <div className="text-xs text-gray-500">Common</div>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-2">
+                <div className="text-lg font-semibold text-blue-600">{collectionStats.rare}</div>
+                <div className="text-xs text-gray-500">Rare</div>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-2">
+                <div className="text-lg font-semibold text-purple-600">{collectionStats.epic}</div>
+                <div className="text-xs text-gray-500">Epic</div>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-2">
+                <div className="text-lg font-semibold text-amber-600">{collectionStats.legendary}</div>
+                <div className="text-xs text-gray-500">Legendary</div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
 
-        <TabsContent value={activeTab} className="mt-4">
-          {sortedLevels.map((level) => (
-            <div key={level} className="mb-8">
+        {/* Search and Filters */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1, duration: 0.4 }}
+          className="mb-4 space-y-3"
+        >
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              placeholder="Search cards..."
+              className="pl-10 bg-white"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+
+          <Tabs defaultValue="all" className="w-full" onValueChange={setActiveTab}>
+            <TabsList className="grid w-full grid-cols-5 bg-white h-9">
+              <TabsTrigger value="all" className="text-xs h-7">
+                All
+              </TabsTrigger>
+              <TabsTrigger value="legendary" className="text-xs h-7">
+                Legendary
+              </TabsTrigger>
+              <TabsTrigger value="epic" className="text-xs h-7">
+                Epic
+              </TabsTrigger>
+              <TabsTrigger value="rare" className="text-xs h-7">
+                Rare
+              </TabsTrigger>
+              <TabsTrigger value="common" className="text-xs h-7">
+                Common
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </motion.div>
+
+        {/* Cards by Level */}
+        {sortedLevels.length > 0 ? (
+          sortedLevels.map((level) => (
+            <motion.div
+              key={level}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.4 }}
+              className="mb-8"
+            >
               <div className="flex items-center mb-3">
                 <Badge variant="outline" className="mr-2 font-bold">
                   Level {level}
@@ -215,7 +336,7 @@ export default function CollectionPage() {
               </div>
 
               <motion.div
-                className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3"
+                className="grid grid-cols-3 sm:grid-cols-4 gap-3"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ staggerChildren: 0.05 }}
@@ -245,10 +366,29 @@ export default function CollectionPage() {
                   ))}
                 </AnimatePresence>
               </motion.div>
+            </motion.div>
+          ))
+        ) : (
+          <div className="bg-white rounded-2xl shadow-sm p-8 text-center">
+            <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+              <Search className="h-6 w-6 text-gray-400" />
             </div>
-          ))}
-        </TabsContent>
-      </Tabs>
+            <h2 className="text-lg font-medium mb-2">No Results</h2>
+            <p className="text-gray-500 mb-4">
+              No cards match your search criteria. Try different keywords or filters.
+            </p>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSearchTerm("")
+                setActiveTab("all")
+              }}
+            >
+              Clear Filters
+            </Button>
+          </div>
+        )}
+      </main>
 
       <MobileNav />
     </div>

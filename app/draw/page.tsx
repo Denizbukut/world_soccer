@@ -246,48 +246,31 @@ export default function DrawPage() {
   if (!isClient) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 pb-20">
-          <header className="bg-white border-b border-gray-200 p-4 relative z-10">
-            <div className="flex justify-between items-center">
-              <h1 className="text-xl font-bold">Card Packs</h1>
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1 bg-gray-100 px-3 py-1.5 rounded-full">
-                  <Ticket className="h-4 w-4 text-blue-500" />
-                  <span className="font-bold">0</span>
-                </div>
-                <div className="flex items-center gap-1 bg-gray-100 px-3 py-1.5 rounded-full">
-                  <Crown className="h-4 w-4 text-yellow-500" />
-                  <span className="font-bold">0</span>
+        <div className="min-h-screen bg-[#f8f9ff] pb-20">
+          <header className="sticky top-0 z-10 backdrop-blur-md bg-white/80 border-b border-gray-100">
+            <div className="max-w-lg mx-auto px-4 py-3">
+              <div className="flex justify-between items-center">
+                <h1 className="text-lg font-medium">Card Packs</h1>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
+                    <Ticket className="h-3.5 w-3.5 text-violet-500" />
+                    <span className="font-medium text-sm">0</span>
+                  </div>
+                  <div className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
+                    <Crown className="h-3.5 w-3.5 text-amber-500" />
+                    <span className="font-medium text-sm">0</span>
+                  </div>
                 </div>
               </div>
             </div>
           </header>
-          <main className="p-4 space-y-6">
-            <div className="flex rounded-xl overflow-hidden mb-6 border border-gray-200">
-              <button className="flex-1 py-3 px-4 text-center font-medium transition-all bg-gradient-to-r from-blue-500 to-purple-500 text-white">
-                <div className="flex items-center justify-center gap-2">
-                  <Ticket className="h-4 w-4" />
-                  <span>Regular Pack</span>
-                </div>
-              </button>
-              <button className="flex-1 py-3 px-4 text-center font-medium transition-all bg-white text-gray-500">
-                <div className="flex items-center justify-center gap-2">
-                  <Crown className="h-4 w-4" />
-                  <span>Legendary Pack</span>
-                </div>
-              </button>
+          <div className="p-4 max-w-lg mx-auto">
+            <div className="animate-pulse space-y-4">
+              <div className="h-10 bg-gray-200 rounded-xl w-full"></div>
+              <div className="h-64 bg-gray-200 rounded-xl w-full"></div>
+              <div className="h-12 bg-gray-200 rounded-xl w-1/2 mx-auto"></div>
             </div>
-            <div className="bg-white rounded-xl overflow-hidden shadow-md p-4">
-              <div className="flex flex-col items-center">
-                <div className="relative w-48 h-64 mb-4">
-                  <div className="w-full h-full bg-gray-200 animate-pulse rounded-lg"></div>
-                </div>
-                <div className="text-center mb-4">
-                  <h3 className="text-lg font-bold">Loading...</h3>
-                </div>
-              </div>
-            </div>
-          </main>
+          </div>
           <MobileNav />
         </div>
       </ProtectedRoute>
@@ -296,25 +279,27 @@ export default function DrawPage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 pb-20">
+      <div className="min-h-screen bg-[#f8f9ff] pb-20">
         {/* Header with tickets */}
-        <header className="bg-white border-b border-gray-200 p-4 relative z-10">
-          <div className="flex justify-between items-center">
-            <h1 className="text-xl font-bold">Card Packs</h1>
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1 bg-gray-100 px-3 py-1.5 rounded-full">
-                <Ticket className="h-4 w-4 text-blue-500" />
-                <span className="font-bold">{user?.tickets || 0}</span>
-              </div>
-              <div className="flex items-center gap-1 bg-gray-100 px-3 py-1.5 rounded-full">
-                <Crown className="h-4 w-4 text-yellow-500" />
-                <span className="font-bold">{legendaryTickets}</span>
+        <header className="sticky top-0 z-10 backdrop-blur-md bg-white/80 border-b border-gray-100">
+          <div className="max-w-lg mx-auto px-4 py-3">
+            <div className="flex justify-between items-center">
+              <h1 className="text-lg font-medium">Card Packs</h1>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
+                  <Ticket className="h-3.5 w-3.5 text-violet-500" />
+                  <span className="font-medium text-sm">{user?.tickets || 0}</span>
+                </div>
+                <div className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
+                  <Crown className="h-3.5 w-3.5 text-amber-500" />
+                  <span className="font-medium text-sm">{legendaryTickets}</span>
+                </div>
               </div>
             </div>
           </div>
         </header>
 
-        <main className="p-4 space-y-6">
+        <main className="p-4 max-w-lg mx-auto">
           {/* Pack Selection Screen */}
           <AnimatePresence>
             {showPackSelection && (
@@ -325,12 +310,12 @@ export default function DrawPage() {
                 transition={{ duration: 0.3 }}
               >
                 {/* Tabs */}
-                <div className="flex rounded-xl overflow-hidden mb-6 border border-gray-200">
+                <div className="flex rounded-xl overflow-hidden mb-6 border border-gray-200 bg-white">
                   <button
                     onClick={() => setActiveTab("regular")}
                     className={`flex-1 py-3 px-4 text-center font-medium transition-all ${
                       activeTab === "regular"
-                        ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white"
+                        ? "bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white"
                         : "bg-white text-gray-500"
                     }`}
                   >
@@ -343,7 +328,7 @@ export default function DrawPage() {
                     onClick={() => setActiveTab("legendary")}
                     className={`flex-1 py-3 px-4 text-center font-medium transition-all ${
                       activeTab === "legendary"
-                        ? "bg-gradient-to-r from-yellow-500 to-amber-500 text-white"
+                        ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white"
                         : "bg-white text-gray-500"
                     }`}
                   >
@@ -360,7 +345,7 @@ export default function DrawPage() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ duration: 0.3 }}
-                  className="bg-white rounded-xl overflow-hidden shadow-md"
+                  className="bg-white rounded-2xl overflow-hidden shadow-sm"
                 >
                   <div className="p-4">
                     <div className="flex flex-col items-center">
@@ -388,7 +373,7 @@ export default function DrawPage() {
                       </motion.div>
 
                       <div className="text-center mb-4">
-                        <h3 className="text-lg font-bold">
+                        <h3 className="text-lg font-medium">
                           {activeTab === "legendary" ? "Legendary" : "Regular"} Card Pack
                         </h3>
                         <p className="text-sm text-gray-500">Contains 1 random card</p>
@@ -411,7 +396,7 @@ export default function DrawPage() {
                             </div>
                             <div className="flex justify-between items-center text-sm">
                               <span>Legendary</span>
-                              <span className="text-yellow-500">5%</span>
+                              <span className="text-amber-500">5%</span>
                             </div>
                           </>
                         ) : (
@@ -430,7 +415,7 @@ export default function DrawPage() {
                             </div>
                             <div className="flex justify-between items-center text-sm">
                               <span>Legendary</span>
-                              <span className="text-yellow-500">0.5%</span>
+                              <span className="text-amber-500">0.5%</span>
                             </div>
                           </>
                         )}
@@ -443,8 +428,8 @@ export default function DrawPage() {
                         }
                         className={
                           activeTab === "legendary"
-                            ? "w-full bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-600 hover:to-amber-600"
-                            : "w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
+                            ? "w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 rounded-full"
+                            : "w-full bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 rounded-full"
                         }
                       >
                         {isDrawing ? (
@@ -539,8 +524,8 @@ export default function DrawPage() {
                       onClick={handleOpenPack}
                       className={
                         activeTab === "legendary"
-                          ? "bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-600 hover:to-amber-600 w-40"
-                          : "bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 w-40"
+                          ? "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 rounded-full w-40"
+                          : "bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 rounded-full w-40"
                       }
                     >
                       Open
@@ -642,7 +627,6 @@ export default function DrawPage() {
               >
                 {/* Dark overlay */}
                 <div className="absolute inset-0 bg-black opacity-80" />
-
 
                 {/* Card */}
                 <div className="relative z-10 flex flex-col items-center">
@@ -784,7 +768,7 @@ export default function DrawPage() {
                   {/* Button to add card to collection */}
                   <Button
                     onClick={() => finishCardReview()}
-                    className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 px-8 anime-text"
+                    className="bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 px-8 rounded-full"
                     size="lg"
                   >
                     Add to Collection

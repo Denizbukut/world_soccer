@@ -1,6 +1,3 @@
-@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=Bangers&display=swap");
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -29,32 +26,27 @@ body {
   .rotateY-180 {
     transform: rotateY(180deg);
   }
+}
 
-  .anime-text {
-    font-family: "Bangers", cursive;
-    letter-spacing: 1px;
-  }
-
+@layer components {
   .card-border-common {
-    box-shadow: inset 0 0 0 5px rgba(200, 200, 200, 0.8);
+    @apply border-4 border-gray-400;
   }
 
   .card-border-rare {
-    box-shadow: inset 0 0 0 5px rgba(30, 144, 255, 0.8);
+    @apply border-4 border-blue-500;
   }
 
   .card-border-epic {
-    box-shadow: inset 0 0 0 5px transparent, 0 0 15px rgba(128, 0, 128, 0.7);
-    background: linear-gradient(to right, rgba(128, 0, 128, 0.8), rgba(75, 0, 130, 0.8)) border-box;
-    border: 5px solid transparent;
-    background-clip: padding-box, border-box;
+    @apply border-4 border-purple-500;
   }
 
   .card-border-legendary {
-    box-shadow: inset 0 0 0 5px transparent, 0 0 20px rgba(255, 215, 0, 0.7);
-    background: linear-gradient(to right, rgba(255, 215, 0, 0.8), rgba(255, 140, 0, 0.8)) border-box;
-    border: 5px solid transparent;
-    background-clip: padding-box, border-box;
+    @apply border-4 border-yellow-500;
+  }
+
+  .anime-text {
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
   }
 }
 

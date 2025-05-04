@@ -6,7 +6,7 @@ import Link from "next/link"
 import type { Card } from "@/types/card"
 import { cn } from "@/lib/utils"
 import Image from "next/image"
-import { Star } from "lucide-react"
+import { Star } from 'lucide-react'
 import { motion } from "framer-motion"
 
 interface CardItemProps {

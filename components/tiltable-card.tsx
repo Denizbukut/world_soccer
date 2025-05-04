@@ -14,9 +14,18 @@ interface TiltableCardProps {
   imageUrl?: string
   rarity: string
   level?: number
+  owned?: boolean // Add this new prop
 }
 
-export default function TiltableCard({ id, name, character, imageUrl, rarity, level = 1 }: TiltableCardProps) {
+export default function TiltableCard({
+  id,
+  name,
+  character,
+  imageUrl,
+  rarity,
+  level = 1,
+  owned = true,
+}: TiltableCardProps) {
   const cardRef = useRef<HTMLDivElement>(null)
   const [isHovered, setIsHovered] = useState(false)
 
@@ -50,7 +59,7 @@ export default function TiltableCard({ id, name, character, imageUrl, rarity, le
       gradient: "from-purple-300/30 to-purple-100/30",
     },
     legendary: {
-      border: "border-4 border-yellow-500",
+      border: "border-4 border-transparent", // Changed to transparent to show the gradient border
       glow: "shadow-yellow-300",
       text: "text-yellow-600",
       gradient: "from-yellow-300/30 to-yellow-100/30",
@@ -120,6 +129,25 @@ export default function TiltableCard({ id, name, character, imageUrl, rarity, le
           transformStyle: "preserve-3d",
         }}
       >
+        {/* Special border effect for legendary cards */}
+        {rarity === "legendary" && (
+          <motion.div
+            className="absolute -inset-[3px] rounded-xl pointer-events-none z-[-1] bg-[conic-gradient(at_top_right,_var(--tw-gradient-stops))] from-yellow-500 via-amber-300 to-yellow-600"
+            animate={{
+              boxShadow: [
+                "0 0 10px 2px rgba(253,224,71,0.4)",
+                "0 0 15px 5px rgba(253,224,71,0.6)",
+                "0 0 10px 2px rgba(253,224,71,0.4)",
+              ],
+            }}
+            transition={{
+              duration: 2,
+              repeat: Number.POSITIVE_INFINITY,
+              repeatType: "reverse",
+            }}
+          />
+        )}
+
         {/* Card with rarity-based styling */}
         <div className={`w-full h-full relative rounded-xl overflow-hidden ${rarityStyle.border}`}>
           {/* Card image */}
@@ -127,7 +155,7 @@ export default function TiltableCard({ id, name, character, imageUrl, rarity, le
             src={cardImageUrl || "/placeholder.svg"}
             alt={`${name} - ${character}`}
             fill
-            className="object-cover"
+            className={`object-cover ${!owned ? "filter grayscale" : ""}`}
             priority
           />
 
@@ -138,24 +166,26 @@ export default function TiltableCard({ id, name, character, imageUrl, rarity, le
             </div>
           </div>
 
-          {/* Level stars */}
-          <div className="absolute bottom-1 left-0 right-0 flex justify-center">
-            {Array.from({ length: level }).map((_, i) => (
-              <div key={i} className="relative mx-0.5">
-                {/* Base star with white border */}
-                <Star
-                  className="h-5 w-5 text-red-600 fill-red-600 drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]"
-                  strokeWidth={1.5}
-                  stroke="white"
-                />
+          {/* Level stars - only show if owned */}
+          {owned && (
+            <div className="absolute bottom-1 left-0 right-0 flex justify-center">
+              {Array.from({ length: level }).map((_, i) => (
+                <div key={i} className="relative mx-0.5">
+                  {/* Base star with white border */}
+                  <Star
+                    className="h-5 w-5 text-red-600 fill-red-600 drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]"
+                    strokeWidth={1.5}
+                    stroke="white"
+                  />
 
-                {/* Light reflection overlay */}
-                <div className="absolute inset-0 overflow-hidden">
-                  <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-white/60 to-transparent rounded-full transform -rotate-45 scale-75 opacity-80"></div>
+                  {/* Light reflection overlay */}
+                  <div className="absolute inset-0 overflow-hidden">
+                    <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-white/60 to-transparent rounded-full transform -rotate-45 scale-75 opacity-80"></div>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
 
           {/* Dynamic light reflection effect - more responsive to tilt */}
           <motion.div
@@ -182,12 +212,10 @@ export default function TiltableCard({ id, name, character, imageUrl, rarity, le
             }}
           />
 
-          {/* Special effects for legendary and epic cards */}
-          {(rarity === "legendary" || rarity === "epic") && (
+          {/* Special effects for epic cards only (removed for legendary) */}
+          {rarity === "epic" && (
             <motion.div
-              className={`absolute inset-0 pointer-events-none mix-blend-overlay rounded-xl ${
-                rarity === "legendary" ? "bg-yellow-300" : "bg-purple-300"
-              }`}
+              className="absolute inset-0 pointer-events-none mix-blend-overlay rounded-xl bg-purple-300"
               animate={{
                 opacity: [0.1, 0.3, 0.1],
               }}

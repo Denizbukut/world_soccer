@@ -246,6 +246,52 @@ export default function CardDetailPage() {
     router.back()
   }
 
+  // Background patterns based on rarity
+  const getBackgroundPattern = (rarity: string) => {
+    switch (rarity) {
+      case "legendary":
+        return {
+          backgroundImage: `
+            radial-gradient(circle at 25% 25%, rgba(253, 224, 71, 0.15) 2%, transparent 10%),
+            radial-gradient(circle at 75% 75%, rgba(253, 224, 71, 0.15) 2%, transparent 10%),
+            radial-gradient(circle at 50% 50%, rgba(253, 224, 71, 0.1) 5%, transparent 15%),
+            linear-gradient(45deg, rgba(253, 224, 71, 0.05) 25%, transparent 25%, transparent 50%, rgba(253, 224, 71, 0.05) 50%, rgba(253, 224, 71, 0.05) 75%, transparent 75%, transparent),
+            linear-gradient(135deg, rgba(234, 179, 8, 0.05) 25%, transparent 25%, transparent 50%, rgba(234, 179, 8, 0.05) 50%, rgba(234, 179, 8, 0.05) 75%, transparent 75%, transparent)
+          `,
+          backgroundSize: "80px 80px, 80px 80px, 120px 120px, 40px 40px, 40px 40px",
+          backgroundPosition: "0 0, 0 0, 0 0, 0 0, 0 0",
+          animation: "backgroundShimmer 10s linear infinite",
+        }
+      case "epic":
+        return {
+          backgroundImage: `
+            radial-gradient(circle at 25% 25%, rgba(168, 85, 247, 0.1) 2%, transparent 8%),
+            radial-gradient(circle at 75% 75%, rgba(168, 85, 247, 0.1) 2%, transparent 8%),
+            linear-gradient(45deg, rgba(168, 85, 247, 0.03) 25%, transparent 25%, transparent 50%, rgba(168, 85, 247, 0.03) 50%, rgba(168, 85, 247, 0.03) 75%, transparent 75%, transparent)
+          `,
+          backgroundSize: "80px 80px, 80px 80px, 40px 40px",
+          backgroundPosition: "0 0, 0 0, 0 0",
+        }
+      case "rare":
+        return {
+          backgroundImage: `
+            radial-gradient(circle at 50% 50%, rgba(59, 130, 246, 0.08) 2%, transparent 6%),
+            linear-gradient(45deg, rgba(59, 130, 246, 0.02) 25%, transparent 25%, transparent 50%, rgba(59, 130, 246, 0.02) 50%, rgba(59, 130, 246, 0.02) 75%, transparent 75%, transparent)
+          `,
+          backgroundSize: "60px 60px, 30px 30px",
+          backgroundPosition: "0 0, 0 0",
+        }
+      default: // common
+        return {
+          backgroundImage: `
+            radial-gradient(circle at 50% 50%, rgba(156, 163, 175, 0.05) 2%, transparent 5%)
+          `,
+          backgroundSize: "50px 50px",
+          backgroundPosition: "0 0",
+        }
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-4">
@@ -283,9 +329,84 @@ export default function CardDetailPage() {
     )
   }
 
+  // Get background pattern based on card rarity
+  const backgroundStyle = getBackgroundPattern(card.rarity)
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 pb-20">
-      <div className="container mx-auto max-w-md p-4">
+    <div
+      className="min-h-screen pb-20 relative overflow-hidden"
+      style={{
+        background: `linear-gradient(to bottom right, ${
+          card.rarity === "legendary"
+            ? "rgba(254, 240, 138, 0.2), rgba(250, 204, 21, 0.1)"
+            : card.rarity === "epic"
+              ? "rgba(216, 180, 254, 0.2), rgba(168, 85, 247, 0.1)"
+              : card.rarity === "rare"
+                ? "rgba(191, 219, 254, 0.2), rgba(59, 130, 246, 0.1)"
+                : "rgba(229, 231, 235, 0.2), rgba(209, 213, 219, 0.1)"
+        })`,
+      }}
+    >
+      {/* Decorative background patterns */}
+      <div className="absolute inset-0 z-0 opacity-70" style={backgroundStyle} />
+
+      {/* Floating elements for legendary cards */}
+      {card.rarity === "legendary" && (
+        <>
+          {[...Array(8)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute rounded-full bg-yellow-300/20 z-0"
+              style={{
+                width: `${Math.random() * 40 + 20}px`,
+                height: `${Math.random() * 40 + 20}px`,
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+              }}
+              animate={{
+                y: [0, -15, 0],
+                opacity: [0.2, 0.5, 0.2],
+              }}
+              transition={{
+                duration: Math.random() * 3 + 2,
+                repeat: Number.POSITIVE_INFINITY,
+                repeatType: "reverse",
+                delay: Math.random() * 2,
+              }}
+            />
+          ))}
+        </>
+      )}
+
+      {/* Floating elements for epic cards */}
+      {card.rarity === "epic" && (
+        <>
+          {[...Array(5)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute rounded-full bg-purple-300/20 z-0"
+              style={{
+                width: `${Math.random() * 30 + 15}px`,
+                height: `${Math.random() * 30 + 15}px`,
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+              }}
+              animate={{
+                y: [0, -10, 0],
+                opacity: [0.1, 0.3, 0.1],
+              }}
+              transition={{
+                duration: Math.random() * 3 + 2,
+                repeat: Number.POSITIVE_INFINITY,
+                repeatType: "reverse",
+                delay: Math.random() * 2,
+              }}
+            />
+          ))}
+        </>
+      )}
+
+      <div className="container mx-auto max-w-md p-4 relative z-10">
         <div className="flex justify-between items-center mb-4">
           <Button variant="ghost" onClick={goBack} className="p-2 h-auto">
             <ArrowLeft className="h-5 w-5" />
@@ -320,6 +441,7 @@ export default function CardDetailPage() {
               imageUrl={card.image_url}
               rarity={card.rarity}
               level={userCard?.level || 1}
+              owned={owned}
             />
 
             {/* Level Up Animation Overlay */}
@@ -394,7 +516,15 @@ export default function CardDetailPage() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4, duration: 0.5 }}
-                className="bg-white rounded-xl p-4 border border-gray-200"
+                className={`bg-white/90 backdrop-blur-sm rounded-xl p-4 border ${
+                  card.rarity === "legendary"
+                    ? "border-yellow-300 shadow-[0_0_15px_rgba(253,224,71,0.3)]"
+                    : card.rarity === "epic"
+                      ? "border-purple-300 shadow-[0_0_10px_rgba(168,85,247,0.2)]"
+                      : card.rarity === "rare"
+                        ? "border-blue-300 shadow-[0_0_5px_rgba(59,130,246,0.2)]"
+                        : "border-gray-200"
+                }`}
               >
                 <div className="flex justify-between items-center mb-2">
                   <h3 className="font-bold text-lg">Card Details</h3>
@@ -416,11 +546,7 @@ export default function CardDetailPage() {
                   </Badge>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 mb-3">
-                  <div className="text-sm">
-                    <div className="font-medium">{card.character}</div>
-                  </div>
-
+                <div className="grid grid-cols-1 gap-2 mb-3">
                   {owned && (
                     <div className="text-sm text-right">
                       <span className="text-gray-500">Total Owned:</span>
@@ -465,7 +591,17 @@ export default function CardDetailPage() {
 
               {/* Level Up Section - nur anzeigen, wenn der User die Karte besitzt */}
               {owned && userCard && (
-                <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+                <div
+                  className={`bg-white/90 backdrop-blur-sm rounded-xl p-4 shadow-sm border ${
+                    card.rarity === "legendary"
+                      ? "border-yellow-300"
+                      : card.rarity === "epic"
+                        ? "border-purple-300"
+                        : card.rarity === "rare"
+                          ? "border-blue-300"
+                          : "border-gray-200"
+                  }`}
+                >
                   <h3 className="font-bold text-lg mb-3">Level Up Card</h3>
 
                   <div className="flex items-center justify-between mb-4">
@@ -503,7 +639,13 @@ export default function CardDetailPage() {
                       </Alert>
 
                       <Button
-                        className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600"
+                        className={`w-full ${
+                          card.rarity === "legendary"
+                            ? "bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600"
+                            : card.rarity === "epic"
+                              ? "bg-gradient-to-r from-purple-500 to-fuchsia-500 hover:from-purple-600 hover:to-fuchsia-600"
+                              : "bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600"
+                        }`}
                         onClick={handleLevelUp}
                         disabled={levelUpLoading || showLevelUpAnimation}
                       >
@@ -533,7 +675,7 @@ export default function CardDetailPage() {
 
               {/* Hinweis anzeigen, wenn der User die Karte nicht besitzt */}
               {!owned && (
-                <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+                <div className="bg-white/90 backdrop-blur-sm rounded-xl p-4 shadow-sm border border-gray-200">
                   <Alert className="bg-blue-50 border-blue-200">
                     <AlertTitle className="text-blue-800">Card Not Owned</AlertTitle>
                     <AlertDescription className="text-blue-700">
@@ -546,6 +688,18 @@ export default function CardDetailPage() {
           </div>
         </motion.div>
       </div>
+
+      {/* Add CSS animation for legendary background shimmer */}
+      <style jsx global>{`
+        @keyframes backgroundShimmer {
+          0% {
+            background-position: 0% 0%, 0% 0%, 0% 0%, 0% 0%, 0% 0%;
+          }
+          100% {
+            background-position: 100% 100%, 100% 100%, 100% 100%, 40px 40px, 40px 40px;
+          }
+        }
+      `}</style>
 
       <MobileNav />
     </div>

@@ -10,11 +10,13 @@ import { Button } from "@/components/ui/button"
 import { motion } from "framer-motion"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { Search, ArrowLeft } from "lucide-react"
+import { Search, ArrowLeft } from 'lucide-react'
 import Link from "next/link"
 import MobileNav from "@/components/mobile-nav"
+import { useRouter } from "next/navigation"
 
 export default function CatalogPage() {
+  const router = useRouter()
   const { user } = useAuth()
   const [allCards, setAllCards] = useState<any[]>([])
   const [userCards, setUserCards] = useState<Record<string, { owned: boolean; level: number }>>({})
@@ -23,7 +25,6 @@ export default function CatalogPage() {
   const [searchTerm, setSearchTerm] = useState("")
 
   // Update the fetchCards function to not rely on foreign key relationships
-
   async function fetchCards() {
     setLoading(true)
     const supabase = getSupabaseBrowserClient()
@@ -117,6 +118,11 @@ export default function CatalogPage() {
     (category) => cardsByRarity[category] && cardsByRarity[category].length > 0,
   )
 
+  // Handle card click to navigate to card detail page
+  const handleCardClick = (cardId: string) => {
+    router.push(`/cards/${cardId}`)
+  }
+
   if (loading) {
     return (
       <div className="container mx-auto p-4 pb-20">
@@ -203,6 +209,7 @@ export default function CatalogPage() {
                       level={userCards[card.id]?.level || 1}
                       owned={userCards[card.id]?.owned || false}
                       hideOverlay={true}
+                      onClick={() => handleCardClick(card.id)}
                     />
                   </motion.div>
                 ))}
@@ -235,6 +242,7 @@ export default function CatalogPage() {
                     level={userCards[card.id]?.level || 1}
                     owned={userCards[card.id]?.owned || false}
                     hideOverlay={true}
+                    onClick={() => handleCardClick(card.id)}
                   />
                 </motion.div>
               ))}

@@ -643,12 +643,6 @@ export default function DrawPage() {
                 {/* Dark overlay */}
                 <div className="absolute inset-0 bg-black opacity-80" />
 
-                {/* Instructions */}
-                <div className="absolute top-16 left-0 right-0 flex justify-center z-20">
-                  <div className="bg-white/10 px-4 py-2 rounded-lg text-white text-sm text-center anime-text">
-                    Move your finger or mouse over the card to see the holographic effect
-                  </div>
-                </div>
 
                 {/* Card */}
                 <div className="relative z-10 flex flex-col items-center">
@@ -656,7 +650,7 @@ export default function DrawPage() {
                     <div className="perspective-1000 mb-8">
                       <motion.div
                         ref={cardRef}
-                        className="relative w-64 h-96 preserve-3d cursor-pointer touch-none"
+                        className="w-80 h-[30rem] preserve-3d cursor-pointer touch-none"
                         initial={{ rotateY: 0 }}
                         animate={{ rotateY: cardRevealed ? 0 : 180 }}
                         transition={{

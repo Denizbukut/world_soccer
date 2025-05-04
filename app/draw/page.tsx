@@ -321,7 +321,7 @@ export default function DrawPage() {
                   >
                     <div className="flex items-center justify-center gap-2">
                       <Ticket className="h-4 w-4" />
-                      <span>Regular Pack</span>
+                      <span>Regular</span>
                     </div>
                   </button>
                   <button
@@ -334,7 +334,7 @@ export default function DrawPage() {
                   >
                     <div className="flex items-center justify-center gap-2">
                       <Crown className="h-4 w-4" />
-                      <span>Legendary Pack</span>
+                      <span>Legendary</span>
                     </div>
                   </button>
                 </div>

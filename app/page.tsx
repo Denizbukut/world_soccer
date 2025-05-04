@@ -309,7 +309,7 @@ export default function Home() {
                       <span className="font-medium text-sm">Legendary Pack</span>
                       <div className="flex items-center justify-center gap-1 mt-1">
                         <Crown className="h-3 w-3 text-amber-500" />
-                        <span className="text-xs text-gray-500">1 Legendary Ticket</span>
+                        <span className="text-xs text-gray-500">1 L. Ticket</span>
                       </div>
                     </div>
                   </div>

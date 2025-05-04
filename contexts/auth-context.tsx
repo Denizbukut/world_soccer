@@ -13,6 +13,7 @@ type User = {
   level: number
   experience: number
   nextLevelExp: number
+  has_premium?: boolean
 }
 
 type AuthContextType = {
@@ -22,7 +23,8 @@ type AuthContextType = {
   logout: () => void
   updateUserTickets: (newTicketCount: number, newLegendaryTicketCount?: number) => void
   updateUserCoins: (newCoinCount: number) => void
-  updateUserExp: (expToAdd: number) => void
+  updateUserExp: (expToAdd: number) => Promise<{ leveledUp: boolean; newLevel?: number }>
+  setUserPremium: (hasPremium: boolean) => void
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -32,7 +34,8 @@ const AuthContext = createContext<AuthContextType>({
   logout: () => {},
   updateUserTickets: () => {},
   updateUserCoins: () => {},
-  updateUserExp: () => {},
+  updateUserExp: async () => ({ leveledUp: false }),
+  setUserPremium: () => {},
 })
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
@@ -102,6 +105,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         level: 1,
         experience: 0,
         nextLevelExp: 100,
+        has_premium: false,
       }
 
       console.log("Created user data:", userData)
@@ -142,12 +146,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }
 
   const updateUserTickets = (newTicketCount: number, newLegendaryTicketCount?: number) => {
-    if (user) {
+    if (user && typeof newTicketCount === "number") {
       // Create updated user with new ticket count
       const updatedUser = { ...user, tickets: newTicketCount }
 
       // Update legendary tickets if provided
-      if (newLegendaryTicketCount !== undefined) {
+      if (typeof newLegendaryTicketCount === "number") {
         updatedUser.legendary_tickets = newLegendaryTicketCount
       }
 
@@ -165,24 +169,58 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const updateUserExp = (expToAdd: number) => {
-    if (user) {
+  const updateUserExp = async (expToAdd: number) => {
+    if (!user) return { leveledUp: false }
+
+    try {
       let newExp = user.experience + expToAdd
       let newLevel = user.level
+      let leveledUp = false
 
       // Check if user leveled up
-      while (newExp >= user.nextLevelExp) {
+      if (newExp >= user.nextLevelExp) {
         newExp -= user.nextLevelExp
         newLevel++
+        leveledUp = true
       }
+
+      // Calculate next level exp requirement
+      const nextLevelExp = Math.floor(100 * Math.pow(1.5, newLevel - 1))
 
       const updatedUser = {
         ...user,
         experience: newExp,
         level: newLevel,
-        nextLevelExp: Math.floor(100 * Math.pow(1.5, newLevel - 1)),
+        nextLevelExp: nextLevelExp,
       }
 
+      // Update user in database
+      const supabase = getSupabaseBrowserClient()
+      if (supabase) {
+        await supabase
+          .from("users")
+          .update({
+            experience: newExp,
+            level: newLevel,
+            next_level_exp: nextLevelExp,
+          })
+          .eq("username", user.username)
+      }
+
+      // Update local state
+      setUser(updatedUser)
+      localStorage.setItem("animeworld_user", JSON.stringify(updatedUser))
+
+      return { leveledUp, newLevel: leveledUp ? newLevel : undefined }
+    } catch (error) {
+      console.error("Error updating user experience:", error)
+      return { leveledUp: false }
+    }
+  }
+
+  const setUserPremium = (hasPremium: boolean) => {
+    if (user) {
+      const updatedUser = { ...user, has_premium: hasPremium }
       setUser(updatedUser)
       localStorage.setItem("animeworld_user", JSON.stringify(updatedUser))
     }
@@ -198,6 +236,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         updateUserTickets,
         updateUserCoins,
         updateUserExp,
+        setUserPremium,
       }}
     >
       {children}

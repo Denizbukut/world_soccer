@@ -6,7 +6,7 @@ import { claimDailyBonus } from "@/app/actions"
 import ProtectedRoute from "@/components/protected-route"
 import MobileNav from "@/components/mobile-nav"
 import { Button } from "@/components/ui/button"
-import { Ticket, Gift, CreditCard, Repeat, Clock, ChevronRight } from "lucide-react"
+import { Ticket, Gift, CreditCard, Repeat, Clock, ChevronRight, Crown } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
@@ -22,8 +22,7 @@ export default function Home() {
   const [legendaryTickets, setLegendaryTickets] = useState(0)
   const [tickets, setTickets] = useState(0)
   const [showClaimAnimation, setShowClaimAnimation] = useState(false)
-
-  
+  const [hasPremium, setHasPremium] = useState(false)
 
   // Format time remaining as HH:MM:SS
   const formatTimeRemaining = (milliseconds: number) => {
@@ -48,13 +47,18 @@ export default function Home() {
         // Get user data including ticket_last_claimed and tickets
         const { data, error } = await supabase
           .from("users")
-          .select("ticket_last_claimed, legendary_tickets, tickets")
+          .select("ticket_last_claimed, legendary_tickets, tickets, has_premium")
           .eq("username", user.username)
           .single()
 
         if (error) {
           console.error("Error fetching user data:", error)
           return
+        }
+
+        // Update premium status
+        if (data && typeof data.has_premium === "boolean") {
+          setHasPremium(data.has_premium)
         }
 
         // Update tickets and legendary tickets with proper type checking
@@ -221,6 +225,31 @@ export default function Home() {
                 indicatorClassName="bg-gradient-to-r from-violet-500 to-fuchsia-500"
               />
             </div>
+          </motion.div>
+
+          {/* Premium Pass Banner */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05, duration: 0.4 }}
+            className="bg-gradient-to-r from-amber-400/20 to-amber-600/20 rounded-2xl shadow-sm overflow-hidden"
+          >
+            <Link href="/pass" className="block">
+              <div className="p-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-r from-amber-400 to-amber-600 flex items-center justify-center">
+                    <Crown className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-base">Premium Pass</h3>
+                    <p className="text-xs text-gray-600">
+                      {hasPremium ? "View your premium benefits" : "Unlock exclusive rewards"}
+                    </p>
+                  </div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-gray-400" />
+              </div>
+            </Link>
           </motion.div>
 
           {/* Daily bonus */}

@@ -123,7 +123,7 @@ export async function drawCards(username: string, packType = "common", cardCount
     // 1. Get user data to check tickets
     const { data: userData, error: userError } = await supabase
       .from("users")
-      .select("username, tickets, legendary_tickets")
+      .select("username, tickets, legendary_tickets, experience, level, next_level_exp")
       .eq("username", username)
       .single()
 
@@ -185,21 +185,46 @@ export async function drawCards(username: string, packType = "common", cardCount
 
     console.log("Cards drawn successfully:", drawnCards)
 
-    // 4. Begin transaction: decrease tickets and add cards to collection
+    // 4. Calculate XP gain based on pack type
+    const xpGain = packType === "legendary" ? 50 : 25
+    const currentExp = typeof userData.experience === "number" ? userData.experience : 0
+    const currentLevel = typeof userData.level === "number" ? userData.level : 1
+    const nextLevelExp = typeof userData.next_level_exp === "number" ? userData.next_level_exp : 100
+
+    let newExp = currentExp + xpGain
+    let newLevel = currentLevel
+    let leveledUp = false
+
+    // Check if user leveled up
+    if (newExp >= nextLevelExp) {
+      newExp -= nextLevelExp
+      newLevel += 1
+      leveledUp = true
+    }
+
+    // Calculate next level exp requirement (increases with each level)
+    const newNextLevelExp = Math.floor(100 * Math.pow(1.5, newLevel - 1))
+
+    // 5. Begin transaction: decrease tickets, add XP, and add cards to collection
     const { error: ticketError } = await supabase
       .from("users")
-      .update({ [ticketField]: ticketCount - 1 })
+      .update({
+        [ticketField]: ticketCount - 1,
+        experience: newExp,
+        level: newLevel,
+        next_level_exp: newNextLevelExp,
+      })
       .eq("username", userData.username)
 
     if (ticketError) {
-      console.error("Error updating tickets:", ticketError)
+      console.error("Error updating tickets and XP:", ticketError)
       return {
         success: false,
-        error: "Failed to update tickets",
+        error: "Failed to update user data",
       }
     }
 
-    // 5. Add cards to user's collection
+    // 6. Add cards to user's collection
     for (const card of drawnCards) {
       // Check if user already has this card
       const { data: existingCards, error: existingCardError } = await supabase
@@ -236,7 +261,7 @@ export async function drawCards(username: string, packType = "common", cardCount
       }
     }
 
-    // 6. Get updated ticket count
+    // 7. Get updated ticket count
     const { data: updatedUser } = await supabase
       .from("users")
       .select("tickets, legendary_tickets")
@@ -246,6 +271,7 @@ export async function drawCards(username: string, packType = "common", cardCount
     // Revalidate the collection page to show the new cards
     revalidatePath("/collection")
     revalidatePath("/draw")
+    revalidatePath("/pass")
 
     const newTicketCount = typeof updatedUser?.tickets === "number" ? updatedUser.tickets : ticketCount - 1
     const newLegendaryTicketCount =
@@ -260,6 +286,11 @@ export async function drawCards(username: string, packType = "common", cardCount
       drawnCards: drawnCards,
       newTicketCount,
       newLegendaryTicketCount,
+      xpGained: xpGain,
+      leveledUp,
+      newLevel: leveledUp ? newLevel : null,
+      newExp,
+      newNextLevelExp,
     }
   } catch (error) {
     console.error("Unexpected error in drawCards:", error)

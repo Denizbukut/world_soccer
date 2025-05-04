@@ -6,10 +6,10 @@ import { claimDailyBonus } from "@/app/actions"
 import ProtectedRoute from "@/components/protected-route"
 import MobileNav from "@/components/mobile-nav"
 import { Button } from "@/components/ui/button"
-import { Ticket, Gift, CreditCard, Repeat, Crown, Clock, ChevronRight } from "lucide-react"
+import { Ticket, Gift, CreditCard, Repeat, Clock, ChevronRight } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
 import Link from "next/link"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 import Image from "next/image"
 import { getSupabaseBrowserClient } from "@/lib/supabase"
 import { Progress } from "@/components/ui/progress"
@@ -21,6 +21,9 @@ export default function Home() {
   const [timeUntilNextClaim, setTimeUntilNextClaim] = useState<number | null>(null)
   const [legendaryTickets, setLegendaryTickets] = useState(0)
   const [tickets, setTickets] = useState(0)
+  const [showClaimAnimation, setShowClaimAnimation] = useState(false)
+
+  
 
   // Format time remaining as HH:MM:SS
   const formatTimeRemaining = (milliseconds: number) => {
@@ -54,17 +57,17 @@ export default function Home() {
           return
         }
 
-        // Update tickets and legendary tickets
-        if (data?.tickets !== undefined) {
+        // Update tickets and legendary tickets with proper type checking
+        if (data && typeof data.tickets === "number") {
           setTickets(data.tickets)
         }
 
-        if (data?.legendary_tickets !== undefined) {
+        if (data && typeof data.legendary_tickets === "number") {
           setLegendaryTickets(data.legendary_tickets)
         }
 
         // Check if user has claimed tickets in the last 12 hours
-        if (data?.ticket_last_claimed) {
+        if (data?.ticket_last_claimed && typeof data.ticket_last_claimed === "string") {
           const lastClaimedDate = new Date(data.ticket_last_claimed)
           const now = new Date()
           const twelveHoursInMs = 12 * 60 * 60 * 1000
@@ -106,16 +109,40 @@ export default function Home() {
       const result = await claimDailyBonus(user.username)
 
       if (result.success) {
-        await updateUserTickets?.(result.newTicketCount)
-        setTickets(result.newTicketCount)
-        toast({
-          title: "Success!",
-          description: "You've claimed 3 tickets as your daily bonus!",
-        })
-        setAlreadyClaimed(true)
-        setTimeUntilNextClaim(12 * 60 * 60 * 1000) // 12 hours in milliseconds
+        // Show claim animation
+        setShowClaimAnimation(true)
+
+        // Update tickets after a short delay to allow animation to play
+        setTimeout(async () => {
+          if (typeof result.newTicketCount === "number") {
+            await updateUserTickets?.(result.newTicketCount)
+            setTickets(result.newTicketCount)
+          }
+
+          toast({
+            title: "Success!",
+            description: "You've claimed 3 tickets as your daily bonus!",
+          })
+
+          setAlreadyClaimed(true)
+          if (result.nextClaimTime) {
+            const nextClaimDate = new Date(result.nextClaimTime)
+            const now = new Date()
+            setTimeUntilNextClaim(nextClaimDate.getTime() - now.getTime())
+          } else {
+            setTimeUntilNextClaim(12 * 60 * 60 * 1000) // 12 hours in milliseconds
+          }
+
+          // Hide animation after it completes
+          setTimeout(() => {
+            setShowClaimAnimation(false)
+          }, 1000)
+        }, 1500)
       } else if (result.alreadyClaimed) {
         setAlreadyClaimed(true)
+        if (result.timeUntilNextClaim) {
+          setTimeUntilNextClaim(result.timeUntilNextClaim)
+        }
         toast({
           title: "Already Claimed",
           description: "You've already claimed your tickets. Check back later!",
@@ -135,7 +162,9 @@ export default function Home() {
         variant: "destructive",
       })
     } finally {
-      setClaimLoading(false)
+      if (!showClaimAnimation) {
+        setClaimLoading(false)
+      }
     }
   }
 
@@ -146,9 +175,6 @@ export default function Home() {
         <header className="sticky top-0 z-10 backdrop-blur-md bg-white/80 border-b border-gray-100">
           <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
             <div className="flex items-center">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center text-white font-bold text-sm mr-3">
-                {user?.username?.charAt(0).toUpperCase() || "A"}
-              </div>
               <h1 className="text-lg font-medium bg-gradient-to-r from-violet-600 to-fuchsia-600 bg-clip-text text-transparent">
                 Anime World
               </h1>
@@ -159,8 +185,8 @@ export default function Home() {
                 <span className="font-medium text-sm">{tickets}</span>
               </div>
               <div className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
-                <Crown className="h-3.5 w-3.5 text-amber-500" />
-                <span className="font-medium text-sm">{legendaryTickets || 0}</span>
+                <Ticket className="h-3.5 w-3.5 text-amber-500" />
+                <span className="font-medium text-sm">{legendaryTickets}</span>
               </div>
             </div>
           </div>
@@ -174,30 +200,26 @@ export default function Home() {
             transition={{ duration: 0.4 }}
             className="bg-white rounded-2xl p-4 shadow-sm"
           >
-            <div className="flex items-center gap-4">
-              <div className="relative">
-                <div className="w-16 h-16 rounded-xl overflow-hidden bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center text-white font-bold text-xl shadow-sm">
-                  {user?.username?.charAt(0).toUpperCase() || "A"}
-                </div>
-                <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 shadow-sm">
+            <div className="flex flex-col">
+              <div className="flex justify-between items-center mb-1">
+                <h2 className="font-semibold text-base">{user?.username || "Trainer"}</h2>
+                <div className="flex items-center">
+                  <span className="text-xs text-gray-500 mr-2">Level {user?.level || 1}</span>
                   <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
                     <span className="text-[10px] text-white font-bold">{user?.level || 1}</span>
                   </div>
                 </div>
               </div>
-              <div className="flex-1">
-                <div className="flex justify-between items-center mb-1">
-                  <h2 className="font-semibold text-base">{user?.username || "Trainer"}</h2>
-                  <span className="text-xs text-gray-500">
-                    {user?.experience || 0} / {user?.nextLevelExp || 100} XP
-                  </span>
-                </div>
-                <Progress
-                  value={user?.experience ? (user.experience / user.nextLevelExp) * 100 : 0}
-                  className="h-1.5 bg-gray-100"
-                  indicatorClassName="bg-gradient-to-r from-violet-500 to-fuchsia-500"
-                />
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-xs text-gray-500">
+                  {user?.experience || 0} / {user?.nextLevelExp || 100} XP
+                </span>
               </div>
+              <Progress
+                value={user?.experience ? (user.experience / user.nextLevelExp) * 100 : 0}
+                className="h-1.5 bg-gray-100"
+                indicatorClassName="bg-gradient-to-r from-violet-500 to-fuchsia-500"
+              />
             </div>
           </motion.div>
 
@@ -308,8 +330,8 @@ export default function Home() {
                     <div className="bg-white rounded-lg p-2 text-center shadow-sm">
                       <span className="font-medium text-sm">Legendary Pack</span>
                       <div className="flex items-center justify-center gap-1 mt-1">
-                        <Crown className="h-3 w-3 text-amber-500" />
-                        <span className="text-xs text-gray-500">1 L. Ticket</span>
+                        <Ticket className="h-3 w-3 text-amber-500" />
+                        <span className="text-xs text-gray-500">1 Legendary Ticket</span>
                       </div>
                     </div>
                   </div>
@@ -345,6 +367,97 @@ export default function Home() {
             </Link>
           </motion.div>
         </main>
+
+        {/* Ticket claim animation */}
+        <AnimatePresence>
+          {showClaimAnimation && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center"
+            >
+              <div className="relative">
+                {/* Flying tickets animation */}
+                {[...Array(3)].map((_, i) => (
+                  <motion.div
+                    key={i}
+                    className="absolute"
+                    initial={{
+                      x: 0,
+                      y: 0,
+                      scale: 0,
+                      rotate: Math.random() * 20 - 10,
+                    }}
+                    animate={{
+                      x: [0, (i - 1) * 30],
+                      y: [0, -80 + i * 10],
+                      scale: [0, 1.2, 1],
+                      rotate: [Math.random() * 20 - 10, Math.random() * 40 - 20],
+                    }}
+                    transition={{
+                      duration: 0.8,
+                      delay: i * 0.15,
+                      ease: "easeOut",
+                    }}
+                  >
+                    <div className="bg-white rounded-lg p-2 shadow-lg flex items-center gap-2 border-2 border-violet-300">
+                      <Ticket className="h-5 w-5 text-violet-500" />
+                      <span className="font-bold text-violet-600">+1</span>
+                    </div>
+                  </motion.div>
+                ))}
+
+                {/* Central animation */}
+                <motion.div
+                  className="bg-white rounded-xl p-4 shadow-lg flex flex-col items-center gap-2 border-2 border-violet-300"
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{
+                    scale: [0, 1.2, 1],
+                    opacity: [0, 1, 1, 0],
+                  }}
+                  transition={{
+                    duration: 1.5,
+                    times: [0, 0.3, 0.5, 1],
+                  }}
+                >
+                  <div className="text-xl font-bold text-violet-600">+3 Tickets!</div>
+                  <div className="flex items-center gap-2">
+                    <Ticket className="h-6 w-6 text-violet-500" />
+                    <Ticket className="h-6 w-6 text-violet-500" />
+                    <Ticket className="h-6 w-6 text-violet-500" />
+                  </div>
+                </motion.div>
+
+                {/* Particles */}
+                {[...Array(20)].map((_, i) => (
+                  <motion.div
+                    key={`particle-${i}`}
+                    className="absolute rounded-full bg-violet-500"
+                    style={{
+                      width: Math.random() * 6 + 2,
+                      height: Math.random() * 6 + 2,
+                    }}
+                    initial={{
+                      x: 0,
+                      y: 0,
+                      opacity: 0,
+                    }}
+                    animate={{
+                      x: (Math.random() - 0.5) * 200,
+                      y: (Math.random() - 0.5) * 200,
+                      opacity: [0, 0.8, 0],
+                    }}
+                    transition={{
+                      duration: 1 + Math.random(),
+                      delay: Math.random() * 0.3,
+                    }}
+                  />
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <MobileNav />
       </div>

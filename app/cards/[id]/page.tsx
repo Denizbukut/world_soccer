@@ -14,12 +14,135 @@ import { Skeleton } from "@/components/ui/skeleton"
 import TiltableCard from "@/components/tiltable-card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
+// Define types for our data
+interface UserCard {
+  id: string
+  user_id: string
+  card_id: string
+  quantity: number
+  level?: number
+  favorite?: boolean
+  obtained_at?: string
+}
+
+interface Card {
+  id: string
+  name: string
+  character: string
+  image_url?: string
+  rarity: string
+  type?: string
+  description?: string
+}
+
+// Helper functions to safely convert data to our types
+function toCard(data: unknown): Card | null {
+  if (!data || typeof data !== "object") return null
+
+  const obj = data as Record<string, unknown>
+
+  // Check if the object has the required properties
+  if (
+    typeof obj.id !== "string" ||
+    typeof obj.name !== "string" ||
+    typeof obj.character !== "string" ||
+    typeof obj.rarity !== "string"
+  ) {
+    console.error("Invalid card data:", obj)
+    return null
+  }
+
+  return {
+    id: obj.id,
+    name: obj.name,
+    character: obj.character,
+    rarity: obj.rarity,
+    image_url: typeof obj.image_url === "string" ? obj.image_url : undefined,
+    type: typeof obj.type === "string" ? obj.type : undefined,
+    description: typeof obj.description === "string" ? obj.description : undefined,
+  }
+}
+
+// Update the toUserCard function to be more lenient and add better logging
+function toUserCard(data: unknown): UserCard | null {
+  if (!data || typeof data !== "object") {
+    console.error("User card data is not an object:", data)
+    return null
+  }
+
+  const obj = data as Record<string, unknown>
+
+  // Log the received data to help diagnose issues
+  console.log("Processing user card data:", obj)
+
+  // Check if required properties exist with more detailed logging
+  // IMPORTANT: Allow id to be either string or number
+  if (typeof obj.id !== "string" && typeof obj.id !== "number") {
+    console.error("User card missing id or id is not a string/number:", obj.id)
+    return null
+  }
+
+  if (typeof obj.user_id !== "string") {
+    console.error("User card missing user_id or user_id is not a string:", obj.user_id)
+    return null
+  }
+
+  if (typeof obj.card_id !== "string") {
+    console.error("User card missing card_id or card_id is not a string:", obj.card_id)
+    return null
+  }
+
+  // Be more lenient with quantity - convert to number if possible or use default
+  let quantity = 0
+  if (obj.quantity !== undefined) {
+    if (typeof obj.quantity === "number") {
+      quantity = obj.quantity
+    } else if (typeof obj.quantity === "string") {
+      // Try to parse string to number
+      const parsed = Number.parseInt(obj.quantity, 10)
+      if (!isNaN(parsed)) {
+        quantity = parsed
+      }
+    }
+  }
+
+  // Create the user card with safe defaults for optional fields
+  return {
+    // Convert id to string regardless of whether it's a number or string
+    id: String(obj.id),
+    user_id: obj.user_id,
+    card_id: obj.card_id,
+    quantity: quantity,
+    level:
+      typeof obj.level === "number"
+        ? obj.level
+        : typeof obj.level === "string"
+          ? Number.parseInt(obj.level, 10) || 1
+          : 1,
+    favorite:
+      typeof obj.favorite === "boolean"
+        ? obj.favorite
+        : obj.favorite === "true"
+          ? true
+          : obj.favorite === "1"
+            ? true
+            : false,
+    obtained_at: typeof obj.obtained_at === "string" ? obj.obtained_at : undefined,
+  }
+}
+
+function toUserCards(data: unknown[]): UserCard[] {
+  if (!Array.isArray(data)) return []
+
+  return data.map((item) => toUserCard(item)).filter((item): item is UserCard => item !== null)
+}
+
 export default function CardDetailPage() {
   const params = useParams()
   const router = useRouter()
   const { user } = useAuth()
-  const [card, setCard] = useState<any>(null)
-  const [userCard, setUserCard] = useState<any>(null)
+  const [card, setCard] = useState<Card | null>(null)
+  const [userCard, setUserCard] = useState<UserCard | null>(null)
   const [loading, setLoading] = useState(true)
   const [owned, setOwned] = useState(false)
   const [favorite, setFavorite] = useState(false)
@@ -27,7 +150,7 @@ export default function CardDetailPage() {
   const [levelUpLoading, setLevelUpLoading] = useState(false)
   const [showLevelUpAnimation, setShowLevelUpAnimation] = useState(false)
   const [newLevel, setNewLevel] = useState(1)
-  const [allUserCards, setAllUserCards] = useState<any[]>([])
+  const [allUserCards, setAllUserCards] = useState<UserCard[]>([])
 
   const cardId = params.id as string
 
@@ -51,7 +174,16 @@ export default function CardDetailPage() {
             variant: "destructive",
           })
         } else {
-          setCard(cardData)
+          const validCard = toCard(cardData)
+          if (validCard) {
+            setCard(validCard)
+          } else {
+            toast({
+              title: "Error",
+              description: "Invalid card data received",
+              variant: "destructive",
+            })
+          }
         }
 
         // Check if user owns this card at ANY level
@@ -67,15 +199,19 @@ export default function CardDetailPage() {
         } else if (userCardsData && userCardsData.length > 0) {
           // User owns this card at some level
           setOwned(true)
-          setAllUserCards(userCardsData)
+
+          const validUserCards = toUserCards(userCardsData)
+          setAllUserCards(validUserCards)
 
           // Find the highest level card for display and level-up functionality
-          const highestLevelCard = userCardsData.reduce((prev, current) => {
-            return (prev.level || 1) > (current.level || 1) ? prev : current
-          })
+          if (validUserCards.length > 0) {
+            const highestLevelCard = validUserCards.reduce((prev, current) => {
+              return (prev.level || 1) > (current.level || 1) ? prev : current
+            })
 
-          setUserCard(highestLevelCard)
-          setFavorite(Boolean(highestLevelCard?.favorite))
+            setUserCard(highestLevelCard)
+            setFavorite(Boolean(highestLevelCard.favorite))
+          }
         }
       } catch (error) {
         console.error("Error in fetchCardDetails:", error)
@@ -169,7 +305,7 @@ export default function CardDetailPage() {
       }
 
       // 2. Check if user already has this card at the next level
-      const { data: existingCards, error: existingCardError } = await supabase
+      const { data: existingCardsData, error: existingCardError } = await supabase
         .from("user_cards")
         .select("*")
         .eq("user_id", user.username)
@@ -180,23 +316,75 @@ export default function CardDetailPage() {
         console.error("Error checking for existing higher level card:", existingCardError)
       }
 
-      // 3. If user already has this card at the next level, increment quantity
-      if (existingCards && existingCards.length > 0) {
-        const existingCard = existingCards[0]
-        const { error: incrementError } = await supabase
-          .from("user_cards")
-          .update({ quantity: (existingCard.quantity || 0) + 1 })
-          .eq("id", existingCard.id)
+      // Also update the existingCard handling in handleLevelUp to be more robust
+      // Find this section in the handleLevelUp function and replace it:
 
-        if (incrementError) {
-          console.error("Error incrementing higher level card quantity:", incrementError)
-          toast({
-            title: "Level up failed",
-            description: "Failed to update higher level card",
-            variant: "destructive",
-          })
-          setLevelUpLoading(false)
-          return
+      // 3. If user already has this card at the next level, increment quantity
+      if (existingCardsData && existingCardsData.length > 0) {
+        const existingCardRaw = existingCardsData[0]
+        console.log("Existing card data for level up:", existingCardRaw)
+
+        const existingCard = toUserCard(existingCardRaw)
+
+        if (!existingCard) {
+          console.error("Invalid existing card data:", existingCardRaw)
+
+          // Fallback approach - try to work with the raw data directly
+          // First check if existingCardRaw is an object and has an id property
+          if (
+            existingCardRaw &&
+            typeof existingCardRaw === "object" &&
+            "id" in existingCardRaw &&
+            (typeof existingCardRaw.id === "string" || typeof existingCardRaw.id === "number")
+          ) {
+            const quantity =
+              typeof existingCardRaw.quantity === "number"
+                ? existingCardRaw.quantity
+                : typeof existingCardRaw.quantity === "string"
+                  ? Number.parseInt(existingCardRaw.quantity, 10) || 0
+                  : 0
+
+            const { error: incrementError } = await supabase
+              .from("user_cards")
+              .update({ quantity: quantity + 1 })
+              .eq("id", existingCardRaw.id)
+
+            if (incrementError) {
+              console.error("Error incrementing higher level card quantity:", incrementError)
+              toast({
+                title: "Level up failed",
+                description: "Failed to update higher level card",
+                variant: "destructive",
+              })
+              setLevelUpLoading(false)
+              return
+            }
+          } else {
+            console.error("Cannot proceed with level up: existing card data is invalid and missing required id")
+            toast({
+              title: "Level up failed",
+              description: "Invalid card data structure",
+              variant: "destructive",
+            })
+            setLevelUpLoading(false)
+            return
+          }
+        } else {
+          const { error: incrementError } = await supabase
+            .from("user_cards")
+            .update({ quantity: (existingCard.quantity || 0) + 1 })
+            .eq("id", existingCard.id)
+
+          if (incrementError) {
+            console.error("Error incrementing higher level card quantity:", incrementError)
+            toast({
+              title: "Level up failed",
+              description: "Failed to update higher level card",
+              variant: "destructive",
+            })
+            setLevelUpLoading(false)
+            return
+          }
         }
       } else {
         // 4. If user doesn't have this card at the next level, create a new entry
@@ -574,7 +762,7 @@ export default function CardDetailPage() {
                           <div className="flex items-center">
                             <span className="mr-2">Level {userCardItem.level}</span>
                             <div className="flex">
-                              {Array.from({ length: userCardItem.level }).map((_, i) => (
+                              {Array.from({ length: userCardItem.level || 1 }).map((_, i) => (
                                 <Star key={i} className="h-3 w-3 text-red-600 fill-red-600" />
                               ))}
                             </div>

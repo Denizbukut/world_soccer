@@ -67,18 +67,19 @@ export default function LoginPage() {
           if (!existingUser) {
             console.log("User doesn't exist, creating new user:", userIdentifier)
             const { data: newUser, error: insertError } = await supabase
-              .from("users")
-              .insert([
-                {
-                  username: userIdentifier,
-                  tickets: 5,
-                  coins: 1000,
-                  level: 1,
-                  experience: 0,
-                  world_id: address,
-                },
-              ])
-              .select()
+            .from("users")
+            .insert([
+              {
+                username: userIdentifier,
+                tickets: 5,
+                coins: 1000,
+                level: 1,
+                experience: 0,
+                world_id: address,
+                walletaddress: address, // Add the wallet address to the new column
+              },
+            ])
+            .select()
 
             if (insertError) {
               console.error("Error creating new user:", insertError)
@@ -90,9 +91,12 @@ export default function LoginPage() {
 
             // Update the last_login timestamp
             const { error: updateError } = await supabase
-              .from("users")
-              .update({ last_login: new Date().toISOString() })
-              .eq("username", userIdentifier)
+            .from("users")
+            .update({
+              last_login: new Date().toISOString(),
+              walletaddress: address, // Update the wallet address in case it changed or wasn't set
+            })
+            .eq("username", userIdentifier)
 
             if (updateError) {
               console.error("Error updating last login:", updateError)
@@ -151,7 +155,7 @@ export default function LoginPage() {
         {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">{error}</div>}
         <button
           onClick={signInWithWallet}
-          style= {{ backgroundColor: "#FCA171"}}
+          style= {{ backgroundColor: "#2E5283"}}
           className="w-full  text-white border border-black font-medium py-4 rounded-xl mb-6 hover:from-black hover:to-gray-800 transition-all duration-300 flex items-center justify-center gap-2 shadow-md"
             disabled={isLoading}
         >

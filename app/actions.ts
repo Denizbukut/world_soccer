@@ -1,19 +1,47 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import { createClient } from "@/utils/supabase/server"
+import { createClient } from "@supabase/supabase-js"
 
 // Card rarity types
 type CardRarity = "common" | "rare" | "epic" | "legendary"
 
-// Update the claimDailyBonus function to use a 12-hour cooldown instead of daily
+// Define types for our data
+type UserCard = {
+  id: string
+  user_id: string
+  card_id: string
+  quantity: number
+  level?: number
+  favorite?: boolean
+  obtained_at: string
+}
+
+type Card = {
+  id: string
+  name: string
+  character: string
+  image_url?: string
+  rarity: CardRarity
+  type?: string
+  description?: string
+}
+
+// Create a server-side Supabase client
+function createSupabaseServer() {
+  return createClient(process.env.SUPABASE_URL || "", process.env.SUPABASE_SERVICE_ROLE_KEY || "", {
+    auth: {
+      persistSession: false,
+    },
+  })
+}
 
 /**
  * Claims daily login bonus for a user
  */
 export async function claimDailyBonus(username: string) {
   try {
-    const supabase = createClient()
+    const supabase = createSupabaseServer()
 
     // Get current user data
     const { data: userData, error: userError } = await supabase
@@ -41,17 +69,24 @@ export async function claimDailyBonus(username: string) {
 
     // Check if user has already claimed within the last 12 hours
     if (userData.ticket_last_claimed) {
-      const lastClaimed = new Date(userData.ticket_last_claimed)
+      const lastClaimed = new Date(userData.ticket_last_claimed as string)
       const now = new Date()
       const hoursSinceLastClaim = (now.getTime() - lastClaimed.getTime()) / (1000 * 60 * 60)
 
       if (hoursSinceLastClaim < 12) {
-        return { success: false, error: "Already claimed within the last 12 hours", alreadyClaimed: true }
+        const timeUntilNextClaim = 12 * 60 * 60 * 1000 - (now.getTime() - lastClaimed.getTime())
+        return {
+          success: false,
+          error: "Already claimed within the last 12 hours",
+          alreadyClaimed: true,
+          timeUntilNextClaim,
+          nextClaimTime: new Date(lastClaimed.getTime() + 12 * 60 * 60 * 1000).toISOString(),
+        }
       }
     }
 
     // Award tickets (3 tickets per claim)
-    const newTicketCount = (userData.tickets || 0) + 3
+    const newTicketCount = (typeof userData.tickets === "number" ? userData.tickets : 0) + 3
 
     // Update user
     const { error: updateError } = await supabase
@@ -67,7 +102,11 @@ export async function claimDailyBonus(username: string) {
     }
 
     revalidatePath("/")
-    return { success: true, newTicketCount }
+    return {
+      success: true,
+      newTicketCount: newTicketCount || 0,
+      nextClaimTime: new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString(),
+    }
   } catch (error) {
     console.error("Error claiming daily bonus:", error)
     return { success: false, error: "An unexpected error occurred" }
@@ -77,7 +116,7 @@ export async function claimDailyBonus(username: string) {
 // Add more detailed logging to help diagnose the issue
 export async function drawCards(username: string, packType = "common", cardCount = 1) {
   try {
-    const supabase = createClient()
+    const supabase = createSupabaseServer()
 
     console.log(`Drawing ${cardCount} cards from ${packType} pack for user ${username}`)
 
@@ -98,7 +137,9 @@ export async function drawCards(username: string, packType = "common", cardCount
 
     // 2. Check if user has enough tickets
     const ticketField = packType === "legendary" ? "legendary_tickets" : "tickets"
-    if (userData[ticketField] < 1) {
+    const ticketCount = typeof userData[ticketField] === "number" ? (userData[ticketField] as number) : 0
+
+    if (ticketCount < 1) {
       return {
         success: false,
         error: `Not enough ${packType} tickets`,
@@ -106,7 +147,7 @@ export async function drawCards(username: string, packType = "common", cardCount
     }
 
     // 3. Draw multiple cards
-    const drawnCards = []
+    const drawnCards: Card[] = []
 
     for (let i = 0; i < cardCount; i++) {
       // Determine card rarity based on probabilities
@@ -133,11 +174,11 @@ export async function drawCards(username: string, packType = "common", cardCount
         }
 
         // Select a random fallback card
-        const randomCard = fallbackCards[Math.floor(Math.random() * fallbackCards.length)]
+        const randomCard = fallbackCards[Math.floor(Math.random() * fallbackCards.length)] as Card
         drawnCards.push(randomCard)
       } else {
         // Select a random card from the available cards
-        const randomCard = availableCards[Math.floor(Math.random() * availableCards.length)]
+        const randomCard = availableCards[Math.floor(Math.random() * availableCards.length)] as Card
         drawnCards.push(randomCard)
       }
     }
@@ -147,7 +188,7 @@ export async function drawCards(username: string, packType = "common", cardCount
     // 4. Begin transaction: decrease tickets and add cards to collection
     const { error: ticketError } = await supabase
       .from("users")
-      .update({ [ticketField]: userData[ticketField] - 1 })
+      .update({ [ticketField]: ticketCount - 1 })
       .eq("username", userData.username)
 
     if (ticketError) {
@@ -174,10 +215,11 @@ export async function drawCards(username: string, packType = "common", cardCount
 
       if (existingCards && existingCards.length > 0) {
         // Increment quantity
+        const existingCard = existingCards[0] as UserCard
         await supabase
           .from("user_cards")
-          .update({ quantity: existingCards[0].quantity + 1 })
-          .eq("id", existingCards[0].id)
+          .update({ quantity: existingCard.quantity + 1 })
+          .eq("id", existingCard.id)
       } else {
         // Add new card to user's collection
         const { error: collectionError } = await supabase.from("user_cards").insert({
@@ -205,11 +247,19 @@ export async function drawCards(username: string, packType = "common", cardCount
     revalidatePath("/collection")
     revalidatePath("/draw")
 
+    const newTicketCount = typeof updatedUser?.tickets === "number" ? updatedUser.tickets : ticketCount - 1
+    const newLegendaryTicketCount =
+      typeof updatedUser?.legendary_tickets === "number"
+        ? updatedUser.legendary_tickets
+        : packType === "legendary"
+          ? ticketCount - 1
+          : (userData.legendary_tickets as number)
+
     return {
       success: true,
       drawnCards: drawnCards,
-      newTicketCount: updatedUser?.tickets || userData.tickets - 1,
-      newLegendaryTicketCount: updatedUser?.legendary_tickets || userData.legendary_tickets,
+      newTicketCount,
+      newLegendaryTicketCount,
     }
   } catch (error) {
     console.error("Unexpected error in drawCards:", error)
@@ -225,7 +275,7 @@ export async function drawCards(username: string, packType = "common", cardCount
  */
 export async function getUserCards(username: string) {
   try {
-    const supabase = createClient()
+    const supabase = createSupabaseServer()
 
     // Get the user's cards with their quantities
     const { data: userCardsData, error: userCardsError } = await supabase
@@ -244,7 +294,7 @@ export async function getUserCards(username: string) {
     }
 
     // Extract card IDs
-    const cardIds = userCardsData.map((item) => item.card_id)
+    const cardIds = userCardsData.map((item: { card_id: string }) => item.card_id)
 
     // Then, get the card details for those IDs
     const { data: cardsData, error: cardsError } = await supabase.from("cards").select("*").in("id", cardIds)
@@ -256,13 +306,13 @@ export async function getUserCards(username: string) {
 
     // Create a map of card details by ID for easy lookup
     const cardDetailsMap = new Map()
-    cardsData?.forEach((card) => {
+    cardsData?.forEach((card: Card) => {
       cardDetailsMap.set(card.id, card)
     })
 
     // Combine the user cards with their details
     const cards = userCardsData
-      .map((userCard) => {
+      .map((userCard: { card_id: string; quantity: number }) => {
         const cardDetails = cardDetailsMap.get(userCard.card_id)
         if (!cardDetails) return null
 

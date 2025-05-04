@@ -291,7 +291,7 @@ export default function DrawPage() {
                   <span className="font-medium text-sm">{user?.tickets || 0}</span>
                 </div>
                 <div className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
-                  <Crown className="h-3.5 w-3.5 text-amber-500" />
+                  <Ticket className="h-3.5 w-3.5 text-amber-500" />
                   <span className="font-medium text-sm">{legendaryTickets}</span>
                 </div>
               </div>
@@ -321,7 +321,7 @@ export default function DrawPage() {
                   >
                     <div className="flex items-center justify-center gap-2">
                       <Ticket className="h-4 w-4" />
-                      <span>Regular</span>
+                      <span>Regular Pack</span>
                     </div>
                   </button>
                   <button
@@ -334,7 +334,7 @@ export default function DrawPage() {
                   >
                     <div className="flex items-center justify-center gap-2">
                       <Crown className="h-4 w-4" />
-                      <span>Legendary</span>
+                      <span>Legendary Pack</span>
                     </div>
                   </button>
                 </div>
@@ -439,17 +439,8 @@ export default function DrawPage() {
                           </div>
                         ) : (
                           <>
-                            {activeTab === "legendary" ? (
-                              <>
-                                <Crown className="h-4 w-4 mr-2" />
-                                Open Pack (1 Legendary Ticket)
-                              </>
-                            ) : (
-                              <>
-                                <Ticket className="h-4 w-4 mr-2" />
-                                Open Pack (1 Ticket)
-                              </>
-                            )}
+                            <Ticket className="h-4 w-4 mr-2 text-amber-500" />
+                            Open Pack (1 Legendary Ticket)
                           </>
                         )}
                       </Button>

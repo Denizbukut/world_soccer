@@ -1,18 +1,26 @@
-import { createClient, SupabaseClient } from "@supabase/supabase-js"
+import { createClient } from "@supabase/supabase-js"
 
-// Typen (optional, wenn du keine eigenen generierten Typen hast)
-type GenericClient = SupabaseClient<any, "public", any>
+// Singleton pattern for browser client
+let browserClient: ReturnType<typeof createClient> | null = null
 
-// ✅ Client-seitig (Browser)
-export function getSupabaseBrowserClient(): GenericClient {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  return createClient(url, key)
-}
+export function getSupabaseBrowserClient() {
+  if (browserClient) return browserClient
 
-// ✅ Server-seitig (z. B. in app/actions.ts)
-export function getSupabaseServerClient(): GenericClient {
-  const url = process.env.SUPABASE_URL!
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY!
-  return createClient(url, key)
+  // Only create a new client if one doesn't exist
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.error("Supabase URL or Anon Key is missing")
+    return null
+  }
+
+  browserClient = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+    },
+  })
+
+  return browserClient
 }

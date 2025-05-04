@@ -3,6 +3,7 @@
 import type React from "react"
 import { createContext, useContext, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import { getSupabaseBrowserClient } from "@/lib/supabase"
 
 type User = {
   username: string
@@ -39,6 +40,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
   const router = useRouter()
   const [isAuthenticated, setIsAuthenticated] = useState(false)
+
+  // Initialize Supabase client once when the provider mounts
+  useEffect(() => {
+    // Just initialize the client once to prevent multiple instances
+    getSupabaseBrowserClient()
+  }, [])
 
   useEffect(() => {
     const checkExistingAuth = async () => {

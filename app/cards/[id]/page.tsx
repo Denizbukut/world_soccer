@@ -734,16 +734,6 @@ export default function CardDetailPage() {
                   </Badge>
                 </div>
 
-                <div className="grid grid-cols-1 gap-2 mb-3">
-                  {owned && (
-                    <div className="text-sm text-right">
-                      <span className="text-gray-500">Total Owned:</span>
-                      <div className="font-medium">
-                        {allUserCards.reduce((sum, card) => sum + (card.quantity || 0), 0)}
-                      </div>
-                    </div>
-                  )}
-                </div>
 
                 {card.description && (
                   <div className="text-sm mt-2">

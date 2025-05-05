@@ -8,7 +8,7 @@ import { drawCards } from "@/app/actions"
 import ProtectedRoute from "@/components/protected-route"
 import MobileNav from "@/components/mobile-nav"
 import { Button } from "@/components/ui/button"
-import { Ticket, Crown, Sparkles } from "lucide-react"
+import { Ticket, Crown, Sparkles, Star } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
 import { motion, AnimatePresence, useAnimation, useMotionValue, useTransform } from "framer-motion"
 import Image from "next/image"
@@ -72,11 +72,12 @@ const RARITY_COLORS = {
 }
 
 export default function DrawPage() {
-  const { user, updateUserTickets } = useAuth()
+  const { user, updateUserTickets, updateUserExp, refreshUserData } = useAuth()
   const [isDrawing, setIsDrawing] = useState(false)
   const [drawnCards, setDrawnCards] = useState<any[]>([])
   const [activeTab, setActiveTab] = useState<"regular" | "legendary">("regular")
   const [legendaryTickets, setLegendaryTickets] = useState(2)
+  const [tickets, setTickets] = useState(0)
 
   // Animation states
   const [showPackSelection, setShowPackSelection] = useState(true)
@@ -85,6 +86,10 @@ export default function DrawPage() {
   const [showRarityText, setShowRarityText] = useState(false)
   const [showCards, setShowCards] = useState(false)
   const [cardRevealed, setCardRevealed] = useState(false)
+  const [showXpAnimation, setShowXpAnimation] = useState(false)
+  const [xpGained, setXpGained] = useState(0)
+  const [showLevelUpAnimation, setShowLevelUpAnimation] = useState(false)
+  const [newLevel, setNewLevel] = useState(1)
 
   // Hydration safety
   const [isClient, setIsClient] = useState(false)
@@ -106,12 +111,20 @@ export default function DrawPage() {
   // Set isClient to true once component mounts
   useEffect(() => {
     setIsClient(true)
-  }, [])
 
-  // Update legendary tickets when user changes
+    // Refresh user data from database when component mounts
+    refreshUserData?.()
+  }, [refreshUserData])
+
+  // Update tickets and legendary tickets when user changes
   useEffect(() => {
-    if (user?.legendary_tickets !== undefined) {
-      setLegendaryTickets(user.legendary_tickets)
+    if (user) {
+      if (typeof user.tickets === "number") {
+        setTickets(user.tickets)
+      }
+      if (typeof user.legendary_tickets === "number") {
+        setLegendaryTickets(user.legendary_tickets)
+      }
     }
   }, [user])
 
@@ -152,7 +165,6 @@ export default function DrawPage() {
     y.set(0, true)
   }
 
-  // Update the error handling in handleSelectPack to provide more information
   const handleSelectPack = async (cardType: string) => {
     if (!user) {
       toast({ title: "Error", description: "You must be logged in.", variant: "destructive" })
@@ -170,12 +182,35 @@ export default function DrawPage() {
       console.log("Draw result:", result)
 
       if (result.success && result.drawnCards && result.drawnCards.length > 0) {
-        await updateUserTickets?.(result.newTicketCount)
-        if (result.newLegendaryTicketCount !== undefined) {
-          setLegendaryTickets(result.newLegendaryTicketCount)
-        }
+        // Set drawn cards
         setDrawnCards(result.drawnCards)
         console.log("Drawn cards set:", result.drawnCards)
+
+        // Update ticket counts in state
+        if (typeof result.newTicketCount === "number") {
+          setTickets(result.newTicketCount)
+        }
+        if (typeof result.newLegendaryTicketCount === "number") {
+          setLegendaryTickets(result.newLegendaryTicketCount)
+        }
+
+        // Update the context as well to ensure consistency across the app
+        await updateUserTickets?.(
+          typeof result.newTicketCount === "number" ? result.newTicketCount : tickets,
+          typeof result.newLegendaryTicketCount === "number" ? result.newLegendaryTicketCount : legendaryTickets,
+        )
+
+        // Store XP gained for animation
+        const xpAmount = cardType === "legendary" ? 50 : 25
+        setXpGained(xpAmount)
+
+        // Update user's XP in context
+        const { leveledUp, newLevel: updatedLevel } = (await updateUserExp?.(xpAmount)) || { leveledUp: false }
+
+        // If user leveled up, store the new level for animation
+        if (leveledUp && updatedLevel) {
+          setNewLevel(updatedLevel)
+        }
       } else {
         console.error("Draw failed or no cards returned:", result.error)
         toast({
@@ -220,12 +255,35 @@ export default function DrawPage() {
   }
 
   const finishCardReview = () => {
-    // Reset all states to go back to pack selection
+    // Hide card display
     setShowCards(false)
+
+    // Show XP animation
+    setShowXpAnimation(true)
+
+    // After XP animation completes
+    setTimeout(() => {
+      setShowXpAnimation(false)
+
+      // Now show level up animation if applicable
+      if (newLevel > 1) {
+        setShowLevelUpAnimation(true)
+      } else {
+        resetStates()
+      }
+    }, 1000) // Changed from 2000 to 1000 for faster animation
+  }
+
+  const resetStates = () => {
     setPackOpened(false)
     setShowPackSelection(true)
     setDrawnCards([])
     setCardRevealed(false)
+    setXpGained(0)
+    setNewLevel(1) // Reset the new level
+
+    // Refresh user data after completing the draw
+    refreshUserData?.()
 
     toast({
       title: "Card Added",
@@ -288,7 +346,7 @@ export default function DrawPage() {
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
                   <Ticket className="h-3.5 w-3.5 text-violet-500" />
-                  <span className="font-medium text-sm">{user?.tickets || 0}</span>
+                  <span className="font-medium text-sm">{tickets}</span>
                 </div>
                 <div className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
                   <Ticket className="h-3.5 w-3.5 text-amber-500" />
@@ -321,7 +379,7 @@ export default function DrawPage() {
                   >
                     <div className="flex items-center justify-center gap-2">
                       <Ticket className="h-4 w-4" />
-                      <span>Regular Pack</span>
+                      <span>Regular</span>
                     </div>
                   </button>
                   <button
@@ -334,7 +392,7 @@ export default function DrawPage() {
                   >
                     <div className="flex items-center justify-center gap-2">
                       <Crown className="h-4 w-4" />
-                      <span>Legendary Pack</span>
+                      <span>Legendary</span>
                     </div>
                   </button>
                 </div>
@@ -377,6 +435,10 @@ export default function DrawPage() {
                           {activeTab === "legendary" ? "Legendary" : "Regular"} Card Pack
                         </h3>
                         <p className="text-sm text-gray-500">Contains 1 random card</p>
+                        <div className="flex items-center justify-center gap-1 mt-1 text-xs text-violet-600">
+                          <Star className="h-3 w-3" />
+                          <span>+{activeTab === "legendary" ? "50" : "25"} XP</span>
+                        </div>
                       </div>
 
                       <div className="w-full space-y-2 mb-4">
@@ -384,7 +446,7 @@ export default function DrawPage() {
                           <>
                             <div className="flex justify-between items-center text-sm">
                               <span>Common</span>
-                              <span className="text-gray-500">30%</span>
+                              <span className="text-gray-500">10%</span>
                             </div>
                             <div className="flex justify-between items-center text-sm">
                               <span>Rare</span>
@@ -392,22 +454,22 @@ export default function DrawPage() {
                             </div>
                             <div className="flex justify-between items-center text-sm">
                               <span>Epic</span>
-                              <span className="text-purple-500">25%</span>
+                              <span className="text-purple-500">40%</span>
                             </div>
                             <div className="flex justify-between items-center text-sm">
                               <span>Legendary</span>
-                              <span className="text-amber-500">5%</span>
+                              <span className="text-amber-500">10%</span>
                             </div>
                           </>
                         ) : (
                           <>
                             <div className="flex justify-between items-center text-sm">
                               <span>Common</span>
-                              <span className="text-gray-500">59%</span>
+                              <span className="text-gray-500">60%</span>
                             </div>
                             <div className="flex justify-between items-center text-sm">
                               <span>Rare</span>
-                              <span className="text-blue-500">35.5%</span>
+                              <span className="text-blue-500">34%</span>
                             </div>
                             <div className="flex justify-between items-center text-sm">
                               <span>Epic</span>
@@ -415,7 +477,7 @@ export default function DrawPage() {
                             </div>
                             <div className="flex justify-between items-center text-sm">
                               <span>Legendary</span>
-                              <span className="text-amber-500">0.5%</span>
+                              <span className="text-amber-500">1%</span>
                             </div>
                           </>
                         )}
@@ -423,9 +485,7 @@ export default function DrawPage() {
 
                       <Button
                         onClick={() => handleSelectPack(activeTab === "legendary" ? "legendary" : "common")}
-                        disabled={
-                          isDrawing || (activeTab === "legendary" ? legendaryTickets < 1 : (user?.tickets || 0) < 1)
-                        }
+                        disabled={isDrawing || (activeTab === "legendary" ? legendaryTickets < 1 : tickets < 1)}
                         className={
                           activeTab === "legendary"
                             ? "w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 rounded-full"
@@ -439,8 +499,8 @@ export default function DrawPage() {
                           </div>
                         ) : (
                           <>
-                            <Ticket className="h-4 w-4 mr-2 text-amber-500" />
-                            Open Pack (1 Legendary Ticket)
+                            <Ticket className="h-4 w-4 mr-2" />
+                            Open Pack (1 {activeTab === "legendary" ? "Legendary " : ""}Ticket)
                           </>
                         )}
                       </Button>
@@ -765,6 +825,149 @@ export default function DrawPage() {
                     Add to Collection
                   </Button>
                 </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* XP Gain Animation */}
+          <AnimatePresence>
+            {showXpAnimation && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center"
+              >
+                <motion.div
+                  className="bg-white rounded-xl p-6 shadow-lg flex flex-col items-center gap-2 border-2 border-violet-300"
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{
+                    scale: [0, 1.2, 1],
+                    opacity: [0, 1, 1, 0],
+                  }}
+                  transition={{
+                    duration: 1, // Changed from 2 to 1 for faster animation
+                    times: [0, 0.3, 0.5, 1],
+                  }}
+                >
+                  <div className="text-2xl font-bold text-violet-600">+{xpGained} XP</div>
+                  <div className="flex items-center gap-2">
+                    <Star className="h-8 w-8 text-violet-500" />
+                  </div>
+                </motion.div>
+
+                {/* Particles */}
+                {Array.from({ length: 20 }).map((_, i) => (
+                  <motion.div
+                    key={`particle-${i}`}
+                    className="absolute rounded-full bg-violet-500"
+                    style={{
+                      width: Math.random() * 6 + 2,
+                      height: Math.random() * 6 + 2,
+                    }}
+                    initial={{
+                      x: "50%",
+                      y: "50%",
+                      opacity: 0,
+                    }}
+                    animate={{
+                      x: `${Math.random() * 100}%`,
+                      y: `${Math.random() * 100}%`,
+                      opacity: [0, 0.8, 0],
+                    }}
+                    transition={{
+                      duration: 0.8, // Changed from 1.5 to 0.8 for faster animation
+                      delay: Math.random() * 0.2, // Reduced delay from 0.3 to 0.2
+                    }}
+                  />
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Level Up Animation */}
+          <AnimatePresence>
+            {showLevelUpAnimation && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-50 flex items-center justify-center"
+              >
+                <div className="absolute inset-0 bg-black/70" />
+                <motion.div
+                  className="relative z-10 bg-white rounded-xl p-6 shadow-lg flex flex-col items-center gap-4 border-2 border-amber-400"
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{
+                    scale: [0, 1.2, 1],
+                    opacity: 1,
+                  }}
+                  transition={{
+                    duration: 0.5,
+                    times: [0, 0.7, 1],
+                  }}
+                >
+                  <motion.div
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ delay: 0.3, duration: 0.5 }}
+                  >
+                    <div className="w-20 h-20 rounded-full bg-gradient-to-r from-amber-400 to-amber-600 flex items-center justify-center mb-2">
+                      <Star className="h-10 w-10 text-white" />
+                    </div>
+                  </motion.div>
+                  <motion.div
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.5, duration: 0.5 }}
+                  >
+                    <h2 className="text-2xl font-bold text-center">Level Up!</h2>
+                    <p className="text-lg font-medium text-center text-amber-600">You reached Level {newLevel}!</p>
+                  </motion.div>
+
+                  
+
+                  {/* Added Continue button */}
+                  <motion.div
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.9, duration: 0.5 }}
+                    className="mt-4"
+                  >
+                    <Button
+                      onClick={() => {
+                        setShowLevelUpAnimation(false)
+                        resetStates()
+                      }}
+                      className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white px-8"
+                    >
+                      Continue
+                    </Button>
+                  </motion.div>
+                </motion.div>
+
+                {/* Particles */}
+                {Array.from({ length: 30 }).map((_, i) => (
+                  <motion.div
+                    key={i}
+                    className="absolute w-2 h-2 rounded-full bg-amber-400"
+                    initial={{
+                      x: "50%",
+                      y: "50%",
+                      opacity: 0,
+                    }}
+                    animate={{
+                      x: `${Math.random() * 100}%`,
+                      y: `${Math.random() * 100}%`,
+                      opacity: [0, 1, 0],
+                    }}
+                    transition={{
+                      duration: 2,
+                      delay: Math.random() * 0.5,
+                      ease: "easeOut",
+                    }}
+                  />
+                ))}
               </motion.div>
             )}
           </AnimatePresence>

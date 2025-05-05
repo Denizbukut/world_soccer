@@ -6,7 +6,7 @@ import { claimDailyBonus } from "@/app/actions"
 import ProtectedRoute from "@/components/protected-route"
 import MobileNav from "@/components/mobile-nav"
 import { Button } from "@/components/ui/button"
-import { Ticket, Gift, CreditCard, Repeat, Clock, ChevronRight, Crown } from "lucide-react"
+import { Ticket, Gift, CreditCard, Repeat, Clock, ChevronRight, Crown, Bell } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
@@ -15,7 +15,7 @@ import { getSupabaseBrowserClient } from "@/lib/supabase"
 import { Progress } from "@/components/ui/progress"
 
 export default function Home() {
-  const { user, updateUserTickets } = useAuth()
+  const { user, updateUserTickets, refreshUserData } = useAuth()
   const [claimLoading, setClaimLoading] = useState(false)
   const [alreadyClaimed, setAlreadyClaimed] = useState(false)
   const [timeUntilNextClaim, setTimeUntilNextClaim] = useState<number | null>(null)
@@ -23,6 +23,13 @@ export default function Home() {
   const [tickets, setTickets] = useState(0)
   const [showClaimAnimation, setShowClaimAnimation] = useState(false)
   const [hasPremium, setHasPremium] = useState(false)
+  const [canClaimLegendary, setCanClaimLegendary] = useState(false)
+  const [unclaimedRewards, setUnclaimedRewards] = useState(0)
+
+  // Refresh user data when component mounts
+  useEffect(() => {
+    refreshUserData?.()
+  }, [refreshUserData])
 
   // Format time remaining as HH:MM:SS
   const formatTimeRemaining = (milliseconds: number) => {
@@ -208,10 +215,8 @@ export default function Home() {
               <div className="flex justify-between items-center mb-1">
                 <h2 className="font-semibold text-base">{user?.username || "Trainer"}</h2>
                 <div className="flex items-center">
-                  <span className="text-xs text-gray-500 mr-2">Level {user?.level || 1}</span>
-                  <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
-                    <span className="text-[10px] text-white font-bold">{user?.level || 1}</span>
-                  </div>
+                  <span className="text-sm text-black-500 mr-2">Level {user?.level || 1}</span>
+                  
                 </div>
               </div>
               <div className="flex justify-between items-center mb-1">
@@ -237,8 +242,18 @@ export default function Home() {
             <Link href="/pass" className="block">
               <div className="p-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-r from-amber-400 to-amber-600 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-r from-amber-400 to-amber-600 flex items-center justify-center relative">
                     <Crown className="h-5 w-5 text-white" />
+                    {(canClaimLegendary || unclaimedRewards > 0) && (
+                      <div className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center animate-pulse">
+                        <Bell className="h-3.5 w-3.5 text-white" />
+                        {unclaimedRewards > 0 && (
+                          <span className="absolute -top-1 -right-1 bg-white text-red-500 text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                            {unclaimedRewards > 9 ? "9+" : unclaimedRewards}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div>
                     <h3 className="font-medium text-base">Premium Pass</h3>
@@ -360,7 +375,7 @@ export default function Home() {
                       <span className="font-medium text-sm">Legendary Pack</span>
                       <div className="flex items-center justify-center gap-1 mt-1">
                         <Ticket className="h-3 w-3 text-amber-500" />
-                        <span className="text-xs text-gray-500">1 Legendary Ticket</span>
+                        <span className="text-xs text-gray-500">1 L. Ticket</span>
                       </div>
                     </div>
                   </div>

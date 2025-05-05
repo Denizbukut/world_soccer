@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { toast } from "@/components/ui/use-toast"
 import { motion, AnimatePresence } from "framer-motion"
-import { Crown, Ticket, Star, Gift, Check, Lock, Sparkles, Clock, Calendar } from "lucide-react"
+import { Crown, Ticket, Star, Gift, Check, Lock, Sparkles, Clock, Calendar, Bell } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import type { PremiumPass, ClaimedReward } from "@/types/database"
@@ -17,6 +17,7 @@ interface LevelReward {
   level: number
   standardClaimed: boolean
   premiumClaimed: boolean
+  isSpecialLevel?: boolean
 }
 
 export default function PremiumPassPage() {
@@ -33,7 +34,15 @@ export default function PremiumPassPage() {
   const [xpGained, setXpGained] = useState(0)
   const [showLevelUpAnimation, setShowLevelUpAnimation] = useState(false)
   const [newLevel, setNewLevel] = useState(1)
+  const [tickets, setTickets] = useState(0)
+  const [legendaryTickets, setLegendaryTickets] = useState(0)
+  const [unclaimedRewards, setUnclaimedRewards] = useState(0)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const [showClaimPopup, setShowClaimPopup] = useState(false)
+  const [claimedRewardsInfo, setClaimedRewardsInfo] = useState<{
+    standardTickets: number
+    legendaryTickets: number
+  }>({ standardTickets: 0, legendaryTickets: 0 })
 
   // Format time remaining as HH:MM:SS
   const formatTimeRemaining = (milliseconds: number) => {
@@ -55,6 +64,12 @@ export default function PremiumPassPage() {
     })
   }
 
+  // Calculate XP needed for a specific level
+  const calculateXpForLevel = (level: number) => {
+    if (level <= 1) return 100
+    return 100 + (level - 1) * 50
+  }
+
   // Fetch premium status and level rewards
   useEffect(() => {
     if (!user?.username) return
@@ -64,6 +79,25 @@ export default function PremiumPassPage() {
       if (!supabase) return
 
       try {
+        // Get user data including tickets and legendary tickets
+        const { data: userData, error: userError } = await supabase
+          .from("users")
+          .select("tickets, legendary_tickets")
+          .eq("username", user.username)
+          .single()
+
+        if (userError) {
+          console.error("Error fetching user data:", userError)
+        } else if (userData) {
+          // Update tickets and legendary tickets
+          if (typeof userData.tickets === "number") {
+            setTickets(userData.tickets)
+          }
+          if (typeof userData.legendary_tickets === "number") {
+            setLegendaryTickets(userData.legendary_tickets)
+          }
+        }
+
         // Check if user has premium
         const { data: premiumData, error: premiumError } = (await supabase
           .from("premium_passes")
@@ -118,22 +152,36 @@ export default function PremiumPassPage() {
           console.error("Error fetching claimed rewards:", claimedRewardsError)
         }
 
-        // Create rewards array for all levels up to current level + 10 (to show future levels)
+        // Create rewards array for all levels up to current level + 50 (to show future levels)
         const userLevel = user.level || 1
-        const maxLevel = Math.max(userLevel + 10, 20) // Show at least up to level 20
+        const maxLevel = Math.max(userLevel + 50, 50) // Show at least up to level 50
         const rewards: LevelReward[] = []
 
         for (let i = 1; i <= maxLevel; i++) {
           const claimedReward = claimedRewardsData?.find((reward) => reward.level === i)
 
+          // Double rewards for every 5 levels
+          const isSpecialLevel = i % 5 === 0
+
           rewards.push({
             level: i,
             standardClaimed: Boolean(claimedReward?.standard_claimed),
             premiumClaimed: Boolean(claimedReward?.premium_claimed),
+            isSpecialLevel: isSpecialLevel,
           })
         }
 
         setLevelRewards(rewards)
+
+        // Calculate unclaimed rewards
+        let unclaimed = 0
+        rewards.forEach((reward) => {
+          if (reward.level <= userLevel) {
+            if (!reward.standardClaimed) unclaimed++
+            if (hasPremium && !reward.premiumClaimed) unclaimed++
+          }
+        })
+        setUnclaimedRewards(unclaimed)
       } catch (error) {
         console.error("Error in fetchPremiumStatus:", error)
       }
@@ -152,7 +200,7 @@ export default function PremiumPassPage() {
     }, 1000)
 
     return () => clearInterval(interval)
-  }, [user?.username, user?.level, timeUntilNextClaim])
+  }, [user?.username, user?.level, timeUntilNextClaim, hasPremium])
 
   // Scroll to current level when component mounts
   useEffect(() => {
@@ -186,6 +234,7 @@ export default function PremiumPassPage() {
         .from("premium_passes")
         .update({ last_legendary_claim: new Date().toISOString() })
         .eq("user_id", user.username)
+        .eq("active", true)
 
       if (updateError) {
         console.error("Error updating last claim time:", updateError)
@@ -197,9 +246,29 @@ export default function PremiumPassPage() {
         return
       }
 
-      // Update user's legendary tickets
-      const newLegendaryTicketCount = (user.legendary_tickets || 0) + 1
-      await updateUserTickets?.(user.tickets || 0, newLegendaryTicketCount)
+      // Update user's legendary tickets in the database
+      const newLegendaryTicketCount = (legendaryTickets || 0) + 1
+
+      const { error: ticketUpdateError } = await supabase
+        .from("users")
+        .update({ legendary_tickets: newLegendaryTicketCount })
+        .eq("username", user.username)
+
+      if (ticketUpdateError) {
+        console.error("Error updating legendary tickets:", ticketUpdateError)
+        toast({
+          title: "Error",
+          description: "Failed to update legendary tickets",
+          variant: "destructive",
+        })
+        return
+      }
+
+      // Update local state
+      setLegendaryTickets(newLegendaryTicketCount)
+
+      // Update auth context
+      await updateUserTickets?.(tickets || 0, newLegendaryTicketCount)
 
       toast({
         title: "Success!",
@@ -222,8 +291,8 @@ export default function PremiumPassPage() {
     }
   }
 
-  // Handle claiming level rewards
-  const handleClaimLevelReward = async (level: number, isPremium: boolean) => {
+  // Handle claiming all level rewards
+  const handleClaimAllRewards = async () => {
     if (!user?.username) return
 
     setIsClaimingReward(true)
@@ -232,88 +301,123 @@ export default function PremiumPassPage() {
     try {
       if (!supabase) return
 
-      // Check if reward for this level already exists
-      const { data: existingReward, error: existingRewardError } = (await supabase
-        .from("claimed_rewards")
-        .select("*")
-        .eq("user_id", user.username)
-        .eq("level", level)
-        .single()) as { data: ClaimedReward | null; error: any }
+      let standardTicketsToAdd = 0
+      let legendaryTicketsToAdd = 0
+      const updatedRewards = [...levelRewards]
+      const userLevel = user.level || 1
 
-      if (existingRewardError && existingRewardError.code !== "PGRST116") {
-        console.error("Error checking existing reward:", existingRewardError)
-      }
+      // Process all unclaimed rewards up to the user's current level
+      for (let i = 0; i < updatedRewards.length; i++) {
+        const reward = updatedRewards[i]
+        if (reward.level <= userLevel) {
+          // Standard rewards
+          if (!reward.standardClaimed) {
+            // Double rewards for every 5 levels
+            standardTicketsToAdd += reward.isSpecialLevel ? 6 : 3
+            updatedRewards[i] = { ...reward, standardClaimed: true }
+          }
 
-      if (existingReward) {
-        // Update existing reward
-        const updateData = isPremium ? { premium_claimed: true } : { standard_claimed: true }
-
-        const { error: updateError } = await supabase
-          .from("claimed_rewards")
-          .update(updateData)
-          .eq("id", existingReward.id as string)
-
-        if (updateError) {
-          console.error("Error updating claimed reward:", updateError)
-          toast({
-            title: "Error",
-            description: "Failed to claim reward",
-            variant: "destructive",
-          })
-          return
-        }
-      } else {
-        // Create new reward record
-        const insertData = {
-          user_id: user.username,
-          level: level,
-          standard_claimed: !isPremium,
-          premium_claimed: isPremium,
-        }
-
-        const { error: insertError } = await supabase.from("claimed_rewards").insert(insertData)
-
-        if (insertError) {
-          console.error("Error inserting claimed reward:", insertError)
-          toast({
-            title: "Error",
-            description: "Failed to claim reward",
-            variant: "destructive",
-          })
-          return
+          // Premium rewards (if user has premium)
+          if (hasPremium && !reward.premiumClaimed) {
+            // Double rewards for every 5 levels
+            legendaryTicketsToAdd += reward.isSpecialLevel ? 2 : 1
+            updatedRewards[i] = { ...reward, premiumClaimed: true }
+          }
         }
       }
 
-      // Update user's tickets
-      if (isPremium) {
-        // Premium reward: 1 legendary ticket
-        const newLegendaryTicketCount = (user.legendary_tickets || 0) + 1
-        await updateUserTickets?.(user.tickets || 0, newLegendaryTicketCount)
-      } else {
-        // Standard reward: 3 regular tickets
-        const newTicketCount = (user.tickets || 0) + 3
-        await updateUserTickets?.(newTicketCount, user.legendary_tickets || 0)
-      }
+      // If there are rewards to claim
+      if (standardTicketsToAdd > 0 || legendaryTicketsToAdd > 0) {
+        // Update claimed rewards in database
+        for (let i = 0; i < updatedRewards.length; i++) {
+          const reward = updatedRewards[i]
+          if (reward.level <= userLevel) {
+            // Check if reward for this level already exists
+            const { data: existingReward, error: existingRewardError } = (await supabase
+              .from("claimed_rewards")
+              .select("*")
+              .eq("user_id", user.username)
+              .eq("level", reward.level)
+              .single()) as { data: ClaimedReward | null; error: any }
 
-      // Update local state
-      setLevelRewards((prevRewards) =>
-        prevRewards.map((reward) =>
-          reward.level === level
-            ? {
-                ...reward,
-                standardClaimed: isPremium ? reward.standardClaimed : true,
-                premiumClaimed: isPremium ? true : reward.premiumClaimed,
+            if (existingRewardError && existingRewardError.code !== "PGRST116") {
+              console.error("Error checking existing reward:", existingRewardError)
+              continue
+            }
+
+            if (existingReward) {
+              // Update existing reward
+              const updateData = {
+                standard_claimed: true,
+                premium_claimed: hasPremium ? true : existingReward.premium_claimed,
               }
-            : reward,
-        ),
-      )
 
-      toast({
-        title: "Success!",
-        description: `You've claimed your ${isPremium ? "premium" : "standard"} reward for level ${level}!`,
-      })
+              await supabase
+                .from("claimed_rewards")
+                .update(updateData)
+                .eq("id", existingReward.id as string)
+            } else {
+              // Create new reward record
+              const insertData = {
+                user_id: user.username,
+                level: reward.level,
+                standard_claimed: true,
+                premium_claimed: hasPremium,
+              }
+
+              await supabase.from("claimed_rewards").insert(insertData)
+            }
+          }
+        }
+
+        // Calculate new ticket counts
+        const newTicketCount = (tickets || 0) + standardTicketsToAdd
+        const newLegendaryTicketCount = (legendaryTickets || 0) + legendaryTicketsToAdd
+
+        // Update user's tickets in the database
+        const { error: ticketUpdateError } = await supabase
+          .from("users")
+          .update({
+            tickets: newTicketCount,
+            legendary_tickets: newLegendaryTicketCount,
+          })
+          .eq("username", user.username)
+
+        if (ticketUpdateError) {
+          console.error("Error updating tickets:", ticketUpdateError)
+          toast({
+            title: "Error",
+            description: "Failed to update tickets",
+            variant: "destructive",
+          })
+          return
+        }
+
+        // Update local state
+        setTickets(newTicketCount)
+        setLegendaryTickets(newLegendaryTicketCount)
+
+        // Update auth context
+        await updateUserTickets?.(newTicketCount, newLegendaryTicketCount)
+
+        // Update local state
+        setLevelRewards(updatedRewards)
+        setUnclaimedRewards(0)
+
+        // Show claim popup
+        setClaimedRewardsInfo({
+          standardTickets: standardTicketsToAdd,
+          legendaryTickets: legendaryTicketsToAdd,
+        })
+        setShowClaimPopup(true)
+      } else {
+        toast({
+          title: "No rewards to claim",
+          description: "You have already claimed all available rewards.",
+        })
+      }
     } catch (error) {
-      console.error("Error claiming level reward:", error)
+      console.error("Error claiming all rewards:", error)
       toast({
         title: "Error",
         description: "An unexpected error occurred",
@@ -380,6 +484,23 @@ export default function PremiumPassPage() {
     }
   }
 
+  // Calculate how many legendary tickets the user would get if they purchased premium
+  const calculatePotentialLegendaryTickets = () => {
+    if (!user) return 0
+
+    const userLevel = user.level || 1
+    let count = 0
+
+    // Count unclaimed premium rewards
+    levelRewards.forEach((reward) => {
+      if (reward.level <= userLevel && !reward.premiumClaimed) {
+        count++
+      }
+    })
+
+    return count
+  }
+
   return (
     <div className="min-h-screen bg-[#f8f9ff] pb-20">
       {/* Header */}
@@ -390,11 +511,11 @@ export default function PremiumPassPage() {
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
                 <Ticket className="h-3.5 w-3.5 text-violet-500" />
-                <span className="font-medium text-sm">{user?.tickets || 0}</span>
+                <span className="font-medium text-sm">{tickets}</span>
               </div>
               <div className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
                 <Ticket className="h-3.5 w-3.5 text-amber-500" />
-                <span className="font-medium text-sm">{user?.legendary_tickets || 0}</span>
+                <span className="font-medium text-sm">{legendaryTickets}</span>
               </div>
             </div>
           </div>
@@ -413,9 +534,7 @@ export default function PremiumPassPage() {
             <div className="flex justify-between items-center mb-1">
               <h2 className="font-semibold text-base">Level {user?.level || 1}</h2>
               <div className="flex items-center">
-                <div className="w-6 h-6 rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 flex items-center justify-center">
-                  <span className="text-xs text-white font-bold">{user?.level || 1}</span>
-                </div>
+                
               </div>
             </div>
             <div className="flex justify-between items-center mb-1">
@@ -451,8 +570,13 @@ export default function PremiumPassPage() {
             <div className="relative p-4">
               <div className="flex justify-between items-start mb-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-r from-amber-400 to-amber-600 flex items-center justify-center">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-r from-amber-400 to-amber-600 flex items-center justify-center relative">
                     <Crown className="h-6 w-6 text-white" />
+                    {(canClaimLegendary || unclaimedRewards > 0) && (
+                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
+                        <Bell className="h-2.5 w-2.5 text-white" />
+                      </div>
+                    )}
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
@@ -490,7 +614,7 @@ export default function PremiumPassPage() {
                     <Ticket className="h-4 w-4 text-amber-600" />
                   </div>
                   <div className="flex-1">
-                    <h4 className="font-medium text-sm">Daily Legendary Ticket</h4>
+                    <h4 className="font-medium text-sm">Daily Legend. Ticket</h4>
                     <p className="text-xs text-gray-500">Claim 1 legendary ticket every 24 hours</p>
                   </div>
                   {hasPremium && (
@@ -546,7 +670,7 @@ export default function PremiumPassPage() {
                 <Alert className="bg-amber-50 border-amber-200 mb-2">
                   <AlertTitle className="text-amber-800 flex items-center gap-2">
                     <Sparkles className="h-4 w-4 text-amber-500" />
-                    Retroactive Rewards
+                    Get {calculatePotentialLegendaryTickets()} Legendary Tickets Now!
                   </AlertTitle>
                   <AlertDescription className="text-amber-700 text-sm">
                     Purchase Premium Pass now and claim legendary tickets for all your previous level ups!
@@ -564,29 +688,63 @@ export default function PremiumPassPage() {
           transition={{ delay: 0.2, duration: 0.4 }}
           className="bg-white rounded-2xl shadow-sm p-4"
         >
-          <h3 className="font-medium text-lg mb-4">Level Rewards</h3>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="font-medium text-lg">Pass Rewards</h3>
+            {unclaimedRewards > 0 && (
+              <Button
+                onClick={handleClaimAllRewards}
+                disabled={isClaimingReward}
+                size="sm"
+                className="bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 text-white rounded-full"
+              >
+                {isClaimingReward ? (
+                  <div className="flex items-center">
+                    <div className="h-3 w-3 border-2 border-t-transparent border-white rounded-full animate-spin mr-2"></div>
+                    <span>Claiming...</span>
+                  </div>
+                ) : (
+                  <>
+                    <Gift className="h-3.5 w-3.5 mr-1.5" />
+                    Claim All ({unclaimedRewards})
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
 
           {/* Scrollable timeline */}
           <div
             ref={scrollContainerRef}
             className="overflow-x-auto pb-4 hide-scrollbar"
-            style={{ scrollbarWidth: "none" }}
+            style={{ scrollbarWidth: "none", overscrollBehavior: "contain", WebkitOverflowScrolling: "touch" }}
           >
             <div className="flex flex-col min-w-max">
               {/* Standard rewards (top) */}
               <div className="flex mb-2">
                 {levelRewards.map((reward) => (
-                  <div key={`standard-${reward.level}`} className="flex flex-col items-center w-20">
+                  <div key={`standard-${reward.level}`} className="flex flex-col items-center w-24">
                     <div className="h-20 flex flex-col items-center justify-end pb-2">
                       <div
                         className={`
-                        w-16 h-16 rounded-lg flex flex-col items-center justify-center
-                        ${reward.level <= (user?.level || 1) ? "bg-violet-100" : "bg-gray-100"}
-                        ${reward.standardClaimed ? "border-2 border-green-500" : ""}
+                        w-20 h-16 rounded-lg flex flex-col items-center justify-center relative
+                        ${
+                          reward.level <= (user?.level || 1)
+                            ? reward.standardClaimed
+                              ? "bg-gray-100"
+                              : reward.isSpecialLevel
+                                ? "bg-violet-200"
+                                : "bg-violet-100"
+                            : "bg-gray-100"
+                        }
                       `}
                       >
                         <Ticket className="h-5 w-5 text-violet-500 mb-1" />
-                        <span className="text-xs font-medium">3 Tickets</span>
+                        <span className="text-xs font-medium">{reward.isSpecialLevel ? "6" : "3"} Tickets</span>
+                        {reward.isSpecialLevel && !reward.standardClaimed && reward.level <= (user?.level || 1) && (
+                          <span className="absolute -top-2 -right-2 bg-violet-500 text-white text-[10px] px-1 rounded-full">
+                            2x
+                          </span>
+                        )}
 
                         {reward.standardClaimed && (
                           <div className="absolute -top-1 -right-1 bg-green-500 rounded-full p-0.5">
@@ -594,18 +752,6 @@ export default function PremiumPassPage() {
                           </div>
                         )}
                       </div>
-
-                      {reward.level <= (user?.level || 1) && !reward.standardClaimed && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="absolute -bottom-6 text-[10px] h-5 px-1 text-violet-600"
-                          onClick={() => handleClaimLevelReward(reward.level, false)}
-                          disabled={isClaimingReward}
-                        >
-                          Claim
-                        </Button>
-                      )}
                     </div>
                   </div>
                 ))}
@@ -619,7 +765,7 @@ export default function PremiumPassPage() {
                   <div
                     id={`level-${reward.level}`}
                     key={`level-${reward.level}`}
-                    className={`flex flex-col items-center justify-center w-20 z-10`}
+                    className={`flex flex-col items-center justify-center w-24 z-10`}
                   >
                     <div
                       className={`
@@ -643,13 +789,22 @@ export default function PremiumPassPage() {
               {/* Premium rewards (bottom) */}
               <div className="flex mt-2">
                 {levelRewards.map((reward) => (
-                  <div key={`premium-${reward.level}`} className="flex flex-col items-center w-20">
+                  <div key={`premium-${reward.level}`} className="flex flex-col items-center w-24">
                     <div className="h-20 flex flex-col items-center justify-start pt-2 relative">
                       <div
                         className={`
-                        w-16 h-16 rounded-lg flex flex-col items-center justify-center
-                        ${hasPremium ? "bg-amber-100" : "bg-gray-100"}
-                        ${reward.premiumClaimed ? "border-2 border-green-500" : ""}
+                        w-20 h-16 rounded-lg flex flex-col items-center justify-center relative
+                        ${
+                          reward.level <= (user?.level || 1)
+                            ? hasPremium
+                              ? reward.premiumClaimed
+                                ? "bg-gray-100"
+                                : reward.isSpecialLevel
+                                  ? "bg-amber-200"
+                                  : "bg-amber-100"
+                              : "bg-gray-100"
+                            : "bg-gray-100"
+                        }
                         ${!hasPremium ? "opacity-60" : ""}
                       `}
                       >
@@ -660,7 +815,15 @@ export default function PremiumPassPage() {
                         )}
 
                         <Ticket className="h-5 w-5 text-amber-500 mb-1" />
-                        <span className="text-xs font-medium">1 Legendary</span>
+                        <span className="text-xs font-medium">{reward.isSpecialLevel ? "2" : "1"} Legendary</span>
+                        {reward.isSpecialLevel &&
+                          !reward.premiumClaimed &&
+                          hasPremium &&
+                          reward.level <= (user?.level || 1) && (
+                            <span className="absolute -top-2 -right-2 bg-amber-500 text-white text-[10px] px-1 rounded-full">
+                              2x
+                            </span>
+                          )}
 
                         {reward.premiumClaimed && (
                           <div className="absolute -top-1 -right-1 bg-green-500 rounded-full p-0.5">
@@ -668,18 +831,6 @@ export default function PremiumPassPage() {
                           </div>
                         )}
                       </div>
-
-                      {hasPremium && reward.level <= (user?.level || 1) && !reward.premiumClaimed && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="absolute -bottom-6 text-[10px] h-5 px-1 text-amber-600"
-                          onClick={() => handleClaimLevelReward(reward.level, true)}
-                          disabled={isClaimingReward}
-                        >
-                          Claim
-                        </Button>
-                      )}
                     </div>
                   </div>
                 ))}
@@ -826,6 +977,59 @@ export default function PremiumPassPage() {
                 }}
               />
             ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Claim Rewards Popup */}
+      <AnimatePresence>
+        {showClaimPopup && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center"
+          >
+            <div className="absolute inset-0 bg-black/50" onClick={() => setShowClaimPopup(false)} />
+            <motion.div
+              className="relative z-10 bg-white rounded-xl p-6 shadow-lg flex flex-col items-center gap-4 border-2 border-violet-300 max-w-xs w-full"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+            >
+              <h2 className="text-xl font-bold text-center">Rewards Claimed!</h2>
+
+              {claimedRewardsInfo.standardTickets > 0 && (
+                <div className="flex items-center gap-3 bg-violet-50 p-3 rounded-lg w-full">
+                  <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center">
+                    <Ticket className="h-5 w-5 text-violet-500" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-medium">Regular Tickets</h4>
+                    <p className="text-sm text-violet-600 font-bold">+{claimedRewardsInfo.standardTickets}</p>
+                  </div>
+                </div>
+              )}
+
+              {claimedRewardsInfo.legendaryTickets > 0 && (
+                <div className="flex items-center gap-3 bg-amber-50 p-3 rounded-lg w-full">
+                  <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
+                    <Ticket className="h-5 w-5 text-amber-500" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-medium">Legendary Tickets</h4>
+                    <p className="text-sm text-amber-600 font-bold">+{claimedRewardsInfo.legendaryTickets}</p>
+                  </div>
+                </div>
+              )}
+
+              <Button
+                onClick={() => setShowClaimPopup(false)}
+                className="bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 text-white w-full mt-2"
+              >
+                Continue
+              </Button>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

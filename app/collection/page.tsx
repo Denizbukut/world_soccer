@@ -34,6 +34,7 @@ export default function CollectionPage() {
 
       try {
         // 1. First get user's cards
+        if(!supabase) return
         const { data: userCardsData, error: userCardsError } = await supabase
           .from("user_cards")
           .select("id, card_id, quantity, level")

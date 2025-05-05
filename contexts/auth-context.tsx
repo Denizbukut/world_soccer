@@ -25,6 +25,7 @@ type AuthContextType = {
   updateUserCoins: (newCoinCount: number) => void
   updateUserExp: (expToAdd: number) => Promise<{ leveledUp: boolean; newLevel?: number }>
   setUserPremium: (hasPremium: boolean) => void
+  refreshUserData: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -36,6 +37,7 @@ const AuthContext = createContext<AuthContextType>({
   updateUserCoins: () => {},
   updateUserExp: async () => ({ leveledUp: false }),
   setUserPremium: () => {},
+  refreshUserData: async () => {},
 })
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
@@ -49,6 +51,61 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     // Just initialize the client once to prevent multiple instances
     getSupabaseBrowserClient()
   }, [])
+
+  // Load user data from database
+  const loadUserDataFromDatabase = async (username: string) => {
+    try {
+      const supabase = getSupabaseBrowserClient()
+      if (!supabase) return null
+
+      const { data, error } = await supabase
+        .from("users")
+        .select("username, tickets, legendary_tickets, coins, level, experience, next_level_exp, has_premium")
+        .eq("username", username)
+        .single()
+
+      if (error) {
+        console.error("Error loading user data from database:", error)
+        return null
+      }
+
+      if (data) {
+        // Transform database fields to match our User type with proper type assertions
+        const userData: User = {
+          username: String(data.username || ""),
+          tickets: Number(data.tickets || 0),
+          legendary_tickets: Number(data.legendary_tickets || 0),
+          coins: Number(data.coins || 0),
+          level: Number(data.level || 1),
+          experience: Number(data.experience || 0),
+          nextLevelExp: Number(data.next_level_exp || 100),
+          has_premium: Boolean(data.has_premium || false),
+        }
+
+        return userData
+      }
+
+      return null
+    } catch (error) {
+      console.error("Error in loadUserDataFromDatabase:", error)
+      return null
+    }
+  }
+
+  // Refresh user data from database
+  const refreshUserData = async () => {
+    if (!user?.username) return
+
+    try {
+      const userData = await loadUserDataFromDatabase(user.username)
+      if (userData) {
+        setUser(userData)
+        localStorage.setItem("animeworld_user", JSON.stringify(userData))
+      }
+    } catch (error) {
+      console.error("Error refreshing user data:", error)
+    }
+  }
 
   useEffect(() => {
     const checkExistingAuth = async () => {
@@ -64,7 +121,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
 
     // Check for user in localStorage
-    const checkUser = () => {
+    const checkUser = async () => {
       try {
         console.log("Checking for user in localStorage...")
         const storedUser = localStorage.getItem("animeworld_user")
@@ -72,15 +129,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
         if (storedUser) {
           const parsedUser = JSON.parse(storedUser)
-
-          // Add legendary_tickets if it doesn't exist in stored user data (for backward compatibility)
-          if (parsedUser && !parsedUser.legendary_tickets) {
-            parsedUser.legendary_tickets = 2 // Default value
-          }
-
           console.log("Parsed user:", parsedUser)
+
+          // Set user from localStorage first for immediate UI rendering
           setUser(parsedUser)
           setIsAuthenticated(true)
+
+          // Then fetch fresh data from database
+          if (parsedUser.username) {
+            const freshUserData = await loadUserDataFromDatabase(parsedUser.username)
+            if (freshUserData) {
+              console.log("Fresh user data from database:", freshUserData)
+              setUser(freshUserData)
+              localStorage.setItem("animeworld_user", JSON.stringify(freshUserData))
+            }
+          }
         }
       } catch (error) {
         console.error("Error parsing user data:", error)
@@ -96,11 +159,29 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log("Logging in with username:", username)
 
-      // Create a user object with username as primary identifier
-      const userData = {
+      // Try to load user data from database first
+      const userData = await loadUserDataFromDatabase(username)
+
+      if (userData) {
+        // User exists in database, use that data
+        console.log("User found in database:", userData)
+        localStorage.setItem("animeworld_user", JSON.stringify(userData))
+        setUser(userData)
+        setIsAuthenticated(true)
+        return { success: true }
+      }
+
+      // User doesn't exist in database, create new user
+      const supabase = getSupabaseBrowserClient()
+      if (!supabase) {
+        return { success: false, error: "Failed to initialize Supabase client" }
+      }
+
+      // Create default user data
+      const newUserData: User = {
         username,
         tickets: 5,
-        legendary_tickets: 2, // Initialize legendary tickets
+        legendary_tickets: 2,
         coins: 1000,
         level: 1,
         experience: 0,
@@ -108,16 +189,26 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         has_premium: false,
       }
 
-      console.log("Created user data:", userData)
+      // Insert new user into database
+      const { error } = await supabase.from("users").insert({
+        username: username,
+        tickets: newUserData.tickets,
+        legendary_tickets: newUserData.legendary_tickets,
+        coins: newUserData.coins,
+        level: newUserData.level,
+        experience: newUserData.experience,
+        next_level_exp: newUserData.nextLevelExp,
+        has_premium: newUserData.has_premium,
+      })
 
-      // Store in localStorage
-      localStorage.setItem("animeworld_user", JSON.stringify(userData))
+      if (error) {
+        console.error("Error creating new user in database:", error)
+        return { success: false, error: "Failed to create user in database" }
+      }
 
-      // Set auth cookie
-      document.cookie = "animeworld_auth=true; path=/; max-age=2592000" // 30 days
-
-      // Update state
-      setUser(userData)
+      console.log("Created new user in database:", newUserData)
+      localStorage.setItem("animeworld_user", JSON.stringify(newUserData))
+      setUser(newUserData)
       setIsAuthenticated(true)
 
       return { success: true }
@@ -145,28 +236,76 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const updateUserTickets = (newTicketCount: number, newLegendaryTicketCount?: number) => {
-    if (user && typeof newTicketCount === "number") {
+  const updateUserTickets = async (newTicketCount: number, newLegendaryTicketCount?: number) => {
+    if (user) {
       // Create updated user with new ticket count
-      const updatedUser = { ...user, tickets: newTicketCount }
+      const updatedUser = { ...user }
+
+      if (typeof newTicketCount === "number") {
+        updatedUser.tickets = newTicketCount
+      }
 
       // Update legendary tickets if provided
       if (typeof newLegendaryTicketCount === "number") {
         updatedUser.legendary_tickets = newLegendaryTicketCount
       }
 
+      console.log("Updating user tickets:", updatedUser.tickets, "legendary:", updatedUser.legendary_tickets)
+
       // Update state and localStorage
       setUser(updatedUser)
       localStorage.setItem("animeworld_user", JSON.stringify(updatedUser))
+
+      // Update database
+      try {
+        const supabase = getSupabaseBrowserClient()
+        if (!supabase) return
+
+        const updateData: Record<string, any> = {}
+        if (typeof newTicketCount === "number") {
+          updateData.tickets = newTicketCount
+        }
+        if (typeof newLegendaryTicketCount === "number") {
+          updateData.legendary_tickets = newLegendaryTicketCount
+        }
+
+        const { error } = await supabase.from("users").update(updateData).eq("username", user.username)
+
+        if (error) {
+          console.error("Error updating tickets in database:", error)
+        }
+      } catch (error) {
+        console.error("Error in updateUserTickets:", error)
+      }
     }
   }
 
-  const updateUserCoins = (newCoinCount: number) => {
+  const updateUserCoins = async (newCoinCount: number) => {
     if (user) {
       const updatedUser = { ...user, coins: newCoinCount }
       setUser(updatedUser)
       localStorage.setItem("animeworld_user", JSON.stringify(updatedUser))
+
+      // Update database
+      try {
+        const supabase = getSupabaseBrowserClient()
+        if (!supabase) return
+
+        const { error } = await supabase.from("users").update({ coins: newCoinCount }).eq("username", user.username)
+
+        if (error) {
+          console.error("Error updating coins in database:", error)
+        }
+      } catch (error) {
+        console.error("Error in updateUserCoins:", error)
+      }
     }
+  }
+
+  // Calculate XP needed for a specific level using the new formula
+  const calculateXpForLevel = (level: number) => {
+    if (level <= 1) return 100
+    return 100 + (level - 1) * 50
   }
 
   const updateUserExp = async (expToAdd: number) => {
@@ -184,8 +323,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         leveledUp = true
       }
 
-      // Calculate next level exp requirement
-      const nextLevelExp = Math.floor(100 * Math.pow(1.5, newLevel - 1))
+      // Calculate next level exp requirement using the new formula
+      const nextLevelExp = calculateXpForLevel(newLevel)
 
       const updatedUser = {
         ...user,
@@ -218,11 +357,25 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const setUserPremium = (hasPremium: boolean) => {
+  const setUserPremium = async (hasPremium: boolean) => {
     if (user) {
       const updatedUser = { ...user, has_premium: hasPremium }
       setUser(updatedUser)
       localStorage.setItem("animeworld_user", JSON.stringify(updatedUser))
+
+      // Update database
+      try {
+        const supabase = getSupabaseBrowserClient()
+        if (!supabase) return
+
+        const { error } = await supabase.from("users").update({ has_premium: hasPremium }).eq("username", user.username)
+
+        if (error) {
+          console.error("Error updating premium status in database:", error)
+        }
+      } catch (error) {
+        console.error("Error in setUserPremium:", error)
+      }
     }
   }
 
@@ -237,6 +390,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         updateUserCoins,
         updateUserExp,
         setUserPremium,
+        refreshUserData,
       }}
     >
       {children}

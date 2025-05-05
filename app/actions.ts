@@ -113,191 +113,200 @@ export async function claimDailyBonus(username: string) {
   }
 }
 
-// Add more detailed logging to help diagnose the issue
-export async function drawCards(username: string, packType = "common", cardCount = 1) {
+// Helper function to generate a random card based on rarity
+function generateRandomCard(rarity: CardRarity): Card {
+  // Placeholder implementation - replace with your actual card generation logic
+  const cardNames = {
+    common: ["Common Card 1", "Common Card 2"],
+    rare: ["Rare Card 1", "Rare Card 2"],
+    epic: ["Epic Card 1", "Epic Card 2"],
+    legendary: ["Legendary Card 1", "Legendary Card 2"],
+  }
+
+  const name = cardNames[rarity][Math.floor(Math.random() * cardNames[rarity].length)]
+  return {
+    id: Math.random().toString(36).substring(2, 15), // Generate a random ID
+    name: name,
+    character: "Placeholder Character",
+    rarity: rarity,
+  }
+}
+
+export async function drawCards(username: string, packType: string, count = 1) {
   try {
     const supabase = createSupabaseServer()
 
-    console.log(`Drawing ${cardCount} cards from ${packType} pack for user ${username}`)
-
-    // 1. Get user data to check tickets
+    // Get user data from database
     const { data: userData, error: userError } = await supabase
       .from("users")
-      .select("username, tickets, legendary_tickets, experience, level, next_level_exp")
+      .select("*")
       .eq("username", username)
       .single()
 
-    if (userError || !userData) {
-      console.error("Error fetching user:", userError)
+    if (userError) {
+      console.error("Error fetching user data:", userError)
+      return { success: false, error: "User not found" }
+    }
+
+    // Check if user has enough tickets
+    const isLegendary = packType === "legendary"
+    const ticketField = isLegendary ? "legendary_tickets" : "tickets"
+    const currentTickets = userData[ticketField] || 0
+
+    if (currentTickets < count) {
       return {
         success: false,
-        error: "User not found",
+        error: `Not enough ${isLegendary ? "legendary " : ""}tickets`,
       }
     }
 
-    // 2. Check if user has enough tickets
-    const ticketField = packType === "legendary" ? "legendary_tickets" : "tickets"
-    const ticketCount = typeof userData[ticketField] === "number" ? (userData[ticketField] as number) : 0
+    // Deduct tickets
+    const newTicketCount = currentTickets - count
 
-    if (ticketCount < 1) {
-      return {
-        success: false,
-        error: `Not enough ${packType} tickets`,
-      }
+    // Prepare update data - ONLY update the ticket fields
+    const updateData: Record<string, any> = {}
+    if (isLegendary) {
+      updateData.legendary_tickets = newTicketCount
+    } else {
+      updateData.tickets = newTicketCount
     }
 
-    // 3. Draw multiple cards
-    const drawnCards: Card[] = []
+    // Update user tickets in database
+    const { error: updateError } = await supabase.from("users").update(updateData).eq("username", username)
 
-    for (let i = 0; i < cardCount; i++) {
-      // Determine card rarity based on probabilities
-      const rarity = determineRarity(packType)
-      console.log(`Card ${i + 1} determined rarity: ${rarity} for pack type: ${packType}`)
+    if (updateError) {
+      console.error("Error updating tickets:", updateError)
+      return { success: false, error: "Failed to update tickets" }
+    }
 
-      // Get a random card of the determined rarity
-      const { data: availableCards, error: cardsError } = await supabase.from("cards").select("*").eq("rarity", rarity)
+    // Get available cards from database
+    const { data: availableCards, error: cardsError } = await supabase.from("cards").select("*")
 
-      console.log(`Found ${availableCards?.length || 0} cards with rarity ${rarity}`)
+    if (cardsError || !availableCards || availableCards.length === 0) {
+      console.error("Error fetching available cards:", cardsError)
+      return { success: false, error: "Failed to fetch cards" }
+    }
 
-      if (cardsError || !availableCards || availableCards.length === 0) {
-        console.error(`Error fetching cards with rarity ${rarity}:`, cardsError)
-        console.log("Trying to fetch any card as fallback...")
+    // Filter cards by rarity for each pack type
+    const commonCards = availableCards.filter((card) => card.rarity === "common")
+    const rareCards = availableCards.filter((card) => card.rarity === "rare")
+    const epicCards = availableCards.filter((card) => card.rarity === "epic")
+    const legendaryCards = availableCards.filter((card) => card.rarity === "legendary")
 
-        // Try to get any card as fallback
-        const { data: fallbackCards, error: fallbackError } = await supabase.from("cards").select("*").limit(10)
+    // Generate random cards based on rarity chances
+    const drawnCards = []
 
-        console.log(`Found ${fallbackCards?.length || 0} fallback cards`)
+    for (let i = 0; i < count; i++) {
+      const random = Math.random() * 100
+      let rarity: CardRarity
+      let cardPool: any[]
 
-        if (fallbackError || !fallbackCards || fallbackCards.length === 0) {
-          console.error("Error fetching any cards:", fallbackError)
-          return { success: false, error: "No cards available" }
+      if (isLegendary) {
+        // Legendary pack rarity distribution: Common 10%, Rare 40%, Epic 40%, Legendary 10%
+        if (random < 10) {
+          rarity = "common"
+          cardPool = commonCards
+        } else if (random < 50) {
+          rarity = "rare"
+          cardPool = rareCards
+        } else if (random < 90) {
+          rarity = "epic"
+          cardPool = epicCards
+        } else {
+          rarity = "legendary"
+          cardPool = legendaryCards
         }
-
-        // Select a random fallback card
-        const randomCard = fallbackCards[Math.floor(Math.random() * fallbackCards.length)] as Card
-        drawnCards.push(randomCard)
       } else {
-        // Select a random card from the available cards
-        const randomCard = availableCards[Math.floor(Math.random() * availableCards.length)] as Card
-        drawnCards.push(randomCard)
+        // Regular pack rarity distribution: Common 60%, Rare 34%, Epic 5%, Legendary 1%
+        if (random < 60) {
+          rarity = "common"
+          cardPool = commonCards
+        } else if (random < 94) {
+          rarity = "rare"
+          cardPool = rareCards
+        } else if (random < 99) {
+          rarity = "epic"
+          cardPool = epicCards
+        } else {
+          rarity = "legendary"
+          cardPool = legendaryCards
+        }
       }
-    }
 
-    console.log("Cards drawn successfully:", drawnCards)
-
-    // 4. Calculate XP gain based on pack type
-    const xpGain = packType === "legendary" ? 50 : 25
-    const currentExp = typeof userData.experience === "number" ? userData.experience : 0
-    const currentLevel = typeof userData.level === "number" ? userData.level : 1
-    const nextLevelExp = typeof userData.next_level_exp === "number" ? userData.next_level_exp : 100
-
-    let newExp = currentExp + xpGain
-    let newLevel = currentLevel
-    let leveledUp = false
-
-    // Check if user leveled up
-    if (newExp >= nextLevelExp) {
-      newExp -= nextLevelExp
-      newLevel += 1
-      leveledUp = true
-    }
-
-    // Calculate next level exp requirement (increases with each level)
-    const newNextLevelExp = Math.floor(100 * Math.pow(1.5, newLevel - 1))
-
-    // 5. Begin transaction: decrease tickets, add XP, and add cards to collection
-    const { error: ticketError } = await supabase
-      .from("users")
-      .update({
-        [ticketField]: ticketCount - 1,
-        experience: newExp,
-        level: newLevel,
-        next_level_exp: newNextLevelExp,
-      })
-      .eq("username", userData.username)
-
-    if (ticketError) {
-      console.error("Error updating tickets and XP:", ticketError)
-      return {
-        success: false,
-        error: "Failed to update user data",
+      // If no cards of the selected rarity, fall back to common
+      if (!cardPool || cardPool.length === 0) {
+        rarity = "common"
+        cardPool = commonCards.length > 0 ? commonCards : availableCards
       }
-    }
 
-    // 6. Add cards to user's collection
-    for (const card of drawnCards) {
+      // Select a random card from the pool
+      const selectedCard = cardPool[Math.floor(Math.random() * cardPool.length)]
+      drawnCards.push(selectedCard)
+
+      // Add card to user's collection
+      const today = new Date().toISOString().split("T")[0] // Format as YYYY-MM-DD
+
       // Check if user already has this card
-      const { data: existingCards, error: existingCardError } = await supabase
+      const { data: existingCard, error: existingCardError } = await supabase
         .from("user_cards")
         .select("*")
-        .eq("user_id", username) // Using username as user_id
-        .eq("card_id", card.id)
+        .eq("user_id", username)
+        .eq("card_id", selectedCard.id)
+        .single()
 
-      if (existingCardError) {
+      if (existingCardError && existingCardError.code !== "PGRST116") {
+        // PGRST116 means no rows returned
         console.error("Error checking existing card:", existingCardError)
-        // Continue anyway, we'll just add a new card
       }
 
-      if (existingCards && existingCards.length > 0) {
-        // Increment quantity
-        const existingCard = existingCards[0] as UserCard
-        await supabase
+      if (existingCard) {
+        // Update quantity if user already has this card
+        const { error: updateCardError } = await supabase
           .from("user_cards")
-          .update({ quantity: existingCard.quantity + 1 })
+          .update({ quantity: (existingCard.quantity || 0) + 1 })
           .eq("id", existingCard.id)
+
+        if (updateCardError) {
+          console.error("Error updating card quantity:", updateCardError)
+        }
       } else {
         // Add new card to user's collection
-        const { error: collectionError } = await supabase.from("user_cards").insert({
-          user_id: username, // Using username as user_id
-          card_id: card.id,
+        const { error: insertCardError } = await supabase.from("user_cards").insert({
+          user_id: username,
+          card_id: selectedCard.id,
           quantity: 1,
-          obtained_at: new Date().toISOString(),
+          level: 1,
+          favorite: false,
+          obtained_at: today,
         })
 
-        if (collectionError) {
-          console.error("Error adding card to collection:", collectionError)
-          // Continue with other cards even if one fails
+        if (insertCardError) {
+          console.error("Error adding card to collection:", insertCardError)
         }
       }
     }
 
-    // 7. Get updated ticket count
-    const { data: updatedUser } = await supabase
+    // Get updated ticket counts - but don't return the entire user object
+    const { data: updatedUser, error: updatedUserError } = await supabase
       .from("users")
       .select("tickets, legendary_tickets")
       .eq("username", username)
       .single()
 
-    // Revalidate the collection page to show the new cards
-    revalidatePath("/collection")
-    revalidatePath("/draw")
-    revalidatePath("/pass")
-
-    const newTicketCount = typeof updatedUser?.tickets === "number" ? updatedUser.tickets : ticketCount - 1
-    const newLegendaryTicketCount =
-      typeof updatedUser?.legendary_tickets === "number"
-        ? updatedUser.legendary_tickets
-        : packType === "legendary"
-          ? ticketCount - 1
-          : (userData.legendary_tickets as number)
+    if (updatedUserError) {
+      console.error("Error fetching updated user data:", updatedUserError)
+    }
 
     return {
       success: true,
-      drawnCards: drawnCards,
-      newTicketCount,
-      newLegendaryTicketCount,
-      xpGained: xpGain,
-      leveledUp,
-      newLevel: leveledUp ? newLevel : null,
-      newExp,
-      newNextLevelExp,
+      drawnCards,
+      newTicketCount: updatedUser?.tickets || (isLegendary ? userData.tickets : newTicketCount),
+      newLegendaryTicketCount:
+        updatedUser?.legendary_tickets || (isLegendary ? newTicketCount : userData.legendary_tickets),
     }
   } catch (error) {
-    console.error("Unexpected error in drawCards:", error)
-    return {
-      success: false,
-      error: "An unexpected error occurred",
-    }
+    console.error("Error drawing cards:", error)
+    return { success: false, error: "Failed to draw cards" }
   }
 }
 
@@ -372,17 +381,18 @@ function determineRarity(packType: string): CardRarity {
   const random = Math.random() * 100 // Random number between 0-100
 
   if (packType === "legendary") {
-    // Legendary pack has better odds
-    if (random < 5) return "legendary"
-    if (random < 30) return "epic"
-    if (random < 70) return "rare"
-    return "common"
+    // Legendary pack with updated odds:
+    // 10% legendary, 40% epic, 40% rare, 10% common
+    if (random < 10) return "legendary"
+    if (random < 50) return "epic" // 10 + 40 = 50
+    if (random < 90) return "rare" // 50 + 40 = 90
+    return "common" // Remaining 10%
   } else {
-    // Regular pack with specified chances:
-    // 0.5% legendary, 5% epic, 35.5% rare, 59% common
-    if (random < 0.5) return "legendary"
-    if (random < 5.5) return "epic" // 0.5 + 5 = 5.5
-    if (random < 41) return "rare" // 5.5 + 35.5 = 41
-    return "common" // Remaining 59%
+    // Regular pack with updated odds:
+    // 1% legendary, 5% epic, 34% rare, 60% common
+    if (random < 1) return "legendary"
+    if (random < 6) return "epic" // 1 + 5 = 6
+    if (random < 40) return "rare" // 6 + 34 = 40
+    return "common" // Remaining 60%
   }
 }

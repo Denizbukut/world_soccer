@@ -201,7 +201,7 @@ export default function DrawPage() {
         )
 
         // Store XP gained for animation
-        const xpAmount = cardType === "legendary" ? 50 : 25
+        const xpAmount = cardType === "legendary" ? 100 : 50
         setXpGained(xpAmount)
 
         // Update user's XP in context
@@ -391,7 +391,7 @@ export default function DrawPage() {
                     }`}
                   >
                     <div className="flex items-center justify-center gap-2">
-                      <Crown className="h-4 w-4" />
+                      <Ticket className="h-4 w-4 " />
                       <span>Legendary</span>
                     </div>
                   </button>
@@ -437,7 +437,7 @@ export default function DrawPage() {
                         <p className="text-sm text-gray-500">Contains 1 random card</p>
                         <div className="flex items-center justify-center gap-1 mt-1 text-xs text-violet-600">
                           <Star className="h-3 w-3" />
-                          <span>+{activeTab === "legendary" ? "50" : "25"} XP</span>
+                          <span>+{activeTab === "legendary" ? "100" : "50"} XP</span>
                         </div>
                       </div>
 
@@ -450,11 +450,11 @@ export default function DrawPage() {
                             </div>
                             <div className="flex justify-between items-center text-sm">
                               <span>Rare</span>
-                              <span className="text-blue-500">40%</span>
+                              <span className="text-blue-500">35%</span>
                             </div>
                             <div className="flex justify-between items-center text-sm">
                               <span>Epic</span>
-                              <span className="text-purple-500">40%</span>
+                              <span className="text-purple-500">45%</span>
                             </div>
                             <div className="flex justify-between items-center text-sm">
                               <span>Legendary</span>
@@ -465,7 +465,7 @@ export default function DrawPage() {
                           <>
                             <div className="flex justify-between items-center text-sm">
                               <span>Common</span>
-                              <span className="text-gray-500">60%</span>
+                              <span className="text-gray-500">50%</span>
                             </div>
                             <div className="flex justify-between items-center text-sm">
                               <span>Rare</span>
@@ -473,11 +473,11 @@ export default function DrawPage() {
                             </div>
                             <div className="flex justify-between items-center text-sm">
                               <span>Epic</span>
-                              <span className="text-purple-500">5%</span>
+                              <span className="text-purple-500">14%</span>
                             </div>
                             <div className="flex justify-between items-center text-sm">
                               <span>Legendary</span>
-                              <span className="text-amber-500">1%</span>
+                              <span className="text-amber-500">2%</span>
                             </div>
                           </>
                         )}

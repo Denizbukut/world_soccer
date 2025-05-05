@@ -10,11 +10,12 @@ import { Button } from "@/components/ui/button"
 import { motion, AnimatePresence } from "framer-motion"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "@/components/ui/use-toast"
-import { AlertCircle, Star, BookOpen, Search } from "lucide-react"
+import { AlertCircle, BookOpen, Search } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import MobileNav from "@/components/mobile-nav"
 import { Input } from "@/components/ui/input"
+import { renderStars } from "@/utils/card-stars"
 
 export default function CollectionPage() {
   const { user } = useAuth()
@@ -34,7 +35,7 @@ export default function CollectionPage() {
 
       try {
         // 1. First get user's cards
-        if(!supabase) return
+        if (!supabase) return
         const { data: userCardsData, error: userCardsError } = await supabase
           .from("user_cards")
           .select("id, card_id, quantity, level")
@@ -258,7 +259,7 @@ export default function CollectionPage() {
               </div>
               <div className="bg-gray-50 rounded-lg p-2">
                 <div className="text-lg font-semibold text-amber-600">{collectionStats.legendary}</div>
-                <div className="text-xs text-gray-500">Legendary</div>
+                <div className="text-xs text-gray-500">Legend</div>
               </div>
             </div>
           </div>
@@ -316,21 +317,7 @@ export default function CollectionPage() {
                 <Badge variant="outline" className="mr-2 font-bold">
                   Level {level}
                 </Badge>
-                <div className="flex">
-                  {Array.from({ length: level }).map((_, i) => (
-                    <div key={i} className="relative mx-0.5">
-                      <Star
-                        key={i}
-                        className="h-4 w-4 text-red-600 fill-red-600 drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]"
-                        strokeWidth={1.5}
-                        stroke="white"
-                      />
-                      <div className="absolute inset-0 overflow-hidden">
-                        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-white/60 to-transparent rounded-full transform -rotate-45 scale-75 opacity-80"></div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <div className="flex">{renderStars(level, "xs")}</div>
                 <span className="ml-2 text-sm text-gray-700">
                   ({cardsByLevel[level].length} {cardsByLevel[level].length === 1 ? "card" : "cards"})
                 </span>

@@ -31,6 +31,7 @@ export default function CatalogPage() {
 
     try {
       // Fetch all cards
+      if(!supabase) return
       const { data: cards, error: cardsError } = await supabase
         .from("cards")
         .select("*")

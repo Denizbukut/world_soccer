@@ -13,6 +13,7 @@ import MobileNav from "@/components/mobile-nav"
 import { Skeleton } from "@/components/ui/skeleton"
 import TiltableCard from "@/components/tiltable-card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { renderStars, getStarInfo } from "@/utils/card-stars"
 
 // Define types for our data
 interface UserCard {
@@ -137,6 +138,9 @@ function toUserCards(data: unknown[]): UserCard[] {
   return data.map((item) => toUserCard(item)).filter((item): item is UserCard => item !== null)
 }
 
+// Konstante für maximales Level
+const MAX_CARD_LEVEL = 15
+
 export default function CardDetailPage() {
   const params = useParams()
   const router = useRouter()
@@ -224,37 +228,35 @@ export default function CardDetailPage() {
   }, [cardId, user])
 
   const handleToggleFavorite = async () => {
-    if (!user || !card || !owned || !userCard) return
+    if (!user || !userCard) return
 
     setFavoriteLoading(true)
     const supabase = getSupabaseBrowserClient()
 
     try {
       if (!supabase) return
+
       const { error } = await supabase.from("user_cards").update({ favorite: !favorite }).eq("id", userCard.id)
 
       if (error) {
         console.error("Error updating favorite status:", error)
         toast({
-          title: "Failed to update",
-          description: "Could not update favorite status",
+          title: "Error",
+          description: "Failed to update favorite status",
           variant: "destructive",
         })
-        return
+      } else {
+        setFavorite(!favorite)
+        toast({
+          title: "Favorite Status Updated",
+          description: `Card ${favorite ? "removed from" : "added to"} favorites`,
+        })
       }
-
-      // Update local state
-      setFavorite(!favorite)
-
-      toast({
-        title: favorite ? "Removed from favorites" : "Added to favorites",
-        description: favorite ? "Card removed from favorites" : "Card added to favorites",
-      })
     } catch (error) {
-      console.error("Error in handleToggleFavorite:", error)
+      console.error("Error during favorite toggle:", error)
       toast({
-        title: "Update failed",
-        description: "An unexpected error occurred",
+        title: "Favorite Status Update Failed",
+        description: "There was an error updating the favorite status",
         variant: "destructive",
       })
     } finally {
@@ -262,8 +264,19 @@ export default function CardDetailPage() {
     }
   }
 
+  // Aktualisiere die handleLevelUp-Funktion, um das maximale Level zu berücksichtigen
   const handleLevelUp = async () => {
     if (!user || !card || !userCard) return
+
+    // Prüfe, ob das maximale Level bereits erreicht ist
+    if ((userCard.level || 1) >= MAX_CARD_LEVEL) {
+      toast({
+        title: "Maximum Level Reached",
+        description: "This card has already reached its maximum level.",
+        variant: "default",
+      })
+      return
+    }
 
     setLevelUpLoading(true)
     const supabase = getSupabaseBrowserClient()
@@ -520,6 +533,10 @@ export default function CardDetailPage() {
   // Get background pattern based on card rarity
   const backgroundStyle = getBackgroundPattern(card.rarity)
 
+  // Get star info for current level
+  const currentStarInfo = getStarInfo(userCard?.level || 1)
+  const nextStarInfo = getStarInfo((userCard?.level || 1) + 1)
+
   return (
     <div
       className="min-h-screen pb-20 relative overflow-hidden"
@@ -656,18 +673,7 @@ export default function CardDetailPage() {
                     transition={{ delay: 0.3, duration: 0.5 }}
                   >
                     <h2 className="text-white text-2xl font-bold mb-2 anime-text">LEVEL UP!</h2>
-                    <div className="flex justify-center mb-4">
-                      {Array.from({ length: newLevel }).map((_, i) => (
-                        <motion.div
-                          key={i}
-                          initial={{ scale: 0, rotate: -180 }}
-                          animate={{ scale: 1, rotate: 0 }}
-                          transition={{ delay: 0.5 + i * 0.1, duration: 0.5 }}
-                        >
-                          <Star className="h-8 w-8 text-red-600 fill-red-600 mx-1" />
-                        </motion.div>
-                      ))}
-                    </div>
+                    <div className="flex justify-center mb-4">{renderStars(newLevel, "lg")}</div>
                   </motion.div>
 
                   {/* Particles */}
@@ -734,7 +740,6 @@ export default function CardDetailPage() {
                   </Badge>
                 </div>
 
-
                 {card.description && (
                   <div className="text-sm mt-2">
                     <span className="text-gray-500">Description:</span>
@@ -746,22 +751,36 @@ export default function CardDetailPage() {
                 {owned && allUserCards.length > 0 && (
                   <div className="mt-4 pt-3 border-t border-gray-100">
                     <h4 className="text-sm font-medium text-gray-700 mb-2">Your Collection:</h4>
-                    <div className="space-y-2">
-                      {allUserCards.map((userCardItem) => (
-                        <div key={userCardItem.id} className="flex justify-between items-center text-sm">
-                          <div className="flex items-center">
-                            <span className="mr-2">Level {userCardItem.level}</span>
-                            <div className="flex">
-                              {Array.from({ length: userCardItem.level || 1 }).map((_, i) => (
-                                <Star key={i} className="h-3 w-3 text-red-600 fill-red-600" />
-                              ))}
+                    <div className="space-y-4">
+                      {allUserCards.map((userCardItem) => {
+                        const { color } = getStarInfo(userCardItem.level || 1)
+                        const tierName = color === "red" ? "Red Tier" : color === "blue" ? "Blue Tier" : "Gold Tier"
+
+                        return (
+                          <div key={userCardItem.id} className="flex justify-between items-center">
+                            <div className="flex flex-col">
+                              <div className="flex items-center">
+                                <span className="mr-2 font-medium">Level {userCardItem.level}</span>
+                                <span
+                                  className={`text-xs px-2 py-0.5 rounded-full ${
+                                    color === "red"
+                                      ? "bg-red-100 text-red-800"
+                                      : color === "blue"
+                                        ? "bg-blue-100 text-blue-800"
+                                        : "bg-yellow-100 text-yellow-800"
+                                  }`}
+                                >
+                                  {tierName}
+                                </span>
+                              </div>
+                              <div className="flex mt-1">{renderStars(userCardItem.level || 1, "xs")}</div>
                             </div>
+                            <Badge variant="outline" className="bg-gray-50 text-sm">
+                              x{userCardItem.quantity}
+                            </Badge>
                           </div>
-                          <Badge variant="outline" className="bg-gray-50">
-                            x{userCardItem.quantity}
-                          </Badge>
-                        </div>
-                      ))}
+                        )
+                      })}
                     </div>
                   </div>
                 )}
@@ -782,27 +801,71 @@ export default function CardDetailPage() {
                 >
                   <h3 className="font-bold text-lg mb-3">Level Up Card</h3>
 
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <div className="text-sm text-gray-500 mb-1">Current Level</div>
-                      <div className="flex">
-                        {Array.from({ length: userCard?.level || 1 }).map((_, i) => (
-                          <Star key={i} className="h-4 w-4 text-red-600 fill-red-600" />
-                        ))}
+                  <div className="flex flex-col items-center justify-between mb-4 space-y-4">
+                    <div className="flex justify-between w-full">
+                      <div>
+                        <div className="text-sm text-gray-500 mb-1">Current Level</div>
+                        <div className="flex items-center">
+                          <span className="mr-2 font-medium">Level {userCard?.level || 1}</span>
+                          <span
+                            className={`text-xs px-2 py-0.5 rounded-full ${
+                              currentStarInfo.color === "red"
+                                ? "bg-red-100 text-red-800"
+                                : currentStarInfo.color === "blue"
+                                  ? "bg-blue-100 text-blue-800"
+                                  : "bg-yellow-100 text-yellow-800"
+                            }`}
+                          >
+                            {currentStarInfo.color === "red"
+                              ? "Red Tier"
+                              : currentStarInfo.color === "blue"
+                                ? "Blue Tier"
+                                : "Gold Tier"}
+                          </span>
+                        </div>
                       </div>
+
+                      {(userCard?.level || 1) < MAX_CARD_LEVEL && (
+                        <div>
+                          <div className="text-sm text-gray-500 mb-1">Next Level</div>
+                          <div className="flex items-center justify-end">
+                            <span className="mr-2 font-medium">Level {(userCard?.level || 1) + 1}</span>
+                            <span
+                              className={`text-xs px-2 py-0.5 rounded-full ${
+                                nextStarInfo.color === "red"
+                                  ? "bg-red-100 text-red-800"
+                                  : nextStarInfo.color === "blue"
+                                    ? "bg-blue-100 text-blue-800"
+                                    : "bg-yellow-100 text-yellow-800"
+                              }`}
+                            >
+                              {nextStarInfo.color === "red"
+                                ? "Red Tier"
+                                : nextStarInfo.color === "blue"
+                                  ? "Blue Tier"
+                                  : "Gold Tier"}
+                            </span>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
-                    <div>
-                      <div className="text-sm text-gray-500 mb-1">Next Level</div>
-                      <div className="flex">
-                        {Array.from({ length: (userCard?.level || 1) + 1 }).map((_, i) => (
-                          <Star key={i} className="h-4 w-4 text-red-600 fill-red-600" />
-                        ))}
-                      </div>
+                    <div className="flex justify-between w-full">
+                      <div className="flex">{renderStars(userCard?.level || 1, "sm")}</div>
+                      {(userCard?.level || 1) < MAX_CARD_LEVEL && (
+                        <div className="flex">{renderStars((userCard?.level || 1) + 1, "sm")}</div>
+                      )}
                     </div>
                   </div>
 
-                  {(userCard?.quantity || 0) >= 2 ? (
+                  {(userCard?.level || 1) >= MAX_CARD_LEVEL ? (
+                    <Alert className="bg-green-50 border-green-200">
+                      <AlertTitle className="text-green-800">Maximum Level Reached</AlertTitle>
+                      <AlertDescription className="text-green-700">
+                        This card has reached its maximum level. It cannot be leveled up further.
+                      </AlertDescription>
+                    </Alert>
+                  ) : (userCard?.quantity || 0) >= 2 ? (
                     <>
                       <Alert className="mb-4 bg-amber-50 border-amber-200">
                         <AlertTitle className="text-amber-800">Requirements</AlertTitle>

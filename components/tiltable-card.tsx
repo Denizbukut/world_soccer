@@ -5,7 +5,7 @@ import type React from "react"
 import { useRef, useState } from "react"
 import { motion, useMotionValue, useTransform } from "framer-motion"
 import Image from "next/image"
-import { Star } from "lucide-react"
+import { renderStars } from "@/utils/card-stars"
 
 interface TiltableCardProps {
   id: string
@@ -168,23 +168,7 @@ export default function TiltableCard({
 
           {/* Level stars - only show if owned */}
           {owned && (
-            <div className="absolute bottom-1 left-0 right-0 flex justify-center">
-              {Array.from({ length: level }).map((_, i) => (
-                <div key={i} className="relative mx-0.5">
-                  {/* Base star with white border */}
-                  <Star
-                    className="h-5 w-5 text-red-600 fill-red-600 drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]"
-                    strokeWidth={1.5}
-                    stroke="white"
-                  />
-
-                  {/* Light reflection overlay */}
-                  <div className="absolute inset-0 overflow-hidden">
-                    <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-white/60 to-transparent rounded-full transform -rotate-45 scale-75 opacity-80"></div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <div className="absolute bottom-1 left-0 right-0 flex justify-center">{renderStars(level, "md")}</div>
           )}
 
           {/* Dynamic light reflection effect - more responsive to tilt */}

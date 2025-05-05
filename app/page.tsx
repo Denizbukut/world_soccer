@@ -185,11 +185,9 @@ export default function Home() {
         {/* Header with glass effect */}
         <header className="sticky top-0 z-10 backdrop-blur-md bg-white/80 border-b border-gray-100">
           <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
-            <div className="flex items-center">
-              <h1 className="text-lg font-medium bg-gradient-to-r from-violet-600 to-fuchsia-600 bg-clip-text text-transparent">
-                Anime World
-              </h1>
-            </div>
+          <div className="flex items-center">
+            <h1 className="text-2xl font-semibold tracking-tight modern-title">Anime World</h1>
+          </div>
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
                 <Ticket className="h-3.5 w-3.5 text-violet-500" />
@@ -213,7 +211,7 @@ export default function Home() {
           >
             <div className="flex flex-col">
               <div className="flex justify-between items-center mb-1">
-                <h2 className="font-semibold text-base">{user?.username || "Trainer"}</h2>
+                <h2 className="font-semibold text-base">@{user?.username || "Trainer"}</h2>
                 <div className="flex items-center">
                   <span className="text-sm text-black-500 mr-2">Level {user?.level || 1}</span>
                 </div>
@@ -255,9 +253,9 @@ export default function Home() {
                     )}
                   </div>
                   <div>
-                    <h3 className="font-medium text-base">Premium Pass</h3>
+                    <h3 className="font-medium text-base">Game Pass</h3>
                     <p className="text-xs text-gray-600">
-                      {hasPremium ? "View your premium benefits" : "Unlock exclusive rewards"}
+                      Get Rewards by leveling up!
                     </p>
                   </div>
                 </div>
@@ -337,10 +335,9 @@ export default function Home() {
 
               <div className="grid grid-cols-2 gap-3">
                 <Link href="/draw" className="block">
-                  <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-violet-500/10 to-fuchsia-500/10 p-3 transition-all duration-300 hover:shadow-md group">
+                  <div className="relative overflow-hidden rounded-xl p-3 transition-all duration-300 hover:shadow-md group">
                     {/* Animated background */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-violet-500 to-fuchsia-500 opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
-
+                    
                     <div className="flex items-center justify-center mb-2">
                       <div className="relative w-16 h-24 mx-auto transform group-hover:scale-105 transition-transform duration-300">
                         <Image src="/vibrant-purple-card-pack.png" alt="Regular Pack" fill className="object-contain" />
@@ -356,10 +353,9 @@ export default function Home() {
                   </div>
                 </Link>
                 <Link href="/draw" className="block">
-                  <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-amber-500/10 to-orange-500/10 p-3 transition-all duration-300 hover:shadow-md group">
+                  <div className="relative overflow-hidden rounded-xl p-3 transition-all duration-300 hover:shadow-md group">
                     {/* Animated background */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-amber-500 to-orange-500 opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
-
+                    
                     <div className="flex items-center justify-center mb-2">
                       <div className="relative w-16 h-24 mx-auto transform group-hover:scale-105 transition-transform duration-300">
                         <Image

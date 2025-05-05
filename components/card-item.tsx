@@ -6,8 +6,8 @@ import Link from "next/link"
 import type { Card } from "@/types/card"
 import { cn } from "@/lib/utils"
 import Image from "next/image"
-import { Star } from 'lucide-react'
 import { motion } from "framer-motion"
+import { renderStars } from "@/utils/card-stars"
 
 interface CardItemProps {
   id: string
@@ -161,23 +161,7 @@ export function CardItem({
 
             {/* Level stars - only show in collection view */}
             {isCollection && (
-              <div className="absolute bottom-1 left-0 right-0 flex justify-center">
-                {Array.from({ length: level }).map((_, i) => (
-                  <div key={i} className="relative mx-0.5">
-                    {/* Base star with white border */}
-                    <Star
-                      className="h-4 w-4 text-red-600 fill-red-600 drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]"
-                      strokeWidth={1.5}
-                      stroke="white"
-                    />
-
-                    {/* Light reflection overlay */}
-                    <div className="absolute inset-0 overflow-hidden">
-                      <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-white/60 to-transparent rounded-full transform -rotate-45 scale-75 opacity-80"></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <div className="absolute bottom-1 left-0 right-0 flex justify-center">{renderStars(level, "xs")}</div>
             )}
 
             {/* Special effects for legendary and epic cards */}

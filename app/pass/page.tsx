@@ -473,7 +473,7 @@ export default function PremiumPassPage() {
 
   const sendPayment = async () => {
 
-    const wldAmount = 5;
+    const wldAmount = 7;
     const res = await fetch('/api/initiate-payment', {
       method: 'POST',
     })

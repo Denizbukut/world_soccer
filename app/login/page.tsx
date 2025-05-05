@@ -76,7 +76,6 @@ export default function LoginPage() {
                 level: 1,
                 experience: 0,
                 world_id: address,
-                walletaddress: address, // Add the wallet address to the new column
               },
             ])
             .select()

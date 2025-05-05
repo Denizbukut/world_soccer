@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils"
 import Image from "next/image"
 import { motion } from "framer-motion"
 import { renderStars } from "@/utils/card-stars"
+import { Badge } from "@/components/ui/badge"
 
 interface CardItemProps {
   id: string
@@ -121,6 +122,13 @@ export function CardItem({
     )
   }
 
+  const rarityColors = {
+    common: "bg-gray-400 text-gray-800",
+    rare: "bg-blue-500 text-white",
+    epic: "bg-purple-500 text-white",
+    legendary: "bg-yellow-500 text-black",
+  }
+
   return (
     <CardWrapper>
       <div
@@ -142,6 +150,8 @@ export function CardItem({
               className="object-cover"
               priority={false}
             />
+
+
 
             {/* Quantity badge (if more than 1) */}
             {quantity > 1 && (

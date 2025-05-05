@@ -6,7 +6,7 @@ import { getSupabaseBrowserClient } from "@/lib/supabase"
 import { useAuth } from "@/contexts/auth-context"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, Star, ArrowUp } from "lucide-react"
+import { ArrowLeft, Star, ArrowUp, Tag } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { toast } from "@/components/ui/use-toast"
 import MobileNav from "@/components/mobile-nav"
@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import TiltableCard from "@/components/tiltable-card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { renderStars, getStarInfo } from "@/utils/card-stars"
+import SellCardDialog from "@/components/sell-card-dialog"
 
 // Define types for our data
 interface UserCard {
@@ -155,6 +156,8 @@ export default function CardDetailPage() {
   const [showLevelUpAnimation, setShowLevelUpAnimation] = useState(false)
   const [newLevel, setNewLevel] = useState(1)
   const [allUserCards, setAllUserCards] = useState<UserCard[]>([])
+  const [showSellDialog, setShowSellDialog] = useState(false)
+  const [selectedUserCard, setSelectedUserCard] = useState<UserCard | null>(null)
 
   const cardId = params.id as string
 
@@ -441,6 +444,20 @@ export default function CardDetailPage() {
       })
       setLevelUpLoading(false)
     }
+  }
+
+  const handleSellCard = (userCardItem: UserCard) => {
+    setSelectedUserCard(userCardItem)
+    setShowSellDialog(true)
+  }
+
+  const handleSellSuccess = () => {
+    toast({
+      title: "Card Listed",
+      description: "Your card has been listed on the marketplace",
+    })
+    // Refresh the page to update the card quantities
+    window.location.reload()
   }
 
   const goBack = () => {
@@ -775,9 +792,23 @@ export default function CardDetailPage() {
                               </div>
                               <div className="flex mt-1">{renderStars(userCardItem.level || 1, "xs")}</div>
                             </div>
-                            <Badge variant="outline" className="bg-gray-50 text-sm">
-                              x{userCardItem.quantity}
-                            </Badge>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className="bg-gray-50 text-sm">
+                                x{userCardItem.quantity}
+                              </Badge>
+                              {userCardItem.quantity > 0 && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-8 rounded-full border-violet-300 text-violet-600 hover:bg-violet-50"
+                                  onClick={() => handleSellCard(userCardItem)}
+                                >
+                                  
+                                  Sell
+                                  <Tag className="h-3 w-3 mr-1" />
+                                </Button>
+                              )}
+                            </div>
                           </div>
                         )
                       })}
@@ -941,6 +972,26 @@ export default function CardDetailPage() {
           }
         }
       `}</style>
+
+      {/* Sell Card Dialog */}
+      {selectedUserCard && card && (
+        <SellCardDialog
+          isOpen={showSellDialog}
+          onClose={() => setShowSellDialog(false)}
+          card={{
+            id: Number(selectedUserCard.id),
+            card_id: selectedUserCard.card_id,
+            name: card.name,
+            character: card.character,
+            image_url: card.image_url,
+            rarity: card.rarity as "common" | "rare" | "epic" | "legendary",
+            level: selectedUserCard.level || 1,
+            quantity: selectedUserCard.quantity,
+          }}
+          username={user?.username || ""}
+          onSuccess={handleSellSuccess}
+        />
+      )}
 
       <MobileNav />
     </div>

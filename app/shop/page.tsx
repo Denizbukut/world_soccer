@@ -225,12 +225,11 @@ export default function ShopPage() {
                           <Ticket className="h-4 w-4 text-violet-500 mx-1" />
                           {pkg.amount === 1 ? "Ticket" : "Tickets"}
                         </CardTitle>
-                        <CardDescription className="text-gray-500">Regular draw tickets</CardDescription>
                       </CardHeader>
                       <CardContent className="p-4 pt-0 pb-3">
                         <Separator className="my-3" />
                         <div className="flex items-center justify-between">
-                          <span className="text-lg font-semibold">{pkg.price} WLD</span>
+                          <span className="text-base font-semibold">{pkg.price} WLD</span>
                         </div>
                       </CardContent>
                       <CardFooter className="p-4 pt-0">
@@ -270,12 +269,11 @@ export default function ShopPage() {
                           <Ticket className="h-4 w-4 text-amber-500 mx-1" />
                           {pkg.amount === 1 ? "L. Ticket" : "L. Tickets"}
                         </CardTitle>
-                        <CardDescription className="text-gray-500">Legendary draw tickets</CardDescription>
                       </CardHeader>
                       <CardContent className="p-4 pt-0 pb-3">
                         <Separator className="my-3" />
                         <div className="flex items-center justify-between">
-                          <span className="text-lg font-semibold">{pkg.price} WLD</span>
+                          <span className="text-base font-semibold">{pkg.price} WLD</span>
                         </div>
                       </CardContent>
                       <CardFooter className="p-4 pt-0">

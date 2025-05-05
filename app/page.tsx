@@ -6,7 +6,7 @@ import { claimDailyBonus } from "@/app/actions"
 import ProtectedRoute from "@/components/protected-route"
 import MobileNav from "@/components/mobile-nav"
 import { Button } from "@/components/ui/button"
-import { Ticket, Gift, CreditCard, Repeat, Clock, ChevronRight, Crown, Bell } from "lucide-react"
+import { Ticket, Gift, CreditCard, Repeat, Clock, ChevronRight, Crown, Bell, ShoppingCart } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
@@ -216,7 +216,6 @@ export default function Home() {
                 <h2 className="font-semibold text-base">{user?.username || "Trainer"}</h2>
                 <div className="flex items-center">
                   <span className="text-sm text-black-500 mr-2">Level {user?.level || 1}</span>
-                  
                 </div>
               </div>
               <div className="flex justify-between items-center mb-1">
@@ -389,7 +388,7 @@ export default function Home() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.4 }}
-            className="grid grid-cols-2 gap-3"
+            className="grid grid-cols-3 gap-3"
           >
             <Link href="/collection" className="block">
               <div className="bg-white rounded-2xl p-4 shadow-sm h-full transition-all duration-300 hover:shadow-md group">
@@ -398,6 +397,15 @@ export default function Home() {
                 </div>
                 <h3 className="font-medium text-base mb-0.5">Collection</h3>
                 <p className="text-xs text-gray-500">View your cards</p>
+              </div>
+            </Link>
+            <Link href="/shop" className="block">
+              <div className="bg-white rounded-2xl p-4 shadow-sm h-full transition-all duration-300 hover:shadow-md group">
+                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mb-3 group-hover:bg-blue-200 transition-colors duration-300">
+                  <ShoppingCart className="h-5 w-5 text-blue-500" />
+                </div>
+                <h3 className="font-medium text-base mb-0.5">Shop</h3>
+                <p className="text-xs text-gray-500">Buy tickets</p>
               </div>
             </Link>
             <Link href="/trade" className="block">

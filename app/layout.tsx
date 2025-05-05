@@ -23,7 +23,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
             <AppProvider>{children}</AppProvider>
           </ThemeProvider>
-          <ErudaLoader />
         </body>
       </MiniKitProvider>
     </html>

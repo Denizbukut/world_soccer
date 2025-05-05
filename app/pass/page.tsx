@@ -8,10 +8,11 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { toast } from "@/components/ui/use-toast"
 import { motion, AnimatePresence } from "framer-motion"
-import { Crown, Ticket, Star, Gift, Check, Lock, Sparkles, Clock, Calendar, Bell } from "lucide-react"
+import { Crown, Ticket, Star, Gift, Check, Lock, Sparkles, Clock, Calendar, Bell, SendToBack } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import type { PremiumPass, ClaimedReward } from "@/types/database"
+import { MiniKit, tokenToDecimals, Tokens, PayCommandInput } from '@worldcoin/minikit-js'
 
 interface LevelReward {
   level: number
@@ -112,31 +113,73 @@ export default function PremiumPassPage() {
 
         // Set premium status and last claim time
         if (premiumData) {
-          setHasPremium(true)
+          // Check if premium pass has expired
+          const now = new Date()
+          const expiryDate = premiumData.expires_at ? new Date(premiumData.expires_at) : null
 
-          // Set premium expiry date if available
-          if (premiumData.expires_at) {
-            setPremiumExpiryDate(new Date(premiumData.expires_at))
-          }
+          if (expiryDate && now > expiryDate) {
+            // Premium pass has expired, update database
+            console.log("Premium pass expired, updating database...")
 
-          if (premiumData.last_legendary_claim) {
-            const lastClaim = new Date(premiumData.last_legendary_claim as string)
-            setLastLegendaryClaim(lastClaim)
+            // Update premium_passes table
+            const { error: updatePassError } = await supabase
+              .from("premium_passes")
+              .update({ active: false })
+              .eq("user_id", user.username)
+              .eq("id", premiumData.id)
 
-            // Check if 24 hours have passed since last claim
-            const now = new Date()
-            const timeSinceClaim = now.getTime() - lastClaim.getTime()
-            const twentyFourHoursInMs = 24 * 60 * 60 * 1000
-
-            if (timeSinceClaim >= twentyFourHoursInMs) {
-              setCanClaimLegendary(true)
-            } else {
-              setCanClaimLegendary(false)
-              setTimeUntilNextClaim(twentyFourHoursInMs - timeSinceClaim)
+            if (updatePassError) {
+              console.error("Error updating premium pass status:", updatePassError)
             }
+
+            // Update users table
+            const { error: updateUserError } = await supabase
+              .from("users")
+              .update({ has_premium: false })
+              .eq("username", user.username)
+
+            if (updateUserError) {
+              console.error("Error updating user premium status:", updateUserError)
+            }
+
+            // Update local state
+            setHasPremium(false)
+            setPremiumExpiryDate(null)
+            setLastLegendaryClaim(null)
+            setCanClaimLegendary(false)
+
+            toast({
+              title: "Premium Pass Expired",
+              description: "Your premium pass has expired. Renew to continue enjoying premium benefits!",
+              variant: "destructive",
+            })
           } else {
-            // No previous claim, can claim immediately
-            setCanClaimLegendary(true)
+            // Premium pass is still active
+            setHasPremium(true)
+
+            // Set premium expiry date if available
+            if (expiryDate) {
+              setPremiumExpiryDate(expiryDate)
+            }
+
+            if (premiumData.last_legendary_claim) {
+              const lastClaim = new Date(premiumData.last_legendary_claim as string)
+              setLastLegendaryClaim(lastClaim)
+
+              // Check if 24 hours have passed since last claim
+              const timeSinceClaim = now.getTime() - lastClaim.getTime()
+              const twentyFourHoursInMs = 24 * 60 * 60 * 1000
+
+              if (timeSinceClaim >= twentyFourHoursInMs) {
+                setCanClaimLegendary(true)
+              } else {
+                setCanClaimLegendary(false)
+                setTimeUntilNextClaim(twentyFourHoursInMs - timeSinceClaim)
+              }
+            } else {
+              // No previous claim, can claim immediately
+              setCanClaimLegendary(true)
+            }
           }
         } else {
           setHasPremium(false)
@@ -428,6 +471,34 @@ export default function PremiumPassPage() {
     }
   }
 
+  const sendPayment = async () => {
+
+    const wldAmount = 5;
+    const res = await fetch('/api/initiate-payment', {
+      method: 'POST',
+    })
+    const { id } = await res.json()
+  
+    const payload: PayCommandInput = {
+      reference: id,
+      to: '0x4bb270ef6dcb052a083bd5cff518e2e019c0f4ee', // my wallet
+      tokens: [
+        {
+          symbol: Tokens.WLD,
+          token_amount: tokenToDecimals(wldAmount, Tokens.WLD).toString(),
+        },
+      ],
+      description: 'Premium Pass',
+    }
+  
+    const { finalPayload } = await MiniKit.commandsAsync.pay(payload)
+  
+    if (finalPayload.status == 'success') {
+      console.log("success sending payment")
+      handlePurchasePremium();
+    }
+  }
+
   // Handle purchasing premium pass
   const handlePurchasePremium = async () => {
     const supabase = getSupabaseBrowserClient()
@@ -438,13 +509,48 @@ export default function PremiumPassPage() {
       const expiryDate = new Date()
       expiryDate.setMonth(expiryDate.getMonth() + 1)
 
-      // Create premium pass record
-      const { error } = await supabase.from("premium_passes").insert({
-        user_id: user.username,
-        active: true,
-        purchased_at: new Date().toISOString(),
-        expires_at: expiryDate.toISOString(),
-      })
+      // Check if user already has a premium pass record
+      const { data: existingPass, error: checkError } = await supabase
+        .from("premium_passes")
+        .select("*")
+        .eq("user_id", user.username)
+        .single()
+
+      if (checkError && checkError.code !== "PGRST116") {
+        console.error("Error checking existing premium pass:", checkError)
+        toast({
+          title: "Error",
+          description: "Failed to check premium pass status",
+          variant: "destructive",
+        })
+        return
+      }
+
+      let error
+
+      if (existingPass) {
+        // Update existing premium pass
+        const { error: updateError } = await supabase
+          .from("premium_passes")
+          .update({
+            active: true,
+            purchased_at: new Date().toISOString(),
+            expires_at: expiryDate.toISOString(),
+          })
+          .eq("user_id", user.username)
+
+        error = updateError
+      } else {
+        // Create new premium pass record
+        const { error: insertError } = await supabase.from("premium_passes").insert({
+          user_id: user.username,
+          active: true,
+          purchased_at: new Date().toISOString(),
+          expires_at: expiryDate.toISOString(),
+        })
+
+        error = insertError
+      }
 
       if (error) {
         console.error("Error purchasing premium pass:", error)
@@ -456,7 +562,7 @@ export default function PremiumPassPage() {
         return
       }
 
-      // Update user's premium status
+      // Always update user's premium status to true
       const { error: updateError } = await supabase
         .from("users")
         .update({ has_premium: true })
@@ -464,6 +570,11 @@ export default function PremiumPassPage() {
 
       if (updateError) {
         console.error("Error updating user premium status:", updateError)
+        toast({
+          title: "Warning",
+          description: "Premium pass activated but user status update failed",
+          variant: "destructive",
+        })
       }
 
       // Update local state
@@ -472,7 +583,9 @@ export default function PremiumPassPage() {
 
       toast({
         title: "Success!",
-        description: "You've purchased the Premium Pass for 1 month!",
+        description: existingPass
+          ? "You've renewed your Premium Pass for 1 month!"
+          : "You've purchased the Premium Pass for 1 month!",
       })
     } catch (error) {
       console.error("Error in handlePurchasePremium:", error)
@@ -598,7 +711,7 @@ export default function PremiumPassPage() {
                 </div>
                 {!hasPremium && (
                   <Button
-                    onClick={handlePurchasePremium}
+                    onClick={sendPayment}
                     className="bg-gradient-to-r from-amber-400 to-amber-600 hover:from-amber-500 hover:to-amber-700 text-white rounded-full"
                   >
                     <Crown className="h-4 w-4 mr-2" />
@@ -854,10 +967,7 @@ export default function PremiumPassPage() {
             </div>
           </div>
 
-          {/* Scroll hint */}
-          <div className="mt-4 text-center text-xs text-gray-400">
-            <span>Swipe to see more levels</span>
-          </div>
+          
         </motion.div>
       </main>
 

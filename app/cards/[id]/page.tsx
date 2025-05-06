@@ -158,6 +158,7 @@ export default function CardDetailPage() {
   const [allUserCards, setAllUserCards] = useState<UserCard[]>([])
   const [showSellDialog, setShowSellDialog] = useState(false)
   const [selectedUserCard, setSelectedUserCard] = useState<UserCard | null>(null)
+  const [specificLevelRequested, setSpecificLevelRequested] = useState<number | null>(null)
 
   const cardId = params.id as string
 
@@ -179,7 +180,10 @@ export default function CardDetailPage() {
         if (levelMatch) {
           actualCardId = levelMatch[1]
           specificLevel = Number.parseInt(levelMatch[2], 10)
+          setSpecificLevelRequested(specificLevel)
         }
+
+        console.log(`Fetching card: ${actualCardId}, specific level: ${specificLevel}`)
 
         // Fetch card details
         const { data: cardData, error: cardError } = await supabase
@@ -208,7 +212,7 @@ export default function CardDetailPage() {
           }
         }
 
-        // Check if user owns this card at ANY level
+        // Check if user owns this card
         let userCardsQuery = supabase
           .from("user_cards")
           .select("*")
@@ -218,8 +222,6 @@ export default function CardDetailPage() {
         // If a specific level was requested, filter by that level
         if (specificLevel !== null) {
           userCardsQuery = userCardsQuery.eq("level", specificLevel)
-        } else {
-          userCardsQuery = userCardsQuery.order("level", { ascending: true })
         }
 
         const { data: userCardsData, error: userCardsError } = await userCardsQuery
@@ -227,20 +229,35 @@ export default function CardDetailPage() {
         if (userCardsError) {
           console.error("Error fetching user cards:", userCardsError)
         } else if (userCardsData && userCardsData.length > 0) {
-          // User owns this card at some level
+          // User owns this card
           setOwned(true)
 
           const validUserCards = toUserCards(userCardsData)
           setAllUserCards(validUserCards)
 
-          // Find the highest level card for display and level-up functionality
           if (validUserCards.length > 0) {
-            const highestLevelCard = validUserCards.reduce((prev, current) => {
-              return (prev.level || 1) > (current.level || 1) ? prev : current
-            })
-
-            setUserCard(highestLevelCard)
-            setFavorite(Boolean(highestLevelCard.favorite))
+            // If a specific level was requested, find that card
+            if (specificLevel !== null) {
+              const specificLevelCard = validUserCards.find((card) => card.level === specificLevel)
+              if (specificLevelCard) {
+                setUserCard(specificLevelCard)
+                setFavorite(Boolean(specificLevelCard.favorite))
+              } else {
+                // Fallback to highest level if specific level not found
+                const highestLevelCard = validUserCards.reduce((prev, current) => {
+                  return (prev.level || 1) > (current.level || 1) ? prev : current
+                })
+                setUserCard(highestLevelCard)
+                setFavorite(Boolean(highestLevelCard.favorite))
+              }
+            } else {
+              // No specific level requested, use highest level card
+              const highestLevelCard = validUserCards.reduce((prev, current) => {
+                return (prev.level || 1) > (current.level || 1) ? prev : current
+              })
+              setUserCard(highestLevelCard)
+              setFavorite(Boolean(highestLevelCard.favorite))
+            }
           }
         }
       } catch (error) {
@@ -354,9 +371,6 @@ export default function CardDetailPage() {
       if (existingCardError) {
         console.error("Error checking for existing higher level card:", existingCardError)
       }
-
-      // Also update the existingCard handling in handleLevelUp to be more robust
-      // Find this section in the handleLevelUp function and replace it:
 
       // 3. If user already has this card at the next level, increment quantity
       if (existingCardsData && existingCardsData.length > 0) {
@@ -585,10 +599,12 @@ export default function CardDetailPage() {
           card.rarity === "legendary"
             ? "rgba(254, 240, 138, 0.2), rgba(250, 204, 21, 0.1)"
             : card.rarity === "epic"
-              ? "rgba(216, 180, 254, 0.2), rgba(168, 85, 247, 0.1)"
-              : card.rarity === "rare"
-                ? "rgba(191, 219, 254, 0.2), rgba(59, 130, 246, 0.1)"
-                : "rgba(229, 231, 235, 0.2), rgba(209, 213, 219, 0.1)"
+              ? "rgba(216, 180, 254, 0.2), rgba(168, 85,   204, 21, 0.1)"
+              : card.rarity === "epic"
+                ? "rgba(216, 180, 254, 0.2), rgba(168, 85, 247, 0.1)"
+                : card.rarity === "rare"
+                  ? "rgba(191, 219, 254, 0.2), rgba(59, 130, 246, 0.1)"
+                  : "rgba(229, 231, 235, 0.2), rgba(209, 213, 219, 0.1)"
         })`,
       }}
     >

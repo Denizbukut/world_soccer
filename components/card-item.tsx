@@ -8,7 +8,6 @@ import { cn } from "@/lib/utils"
 import Image from "next/image"
 import { motion } from "framer-motion"
 import { renderStars } from "@/utils/card-stars"
-import { Badge } from "@/components/ui/badge"
 
 interface CardItemProps {
   id: string
@@ -91,6 +90,9 @@ export function CardItem({
   // Use the provided imageUrl, or generate a placeholder
   const cardImageUrl = imageUrl || placeholderUrl
 
+  // Create a composite ID that includes the level when in collection view
+  const cardDetailUrl = isCollection ? `/cards/${id}-level-${level}` : `/cards/${id}`
+
   // Create card wrapper based on whether it's clickable or selectable
   const CardWrapper = ({ children }: { children: React.ReactNode }) => {
     if (selectable) {
@@ -116,7 +118,7 @@ export function CardItem({
     }
 
     return (
-      <Link href={`/cards/${id}`} className="block h-full">
+      <Link href={cardDetailUrl} className="block h-full">
         {children}
       </Link>
     )
@@ -150,8 +152,6 @@ export function CardItem({
               className="object-cover"
               priority={false}
             />
-
-
 
             {/* Quantity badge (if more than 1) */}
             {quantity > 1 && (

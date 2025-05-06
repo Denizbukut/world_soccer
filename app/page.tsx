@@ -6,6 +6,7 @@ import { claimDailyBonus } from "@/app/actions"
 import ProtectedRoute from "@/components/protected-route"
 import MobileNav from "@/components/mobile-nav"
 import { Button } from "@/components/ui/button"
+import { XLogo } from "@/components/x-logo"
 import {
   Ticket,
   Gift,
@@ -17,6 +18,7 @@ import {
   Bell,
   ShoppingCart,
   BookOpen,
+  Twitter,
 } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
 import Link from "next/link"
@@ -309,6 +311,14 @@ export default function Home() {
                 <Ticket className="h-3.5 w-3.5 text-amber-500" />
                 <span className="font-medium text-sm">{legendaryTickets}</span>
               </div>
+              <a
+                href="https://x.com/anime_world_tcg"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="ml-1 bg-black text-white p-1.5 rounded-full hover:bg-gray-800 transition-colors duration-300 flex items-center justify-center shadow-md"
+              >
+                <XLogo className="h-3.5 w-3.5" />
+              </a>
             </div>
           </div>
         </header>

@@ -620,7 +620,7 @@ export default function PremiumPassPage() {
       <header className="sticky top-0 z-10 backdrop-blur-md bg-white/80 border-b border-gray-100">
         <div className="max-w-lg mx-auto px-4 py-3">
           <div className="flex justify-between items-center">
-            <h1 className="text-lg font-medium">Premium Pass</h1>
+            <h1 className="text-lg font-medium">Game Pass</h1>
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
                 <Ticket className="h-3.5 w-3.5 text-violet-500" />

@@ -76,6 +76,7 @@ export default function LoginPage() {
                 level: 1,
                 experience: 0,
                 world_id: address,
+                legendary_tickets: 2,
               },
             ])
             .select()

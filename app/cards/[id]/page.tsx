@@ -170,8 +170,23 @@ export default function CardDetailPage() {
       if (!supabase) return
 
       try {
+        // Parse the composite ID to extract the actual card ID and level
+        let actualCardId = cardId
+        let specificLevel = null
+
+        // Check if the ID contains a level indicator
+        const levelMatch = cardId.match(/^(.+)-level-(\d+)$/)
+        if (levelMatch) {
+          actualCardId = levelMatch[1]
+          specificLevel = Number.parseInt(levelMatch[2], 10)
+        }
+
         // Fetch card details
-        const { data: cardData, error: cardError } = await supabase.from("cards").select("*").eq("id", cardId).single()
+        const { data: cardData, error: cardError } = await supabase
+          .from("cards")
+          .select("*")
+          .eq("id", actualCardId)
+          .single()
 
         if (cardError) {
           console.error("Error fetching card:", cardError)
@@ -194,12 +209,20 @@ export default function CardDetailPage() {
         }
 
         // Check if user owns this card at ANY level
-        const { data: userCardsData, error: userCardsError } = await supabase
+        let userCardsQuery = supabase
           .from("user_cards")
           .select("*")
           .eq("user_id", user.username)
-          .eq("card_id", cardId)
-          .order("level", { ascending: true })
+          .eq("card_id", actualCardId)
+
+        // If a specific level was requested, filter by that level
+        if (specificLevel !== null) {
+          userCardsQuery = userCardsQuery.eq("level", specificLevel)
+        } else {
+          userCardsQuery = userCardsQuery.order("level", { ascending: true })
+        }
+
+        const { data: userCardsData, error: userCardsError } = await userCardsQuery
 
         if (userCardsError) {
           console.error("Error fetching user cards:", userCardsError)
@@ -803,9 +826,8 @@ export default function CardDetailPage() {
                                   className="h-8 rounded-full border-violet-300 text-violet-600 hover:bg-violet-50"
                                   onClick={() => handleSellCard(userCardItem)}
                                 >
-                                  
-                                  Sell
                                   <Tag className="h-3 w-3 mr-1" />
+                                  Sell
                                 </Button>
                               )}
                             </div>

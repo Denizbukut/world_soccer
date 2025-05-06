@@ -220,12 +220,6 @@ export default function CollectionPage() {
         <div className="max-w-lg mx-auto px-4 py-3">
           <div className="flex justify-between items-center">
             <h1 className="text-lg font-medium">My Collection</h1>
-            <Link href="/catalog">
-              <Button variant="ghost" size="sm" className="text-violet-600 h-8 px-3">
-                <BookOpen className="h-4 w-4 mr-1" />
-                <span>Catalog</span>
-              </Button>
-            </Link>
           </div>
         </div>
       </header>
@@ -239,7 +233,18 @@ export default function CollectionPage() {
           className="bg-white rounded-2xl shadow-sm mb-4 overflow-hidden"
         >
           <div className="p-4">
-            <h2 className="text-sm font-medium mb-3">Collection Stats</h2>
+            <div className="flex justify-between items-center mb-3">
+              <h2 className="text-sm font-medium">Collection Stats</h2>
+              <Link href="/catalog">
+                <Button
+                  size="sm"
+                  className="bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white h-7 px-3 shadow-sm"
+                >
+                  <BookOpen className="h-3.5 w-3.5 mr-1" />
+                  <span className="text-xs font-medium">Cards Gallery</span>
+                </Button>
+              </Link>
+            </div>
             <div className="grid grid-cols-5 gap-2 text-center">
               <div className="bg-gray-50 rounded-lg p-2">
                 <div className="text-lg font-semibold">{collectionStats.total}</div>
@@ -340,7 +345,7 @@ export default function CollectionPage() {
                       transition={{ type: "spring", stiffness: 400, damping: 17 }}
                     >
                       <CardItem
-                        id={card.cardId}
+                        id={`${card.cardId}`}
                         name={card.name}
                         character={card.character}
                         imageUrl={card.image_url}

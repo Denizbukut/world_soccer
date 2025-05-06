@@ -6,13 +6,31 @@ import { claimDailyBonus } from "@/app/actions"
 import ProtectedRoute from "@/components/protected-route"
 import MobileNav from "@/components/mobile-nav"
 import { Button } from "@/components/ui/button"
-import { Ticket, Gift, CreditCard, Repeat, Clock, ChevronRight, Crown, Bell, ShoppingCart } from "lucide-react"
+import {
+  Ticket,
+  Gift,
+  CreditCard,
+  Repeat,
+  Clock,
+  ChevronRight,
+  Crown,
+  Bell,
+  ShoppingCart,
+  BookOpen,
+} from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 import Image from "next/image"
 import { getSupabaseBrowserClient } from "@/lib/supabase"
 import { Progress } from "@/components/ui/progress"
+
+interface LevelReward {
+  level: number
+  standardClaimed: boolean
+  premiumClaimed: boolean
+  isSpecialLevel?: boolean
+}
 
 export default function Home() {
   const { user, updateUserTickets, refreshUserData } = useAuth()
@@ -25,6 +43,8 @@ export default function Home() {
   const [hasPremium, setHasPremium] = useState(false)
   const [canClaimLegendary, setCanClaimLegendary] = useState(false)
   const [unclaimedRewards, setUnclaimedRewards] = useState(0)
+  const [levelRewards, setLevelRewards] = useState<LevelReward[]>([])
+  const [lastLegendaryClaim, setLastLegendaryClaim] = useState<Date | null>(null)
 
   // Refresh user data when component mounts
   useEffect(() => {
@@ -92,6 +112,37 @@ export default function Home() {
             setTimeUntilNextClaim(null)
           }
         }
+
+        // Check premium status and legendary ticket claim
+        if (data.has_premium) {
+          const { data: premiumData, error: premiumError } = await supabase
+            .from("premium_passes")
+            .select("*")
+            .eq("user_id", user.username)
+            .eq("active", true)
+            .single()
+
+          if (!premiumError && premiumData) {
+            if (premiumData.last_legendary_claim) {
+              const lastClaim = new Date(premiumData.last_legendary_claim as string)
+              setLastLegendaryClaim(lastClaim)
+
+              // Check if 24 hours have passed since last claim
+              const now = new Date()
+              const timeSinceClaim = now.getTime() - lastClaim.getTime()
+              const twentyFourHoursInMs = 24 * 60 * 60 * 1000
+
+              if (timeSinceClaim >= twentyFourHoursInMs) {
+                setCanClaimLegendary(true)
+              } else {
+                setCanClaimLegendary(false)
+              }
+            } else {
+              // No previous claim, can claim immediately
+              setCanClaimLegendary(true)
+            }
+          }
+        }
       } catch (error) {
         console.error("Error checking claim status:", error)
       }
@@ -111,6 +162,67 @@ export default function Home() {
 
     return () => clearInterval(interval)
   }, [user?.username, timeUntilNextClaim])
+
+  // Check for unclaimed rewards
+  useEffect(() => {
+    if (!user?.username) return
+
+    const checkUnclaimedRewards = async () => {
+      const supabase = getSupabaseBrowserClient()
+      if (!supabase) return
+
+      try {
+        // Fetch claimed rewards
+        const { data: claimedRewardsData, error: claimedRewardsError } = await supabase
+          .from("claimed_rewards")
+          .select("*")
+          .eq("user_id", user.username)
+
+        if (claimedRewardsError) {
+          console.error("Error fetching claimed rewards:", claimedRewardsError)
+          return
+        }
+
+        // Create rewards array for all levels up to current level
+        const userLevel = user.level || 1
+        const rewards: LevelReward[] = []
+
+        for (let i = 1; i <= userLevel; i++) {
+          const claimedReward = claimedRewardsData?.find((reward) => reward.level === i)
+
+          // Double rewards for every 5 levels
+          const isSpecialLevel = i % 5 === 0
+
+          rewards.push({
+            level: i,
+            standardClaimed: Boolean(claimedReward?.standard_claimed),
+            premiumClaimed: Boolean(claimedReward?.premium_claimed),
+            isSpecialLevel: isSpecialLevel,
+          })
+        }
+
+        setLevelRewards(rewards)
+
+        // Calculate unclaimed rewards
+        let unclaimed = 0
+        rewards.forEach((reward) => {
+          if (!reward.standardClaimed) unclaimed++
+          if (hasPremium && !reward.premiumClaimed) unclaimed++
+        })
+
+        setUnclaimedRewards(unclaimed)
+      } catch (error) {
+        console.error("Error checking unclaimed rewards:", error)
+      }
+    }
+
+    checkUnclaimedRewards()
+
+    // Set up interval to periodically check for new rewards
+    const rewardsInterval = setInterval(checkUnclaimedRewards, 60000) // Check every minute
+
+    return () => clearInterval(rewardsInterval)
+  }, [user?.username, user?.level, hasPremium])
 
   const handleClaimBonus = async () => {
     if (!user) return
@@ -185,9 +297,9 @@ export default function Home() {
         {/* Header with glass effect */}
         <header className="sticky top-0 z-10 backdrop-blur-md bg-white/80 border-b border-gray-100">
           <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center">
-            <h1 className="text-2xl font-semibold tracking-tight modern-title">Anime World</h1>
-          </div>
+            <div className="flex items-center">
+              <h1 className="text-2xl font-semibold tracking-tight modern-title">Anime World</h1>
+            </div>
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
                 <Ticket className="h-3.5 w-3.5 text-violet-500" />
@@ -234,12 +346,20 @@ export default function Home() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.05, duration: 0.4 }}
-            className="bg-gradient-to-r from-amber-400/20 to-amber-600/20 rounded-2xl shadow-sm overflow-hidden"
+            className={`bg-gradient-to-r ${
+              canClaimLegendary || unclaimedRewards > 0
+                ? "from-amber-400/40 to-amber-600/40 shadow-md"
+                : "from-amber-400/20 to-amber-600/20"
+            } rounded-2xl shadow-sm overflow-hidden`}
           >
             <Link href="/pass" className="block">
               <div className="p-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-r from-amber-400 to-amber-600 flex items-center justify-center relative">
+                  <div
+                    className={`w-10 h-10 rounded-full bg-gradient-to-r from-amber-400 to-amber-600 flex items-center justify-center relative ${
+                      canClaimLegendary || unclaimedRewards > 0 ? "animate-pulse shadow-lg shadow-amber-200" : ""
+                    }`}
+                  >
                     <Crown className="h-5 w-5 text-white" />
                     {(canClaimLegendary || unclaimedRewards > 0) && (
                       <div className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center animate-pulse">
@@ -253,13 +373,42 @@ export default function Home() {
                     )}
                   </div>
                   <div>
-                    <h3 className="font-medium text-base">Game Pass</h3>
-                    <p className="text-xs text-gray-600">
-                      Get Rewards by leveling up!
+                    <h3
+                      className={`font-medium text-base ${
+                        canClaimLegendary || unclaimedRewards > 0 ? "text-amber-800" : ""
+                      }`}
+                    >
+                      Game Pass
+                    </h3>
+                    <p
+                      className={`text-xs ${
+                        canClaimLegendary || unclaimedRewards > 0 ? "text-amber-700" : "text-gray-600"
+                      }`}
+                    >
+                      {canClaimLegendary || unclaimedRewards > 0
+                        ? "Rewards available to claim!"
+                        : "Get Rewards by leveling up!"}
                     </p>
                   </div>
                 </div>
-                <ChevronRight className="h-5 w-5 text-gray-400" />
+                <motion.div
+                  animate={
+                    canClaimLegendary || unclaimedRewards > 0
+                      ? {
+                          x: [0, 5, 0],
+                          transition: {
+                            repeat: Number.POSITIVE_INFINITY,
+                            repeatType: "reverse",
+                            duration: 1.5,
+                          },
+                        }
+                      : {}
+                  }
+                >
+                  <ChevronRight
+                    className={`h-5 w-5 ${canClaimLegendary || unclaimedRewards > 0 ? "text-amber-600" : "text-gray-400"}`}
+                  />
+                </motion.div>
               </div>
             </Link>
           </motion.div>
@@ -337,7 +486,7 @@ export default function Home() {
                 <Link href="/draw" className="block">
                   <div className="relative overflow-hidden rounded-xl p-3 transition-all duration-300 hover:shadow-md group">
                     {/* Animated background */}
-                    
+
                     <div className="flex items-center justify-center mb-2">
                       <div className="relative w-16 h-24 mx-auto transform group-hover:scale-105 transition-transform duration-300">
                         <Image src="/vibrant-purple-card-pack.png" alt="Regular Pack" fill className="object-contain" />
@@ -355,7 +504,7 @@ export default function Home() {
                 <Link href="/draw" className="block">
                   <div className="relative overflow-hidden rounded-xl p-3 transition-all duration-300 hover:shadow-md group">
                     {/* Animated background */}
-                    
+
                     <div className="flex items-center justify-center mb-2">
                       <div className="relative w-16 h-24 mx-auto transform group-hover:scale-105 transition-transform duration-300">
                         <Image
@@ -384,7 +533,7 @@ export default function Home() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.4 }}
-            className="grid grid-cols-3 gap-3"
+            className="grid grid-cols-2 gap-3"
           >
             <Link href="/collection" className="block">
               <div className="bg-white rounded-2xl p-4 shadow-sm h-full transition-all duration-300 hover:shadow-md group">
@@ -393,6 +542,15 @@ export default function Home() {
                 </div>
                 <h3 className="font-medium text-base mb-0.5">Collection</h3>
                 <p className="text-xs text-gray-500">View your cards</p>
+              </div>
+            </Link>
+            <Link href="/catalog" className="block">
+              <div className="bg-white rounded-2xl p-4 shadow-sm h-full transition-all duration-300 hover:shadow-md group">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-r from-indigo-400 to-indigo-600 flex items-center justify-center mb-3 group-hover:opacity-90 transition-opacity duration-300">
+                  <BookOpen className="h-5 w-5 text-white" />
+                </div>
+                <h3 className="font-medium text-base mb-0.5">Gallery</h3>
+                <p className="text-xs text-gray-500">All cards</p>
               </div>
             </Link>
             <Link href="/shop" className="block">

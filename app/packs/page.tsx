@@ -28,7 +28,7 @@ export default function PacksPage() {
 
     setIsDrawing(true)
     try {
-      const result = await drawCardPack(user.id, packType)
+      const result = await drawCardPack(user.username, packType)
 
       if (result.success) {
         // Update user tickets in context

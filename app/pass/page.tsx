@@ -8,11 +8,26 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { toast } from "@/components/ui/use-toast"
 import { motion, AnimatePresence } from "framer-motion"
-import { Crown, Ticket, Star, Gift, Check, Lock, Sparkles, Clock, Calendar, Bell, SendToBack } from "lucide-react"
+import {
+  Crown,
+  Ticket,
+  Star,
+  Gift,
+  Check,
+  Lock,
+  Sparkles,
+  Clock,
+  Calendar,
+  Bell,
+  BarChart3,
+  ChevronDown,
+  ChevronUp,
+  ArrowRight,
+} from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import type { PremiumPass, ClaimedReward } from "@/types/database"
-import { MiniKit, tokenToDecimals, Tokens, PayCommandInput } from '@worldcoin/minikit-js'
+import { MiniKit, tokenToDecimals, Tokens, type PayCommandInput } from "@worldcoin/minikit-js"
 
 interface LevelReward {
   level: number
@@ -44,6 +59,25 @@ export default function PremiumPassPage() {
     standardTickets: number
     legendaryTickets: number
   }>({ standardTickets: 0, legendaryTickets: 0 })
+
+  // State for collapsible sections
+  const [benefitsExpanded, setBenefitsExpanded] = useState(true)
+
+  // Add a new state for tracking which benefits are expanded
+  const [expandedBenefits, setExpandedBenefits] = useState<Record<string, boolean>>({
+    dailyTicket: true,
+    levelRewards: true,
+    dropRates: true,
+    duration: true,
+  })
+
+  // Toggle function for individual benefits
+  const toggleBenefit = (benefit: string) => {
+    setExpandedBenefits((prev) => ({
+      ...prev,
+      [benefit]: !prev[benefit],
+    }))
+  }
 
   // Format time remaining as HH:MM:SS
   const formatTimeRemaining = (milliseconds: number) => {
@@ -471,31 +505,31 @@ export default function PremiumPassPage() {
     }
   }
 
+  // Update the sendPayment function to reflect the promotional price
   const sendPayment = async () => {
-
-    const wldAmount = 7;
-    const res = await fetch('/api/initiate-payment', {
-      method: 'POST',
+    const wldAmount = 7 // Promotional price
+    const res = await fetch("/api/initiate-payment", {
+      method: "POST",
     })
     const { id } = await res.json()
-  
+
     const payload: PayCommandInput = {
       reference: id,
-      to: '0x4bb270ef6dcb052a083bd5cff518e2e019c0f4ee', // my wallet
+      to: "0x4bb270ef6dcb052a083bd5cff518e2e019c0f4ee", // my wallet
       tokens: [
         {
           symbol: Tokens.WLD,
           token_amount: tokenToDecimals(wldAmount, Tokens.WLD).toString(),
         },
       ],
-      description: 'Premium Pass',
+      description: "Premium Pass",
     }
-  
+
     const { finalPayload } = await MiniKit.commandsAsync.pay(payload)
-  
-    if (finalPayload.status == 'success') {
+
+    if (finalPayload.status == "success") {
       console.log("success sending payment")
-      handlePurchasePremium();
+      handlePurchasePremium()
     }
   }
 
@@ -614,6 +648,64 @@ export default function PremiumPassPage() {
     return count
   }
 
+  // Completely redesigned drop rate comparison to make percentages clearly visible
+  const renderDropRateComparison = () => {
+    // Standard pack rates
+    const standardRates = [
+      { rarity: "Common", rate: 50, color: "bg-gray-400" },
+      { rarity: "Rare", rate: 34, color: "bg-blue-500" },
+      { rarity: "Epic", rate: 14, color: "bg-purple-500" },
+      { rarity: "Legendary", rate: 2, color: "bg-amber-500" },
+    ]
+
+    // Premium pack rates
+    const premiumRates = [
+      { rarity: "Common", rate: 40, color: "bg-gray-400" },
+      { rarity: "Rare", rate: 36, color: "bg-blue-500" },
+      { rarity: "Epic", rate: 18, color: "bg-purple-500" },
+      { rarity: "Legendary", rate: 6, color: "bg-amber-500" },
+    ]
+
+    return (
+      <div className="mt-3 bg-white rounded-lg p-3">
+        <div className="grid grid-cols-3 gap-2 mb-3">
+          <div className="text-xs font-medium text-center">Rarity</div>
+          <div className="text-xs font-medium text-center">Standard</div>
+          <div className="text-xs font-medium text-center">Premium</div>
+        </div>
+
+        {standardRates.map((item, index) => (
+          <div key={item.rarity} className="grid grid-cols-3 gap-2 items-center mb-2">
+            <div className="text-xs font-medium">{item.rarity}</div>
+
+            {/* Standard rate */}
+            <div className="flex items-center justify-center">
+              <div
+                className={`w-8 h-8 rounded-full ${item.color} flex items-center justify-center text-white text-xs font-bold`}
+              >
+                {item.rate}%
+              </div>
+            </div>
+
+            {/* Premium rate with arrow */}
+            <div className="flex items-center justify-center">
+              <ArrowRight className="h-3 w-3 text-amber-500 mr-1" />
+              <div
+                className={`w-8 h-8 rounded-full ${item.color} flex items-center justify-center text-white text-xs font-bold`}
+              >
+                {premiumRates[index].rate}%
+              </div>
+            </div>
+          </div>
+        ))}
+
+        <p className="text-xs text-gray-500 mt-3 italic text-center">
+          Premium Pass significantly increases your chances of getting rare, epic, and legendary cards in regular packs!
+        </p>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-[#f8f9ff] pb-20">
       {/* Header */}
@@ -646,9 +738,7 @@ export default function PremiumPassPage() {
           <div className="flex flex-col">
             <div className="flex justify-between items-center mb-1">
               <h2 className="font-semibold text-base">Level {user?.level || 1}</h2>
-              <div className="flex items-center">
-                
-              </div>
+              <div className="flex items-center"></div>
             </div>
             <div className="flex justify-between items-center mb-1">
               <span className="text-xs text-gray-500">
@@ -720,72 +810,162 @@ export default function PremiumPassPage() {
                 )}
               </div>
 
-              {/* Premium benefits */}
-              <div className="space-y-3 mb-4">
-                <div className="flex items-center gap-3 bg-amber-50 p-3 rounded-lg">
-                  <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center">
+              {/* Limited Time Offer - Only show for non-premium users */}
+              {!hasPremium && (
+                <div className="bg-white rounded-xl p-3 mb-4 relative overflow-hidden border border-gray-200 shadow-sm">
+                  <div className="absolute top-0 right-0">
+                    <div className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-bl-lg">30% DISCOUNT</div>
+                  </div>
+
+                  <div className="relative flex items-center">
+                    <div className="mr-3 bg-gray-100 p-2 rounded-lg">
+                      <Sparkles className="h-5 w-5 text-amber-500" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-bold text-gray-900 text-sm">Limited Time Offer!</h4>
+                      <p className="text-gray-700 text-xs">
+                        Get Premium Pass for only 7 WLD instead of 10 WLD until May 15th!
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Premium Benefits Highlight Box - Collapsible */}
+              <div className="bg-white rounded-xl p-4 mb-4 border border-gray-200 shadow-sm">
+                <button
+                  onClick={() => setBenefitsExpanded(!benefitsExpanded)}
+                  className="w-full flex items-center justify-between font-medium text-gray-800 mb-2"
+                >
+                  <div className="flex items-center">
+                    <Sparkles className="h-4 w-4 mr-2 text-amber-500" />
+                    Premium Pass Benefits
+                    {hasPremium && (
+                      <div className="ml-2 bg-green-500 rounded-full p-0.5">
+                        <Check className="h-3 w-3 text-white" />
+                      </div>
+                    )}
+                  </div>
+                  {benefitsExpanded ? (
+                    <ChevronUp className="h-4 w-4 text-amber-500" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 text-amber-500" />
+                  )}
+                </button>
+
+                {benefitsExpanded && (
+                  <div className="space-y-3">
+                    {/* Daily Legendary Ticket */}
+                    <div className="bg-white rounded-lg p-3 border border-gray-100">
+                      
+                        <div className="flex items-center">
+                          <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mr-2">
+                            <Ticket className="h-3 w-3 text-amber-600" />
+                          </div>
+                          <span className="text-sm">Daily Legendary Ticket</span>
+                        </div>
+                        
+
+                     
+                        <p className="text-xs text-gray-600 mt-2 pl-7">Claim <b>1 legendary ticket</b> every <b>24 hours</b></p>
+                      
+                    </div>
+
+                    {/* Premium Level Rewards */}
+                    <div className="bg-white rounded-lg p-3 border border-gray-100">
+                      
+                        <div className="flex items-center">
+                          <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mr-2">
+                            <Gift className="h-3 w-3 text-amber-600" />
+                          </div>
+                          <span className="text-sm">Premium Level Rewards</span>
+                        </div>
+                        
+
+                        <p className="text-xs text-gray-600 mt-2 pl-7">
+                          Get <b>1 legendary ticket</b> for each <b>level up</b> (2 tickets every 5 levels)
+                        </p>
+                     
+                    </div>
+
+                    {/* Improved Drop Rates */}
+                    <div className="bg-white rounded-lg p-3 border border-gray-100">
+                      
+                        <div className="flex items-center">
+                          <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mr-2">
+                            <BarChart3 className="h-3 w-3 text-amber-600" />
+                          </div>
+                          <span className="text-sm">Improved <b>Regular Pack</b> Drop Rates</span>
+                        </div>
+                        
+
+                      {renderDropRateComparison()}
+                    </div>
+
+                    {/* 30 Days Duration */}
+                    <div className="bg-white rounded-lg p-3 border border-gray-100">
+                      
+                        <div className="flex items-center">
+                          <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mr-2">
+                            <Calendar className="h-3 w-3 text-amber-600" />
+                          </div>
+                          <span className="text-sm">30 Days Duration</span>
+                        </div>
+                        
+
+                        <p className="text-xs text-gray-600 mt-2 pl-7">
+                          Premium Pass is valid for <b>30 days</b> from purchase
+                        </p>
+                      
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Daily Legendary Ticket Claim */}
+              {hasPremium && (
+                <div className="flex items-center gap-3 bg-white p-3 rounded-lg mb-3 border border-gray-200 shadow-sm">
+                  <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
                     <Ticket className="h-4 w-4 text-amber-600" />
                   </div>
                   <div className="flex-1">
                     <h4 className="font-medium text-sm">Daily Legend. Ticket</h4>
                     <p className="text-xs text-gray-500">Claim 1 legendary ticket every 24 hours</p>
                   </div>
-                  {hasPremium && (
-                    <Button
-                      onClick={handleClaimLegendaryTicket}
-                      disabled={!canClaimLegendary || isClaimingLegendary}
-                      size="sm"
-                      className={`rounded-full px-3 ${
-                        canClaimLegendary
-                          ? "bg-gradient-to-r from-amber-400 to-amber-600 hover:from-amber-500 hover:to-amber-700 text-white"
-                          : "bg-gray-100 text-gray-500 hover:bg-gray-100"
-                      }`}
-                    >
-                      {isClaimingLegendary ? (
-                        <div className="flex items-center">
-                          <div className="h-3 w-3 border-2 border-t-transparent border-current rounded-full animate-spin mr-2"></div>
-                          <span className="text-xs">Claiming...</span>
-                        </div>
-                      ) : canClaimLegendary ? (
-                        <span className="text-xs">Claim Now</span>
-                      ) : (
-                        <div className="flex items-center">
-                          <Clock className="h-3 w-3 mr-1" />
-                          <span className="text-xs">{formatTimeRemaining(timeUntilNextClaim || 0)}</span>
-                        </div>
-                      )}
-                    </Button>
-                  )}
+                  <Button
+                    onClick={handleClaimLegendaryTicket}
+                    disabled={!canClaimLegendary || isClaimingLegendary}
+                    size="sm"
+                    className={`rounded-full px-3 ${
+                      canClaimLegendary
+                        ? "bg-gradient-to-r from-amber-400 to-amber-600 hover:from-amber-500 hover:to-amber-700 text-white"
+                        : "bg-gray-100 text-gray-500 hover:bg-gray-100"
+                    }`}
+                  >
+                    {isClaimingLegendary ? (
+                      <div className="flex items-center">
+                        <div className="h-3 w-3 border-2 border-t-transparent border-current rounded-full animate-spin mr-2"></div>
+                        <span className="text-xs">Claiming...</span>
+                      </div>
+                    ) : canClaimLegendary ? (
+                      <span className="text-xs">Claim Now</span>
+                    ) : (
+                      <div className="flex items-center">
+                        <Clock className="h-3 w-3 mr-1" />
+                        <span className="text-xs">{formatTimeRemaining(timeUntilNextClaim || 0)}</span>
+                      </div>
+                    )}
+                  </Button>
                 </div>
-
-                <div className="flex items-center gap-3 bg-amber-50 p-3 rounded-lg">
-                  <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center">
-                    <Gift className="h-4 w-4 text-amber-600" />
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-sm">Premium Level Rewards</h4>
-                    <p className="text-xs text-gray-500">Get 1 legendary ticket for each level up</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 bg-amber-50 p-3 rounded-lg">
-                  <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center">
-                    <Calendar className="h-4 w-4 text-amber-600" />
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-sm">1 Month Duration</h4>
-                    <p className="text-xs text-gray-500">Premium Pass is valid for 30 days</p>
-                  </div>
-                </div>
-              </div>
+              )}
 
               {!hasPremium && (
-                <Alert className="bg-amber-50 border-amber-200 mb-2">
-                  <AlertTitle className="text-amber-800 flex items-center gap-2">
+                <Alert className="bg-white border-gray-200 mb-2">
+                  <AlertTitle className="text-gray-800 flex items-center gap-2">
                     <Sparkles className="h-4 w-4 text-amber-500" />
                     Get {calculatePotentialLegendaryTickets()} Legendary Tickets Now!
                   </AlertTitle>
-                  <AlertDescription className="text-amber-700 text-sm">
+                  <AlertDescription className="text-gray-600 text-sm">
                     Purchase Premium Pass now and claim legendary tickets for all your previous level ups!
                   </AlertDescription>
                 </Alert>
@@ -966,8 +1146,6 @@ export default function PremiumPassPage() {
               <span>Claimed</span>
             </div>
           </div>
-
-          
         </motion.div>
       </main>
 

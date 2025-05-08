@@ -201,6 +201,9 @@ export async function drawCards(username: string, packType: string, count = 1) {
       let rarity: CardRarity
       let cardPool: any[]
 
+      // Check if user has premium to determine drop rates
+      const hasPremium = userData.has_premium || false
+
       if (isLegendary) {
         // Legendary pack rarity distribution: Common 10%, Rare 40%, Epic 40%, Legendary 10%
         if (random < 10) {
@@ -216,15 +219,30 @@ export async function drawCards(username: string, packType: string, count = 1) {
           rarity = "legendary"
           cardPool = legendaryCards
         }
-      } else {
-        // Regular pack rarity distribution: Common 60%, Rare 34%, Epic 5%, Legendary 1%
-        if (random < 60) {
+      } else if (hasPremium) {
+        // Premium user regular pack: Common 35%, Rare 40%, Epic 20%, Legendary 5%
+        if (random < 40) {
           rarity = "common"
           cardPool = commonCards
-        } else if (random < 94) {
+        } else if (random < 76) {
           rarity = "rare"
           cardPool = rareCards
-        } else if (random < 99) {
+        } else if (random < 94) {
+          rarity = "epic"
+          cardPool = epicCards
+        } else {
+          rarity = "legendary"
+          cardPool = legendaryCards
+        }
+      } else {
+        // Regular pack rarity distribution: Common 50%, Rare 34%, Epic 14%, Legendary 2%
+        if (random < 50) {
+          rarity = "common"
+          cardPool = commonCards
+        } else if (random < 84) {
+          rarity = "rare"
+          cardPool = rareCards
+        } else if (random < 98) {
           rarity = "epic"
           cardPool = epicCards
         } else {
@@ -317,11 +335,18 @@ export async function getUserCards(username: string) {
   try {
     const supabase = createSupabaseServer()
 
-    // Get the user's cards with their quantities
-    const { data: userCardsData, error: userCardsError } = await supabase
+    // Ändere die Abfrage, um die ID aus der user_cards-Tabelle zurückzugeben
+    const { data: userCards, error: userCardsError } = await supabase
       .from("user_cards")
-      .select("id, card_id, quantity")
-      .eq("user_id", username) // Using username as user_id
+      .select(`
+        id,
+        card_id,
+        level,
+        quantity,
+        favorite,
+        obtained_at
+      `)
+      .eq("user_id", username)
       .gt("quantity", 0)
 
     if (userCardsError) {
@@ -329,14 +354,14 @@ export async function getUserCards(username: string) {
       return { success: false, error: "Failed to fetch user cards" }
     }
 
-    if (!userCardsData || userCardsData.length === 0) {
+    if (!userCards || userCards.length === 0) {
       return { success: true, cards: [] }
     }
 
-    // Extract card IDs
-    const cardIds = userCardsData.map((item: { card_id: string }) => item.card_id)
+    // Extrahiere die card_ids
+    const cardIds = userCards.map((item) => item.card_id)
 
-    // Then, get the card details for those IDs
+    // Hole die Kartendetails für diese IDs
     const { data: cardsData, error: cardsError } = await supabase.from("cards").select("*").in("id", cardIds)
 
     if (cardsError) {
@@ -344,30 +369,34 @@ export async function getUserCards(username: string) {
       return { success: false, error: "Failed to fetch card details" }
     }
 
-    // Create a map of card details by ID for easy lookup
+    // Erstelle eine Map der Kartendetails nach ID für einfachen Zugriff
     const cardDetailsMap = new Map()
-    cardsData?.forEach((card: Card) => {
+    cardsData?.forEach((card) => {
       cardDetailsMap.set(card.id, card)
     })
 
-    // Combine the user cards with their details
-    const cards = userCardsData
-      .map((userCard: { card_id: string; quantity: number }) => {
+    // Kombiniere die Benutzerkarten mit ihren Details
+    const cards = userCards
+      .map((userCard) => {
         const cardDetails = cardDetailsMap.get(userCard.card_id)
         if (!cardDetails) return null
 
         return {
-          id: cardDetails.id,
+          id: userCard.id, // Die eindeutige ID aus der user_cards-Tabelle
+          card_id: userCard.card_id,
           name: cardDetails.name,
           character: cardDetails.character,
           image_url: cardDetails.image_url,
           rarity: cardDetails.rarity,
           type: cardDetails.type,
           description: cardDetails.description,
-          quantity: userCard.quantity,
+          level: userCard.level || 1,
+          quantity: userCard.quantity || 1,
+          favorite: userCard.favorite || false,
+          obtained_at: userCard.obtained_at,
         }
       })
-      .filter(Boolean) // Remove any null entries
+      .filter(Boolean) // Entferne alle null-Einträge
 
     return { success: true, cards }
   } catch (error) {

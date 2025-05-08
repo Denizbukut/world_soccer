@@ -78,6 +78,7 @@ export default function DrawPage() {
   const [activeTab, setActiveTab] = useState<"regular" | "legendary">("regular")
   const [legendaryTickets, setLegendaryTickets] = useState(2)
   const [tickets, setTickets] = useState(0)
+  const [hasPremiumPass, setHasPremiumPass] = useState(false)
 
   // Animation states
   const [showPackSelection, setShowPackSelection] = useState(true)
@@ -124,6 +125,9 @@ export default function DrawPage() {
       }
       if (typeof user.legendary_tickets === "number") {
         setLegendaryTickets(user.legendary_tickets)
+      }
+      if (typeof user.has_premium === "boolean") {
+        setHasPremiumPass(user.has_premium)
       }
     }
   }, [user])
@@ -345,11 +349,11 @@ export default function DrawPage() {
               <h1 className="text-lg font-medium">Card Packs</h1>
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
-                  <Ticket className="h-3.5 w-3.5 text-violet-500" />
+                  <Ticket className="h-3.5 w-3.5 text-orange-500" />
                   <span className="font-medium text-sm">{tickets}</span>
                 </div>
                 <div className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
-                  <Ticket className="h-3.5 w-3.5 text-amber-500" />
+                  <Ticket className="h-3.5 w-3.5 text-blue-500" />
                   <span className="font-medium text-sm">{legendaryTickets}</span>
                 </div>
               </div>
@@ -373,7 +377,7 @@ export default function DrawPage() {
                     onClick={() => setActiveTab("regular")}
                     className={`flex-1 py-3 px-4 text-center font-medium transition-all ${
                       activeTab === "regular"
-                        ? "bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white"
+                        ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white"
                         : "bg-white text-gray-500"
                     }`}
                   >
@@ -386,7 +390,7 @@ export default function DrawPage() {
                     onClick={() => setActiveTab("legendary")}
                     className={`flex-1 py-3 px-4 text-center font-medium transition-all ${
                       activeTab === "legendary"
-                        ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white"
+                        ? "bg-gradient-to-r from-blue-500 to-cyan-500 text-white"
                         : "bg-white text-gray-500"
                     }`}
                   >
@@ -443,43 +447,86 @@ export default function DrawPage() {
 
                       <div className="w-full space-y-2 mb-4">
                         {activeTab === "legendary" ? (
-                          <>
-                            <div className="flex justify-between items-center text-sm">
-                              <span>Common</span>
-                              <span className="text-gray-500">10%</span>
+                          <div className="border border-gray-200 rounded-lg p-3 relative">
+                            <div className="space-y-2">
+                              <div className="flex justify-between items-center text-sm">
+                                <span>Common</span>
+                                <span className="text-gray-500">10%</span>
+                              </div>
+                              <div className="flex justify-between items-center text-sm">
+                                <span>Rare</span>
+                                <span className="text-blue-500">35%</span>
+                              </div>
+                              <div className="flex justify-between items-center text-sm">
+                                <span>Epic</span>
+                                <span className="text-purple-500">45%</span>
+                              </div>
+                              <div className="flex justify-between items-center text-sm">
+                                <span>Legendary</span>
+                                <span className="text-amber-500">10%</span>
+                              </div>
                             </div>
-                            <div className="flex justify-between items-center text-sm">
-                              <span>Rare</span>
-                              <span className="text-blue-500">35%</span>
-                            </div>
-                            <div className="flex justify-between items-center text-sm">
-                              <span>Epic</span>
-                              <span className="text-purple-500">45%</span>
-                            </div>
-                            <div className="flex justify-between items-center text-sm">
-                              <span>Legendary</span>
-                              <span className="text-amber-500">10%</span>
-                            </div>
-                          </>
+                          </div>
                         ) : (
-                          <>
-                            <div className="flex justify-between items-center text-sm">
-                              <span>Common</span>
-                              <span className="text-gray-500">50%</span>
+                          <div className="border border-gray-200 rounded-lg p-3 relative">
+                            {hasPremiumPass && (
+                              <div className="absolute -top-3 right-3 bg-amber-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                                PREMIUM BONUS
+                              </div>
+                            )}
+                            <div className="space-y-2">
+                              <div className="flex justify-between items-center text-sm">
+                                <span>Common</span>
+                                <div className="flex items-center gap-2">
+                                  <span
+                                    className={`text-gray-500 ${hasPremiumPass ? "line-through text-gray-400" : ""}`}
+                                  >
+                                    50%
+                                  </span>
+                                  {hasPremiumPass && <span className="text-gray-500 font-medium">40%</span>}
+                                </div>
+                              </div>
+                              <div className="flex justify-between items-center text-sm">
+                                <span>Rare</span>
+                                <div className="flex items-center gap-2">
+                                  <span
+                                    className={`text-blue-500 ${hasPremiumPass ? "line-through text-blue-400/70" : ""}`}
+                                  >
+                                    34%
+                                  </span>
+                                  {hasPremiumPass && <span className="text-blue-500 font-medium">36%</span>}
+                                </div>
+                              </div>
+                              <div className="flex justify-between items-center text-sm">
+                                <span>Epic</span>
+                                <div className="flex items-center gap-2">
+                                  <span
+                                    className={`text-purple-500 ${hasPremiumPass ? "line-through text-purple-400/70" : ""}`}
+                                  >
+                                    14%
+                                  </span>
+                                  {hasPremiumPass && <span className="text-purple-500 font-medium">18%</span>}
+                                </div>
+                              </div>
+                              <div className="flex justify-between items-center text-sm">
+                                <span>Legendary</span>
+                                <div className="flex items-center gap-2">
+                                  <span
+                                    className={`text-amber-500 ${hasPremiumPass ? "line-through text-amber-400/70" : ""}`}
+                                  >
+                                    2%
+                                  </span>
+                                  {hasPremiumPass && <span className="text-amber-500 font-medium">6%</span>}
+                                </div>
+                              </div>
                             </div>
-                            <div className="flex justify-between items-center text-sm">
-                              <span>Rare</span>
-                              <span className="text-blue-500">34%</span>
-                            </div>
-                            <div className="flex justify-between items-center text-sm">
-                              <span>Epic</span>
-                              <span className="text-purple-500">14%</span>
-                            </div>
-                            <div className="flex justify-between items-center text-sm">
-                              <span>Legendary</span>
-                              <span className="text-amber-500">2%</span>
-                            </div>
-                          </>
+                            {hasPremiumPass && (
+                              <div className="mt-2 flex items-center gap-1 text-xs text-amber-600">
+                                <Crown className="h-3 w-3" />
+                                <span>Premium Pass activated</span>
+                              </div>
+                            )}
+                          </div>
                         )}
                       </div>
 
@@ -488,8 +535,8 @@ export default function DrawPage() {
                         disabled={isDrawing || (activeTab === "legendary" ? legendaryTickets < 1 : tickets < 1)}
                         className={
                           activeTab === "legendary"
-                            ? "w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 rounded-full"
-                            : "w-full bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 rounded-full"
+                            ? "w-full bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 rounded-full"
+                            : "w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 rounded-full"
                         }
                       >
                         {isDrawing ? (
@@ -575,8 +622,8 @@ export default function DrawPage() {
                       onClick={handleOpenPack}
                       className={
                         activeTab === "legendary"
-                          ? "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 rounded-full w-40"
-                          : "bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 rounded-full w-40"
+                          ? "bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 rounded-full w-40"
+                          : "bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 rounded-full w-40"
                       }
                     >
                       Open
@@ -596,7 +643,7 @@ export default function DrawPage() {
                       <motion.div
                         key={i}
                         className={`absolute w-2 h-2 rounded-full ${
-                          activeTab === "legendary" ? "bg-yellow-400" : "bg-purple-400"
+                          activeTab === "legendary" ? "bg-blue-400" : "bg-orange-400"
                         }`}
                         initial={{
                           x: "50vw",
@@ -819,7 +866,11 @@ export default function DrawPage() {
                   {/* Button to add card to collection */}
                   <Button
                     onClick={() => finishCardReview()}
-                    className="bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 px-8 rounded-full"
+                    className={
+                      activeTab === "legendary"
+                        ? "bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 px-8 rounded-full"
+                        : "bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 px-8 rounded-full"
+                    }
                     size="lg"
                   >
                     Add to Collection
@@ -924,8 +975,6 @@ export default function DrawPage() {
                     <h2 className="text-2xl font-bold text-center">Level Up!</h2>
                     <p className="text-lg font-medium text-center text-amber-600">You reached Level {newLevel}!</p>
                   </motion.div>
-
-                  
 
                   {/* Added Continue button */}
                   <motion.div

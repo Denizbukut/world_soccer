@@ -20,6 +20,7 @@ import {
   Filter,
   RefreshCw,
   Edit,
+  AlertCircle,
 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
@@ -39,8 +40,10 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { renderStars } from "@/utils/card-stars"
 import UpdatePriceDialog from "@/components/update-price-dialog"
 import TiltableCard from "@/components/tiltable-card"
-import { MiniKit, tokenToDecimals, Tokens, PayCommandInput } from '@worldcoin/minikit-js'
+import { MiniKit, tokenToDecimals, Tokens, type PayCommandInput } from "@worldcoin/minikit-js"
 import PurchaseSuccessAnimation from "@/components/purchase-success-animation"
+import { Progress } from "@/components/ui/progress"
+
 // Typen für die Marketplace-Daten
 type Card = {
   id: string
@@ -88,6 +91,10 @@ export default function TradePage() {
   const [purchaseLoading, setPurchaseLoading] = useState(false)
   const [cancelLoading, setCancelLoading] = useState(false)
   const [showPurchaseSuccess, setShowPurchaseSuccess] = useState(false)
+  const [listingCount, setListingCount] = useState(0)
+  const [maxListings, setMaxListings] = useState(7)
+  const [listingLimitReached, setListingLimitReached] = useState(false)
+
   // Lade Daten basierend auf dem aktiven Tab
   useEffect(() => {
     if (!user?.username) return
@@ -110,6 +117,9 @@ export default function TradePage() {
           const result = await getUserListings(user.username)
           if (result.success) {
             setUserListings(result.listings || [])
+            setListingCount(result.listingCount || 0)
+            setMaxListings(result.maxListings || 7)
+            setListingLimitReached((result.listingCount || 0) >= (result.maxListings || 7))
           } else {
             toast({
               title: "Error",
@@ -184,34 +194,33 @@ export default function TradePage() {
       }
       return 0
     })
-  
-    const sendPayment = async () => {
 
-      const wldAmount = selectedListing?.price || 1;
-      const res = await fetch('/api/initiate-payment', {
-        method: 'POST',
-      })
-      const { id } = await res.json()
-    
-      const payload: PayCommandInput = {
-        reference: id,
-        to: selectedListing?.seller_world_id || "", // my wallet
-        tokens: [
-          {
-            symbol: Tokens.WLD,
-            token_amount: tokenToDecimals(wldAmount, Tokens.WLD).toString(),
-          },
-        ],
-        description: 'Premium Pass',
-      }
-    
-      const { finalPayload } = await MiniKit.commandsAsync.pay(payload)
-    
-      if (finalPayload.status == 'success') {
-        console.log("success sending payment")
-        handlePurchase();
-      }
+  const sendPayment = async () => {
+    const wldAmount = selectedListing?.price || 1
+    const res = await fetch("/api/initiate-payment", {
+      method: "POST",
+    })
+    const { id } = await res.json()
+
+    const payload: PayCommandInput = {
+      reference: id,
+      to: selectedListing?.seller_world_id || "", // my wallet
+      tokens: [
+        {
+          symbol: Tokens.WLD,
+          token_amount: tokenToDecimals(wldAmount, Tokens.WLD).toString(),
+        },
+      ],
+      description: "Premium Pass",
     }
+
+    const { finalPayload } = await MiniKit.commandsAsync.pay(payload)
+
+    if (finalPayload.status == "success") {
+      console.log("success sending payment")
+      handlePurchase()
+    }
+  }
 
   // Kaufe eine Karte
   const handlePurchase = async () => {
@@ -221,7 +230,6 @@ export default function TradePage() {
     try {
       const result = await purchaseCard(user.username, selectedListing.id)
       if (result.success) {
-        
         setShowPurchaseDialog(false)
         setShowPurchaseSuccess(true)
         // Aktualisiere die Listings
@@ -264,6 +272,8 @@ export default function TradePage() {
         const updatedListings = await getUserListings(user.username)
         if (updatedListings.success) {
           setUserListings(updatedListings.listings || [])
+          setListingCount(updatedListings.listingCount || 0)
+          setListingLimitReached((updatedListings.listingCount || 0) >= maxListings)
         }
       } else {
         toast({
@@ -322,6 +332,9 @@ export default function TradePage() {
         const result = await getUserListings(user.username)
         if (result.success) {
           setUserListings(result.listings || [])
+          setListingCount(result.listingCount || 0)
+          setMaxListings(result.maxListings || 7)
+          setListingLimitReached((result.listingCount || 0) >= (result.maxListings || 7))
         }
       } else if (activeTab === "history") {
         const result = await getTransactionHistory(user.username)
@@ -495,12 +508,58 @@ export default function TradePage() {
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <h2 className="text-lg font-medium">My Listed Cards</h2>
-                  <Link href="/collection">
-                    <Button size="sm" className="rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500">
+                  <Link href={listingLimitReached ? "#" : "/collection"}>
+                    <Button
+                      size="sm"
+                      className={`rounded-full ${
+                        listingLimitReached
+                          ? "bg-gray-400 cursor-not-allowed"
+                          : "bg-gradient-to-r from-violet-500 to-fuchsia-500"
+                      }`}
+                      disabled={listingLimitReached}
+                      onClick={(e) => {
+                        if (listingLimitReached) {
+                          e.preventDefault()
+                          toast({
+                            title: "Listing Limit Reached",
+                            description: `You can only list a maximum of ${maxListings} cards at a time. Please remove some listings before adding more.`,
+                            variant: "destructive",
+                          })
+                        }
+                      }}
+                    >
                       <Plus className="h-4 w-4 mr-1" />
                       Sell Card
                     </Button>
                   </Link>
+                </div>
+
+                {/* Listing Limit Indicator */}
+                <div className="bg-white rounded-xl p-4 shadow-sm">
+                  <div className="flex justify-between items-center mb-2">
+                    <div className="flex items-center">
+                      <span className="font-medium">Listing Limit</span>
+                      {listingLimitReached && (
+                        <div className="ml-2 flex items-center text-red-500">
+                          <AlertCircle className="h-4 w-4 mr-1" />
+                          <span className="text-sm">Limit reached</span>
+                        </div>
+                      )}
+                    </div>
+                    <span className={`font-medium ${listingLimitReached ? "text-red-500" : "text-gray-700"}`}>
+                      {listingCount}/{maxListings}
+                    </span>
+                  </div>
+                  <Progress
+                    value={(listingCount / maxListings) * 100}
+                    className={`h-2 ${listingLimitReached ? "bg-red-100" : "bg-gray-100"}`}
+                    indicatorClassName={listingLimitReached ? "bg-red-500" : "bg-violet-500"}
+                  />
+                  <p className="text-xs text-gray-500 mt-2">
+                    {listingLimitReached
+                      ? "You've reached the maximum number of cards you can list. Cancel some listings to add more."
+                      : `You can list ${maxListings - listingCount} more card${maxListings - listingCount !== 1 ? "s" : ""}.`}
+                  </p>
                 </div>
 
                 {loading ? (
@@ -706,7 +765,7 @@ export default function TradePage() {
                   <p className="text-amber-800">
                     <span className="font-medium">Seller:</span> {selectedListing.seller_username}
                   </p>
-                  
+
                   {(user?.coins || 0) < selectedListing.price && (
                     <p className="text-red-500 mt-1 font-medium">You don't have enough WLD for this purchase!</p>
                   )}

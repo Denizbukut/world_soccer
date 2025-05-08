@@ -40,6 +40,9 @@ type MarketListingWithDetails = MarketListing & {
   seller_username: string
 }
 
+// Maximum number of cards a user can list
+const MAX_USER_LISTINGS = 7
+
 /**
  * Holt alle aktiven Marketplace-Listings
  */
@@ -141,7 +144,7 @@ export async function getUserListings(username: string) {
     }
 
     if (!listings || listings.length === 0) {
-      return { success: true, listings: [] }
+      return { success: true, listings: [], listingCount: 0, maxListings: MAX_USER_LISTINGS }
     }
 
     // Extrahiere card_ids für weitere Abfragen
@@ -175,9 +178,45 @@ export async function getUserListings(username: string) {
       }
     })
 
-    return { success: true, listings: listingsWithDetails }
+    return {
+      success: true,
+      listings: listingsWithDetails,
+      listingCount: listings.length,
+      maxListings: MAX_USER_LISTINGS,
+    }
   } catch (error) {
     console.error("Error in getUserListings:", error)
+    return { success: false, error: "An unexpected error occurred" }
+  }
+}
+
+/**
+ * Überprüft, ob ein Benutzer das Limit für Listings erreicht hat
+ */
+export async function checkUserListingLimit(username: string) {
+  try {
+    const supabase = createSupabaseServer()
+
+    // Zähle die aktiven Listings des Benutzers
+    const { count, error } = await supabase
+      .from("market_listings")
+      .select("*", { count: "exact", head: true })
+      .eq("seller_id", username)
+      .eq("status", "active")
+
+    if (error) {
+      console.error("Error checking user listing limit:", error)
+      return { success: false, error: "Failed to check your listing limit" }
+    }
+
+    return {
+      success: true,
+      canList: (count || 0) < MAX_USER_LISTINGS,
+      listingCount: count || 0,
+      maxListings: MAX_USER_LISTINGS,
+    }
+  } catch (error) {
+    console.error("Error in checkUserListingLimit:", error)
     return { success: false, error: "An unexpected error occurred" }
   }
 }
@@ -196,6 +235,25 @@ export async function createListing(
     console.log("Parameters:", { username, userCardId, cardId, price, cardLevel })
 
     const supabase = createSupabaseServer()
+
+    // Überprüfe zuerst, ob der Benutzer das Limit erreicht hat
+    const { count, error: countError } = await supabase
+      .from("market_listings")
+      .select("*", { count: "exact", head: true })
+      .eq("seller_id", username)
+      .eq("status", "active")
+
+    if (countError) {
+      console.error("Error checking user listing count:", countError)
+      return { success: false, error: "Failed to check your listing count" }
+    }
+
+    if ((count || 0) >= MAX_USER_LISTINGS) {
+      return {
+        success: false,
+        error: `You can only list a maximum of ${MAX_USER_LISTINGS} cards at a time. Please remove some listings before adding more.`,
+      }
+    }
 
     // Hole die Benutzerinformationen (username ist bereits die ID)
     console.log("Fetching user data for:", username)

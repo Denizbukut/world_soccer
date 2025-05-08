@@ -16,6 +16,7 @@ import { useRouter } from "next/navigation"
 import MobileNav from "@/components/mobile-nav"
 import { Input } from "@/components/ui/input"
 import { renderStars } from "@/utils/card-stars"
+import { LevelSystemInfoDialog } from "@/components/level-system-info-dialog"
 
 export default function CollectionPage() {
   const { user } = useAuth()
@@ -266,6 +267,11 @@ export default function CollectionPage() {
                 <div className="text-lg font-semibold text-amber-600">{collectionStats.legendary}</div>
                 <div className="text-xs text-gray-500">Legend</div>
               </div>
+            </div>
+
+            {/* Level System Info Button - Now positioned below the stats grid */}
+            <div className="mt-3 flex justify-center">
+              <LevelSystemInfoDialog />
             </div>
           </div>
         </motion.div>

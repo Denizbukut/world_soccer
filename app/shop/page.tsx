@@ -152,21 +152,81 @@ export default function ShopPage() {
     }
   }
 
-  // Regular ticket packages
-  const regularPackages = [
-    { id: "reg-1", amount: 1, price: 0.2 },
-    { id: "reg-3", amount: 3, price: 0.5 },
-    { id: "reg-5", amount: 5, price: 0.8 },
-    { id: "reg-10", amount: 10, price: 1.4 },
-  ]
+  // Globale Arrays
+const regularPackages: { id: string; amount: number; price: number }[] = [];
+const legendaryPackages: { id: string; amount: number; price: number }[] = [];
 
-  // Legendary ticket packages
-  const legendaryPackages = [
-    { id: "leg-1", amount: 1, price: 0.6 },
-    { id: "leg-3", amount: 3, price: 1.5 },
-    { id: "leg-5", amount: 5, price: 2.4 },
-    { id: "leg-10", amount: 10, price: 4.2 },
-  ]
+async function convertUsdToWld(usdAmount: number): Promise<number | null> {
+  const url = 'https://app-backend.worldcoin.dev/public/v1/miniapps/prices?flatCurrencies=USD&cryptoCurrencies=WLD';
+
+  try {
+    const response = await fetch(url);
+    console.log("response",response)
+
+    if (!response.ok) {
+      console.error("❌ HTTP-Fehler:", response.status, response.statusText);
+      return null;
+    }
+
+    const data = await response.json();
+    const wldData = data?.result?.prices?.WLD?.USD;
+    console.log("wldData", wldData)
+
+    if (!wldData) {
+      console.error("❌ WLD-Daten fehlen:", JSON.stringify(data, null, 2));
+      return null;
+    }
+
+    const amount = Number(wldData.amount);
+    const decimals = Number(wldData.decimals);
+
+    if (isNaN(amount) || isNaN(decimals)) {
+      console.error("❌ Ungültige amount- oder decimals-Werte:", amount, decimals);
+      return null;
+    }
+
+    const pricePerWLD = amount / Math.pow(10, decimals); // USD pro 1 WLD
+    const wldValue = usdAmount / pricePerWLD;
+
+    return wldValue;
+  } catch (error) {
+    console.error("❌ Netzwerkfehler:", error);
+    return null;
+  }
+}
+
+async function populatePackages() {
+  const regularUSD = [0.2, 0.5, 0.8, 1.4];   // Preise in USD
+  const legendaryUSD = [0.6, 1.5, 2.4, 4.2]; // Preise in USD
+
+  const roundWld = (value: number | null) =>
+    value !== null && !isNaN(value) ? Number(value.toFixed(2)) : 0;
+
+  for (let i = 0; i < regularUSD.length; i++) {
+    const priceWld = await convertUsdToWld(regularUSD[i]);
+    regularPackages.push({
+      id: `reg-${[1, 3, 5, 10][i]}`,
+      amount: [1, 3, 5, 10][i],
+      price: roundWld(priceWld),
+    });
+  }
+
+  for (let i = 0; i < legendaryUSD.length; i++) {
+    const priceWld = await convertUsdToWld(legendaryUSD[i]);
+    legendaryPackages.push({
+      id: `leg-${[1, 3, 5, 10][i]}`,
+      amount: [1, 3, 5, 10][i],
+      price: roundWld(priceWld),
+    });
+  }
+
+  console.log("✅ Regular Packages:", regularPackages);
+  console.log("✅ Legendary Packages:", legendaryPackages);
+}
+
+// Initial einmal laden
+populatePackages();
+
 
   return (
     <ProtectedRoute>

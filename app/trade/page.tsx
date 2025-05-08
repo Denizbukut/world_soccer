@@ -21,6 +21,8 @@ import {
   RefreshCw,
   Edit,
   AlertCircle,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
@@ -43,6 +45,7 @@ import TiltableCard from "@/components/tiltable-card"
 import { MiniKit, tokenToDecimals, Tokens, type PayCommandInput } from "@worldcoin/minikit-js"
 import PurchaseSuccessAnimation from "@/components/purchase-success-animation"
 import { Progress } from "@/components/ui/progress"
+import { debounce } from "@/lib/utils"
 
 // Typen für die Marketplace-Daten
 type Card = {
@@ -69,9 +72,18 @@ type MarketListing = {
   seller_world_id?: string
 }
 
+// Update the Transaction type to make seller_username optional
 type Transaction = MarketListing & {
   transaction_type: "sold" | "purchased"
   other_party: string
+  seller_username?: string // Make this optional
+}
+
+type PaginationInfo = {
+  total: number
+  page: number
+  pageSize: number
+  totalPages: number
 }
 
 export default function TradePage() {
@@ -86,7 +98,7 @@ export default function TradePage() {
   const [sortOption, setSortOption] = useState<string>("newest")
   const [selectedListing, setSelectedListing] = useState<MarketListing | null>(null)
   const [showPurchaseDialog, setShowPurchaseDialog] = useState(false)
-  const [showCardDetailsDialog, setShowCardDetailsDialog] = useState(false) // Neuer State für das Kartendetails-Dialog
+  const [showCardDetailsDialog, setShowCardDetailsDialog] = useState(false)
   const [showUpdatePriceDialog, setShowUpdatePriceDialog] = useState(false)
   const [purchaseLoading, setPurchaseLoading] = useState(false)
   const [cancelLoading, setCancelLoading] = useState(false)
@@ -95,105 +107,193 @@ export default function TradePage() {
   const [maxListings, setMaxListings] = useState(7)
   const [listingLimitReached, setListingLimitReached] = useState(false)
 
-  // Lade Daten basierend auf dem aktiven Tab
+  // Pagination states
+  const [marketPage, setMarketPage] = useState(1)
+  const [userListingsPage, setUserListingsPage] = useState(1)
+  const [transactionsPage, setTransactionsPage] = useState(1)
+  const [marketPagination, setMarketPagination] = useState<PaginationInfo>({
+    total: 0,
+    page: 1,
+    pageSize: 20,
+    totalPages: 0,
+  })
+  const [userListingsPagination, setUserListingsPagination] = useState<PaginationInfo>({
+    total: 0,
+    page: 1,
+    pageSize: 20,
+    totalPages: 0,
+  })
+  const [transactionsPagination, setTransactionsPagination] = useState<PaginationInfo>({
+    total: 0,
+    page: 1,
+    pageSize: 20,
+    totalPages: 0,
+  })
+
+  // Debounced search function
+  const debouncedSearch = debounce(() => {
+    setMarketPage(1) // Reset to page 1 when search changes
+    loadMarketListings(1) // Load page 1 with the new search term
+  }, 500)
+
+  // Effect for search term changes
+  useEffect(() => {
+    if (activeTab === "marketplace") {
+      setMarketPage(1) // Reset to page 1 when filters change
+      debouncedSearch()
+    }
+  }, [searchTerm, rarityFilter])
+
+  // Effect for sort option changes
+  useEffect(() => {
+    if (activeTab === "marketplace") {
+      setMarketPage(1) // Reset to page 1 when sort changes
+      loadMarketListings(1)
+    }
+  }, [sortOption])
+
+  // Load data based on active tab
   useEffect(() => {
     if (!user?.username) return
 
-    const loadData = async () => {
-      setLoading(true)
-      try {
-        if (activeTab === "marketplace") {
-          const result = await getMarketListings()
-          if (result.success) {
-            setMarketListings(result.listings || [])
-          } else {
-            toast({
-              title: "Error",
-              description: result.error,
-              variant: "destructive",
-            })
-          }
-        } else if (activeTab === "my-trades") {
-          const result = await getUserListings(user.username)
-          if (result.success) {
-            setUserListings(result.listings || [])
-            setListingCount(result.listingCount || 0)
-            setMaxListings(result.maxListings || 7)
-            setListingLimitReached((result.listingCount || 0) >= (result.maxListings || 7))
-          } else {
-            toast({
-              title: "Error",
-              description: result.error,
-              variant: "destructive",
-            })
-          }
-        } else if (activeTab === "history") {
-          const result = await getTransactionHistory(user.username)
-          if (result.success) {
-            // Explizite Typumwandlung mit einer sicheren Fallback-Option
-            const transactionData = result.transactions || []
-            setTransactions(transactionData as Transaction[])
-          } else {
-            toast({
-              title: "Error",
-              description: result.error,
-              variant: "destructive",
-            })
-          }
-        }
-      } catch (error) {
-        console.error("Error loading data:", error)
-        toast({
-          title: "Error",
-          description: "Failed to load data",
-          variant: "destructive",
-        })
-      } finally {
-        setLoading(false)
-      }
+    // Reset pagination when changing tabs
+    if (activeTab === "marketplace") {
+      setMarketPage(1)
+      loadMarketListings(1)
+    } else if (activeTab === "my-trades") {
+      setUserListingsPage(1)
+      loadUserListings(1)
+    } else if (activeTab === "history") {
+      setTransactionsPage(1)
+      loadTransactionHistory(1)
     }
-
-    loadData()
   }, [activeTab, user?.username])
 
-  // Filtere und sortiere Listings
-  const filteredListings = marketListings
-    .filter((listing) => {
-      // Suche nach Name oder Charakter
-      const matchesSearch =
-        searchTerm === "" ||
-        listing.card.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        listing.card.character.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        listing.seller_username.toLowerCase().includes(searchTerm.toLowerCase())
+  // Load market listings with pagination
+  const loadMarketListings = async (pageToLoad = marketPage) => {
+    if (!user?.username) return
 
-      // Filtere nach Seltenheit
-      const matchesRarity = rarityFilter === "all" || listing.card.rarity === rarityFilter
-
-      return matchesSearch && matchesRarity
-    })
-    .sort((a, b) => {
-      // Sortiere nach ausgewählter Option
-      if (sortOption === "newest") {
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      } else if (sortOption === "oldest") {
-        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-      } else if (sortOption === "price_low") {
-        return a.price - b.price
-      } else if (sortOption === "price_high") {
-        return b.price - a.price
-      } else if (sortOption === "rarity") {
-        const rarityOrder = { common: 0, rare: 1, epic: 2, legendary: 3 }
-        return (
-          rarityOrder[b.card.rarity as keyof typeof rarityOrder] -
-          rarityOrder[a.card.rarity as keyof typeof rarityOrder]
-        )
-      } else if (sortOption === "level_high") {
-        return b.card_level - a.card_level
-      } else if (sortOption === "level_low") {
-        return a.card_level - b.card_level
+    setLoading(true)
+    try {
+      // Prepare filters
+      const filters: any = {
+        rarity: rarityFilter !== "all" ? rarityFilter : undefined,
+        sort: sortOption, // Pass the sort option to the server
       }
-      return 0
-    })
+
+      // Add search term to filters if present
+      if (searchTerm) {
+        filters.search = searchTerm
+      }
+
+      const result = await getMarketListings(pageToLoad, 20, filters)
+      if (result.success) {
+        setMarketListings(result.listings || [])
+        if (result.pagination) {
+          setMarketPagination(result.pagination)
+        }
+      } else {
+        toast({
+          title: "Error",
+          description: result.error,
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Error loading market listings:", error)
+      toast({
+        title: "Error",
+        description: "Failed to load marketplace data",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Load user listings with pagination
+  const loadUserListings = async (pageToLoad = userListingsPage) => {
+    if (!user?.username) return
+
+    setLoading(true)
+    try {
+      const result = await getUserListings(user.username, pageToLoad, 20)
+      if (result.success) {
+        setUserListings(result.listings || [])
+        setListingCount(result.listingCount || 0)
+        setMaxListings(result.maxListings || 7)
+        setListingLimitReached((result.listingCount || 0) >= (result.maxListings || 7))
+        if (result.pagination) {
+          setUserListingsPagination(result.pagination)
+        }
+      } else {
+        toast({
+          title: "Error",
+          description: result.error,
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Error loading user listings:", error)
+      toast({
+        title: "Error",
+        description: "Failed to load your listings",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Load transaction history with pagination
+  const loadTransactionHistory = async (pageToLoad = transactionsPage) => {
+    if (!user?.username) return
+
+    setLoading(true)
+    try {
+      const result = await getTransactionHistory(user.username, pageToLoad, 20)
+      if (result.success) {
+        // Explicitly cast the transactions to the Transaction type
+        const transactionData = result.transactions || []
+        setTransactions(transactionData as unknown as Transaction[])
+
+        if (result.pagination) {
+          setTransactionsPagination(result.pagination)
+        }
+      } else {
+        toast({
+          title: "Error",
+          description: result.error,
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Error loading transaction history:", error)
+      toast({
+        title: "Error",
+        description: "Failed to load transaction history",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Handle page changes
+  const handleMarketPageChange = (newPage: number) => {
+    setMarketPage(newPage)
+    loadMarketListings(newPage) // This will use the current filters and sort options
+  }
+
+  const handleUserListingsPageChange = (newPage: number) => {
+    setUserListingsPage(newPage)
+    loadUserListings(newPage)
+  }
+
+  const handleTransactionsPageChange = (newPage: number) => {
+    setTransactionsPage(newPage)
+    loadTransactionHistory(newPage)
+  }
 
   const sendPayment = async () => {
     const wldAmount = selectedListing?.price || 1
@@ -233,10 +333,7 @@ export default function TradePage() {
         setShowPurchaseDialog(false)
         setShowPurchaseSuccess(true)
         // Aktualisiere die Listings
-        const updatedListings = await getMarketListings()
-        if (updatedListings.success) {
-          setMarketListings(updatedListings.listings || [])
-        }
+        loadMarketListings()
       } else {
         toast({
           title: "Error",
@@ -269,12 +366,7 @@ export default function TradePage() {
           description: "Listing cancelled successfully!",
         })
         // Aktualisiere die Listings
-        const updatedListings = await getUserListings(user.username)
-        if (updatedListings.success) {
-          setUserListings(updatedListings.listings || [])
-          setListingCount(updatedListings.listingCount || 0)
-          setListingLimitReached((updatedListings.listingCount || 0) >= maxListings)
-        }
+        loadUserListings()
       } else {
         toast({
           title: "Error",
@@ -309,55 +401,65 @@ export default function TradePage() {
   // Aktualisiere die Daten nach erfolgreicher Preisänderung
   const handlePriceUpdateSuccess = async () => {
     if (!user?.username) return
-
-    // Aktualisiere die Listings
-    const updatedListings = await getUserListings(user.username)
-    if (updatedListings.success) {
-      setUserListings(updatedListings.listings || [])
-    }
+    loadUserListings()
   }
 
   // Aktualisiere die Daten
   const handleRefresh = async () => {
     if (!user?.username) return
 
-    setLoading(true)
-    try {
-      if (activeTab === "marketplace") {
-        const result = await getMarketListings()
-        if (result.success) {
-          setMarketListings(result.listings || [])
-        }
-      } else if (activeTab === "my-trades") {
-        const result = await getUserListings(user.username)
-        if (result.success) {
-          setUserListings(result.listings || [])
-          setListingCount(result.listingCount || 0)
-          setMaxListings(result.maxListings || 7)
-          setListingLimitReached((result.listingCount || 0) >= (result.maxListings || 7))
-        }
-      } else if (activeTab === "history") {
-        const result = await getTransactionHistory(user.username)
-        if (result.success) {
-          const transactionData = result.transactions || []
-          setTransactions(transactionData as Transaction[])
-        }
-      }
-    } catch (error) {
-      console.error("Error refreshing data:", error)
-      toast({
-        title: "Error",
-        description: "Failed to refresh data",
-        variant: "destructive",
-      })
-    } finally {
-      setLoading(false)
+    if (activeTab === "marketplace") {
+      loadMarketListings()
+    } else if (activeTab === "my-trades") {
+      loadUserListings()
+    } else if (activeTab === "history") {
+      loadTransactionHistory()
     }
   }
 
   const handleSuccessAnimationComplete = () => {
     setShowPurchaseSuccess(false)
-    // Optional: Wechsle zum Collection-Tab oder führe andere Aktionen aus
+  }
+
+  // Pagination component
+  const Pagination = ({
+    pagination,
+    onPageChange,
+  }: {
+    pagination: PaginationInfo
+    onPageChange: (page: number) => void
+  }) => {
+    const { page, totalPages } = pagination
+
+    if (totalPages <= 1) return null
+
+    return (
+      <div className="flex justify-center items-center gap-2 mt-4">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onPageChange(page - 1)}
+          disabled={page === 1 || loading}
+          className="h-8 w-8 p-0"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+
+        <div className="text-sm">
+          Page {page} of {totalPages}
+        </div>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onPageChange(page + 1)}
+          disabled={page === totalPages || loading}
+          className="h-8 w-8 p-0"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
+    )
   }
 
   return (
@@ -429,7 +531,7 @@ export default function TradePage() {
                   </div>
                   <div className="flex justify-between items-center">
                     <div className="text-sm text-gray-500">
-                      {filteredListings.length} {filteredListings.length === 1 ? "card" : "cards"} available
+                      {marketPagination.total} {marketPagination.total === 1 ? "card" : "cards"} available
                     </div>
                     <Select value={sortOption} onValueChange={setSortOption}>
                       <SelectTrigger className="w-[130px] h-8 text-xs">
@@ -441,7 +543,6 @@ export default function TradePage() {
                         <SelectItem value="oldest">Oldest First</SelectItem>
                         <SelectItem value="price_low">Price: Low to High</SelectItem>
                         <SelectItem value="price_high">Price: High to Low</SelectItem>
-                        <SelectItem value="rarity">Rarity</SelectItem>
                         <SelectItem value="level_high">Level: High to Low</SelectItem>
                         <SelectItem value="level_low">Level: Low to High</SelectItem>
                       </SelectContent>
@@ -465,20 +566,25 @@ export default function TradePage() {
                       </div>
                     ))}
                   </div>
-                ) : filteredListings.length > 0 ? (
-                  <div className="space-y-3">
-                    {filteredListings.map((listing) => (
-                      <MarketplaceCard
-                        key={listing.id}
-                        listing={listing}
-                        onPurchase={() => {
-                          setSelectedListing(listing)
-                          setShowPurchaseDialog(true)
-                        }}
-                        onShowDetails={() => handleShowCardDetails(listing)}
-                      />
-                    ))}
-                  </div>
+                ) : marketListings.length > 0 ? (
+                  <>
+                    <div className="space-y-3">
+                      {marketListings.map((listing) => (
+                        <MarketplaceCard
+                          key={listing.id}
+                          listing={listing}
+                          onPurchase={() => {
+                            setSelectedListing(listing)
+                            setShowPurchaseDialog(true)
+                          }}
+                          onShowDetails={() => handleShowCardDetails(listing)}
+                        />
+                      ))}
+                    </div>
+
+                    {/* Pagination */}
+                    <Pagination pagination={marketPagination} onPageChange={handleMarketPageChange} />
+                  </>
                 ) : (
                   <div className="bg-white rounded-xl p-6 shadow-sm text-center">
                     <div className="flex flex-col items-center">
@@ -578,17 +684,22 @@ export default function TradePage() {
                     ))}
                   </div>
                 ) : userListings.length > 0 ? (
-                  <div className="space-y-3">
-                    {userListings.map((listing) => (
-                      <MyListingCard
-                        key={listing.id}
-                        listing={listing}
-                        onCancel={() => handleCancelListing(listing.id)}
-                        onUpdatePrice={() => handleUpdatePrice(listing)}
-                        cancelLoading={cancelLoading}
-                      />
-                    ))}
-                  </div>
+                  <>
+                    <div className="space-y-3">
+                      {userListings.map((listing) => (
+                        <MyListingCard
+                          key={listing.id}
+                          listing={listing}
+                          onCancel={() => handleCancelListing(listing.id)}
+                          onUpdatePrice={() => handleUpdatePrice(listing)}
+                          cancelLoading={cancelLoading}
+                        />
+                      ))}
+                    </div>
+
+                    {/* Pagination */}
+                    <Pagination pagination={userListingsPagination} onPageChange={handleUserListingsPageChange} />
+                  </>
                 ) : (
                   <div className="bg-white rounded-xl p-6 shadow-sm text-center">
                     <div className="flex flex-col items-center">
@@ -630,11 +741,16 @@ export default function TradePage() {
                     ))}
                   </div>
                 ) : transactions.length > 0 ? (
-                  <div className="space-y-3">
-                    {transactions.map((transaction) => (
-                      <TransactionCard key={transaction.id} transaction={transaction} />
-                    ))}
-                  </div>
+                  <>
+                    <div className="space-y-3">
+                      {transactions.map((transaction) => (
+                        <TransactionCard key={transaction.id} transaction={transaction} />
+                      ))}
+                    </div>
+
+                    {/* Pagination */}
+                    <Pagination pagination={transactionsPagination} onPageChange={handleTransactionsPageChange} />
+                  </>
                 ) : (
                   <div className="bg-white rounded-xl p-6 shadow-sm text-center">
                     <div className="flex flex-col items-center">

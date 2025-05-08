@@ -43,19 +43,181 @@ type MarketListingWithDetails = MarketListing & {
 // Maximum number of cards a user can list
 const MAX_USER_LISTINGS = 7
 
+// Default page size for pagination
+const DEFAULT_PAGE_SIZE = 20
+
 /**
- * Holt alle aktiven Marketplace-Listings
+ * Holt alle aktiven Marketplace-Listings mit Pagination
  */
-export async function getMarketListings() {
+export async function getMarketListings(page = 1, pageSize = DEFAULT_PAGE_SIZE, filters: any = {}) {
   try {
     const supabase = createSupabaseServer()
 
-    // Hole alle aktiven Listings
-    const { data: listings, error } = await supabase
+    // First, we need to get all card IDs that match the search term if search is provided
+    let matchingCardIds: string[] = []
+    if (filters.search) {
+      const searchTerm = filters.search.toLowerCase()
+
+      // Search in cards table for matching names or characters
+      const { data: matchingCards, error: searchError } = await supabase
+        .from("cards")
+        .select("id")
+        .or(`name.ilike.%${searchTerm}%,character.ilike.%${searchTerm}%`)
+
+      if (searchError) {
+        console.error("Error searching cards:", searchError)
+        return { success: false, error: "Failed to search cards" }
+      }
+
+      // Extract the card IDs
+      matchingCardIds = matchingCards?.map((card) => card.id) || []
+
+      // If no cards match and it's not a seller search, return empty results early
+      if (matchingCardIds.length === 0 && !searchTerm.includes("@")) {
+        return {
+          success: true,
+          listings: [],
+          pagination: {
+            total: 0,
+            page,
+            pageSize,
+            totalPages: 1,
+          },
+        }
+      }
+    }
+
+    // Build the base query for fetching
+    let baseQuery = supabase.from("market_listings").select("*").eq("status", "active")
+
+    // Apply filters to the base query
+    if (filters.minPrice !== undefined) {
+      baseQuery = baseQuery.gte("price", filters.minPrice)
+    }
+
+    if (filters.maxPrice !== undefined) {
+      baseQuery = baseQuery.lte("price", filters.maxPrice)
+    }
+
+    // Apply search filter at database level
+    if (filters.search) {
+      const searchTerm = filters.search.toLowerCase()
+
+      // If it looks like a username search
+      if (searchTerm.includes("@")) {
+        baseQuery = baseQuery.ilike("seller_id", `%${searchTerm}%`)
+      }
+      // Otherwise, filter by the matching card IDs we found
+      else if (matchingCardIds.length > 0) {
+        baseQuery = baseQuery.in("card_id", matchingCardIds)
+      }
+    }
+
+    // Get all card IDs for rarity filtering if needed
+    let cardIdsByRarity: string[] = []
+    if (filters.rarity && filters.rarity !== "all") {
+      const { data: rarityCards, error: rarityError } = await supabase
+        .from("cards")
+        .select("id")
+        .eq("rarity", filters.rarity)
+
+      if (rarityError) {
+        console.error("Error fetching cards by rarity:", rarityError)
+        return { success: false, error: "Failed to filter by rarity" }
+      }
+
+      cardIdsByRarity = rarityCards?.map((card) => card.id) || []
+
+      // Apply rarity filter at database level
+      if (cardIdsByRarity.length > 0) {
+        baseQuery = baseQuery.in("card_id", cardIdsByRarity)
+      } else {
+        // If no cards match the rarity, return empty results
+        return {
+          success: true,
+          listings: [],
+          pagination: {
+            total: 0,
+            page,
+            pageSize,
+            totalPages: 1,
+          },
+        }
+      }
+    }
+
+    // Get total count with a separate query
+    const countQuery = supabase
       .from("market_listings")
-      .select("*")
+      .select("*", { count: "exact", head: true })
       .eq("status", "active")
-      .order("created_at", { ascending: false })
+
+    // Apply the same filters to the count query
+    if (filters.minPrice !== undefined) {
+      countQuery.gte("price", filters.minPrice)
+    }
+
+    if (filters.maxPrice !== undefined) {
+      countQuery.lte("price", filters.maxPrice)
+    }
+
+    if (filters.search) {
+      const searchTerm = filters.search.toLowerCase()
+      if (searchTerm.includes("@")) {
+        countQuery.ilike("seller_id", `%${searchTerm}%`)
+      } else if (matchingCardIds.length > 0) {
+        countQuery.in("card_id", matchingCardIds)
+      }
+    }
+
+    // Apply rarity filter to count query
+    if (filters.rarity && filters.rarity !== "all" && cardIdsByRarity.length > 0) {
+      countQuery.in("card_id", cardIdsByRarity)
+    }
+
+    const { count: totalCount, error: countError } = await countQuery
+
+    if (countError) {
+      console.error("Error counting filtered market listings:", countError)
+      return { success: false, error: "Failed to count market listings" }
+    }
+
+    // Calculate pagination
+    const offset = (page - 1) * pageSize
+    const totalPages = Math.ceil((totalCount || 0) / pageSize) || 1
+
+    // If page is out of bounds, adjust to last page
+    const adjustedPage = page > totalPages ? totalPages : page
+    const adjustedOffset = (adjustedPage - 1) * pageSize
+
+    // Apply sorting based on the sort option
+    let sortedQuery = baseQuery
+
+    if (filters.sort) {
+      switch (filters.sort) {
+        case "newest":
+          sortedQuery = baseQuery.order("created_at", { ascending: false })
+          break
+        case "oldest":
+          sortedQuery = baseQuery.order("created_at", { ascending: true })
+          break
+        case "price_low":
+          sortedQuery = baseQuery.order("price", { ascending: true })
+          break
+        case "price_high":
+          sortedQuery = baseQuery.order("price", { ascending: false })
+          break
+        // For rarity and level sorting, we'll handle it client-side after fetching the data
+        default:
+          sortedQuery = baseQuery.order("created_at", { ascending: false })
+      }
+    } else {
+      // Default sort by newest
+      sortedQuery = baseQuery.order("created_at", { ascending: false })
+    }
+
+    // Fetch the listings with pagination
+    const { data: listings, error } = await sortedQuery.range(adjustedOffset, adjustedOffset + pageSize - 1)
 
     if (error) {
       console.error("Error fetching market listings:", error)
@@ -63,14 +225,24 @@ export async function getMarketListings() {
     }
 
     if (!listings || listings.length === 0) {
-      return { success: true, listings: [] }
+      return {
+        success: true,
+        listings: [],
+        pagination: {
+          total: totalCount || 0,
+          page: adjustedPage,
+          pageSize,
+          totalPages,
+        },
+      }
     }
 
-    // Extrahiere card_ids und seller_ids für weitere Abfragen
+    // Efficiently fetch related data in batches
+    // 1. Extract unique IDs for related data
     const cardIds = [...new Set(listings.map((listing: MarketListing) => listing.card_id))]
     const sellerIds = [...new Set(listings.map((listing: MarketListing) => listing.seller_id))]
 
-    // Hole Kartendetails
+    // 2. Fetch card details in a single query
     const { data: cards, error: cardsError } = await supabase
       .from("cards")
       .select("id, name, character, image_url, rarity")
@@ -81,7 +253,7 @@ export async function getMarketListings() {
       return { success: false, error: "Failed to fetch card details" }
     }
 
-    // Hole Verkäufer-Usernames
+    // 3. Fetch seller details in a single query
     const { data: users, error: usersError } = await supabase
       .from("users")
       .select("username, world_id")
@@ -92,7 +264,7 @@ export async function getMarketListings() {
       return { success: false, error: "Failed to fetch user details" }
     }
 
-    // Erstelle eine Map für schnellen Zugriff
+    // 4. Create maps for efficient lookups
     const cardMap = new Map()
     cards?.forEach((card: Card) => {
       cardMap.set(card.id, card)
@@ -103,8 +275,12 @@ export async function getMarketListings() {
       userMap.set(user.username, user)
     })
 
-    // Kombiniere die Daten
-    const listingsWithDetails = listings.map((listing: MarketListing) => {
+    // 5. Apply rarity filter if needed (now that we have card data)
+    // This is no longer needed as we filter at the database level
+    const filteredListings = listings
+
+    // 6. Combine the data
+    const listingsWithDetails = filteredListings.map((listing: MarketListing) => {
       const card = cardMap.get(listing.card_id)
       const seller = userMap.get(listing.seller_id)
 
@@ -116,7 +292,36 @@ export async function getMarketListings() {
       }
     })
 
-    return { success: true, listings: listingsWithDetails }
+    // 7. Apply client-side sorting for rarity and level if needed
+    const sortedListings = [...listingsWithDetails]
+    if (filters.sort === "rarity") {
+      const rarityOrder = { common: 0, rare: 1, epic: 2, legendary: 3 }
+      sortedListings.sort((a, b) => {
+        return (
+          rarityOrder[b.card.rarity as keyof typeof rarityOrder] -
+          rarityOrder[a.card.rarity as keyof typeof rarityOrder]
+        )
+      })
+    } else if (filters.sort === "level_high") {
+      sortedListings.sort((a, b) => b.card_level - a.card_level)
+    } else if (filters.sort === "level_low") {
+      sortedListings.sort((a, b) => a.card_level - b.card_level)
+    }
+
+    // Calculate final pagination info based on filtered results
+    const filteredCount = totalCount || 0
+    const filteredTotalPages = Math.ceil(filteredCount / pageSize) || 1
+
+    return {
+      success: true,
+      listings: sortedListings,
+      pagination: {
+        total: filteredCount,
+        page: adjustedPage,
+        pageSize,
+        totalPages: filteredTotalPages,
+      },
+    }
   } catch (error) {
     console.error("Error in getMarketListings:", error)
     return { success: false, error: "An unexpected error occurred" }
@@ -126,17 +331,31 @@ export async function getMarketListings() {
 /**
  * Holt die Marketplace-Listings eines bestimmten Benutzers
  */
-export async function getUserListings(username: string) {
+export async function getUserListings(username: string, page = 1, pageSize = DEFAULT_PAGE_SIZE) {
   try {
     const supabase = createSupabaseServer()
+    const offset = (page - 1) * pageSize
 
-    // Hole alle Listings des Benutzers (username ist bereits die ID)
+    // Count total user listings with a separate query
+    const { count, error: countError } = await supabase
+      .from("market_listings")
+      .select("*", { count: "exact", head: true })
+      .eq("seller_id", username)
+      .eq("status", "active")
+
+    if (countError) {
+      console.error("Error counting user listings:", countError)
+      return { success: false, error: "Failed to count your listings" }
+    }
+
+    // Fetch paginated listings
     const { data: listings, error } = await supabase
       .from("market_listings")
       .select("*")
       .eq("seller_id", username)
       .eq("status", "active")
       .order("created_at", { ascending: false })
+      .range(offset, offset + pageSize - 1)
 
     if (error) {
       console.error("Error fetching user listings:", error)
@@ -144,13 +363,23 @@ export async function getUserListings(username: string) {
     }
 
     if (!listings || listings.length === 0) {
-      return { success: true, listings: [], listingCount: 0, maxListings: MAX_USER_LISTINGS }
+      return {
+        success: true,
+        listings: [],
+        listingCount: count || 0,
+        maxListings: MAX_USER_LISTINGS,
+        pagination: {
+          total: count || 0,
+          page,
+          pageSize,
+          totalPages: Math.ceil((count || 0) / pageSize) || 1,
+        },
+      }
     }
 
-    // Extrahiere card_ids für weitere Abfragen
+    // Efficiently fetch card details
     const cardIds = [...new Set(listings.map((listing: MarketListing) => listing.card_id))]
 
-    // Hole Kartendetails
     const { data: cards, error: cardsError } = await supabase
       .from("cards")
       .select("id, name, character, image_url, rarity")
@@ -161,13 +390,13 @@ export async function getUserListings(username: string) {
       return { success: false, error: "Failed to fetch card details" }
     }
 
-    // Erstelle eine Map für schnellen Zugriff
+    // Create map for efficient lookups
     const cardMap = new Map()
     cards?.forEach((card: Card) => {
       cardMap.set(card.id, card)
     })
 
-    // Kombiniere die Daten
+    // Combine the data
     const listingsWithDetails = listings.map((listing: MarketListing) => {
       const card = cardMap.get(listing.card_id)
 
@@ -181,8 +410,14 @@ export async function getUserListings(username: string) {
     return {
       success: true,
       listings: listingsWithDetails,
-      listingCount: listings.length,
+      listingCount: count || 0,
       maxListings: MAX_USER_LISTINGS,
+      pagination: {
+        total: count || 0,
+        page,
+        pageSize,
+        totalPages: Math.ceil((count || 0) / pageSize) || 1,
+      },
     }
   } catch (error) {
     console.error("Error in getUserListings:", error)
@@ -650,19 +885,33 @@ export async function updateListingPrice(username: string, listingId: string, ne
 }
 
 /**
- * Holt den Transaktionsverlauf eines Benutzers
+ * Holt den Transaktionsverlauf eines Benutzers mit Pagination
  */
-export async function getTransactionHistory(username: string) {
+export async function getTransactionHistory(username: string, page = 1, pageSize = DEFAULT_PAGE_SIZE) {
   try {
     const supabase = createSupabaseServer()
+    const offset = (page - 1) * pageSize
 
-    // Hole alle Käufe und Verkäufe des Benutzers
+    // Count total transactions with a separate query
+    const { count, error: countError } = await supabase
+      .from("market_listings")
+      .select("*", { count: "exact", head: true })
+      .or(`seller_id.eq.${username},buyer_id.eq.${username}`)
+      .eq("status", "sold")
+
+    if (countError) {
+      console.error("Error counting transactions:", countError)
+      return { success: false, error: "Failed to count your transactions" }
+    }
+
+    // Fetch paginated transactions
     const { data: listings, error } = await supabase
       .from("market_listings")
       .select("*")
       .or(`seller_id.eq.${username},buyer_id.eq.${username}`)
       .eq("status", "sold")
       .order("sold_at", { ascending: false })
+      .range(offset, offset + pageSize - 1)
 
     if (error) {
       console.error("Error fetching transaction history:", error)
@@ -670,20 +919,21 @@ export async function getTransactionHistory(username: string) {
     }
 
     if (!listings || listings.length === 0) {
-      return { success: true, transactions: [] }
+      return {
+        success: true,
+        transactions: [],
+        pagination: {
+          total: count || 0,
+          page,
+          pageSize,
+          totalPages: Math.ceil((count || 0) / pageSize) || 1,
+        },
+      }
     }
 
-    // Extrahiere card_ids für weitere Abfragen
+    // Efficiently fetch card details
     const cardIds = [...new Set(listings.map((listing: MarketListing) => listing.card_id))]
 
-    // Sammle alle beteiligten Benutzer
-    const usernames = new Set<string>()
-    listings.forEach((listing: MarketListing) => {
-      if (listing.seller_id) usernames.add(listing.seller_id)
-      if (listing.buyer_id) usernames.add(listing.buyer_id as string)
-    })
-
-    // Hole Kartendetails
     const { data: cards, error: cardsError } = await supabase
       .from("cards")
       .select("id, name, character, image_url, rarity")
@@ -694,13 +944,13 @@ export async function getTransactionHistory(username: string) {
       return { success: false, error: "Failed to fetch card details" }
     }
 
-    // Erstelle Maps für schnellen Zugriff
+    // Create map for efficient lookups
     const cardMap = new Map()
     cards?.forEach((card: Card) => {
       cardMap.set(card.id, card)
     })
 
-    // Kombiniere die Daten
+    // Combine the data
     const transactionsWithDetails = listings.map((listing: MarketListing) => {
       const card = cardMap.get(listing.card_id)
       const isSeller = listing.seller_id === username
@@ -710,10 +960,20 @@ export async function getTransactionHistory(username: string) {
         card,
         transaction_type: isSeller ? "sold" : "purchased",
         other_party: isSeller ? listing.buyer_id : listing.seller_id,
+        seller_username: listing.seller_id, // Add seller_username to match the Transaction type
       }
     })
 
-    return { success: true, transactions: transactionsWithDetails }
+    return {
+      success: true,
+      transactions: transactionsWithDetails,
+      pagination: {
+        total: count || 0,
+        page,
+        pageSize,
+        totalPages: Math.ceil((count || 0) / pageSize) || 1,
+      },
+    }
   } catch (error) {
     console.error("Error in getTransactionHistory:", error)
     return { success: false, error: "An unexpected error occurred" }

@@ -6,7 +6,6 @@ import { claimDailyBonus } from "@/app/actions"
 import ProtectedRoute from "@/components/protected-route"
 import MobileNav from "@/components/mobile-nav"
 import { Button } from "@/components/ui/button"
-import { XLogo } from "@/components/x-logo"
 import {
   Ticket,
   Gift,
@@ -19,6 +18,7 @@ import {
   ShoppingCart,
   BookOpen,
   Send,
+  Trophy,
 } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
 import Link from "next/link"
@@ -304,11 +304,11 @@ export default function Home() {
             </div>
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
-                <Ticket className="h-3.5 w-3.5 text-violet-500" />
+                <Ticket className="h-3.5 w-3.5 text-amber-500" />
                 <span className="font-medium text-sm">{tickets}</span>
               </div>
               <div className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
-                <Ticket className="h-3.5 w-3.5 text-amber-500" />
+                <Ticket className="h-3.5 w-3.5 text-blue-500" />
                 <span className="font-medium text-sm">{legendaryTickets}</span>
               </div>
               <a
@@ -317,10 +317,10 @@ export default function Home() {
                 rel="noopener noreferrer"
                 className="ml-1 bg-black text-white p-1.5 rounded-full hover:bg-gray-800 transition-colors duration-300 flex items-center justify-center shadow-md"
               >
-                <XLogo className="h-3.5 w-3.5" />
+                <span className="font-bold text-xs">𝕏</span>
               </a>
               <a
-                href="https://t.me/+Dx-fEykc-BY5ZmQy"
+                href="https://t.me/animeworld_tcg"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="ml-1 bg-blue-500 text-white p-1.5 rounded-full hover:bg-blue-600 transition-colors duration-300 flex items-center justify-center shadow-md"
@@ -431,6 +431,24 @@ export default function Home() {
             </Link>
           </motion.div>
 
+          {/* Leaderboard Card - Horizontal */}
+          <Link href="/leaderboard" className="block">
+            <div className="bg-white rounded-xl p-4 shadow-sm mb-4 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <div className="bg-violet-100 p-2 rounded-lg mr-3">
+                    <Trophy className="h-5 w-5 text-violet-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-sm">Leaderboard</h3>
+                    <p className="text-xs text-gray-500">See top players and rankings</p>
+                  </div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-gray-400" />
+              </div>
+            </div>
+          </Link>
+
           {/* Daily bonus */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -513,7 +531,7 @@ export default function Home() {
                     <div className="bg-white rounded-lg p-2 text-center shadow-sm">
                       <span className="font-medium text-sm">Regular Pack</span>
                       <div className="flex items-center justify-center gap-1 mt-1">
-                        <Ticket className="h-3 w-3 text-violet-500" />
+                        <Ticket className="h-3 w-3 text-amber-500" />
                         <span className="text-xs text-gray-500">1 Ticket</span>
                       </div>
                     </div>
@@ -536,7 +554,7 @@ export default function Home() {
                     <div className="bg-white rounded-lg p-2 text-center shadow-sm">
                       <span className="font-medium text-sm">Legendary Pack</span>
                       <div className="flex items-center justify-center gap-1 mt-1">
-                        <Ticket className="h-3 w-3 text-amber-500" />
+                        <Ticket className="h-3 w-3 text-blue-500" />
                         <span className="text-xs text-gray-500">1 L. Ticket</span>
                       </div>
                     </div>

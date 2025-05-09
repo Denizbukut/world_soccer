@@ -798,7 +798,11 @@ export default function TradePage() {
                   <div className="bg-white/10 backdrop-blur-md p-4 rounded-lg w-full text-white">
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-gray-300">Seller:</span>
-                      <span className="font-medium">{selectedListing.seller_username}</span>
+                      <span className="font-medium">
+                        {selectedListing.seller_username.length > 15
+                          ? `${selectedListing.seller_username.substring(0, 15)}...`
+                          : selectedListing.seller_username}
+                      </span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-gray-300">Price:</span>
@@ -879,7 +883,10 @@ export default function TradePage() {
                 </div>
                 <div className="bg-amber-50 p-3 rounded-lg text-sm">
                   <p className="text-amber-800">
-                    <span className="font-medium">Seller:</span> {selectedListing.seller_username}
+                    <span className="font-medium">Seller:</span>{" "}
+                    {selectedListing.seller_username.length > 15
+                      ? `${selectedListing.seller_username.substring(0, 15)}...`
+                      : selectedListing.seller_username}
                   </p>
 
                   {(user?.coins || 0) < selectedListing.price && (
@@ -1044,7 +1051,12 @@ function MarketplaceCard({
             </div>
 
             <div className="flex items-center mt-1 text-xs text-gray-500">
-              <span>Seller: {listing.seller_username}</span>
+              <span>
+                Seller:{" "}
+                {listing.seller_username.length > 15
+                  ? `${listing.seller_username.substring(0, 15)}...`
+                  : listing.seller_username}
+              </span>
               {isOwnListing && <Badge className="ml-1 bg-red-500 text-[10px] h-4 px-1">My Listing</Badge>}
             </div>
 

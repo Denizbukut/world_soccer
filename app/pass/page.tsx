@@ -507,7 +507,7 @@ export default function PremiumPassPage() {
 
   // Update the sendPayment function to reflect the promotional price
   const sendPayment = async () => {
-    const wldAmount = 7 // Promotional price
+    const wldAmount = 3 // Promotional price
     const res = await fetch("/api/initiate-payment", {
       method: "POST",
     })
@@ -814,7 +814,7 @@ export default function PremiumPassPage() {
               {!hasPremium && (
                 <div className="bg-white rounded-xl p-3 mb-4 relative overflow-hidden border border-gray-200 shadow-sm">
                   <div className="absolute top-0 right-0">
-                    <div className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-bl-lg">30% DISCOUNT</div>
+                    <div className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-bl-lg">70% DISCOUNT</div>
                   </div>
 
                   <div className="relative flex items-center">
@@ -824,7 +824,7 @@ export default function PremiumPassPage() {
                     <div className="flex-1">
                       <h4 className="font-bold text-gray-900 text-sm">Limited Time Offer!</h4>
                       <p className="text-gray-700 text-xs">
-                        Get Premium Pass for only 7 WLD instead of 10 WLD until May 15th!
+                        Get Premium Pass for only <b>3 WLD</b> instead of <b>10 WLD</b> until <b>May 15th</b>!
                       </p>
                     </div>
                   </div>
@@ -857,66 +857,58 @@ export default function PremiumPassPage() {
                   <div className="space-y-3">
                     {/* Daily Legendary Ticket */}
                     <div className="bg-white rounded-lg p-3 border border-gray-100">
-                      
-                        <div className="flex items-center">
-                          <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mr-2">
-                            <Ticket className="h-3 w-3 text-amber-600" />
-                          </div>
-                          <span className="text-sm">Daily Legendary Ticket</span>
+                      <div className="flex items-center">
+                        <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mr-2">
+                          <Ticket className="h-3 w-3 text-amber-600" />
                         </div>
-                        
+                        <span className="text-sm">Daily Legendary Ticket</span>
+                      </div>
 
-                     
-                        <p className="text-xs text-gray-600 mt-2 pl-7">Claim <b>1 legendary ticket</b> every <b>24 hours</b></p>
-                      
+                      <p className="text-xs text-gray-600 mt-2 pl-7">
+                        Claim <b>1 legendary ticket</b> every <b>24 hours</b>
+                      </p>
                     </div>
 
                     {/* Premium Level Rewards */}
                     <div className="bg-white rounded-lg p-3 border border-gray-100">
-                      
-                        <div className="flex items-center">
-                          <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mr-2">
-                            <Gift className="h-3 w-3 text-amber-600" />
-                          </div>
-                          <span className="text-sm">Premium Level Rewards</span>
+                      <div className="flex items-center">
+                        <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mr-2">
+                          <Gift className="h-3 w-3 text-amber-600" />
                         </div>
-                        
+                        <span className="text-sm">Premium Level Rewards</span>
+                      </div>
 
-                        <p className="text-xs text-gray-600 mt-2 pl-7">
-                          Get <b>1 legendary ticket</b> for each <b>level up</b> (2 tickets every 5 levels)
-                        </p>
-                     
+                      <p className="text-xs text-gray-600 mt-2 pl-7">
+                        Get <b>1 legendary ticket</b> for each <b>level up</b> (2 tickets every 5 levels)
+                      </p>
                     </div>
 
                     {/* Improved Drop Rates */}
                     <div className="bg-white rounded-lg p-3 border border-gray-100">
-                      
-                        <div className="flex items-center">
-                          <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mr-2">
-                            <BarChart3 className="h-3 w-3 text-amber-600" />
-                          </div>
-                          <span className="text-sm">Improved <b>Regular Pack</b> Drop Rates</span>
+                      <div className="flex items-center">
+                        <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mr-2">
+                          <BarChart3 className="h-3 w-3 text-amber-600" />
                         </div>
-                        
+                        <span className="text-sm">
+                          Improved <b>Regular Pack</b> Drop Rates
+                        </span>
+                      </div>
 
                       {renderDropRateComparison()}
                     </div>
 
                     {/* 30 Days Duration */}
                     <div className="bg-white rounded-lg p-3 border border-gray-100">
-                      
-                        <div className="flex items-center">
-                          <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mr-2">
-                            <Calendar className="h-3 w-3 text-amber-600" />
-                          </div>
-                          <span className="text-sm">30 Days Duration</span>
+                      <div className="flex items-center">
+                        <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mr-2">
+                          <Calendar className="h-3 w-3 text-amber-600" />
                         </div>
-                        
+                        <span className="text-sm">30 Days Duration</span>
+                      </div>
 
-                        <p className="text-xs text-gray-600 mt-2 pl-7">
-                          Premium Pass is valid for <b>30 days</b> from purchase
-                        </p>
-                      
+                      <p className="text-xs text-gray-600 mt-2 pl-7">
+                        Premium Pass is valid for <b>30 days</b> from purchase
+                      </p>
                     </div>
                   </div>
                 )}

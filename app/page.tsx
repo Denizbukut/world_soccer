@@ -18,7 +18,7 @@ import {
   Bell,
   ShoppingCart,
   BookOpen,
-  Twitter,
+  Send,
 } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
 import Link from "next/link"
@@ -300,7 +300,7 @@ export default function Home() {
         <header className="sticky top-0 z-10 backdrop-blur-md bg-white/80 border-b border-gray-100">
           <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
             <div className="flex items-center">
-              <h1 className="text-2xl font-semibold tracking-tight modern-title">Anime World</h1>
+              <h1 className="text-xl font-semibold tracking-tight modern-title">Anime World</h1>
             </div>
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
@@ -318,6 +318,14 @@ export default function Home() {
                 className="ml-1 bg-black text-white p-1.5 rounded-full hover:bg-gray-800 transition-colors duration-300 flex items-center justify-center shadow-md"
               >
                 <XLogo className="h-3.5 w-3.5" />
+              </a>
+              <a
+                href="https://t.me/+Dx-fEykc-BY5ZmQy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="ml-1 bg-blue-500 text-white p-1.5 rounded-full hover:bg-blue-600 transition-colors duration-300 flex items-center justify-center shadow-md"
+              >
+                <Send className="h-3.5 w-3.5 text-white" />
               </a>
             </div>
           </div>

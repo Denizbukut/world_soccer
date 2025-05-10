@@ -346,9 +346,7 @@ function LeaderboardRow({
               {displayUsername}
               <User className="h-3 w-3 ml-1 opacity-70" />
             </div>
-            <span className="ml-1 text-xs text-violet-500 opacity-0 group-hover:opacity-100 transition-opacity">
-              View
-            </span>
+            
           </Link>
 
           {/* Badges container with fixed position */}

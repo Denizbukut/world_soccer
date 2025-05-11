@@ -5,6 +5,7 @@ import type React from "react"
 import { useState, useEffect, useRef } from "react"
 import { useAuth } from "@/contexts/auth-context"
 import { drawCards } from "@/app/actions"
+import { updateScoreForCards, updateScoreForLevelUp } from "@/app/actions/update-score"
 import ProtectedRoute from "@/components/protected-route"
 import MobileNav from "@/components/mobile-nav"
 import { Button } from "@/components/ui/button"
@@ -72,13 +73,14 @@ const RARITY_COLORS = {
 }
 
 export default function DrawPage() {
-  const { user, updateUserTickets, updateUserExp, refreshUserData } = useAuth()
+  const { user, updateUserTickets, updateUserExp, refreshUserData, updateUserScore } = useAuth()
   const [isDrawing, setIsDrawing] = useState(false)
   const [drawnCards, setDrawnCards] = useState<any[]>([])
   const [activeTab, setActiveTab] = useState<"regular" | "legendary">("regular")
   const [legendaryTickets, setLegendaryTickets] = useState(2)
   const [tickets, setTickets] = useState(0)
   const [hasPremiumPass, setHasPremiumPass] = useState(false)
+  const [isUpdatingScore, setIsUpdatingScore] = useState(false)
 
   // Animation states
   const [showPackSelection, setShowPackSelection] = useState(true)
@@ -91,6 +93,7 @@ export default function DrawPage() {
   const [xpGained, setXpGained] = useState(0)
   const [showLevelUpAnimation, setShowLevelUpAnimation] = useState(false)
   const [newLevel, setNewLevel] = useState(1)
+  const [scoreGained, setScoreGained] = useState(0)
 
   // Hydration safety
   const [isClient, setIsClient] = useState(false)
@@ -258,7 +261,38 @@ export default function DrawPage() {
     }, 2500) // Increased from 1000ms to 2500ms for pack opening
   }
 
-  const finishCardReview = () => {
+  const finishCardReview = async () => {
+    if (!user || drawnCards.length === 0 || isUpdatingScore) return
+
+    setIsUpdatingScore(true)
+
+    try {
+      // HIER: Aktualisiere den Score für die gezogenen Karten
+      console.log("Updating score for drawn cards:", drawnCards)
+      const scoreResult = await updateScoreForCards(user.username, drawnCards)
+
+      if (scoreResult.success) {
+        console.log("Score updated successfully:", scoreResult)
+        setScoreGained(scoreResult.addedScore)
+
+        // Aktualisiere auch den Score im Context
+        if (updateUserScore) {
+          updateUserScore(scoreResult.addedScore)
+        }
+      } else {
+        console.error("Failed to update score:", scoreResult.error)
+        toast({
+          title: "Error",
+          description: "Failed to update score. Please try again.",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Error updating score:", error)
+    } finally {
+      setIsUpdatingScore(false)
+    }
+
     // Hide card display
     setShowCards(false)
 
@@ -272,6 +306,22 @@ export default function DrawPage() {
       // Now show level up animation if applicable
       if (newLevel > 1) {
         setShowLevelUpAnimation(true)
+
+        // Aktualisiere den Score für das Level-Up
+        if (user) {
+          updateScoreForLevelUp(user.username)
+            .then((result) => {
+              if (result.success && updateUserScore) {
+                console.log("Level-up score updated successfully:", result)
+                updateUserScore(result.addedScore || 0)
+              } else {
+                console.error("Failed to update level-up score:", result.error)
+              }
+            })
+            .catch((error) => {
+              console.error("Error updating level-up score:", error)
+            })
+        }
       } else {
         resetStates()
       }
@@ -284,6 +334,7 @@ export default function DrawPage() {
     setDrawnCards([])
     setCardRevealed(false)
     setXpGained(0)
+    setScoreGained(0)
     setNewLevel(1) // Reset the new level
 
     // Refresh user data after completing the draw
@@ -866,6 +917,7 @@ export default function DrawPage() {
                   {/* Button to add card to collection */}
                   <Button
                     onClick={() => finishCardReview()}
+                    disabled={isUpdatingScore}
                     className={
                       activeTab === "legendary"
                         ? "bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 px-8 rounded-full"
@@ -873,7 +925,14 @@ export default function DrawPage() {
                     }
                     size="lg"
                   >
-                    Add to Collection
+                    {isUpdatingScore ? (
+                      <div className="flex items-center">
+                        <div className="h-5 w-5 border-2 border-t-transparent border-white rounded-full animate-spin mr-2"></div>
+                        <span>Updating...</span>
+                      </div>
+                    ) : (
+                      "Add to Collection"
+                    )}
                   </Button>
                 </div>
               </motion.div>
@@ -974,6 +1033,7 @@ export default function DrawPage() {
                   >
                     <h2 className="text-2xl font-bold text-center">Level Up!</h2>
                     <p className="text-lg font-medium text-center text-amber-600">You reached Level {newLevel}!</p>
+                    <p className="text-sm text-center text-gray-600 mt-1">+100 Leaderboard Points</p>
                   </motion.div>
 
                   {/* Added Continue button */}

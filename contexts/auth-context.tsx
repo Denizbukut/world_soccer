@@ -14,6 +14,7 @@ type User = {
   experience: number
   nextLevelExp: number
   has_premium?: boolean
+  score?: number // Hinzufügen des score-Felds
 }
 
 type AuthContextType = {
@@ -26,6 +27,7 @@ type AuthContextType = {
   updateUserExp: (expToAdd: number) => Promise<{ leveledUp: boolean; newLevel?: number }>
   setUserPremium: (hasPremium: boolean) => void
   refreshUserData: () => Promise<void>
+  updateUserScore: (scoreToAdd: number) => void // Neue Methode zum Aktualisieren des Scores
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -38,6 +40,7 @@ const AuthContext = createContext<AuthContextType>({
   updateUserExp: async () => ({ leveledUp: false }),
   setUserPremium: () => {},
   refreshUserData: async () => {},
+  updateUserScore: () => {}, // Standardimplementierung
 })
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
@@ -60,7 +63,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
       const { data, error } = await supabase
         .from("users")
-        .select("username, tickets, legendary_tickets, coins, level, experience, next_level_exp, has_premium")
+        .select("username, tickets, legendary_tickets, coins, level, experience, next_level_exp, has_premium, score")
         .eq("username", username)
         .single()
 
@@ -80,6 +83,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           experience: Number(data.experience || 0),
           nextLevelExp: Number(data.next_level_exp || 100),
           has_premium: Boolean(data.has_premium || false),
+          score: Number(data.score || 0), // Score aus der Datenbank laden
         }
 
         return userData
@@ -187,6 +191,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         experience: 0,
         nextLevelExp: 100,
         has_premium: false,
+        score: 100, // Initialer Score basierend auf Level * 100
       }
 
       // Insert new user into database
@@ -199,6 +204,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         experience: newUserData.experience,
         next_level_exp: newUserData.nextLevelExp,
         has_premium: newUserData.has_premium,
+        score: newUserData.score, // Score in die Datenbank einfügen
       })
 
       if (error) {
@@ -326,11 +332,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       // Calculate next level exp requirement using the new formula
       const nextLevelExp = calculateXpForLevel(newLevel)
 
+      // Berechne Score-Erhöhung für Level-Up (100 Punkte pro Level)
+      const scoreToAdd = leveledUp ? 100 : 0
+      const newScore = (user.score || 0) + scoreToAdd
+
       const updatedUser = {
         ...user,
         experience: newExp,
         level: newLevel,
         nextLevelExp: nextLevelExp,
+        score: newScore, // Score im User-Objekt aktualisieren
       }
 
       // Update user in database
@@ -342,6 +353,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             experience: newExp,
             level: newLevel,
             next_level_exp: nextLevelExp,
+            score: newScore, // Score in der Datenbank aktualisieren
           })
           .eq("username", user.username)
       }
@@ -379,6 +391,32 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  // Neue Methode zum Aktualisieren des Scores
+  const updateUserScore = async (scoreToAdd: number) => {
+    if (user) {
+      const currentScore = user.score || 0
+      const newScore = currentScore + scoreToAdd
+
+      const updatedUser = { ...user, score: newScore }
+      setUser(updatedUser)
+      localStorage.setItem("animeworld_user", JSON.stringify(updatedUser))
+
+      // Update database
+      try {
+        const supabase = getSupabaseBrowserClient()
+        if (!supabase) return
+
+        const { error } = await supabase.from("users").update({ score: newScore }).eq("username", user.username)
+
+        if (error) {
+          console.error("Error updating score in database:", error)
+        }
+      } catch (error) {
+        console.error("Error in updateUserScore:", error)
+      }
+    }
+  }
+
   return (
     <AuthContext.Provider
       value={{
@@ -391,6 +429,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         updateUserExp,
         setUserPremium,
         refreshUserData,
+        updateUserScore, // Neue Methode zum Context hinzufügen
       }}
     >
       {children}

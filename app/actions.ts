@@ -132,6 +132,22 @@ function generateRandomCard(rarity: CardRarity): Card {
   }
 }
 
+// Funktion, um Punkte für eine Kartenrarität zu erhalten
+function getScoreForRarity(rarity: CardRarity): number {
+  switch (rarity) {
+    case "legendary":
+      return 100 // Geändert von 500 auf 100
+    case "epic":
+      return 40 // Geändert von 100 auf 40
+    case "rare":
+      return 25 // Geändert von 20 auf 25
+    case "common":
+      return 5 // Unverändert
+    default:
+      return 0
+  }
+}
+
 export async function drawCards(username: string, packType: string, count = 1) {
   try {
     const supabase = createSupabaseServer()
@@ -195,6 +211,7 @@ export async function drawCards(username: string, packType: string, count = 1) {
 
     // Generate random cards based on rarity chances
     const drawnCards = []
+    let totalScoreToAdd = 0 // Gesamtpunktzahl für alle gezogenen Karten
 
     for (let i = 0; i < count; i++) {
       const random = Math.random() * 100
@@ -221,13 +238,13 @@ export async function drawCards(username: string, packType: string, count = 1) {
         }
       } else if (hasPremium) {
         // Premium user regular pack: Common 35%, Rare 40%, Epic 20%, Legendary 5%
-        if (random < 40) {
+        if (random < 35) {
           rarity = "common"
           cardPool = commonCards
-        } else if (random < 76) {
+        } else if (random < 75) {
           rarity = "rare"
           cardPool = rareCards
-        } else if (random < 94) {
+        } else if (random < 95) {
           rarity = "epic"
           cardPool = epicCards
         } else {
@@ -260,6 +277,11 @@ export async function drawCards(username: string, packType: string, count = 1) {
       // Select a random card from the pool
       const selectedCard = cardPool[Math.floor(Math.random() * cardPool.length)]
       drawnCards.push(selectedCard)
+
+      // Punkte für diese Karte berechnen und zur Gesamtpunktzahl hinzufügen
+      const cardPoints = getScoreForRarity(selectedCard.rarity)
+      totalScoreToAdd += cardPoints
+      console.log(`Card ${selectedCard.name} (${selectedCard.rarity}) worth ${cardPoints} points`)
 
       // Add card to user's collection
       const today = new Date().toISOString().split("T")[0] // Format as YYYY-MM-DD
@@ -304,10 +326,61 @@ export async function drawCards(username: string, packType: string, count = 1) {
       }
     }
 
+    // DIREKT HIER den Score aktualisieren - das ist der wichtigste Teil
+    // Hole den aktuellen Score des Benutzers
+    const { data: currentUserData, error: currentUserError } = await supabase
+      .from("users")
+      .select("score")
+      .eq("username", username)
+      .single()
+
+    if (currentUserError) {
+      console.error("Error fetching current user score:", currentUserError)
+      return { success: false, error: "Failed to fetch current user score" }
+    }
+
+    // Berechne den neuen Score
+    const currentScore = currentUserData.score || 0
+    const newScore = currentScore + totalScoreToAdd
+
+    console.log(`UPDATING SCORE: ${username} - Current: ${currentScore}, Adding: ${totalScoreToAdd}, New: ${newScore}`)
+
+    // Aktualisiere den Score in der Datenbank
+    const { error: scoreUpdateError } = await supabase
+      .from("users")
+      .update({ score: newScore })
+      .eq("username", username)
+
+    if (scoreUpdateError) {
+      console.error("Error updating score:", scoreUpdateError)
+      return { success: false, error: "Failed to update score" }
+    }
+
+    // Überprüfe, ob der Score tatsächlich aktualisiert wurde
+    const { data: verifyData, error: verifyError } = await supabase
+      .from("users")
+      .select("score")
+      .eq("username", username)
+      .single()
+
+    if (verifyError) {
+      console.error("Error verifying score update:", verifyError)
+    } else {
+      console.log(`SCORE VERIFICATION: Expected ${newScore}, Actual ${verifyData.score}`)
+      if (verifyData.score !== newScore) {
+        console.error(`Score verification failed! Expected: ${newScore}, Actual: ${verifyData.score}`)
+      } else {
+        console.log("Score successfully updated and verified!")
+      }
+    }
+
+    // Revalidiere den Leaderboard-Pfad
+    revalidatePath("/leaderboard")
+
     // Get updated ticket counts - but don't return the entire user object
     const { data: updatedUser, error: updatedUserError } = await supabase
       .from("users")
-      .select("tickets, legendary_tickets")
+      .select("tickets, legendary_tickets, score")
       .eq("username", username)
       .single()
 
@@ -321,6 +394,8 @@ export async function drawCards(username: string, packType: string, count = 1) {
       newTicketCount: updatedUser?.tickets || (isLegendary ? userData.tickets : newTicketCount),
       newLegendaryTicketCount:
         updatedUser?.legendary_tickets || (isLegendary ? newTicketCount : userData.legendary_tickets),
+      scoreAdded: totalScoreToAdd,
+      newScore: updatedUser?.score || newScore,
     }
   } catch (error) {
     console.error("Error drawing cards:", error)

@@ -6,10 +6,10 @@ import ProtectedRoute from "@/components/protected-route"
 import MobileNav from "@/components/mobile-nav"
 import { Button } from "@/components/ui/button"
 import { motion } from "framer-motion"
-import { Trophy, RefreshCw, Info, AlertCircle, Loader2, User } from "lucide-react"
+import { Trophy, RefreshCw, Info, AlertCircle, Loader2, User, Crown } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
 import { Badge } from "@/components/ui/badge"
-import { getOverallLeaderboard } from "@/app/actions/leaderboard"
+import { getOverallLeaderboard, getCurrentUserScore } from "@/app/actions/leaderboard"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -23,12 +23,8 @@ type LeaderboardEntry = {
   rank: number
   level?: number
   has_premium?: boolean
-  card_count?: number
-  legendary_count?: number
-  epic_count?: number
-  rare_count?: number
-  common_count?: number
-  highest_card_level?: number
+  isPremium?: boolean
+  isCurrentUser?: boolean
 }
 
 // Helper function to truncate username
@@ -42,6 +38,8 @@ export default function LeaderboardPage() {
   const [loading, setLoading] = useState(true)
   const [overallLeaderboard, setOverallLeaderboard] = useState<LeaderboardEntry[]>([])
   const [userRanking, setUserRanking] = useState<number | null>(null)
+  const [userScore, setUserScore] = useState<number | null>(null)
+  const [userLevel, setUserLevel] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   // Load leaderboard data
@@ -58,22 +56,30 @@ export default function LeaderboardPage() {
     setError(null)
 
     try {
+      // Fetch current user's score first
+      const userScoreResult = await getCurrentUserScore()
+      console.log("LeaderboardPage: User score result:", userScoreResult)
+
+      if (userScoreResult.success && userScoreResult.data) {
+        setUserScore(userScoreResult.data.score)
+        setUserRanking(userScoreResult.data.rank)
+        setUserLevel(userScoreResult.data.level)
+      } else {
+        console.error("LeaderboardPage: Failed to fetch user score", userScoreResult.error)
+      }
+
       console.log("LeaderboardPage: Fetching overall leaderboard")
       // Fetch data from server actions
       const overallResult = await getOverallLeaderboard()
       console.log("LeaderboardPage: Overall leaderboard result:", {
         success: overallResult.success,
-        count: overallResult.leaderboard?.length || 0,
+        count: overallResult.data?.length || 0,
         error: overallResult.error,
       })
 
-      if (overallResult.success) {
+      if (overallResult.success && overallResult.data) {
         console.log("LeaderboardPage: Setting overall leaderboard data")
-        setOverallLeaderboard(overallResult.leaderboard || [])
-
-        // Find user's ranking in the leaderboard
-        console.log("LeaderboardPage: Finding user rankings")
-        setUserRanking(findUserRanking(overallResult.leaderboard || [], user?.username || ""))
+        setOverallLeaderboard(overallResult.data || [])
       } else {
         console.error("LeaderboardPage: Failed to fetch overall leaderboard", overallResult.error)
         setError(overallResult.error || "Failed to load leaderboard data")
@@ -100,12 +106,6 @@ export default function LeaderboardPage() {
     }
   }
 
-  // Helper function to find user's ranking
-  const findUserRanking = (leaderboard: LeaderboardEntry[], username: string): number | null => {
-    const userEntry = leaderboard.find((entry) => entry.username === username)
-    return userEntry ? userEntry.rank : null
-  }
-
   // Handle refresh button click
   const handleRefresh = () => {
     console.log("LeaderboardPage: Refresh button clicked")
@@ -124,11 +124,10 @@ export default function LeaderboardPage() {
         <p>The overall score is calculated using the following formula:</p>
         <div className="bg-gray-100 p-2 rounded-md font-mono text-xs">
           Score = (Player Level × 100) + <br />
-          (Legendary Cards × 500) + <br />
-          (Epic Cards × 100) + <br />
-          (Rare Cards × 20) + <br />
-          (Common Cards × 5) + <br />
-          (Highest Card Level × 50)
+          (Legendary Cards × 100) + <br />
+          (Epic Cards × 40) + <br />
+          (Rare Cards × 25) + <br />
+          (Common Cards × 5)
         </div>
         <p>This balanced approach rewards both progression and collection quality.</p>
       </div>
@@ -139,6 +138,8 @@ export default function LeaderboardPage() {
     overallCount: overallLeaderboard.length,
     loading,
     error,
+    userScore,
+    userRanking,
   })
 
   return (
@@ -157,6 +158,32 @@ export default function LeaderboardPage() {
         </header>
 
         <main className="p-4 max-w-lg mx-auto">
+          {/* User's Score Card */}
+          {!loading && userScore !== null && userRanking !== null && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="bg-gradient-to-r from-violet-500 to-purple-600 rounded-xl p-4 shadow-md mb-4 text-white"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <Crown className="h-5 w-5 mr-2 text-amber-300" />
+                  <h3 className="font-medium">Your Ranking</h3>
+                </div>
+                <Badge className="bg-white/20 text-white hover:bg-white/30">Rank #{userRanking}</Badge>
+              </div>
+              <div className="mt-3 flex items-baseline">
+                <span className="text-2xl font-bold">{formatScore(userScore)}</span>
+                <span className="ml-2 text-sm opacity-80">points</span>
+              </div>
+              <div className="flex justify-between items-center mt-2">
+                <p className="text-xs text-white/70">Keep collecting cards to improve your ranking!</p>
+                {userLevel && <Badge className="bg-amber-400/20 text-amber-100">Level {userLevel}</Badge>}
+              </div>
+            </motion.div>
+          )}
+
           {/* Score Explanation Box */}
           <div className="bg-white rounded-xl p-4 shadow-sm mb-4">
             <div className="flex items-center justify-between">
@@ -178,7 +205,7 @@ export default function LeaderboardPage() {
                 </PopoverContent>
               </Popover>
             </div>
-            <p className="text-xs text-gray-500 mt-2">Based on player level, card collection, and card levels</p>
+            <p className="text-xs text-gray-500 mt-2">Based on player level and card collection</p>
           </div>
 
           {/* Error Alert */}
@@ -346,13 +373,14 @@ function LeaderboardRow({
               {displayUsername}
               <User className="h-3 w-3 ml-1 opacity-70" />
             </div>
-            
           </Link>
 
           {/* Badges container with fixed position */}
           <div className="flex items-center justify-start ml-2">
             {isCurrentUser && <Badge className="text-[10px] h-4 px-1 bg-violet-500 mr-1">You</Badge>}
-            {entry.has_premium && <Badge className="text-[10px] h-4 px-1 bg-amber-500">Premium</Badge>}
+            {(entry.has_premium || entry.isPremium) && (
+              <Badge className="text-[10px] h-4 px-1 bg-amber-500">Premium</Badge>
+            )}
           </div>
 
           {/* Empty space to maintain grid */}
@@ -373,12 +401,7 @@ function LeaderboardRow({
           <TooltipContent>
             <div className="text-xs">
               <p>Level: {entry.level}</p>
-              <p>Cards: {entry.card_count}</p>
-              <p>Legendary: {entry.legendary_count}</p>
-              <p>Epic: {entry.epic_count}</p>
-              <p>Rare: {entry.rare_count}</p>
-              <p>Common: {entry.common_count}</p>
-              <p>Highest Card Level: {entry.highest_card_level}</p>
+              <p>Score: {formatScore(entry.score)}</p>
             </div>
           </TooltipContent>
         </Tooltip>

@@ -824,7 +824,7 @@ export default function PremiumPassPage() {
                     <div className="flex-1">
                       <h4 className="font-bold text-gray-900 text-sm">Limited Time Offer!</h4>
                       <p className="text-gray-700 text-sm">
-                        Get Premium Pass for only <b>1 WLD</b> until <b>May 15th</b>!
+                        Get <b>Premium Pass</b> for only <b>1 WLD</b> until <b>May 15th</b>!
                       </p>
                     </div>
                   </div>

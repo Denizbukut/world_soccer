@@ -507,7 +507,7 @@ export default function PremiumPassPage() {
 
   // Update the sendPayment function to reflect the promotional price
   const sendPayment = async () => {
-    const wldAmount = 3 // Promotional price
+    const wldAmount = 1 // Promotional price
     const res = await fetch("/api/initiate-payment", {
       method: "POST",
     })
@@ -814,7 +814,7 @@ export default function PremiumPassPage() {
               {!hasPremium && (
                 <div className="bg-white rounded-xl p-3 mb-4 relative overflow-hidden border border-gray-200 shadow-sm">
                   <div className="absolute top-0 right-0">
-                    <div className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-bl-lg">70% DISCOUNT</div>
+                    <div className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-bl-lg">80% DISCOUNT</div>
                   </div>
 
                   <div className="relative flex items-center">
@@ -823,8 +823,8 @@ export default function PremiumPassPage() {
                     </div>
                     <div className="flex-1">
                       <h4 className="font-bold text-gray-900 text-sm">Limited Time Offer!</h4>
-                      <p className="text-gray-700 text-xs">
-                        Get Premium Pass for only <b>3 WLD</b> instead of <b>10 WLD</b> until <b>May 15th</b>!
+                      <p className="text-gray-700 text-sm">
+                        Get Premium Pass for only <b>1 WLD</b> until <b>May 15th</b>!
                       </p>
                     </div>
                   </div>

@@ -154,18 +154,18 @@ export default function ShopPage() {
 
   // Regular ticket packages
   const regularPackages = [
-    { id: "reg-1", amount: 1, price: 0.2 },
-    { id: "reg-3", amount: 3, price: 0.5 },
-    { id: "reg-5", amount: 5, price: 0.8 },
-    { id: "reg-10", amount: 10, price: 1.4 },
+    { id: "reg-1", amount: 1, price: 0.1 },
+    { id: "reg-3", amount: 3, price: 0.2 },
+    { id: "reg-5", amount: 5, price: 0.3 },
+    { id: "reg-10", amount: 10, price: 0.5 },
   ]
 
   // Legendary ticket packages
   const legendaryPackages = [
-    { id: "leg-1", amount: 1, price: 0.6 },
-    { id: "leg-3", amount: 3, price: 1.5 },
-    { id: "leg-5", amount: 5, price: 2.4 },
-    { id: "leg-10", amount: 10, price: 4.2 },
+    { id: "leg-1", amount: 1, price: 0.15 },
+    { id: "leg-3", amount: 3, price: 0.3 },
+    { id: "leg-5", amount: 5, price: 0.45 },
+    { id: "leg-10", amount: 10, price: 0.7 },
   ]
 
   return (

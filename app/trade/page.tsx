@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { motion } from "framer-motion"
 import {
   Users,
-  ArrowLeftRight,
+  ShoppingBag,
   Clock,
   Search,
   Plus,
@@ -23,6 +23,11 @@ import {
   AlertCircle,
   ChevronLeft,
   ChevronRight,
+  DollarSign,
+  BarChart2,
+  History,
+  User,
+  Globe,
 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
@@ -33,6 +38,7 @@ import {
   getTransactionHistory,
   purchaseCard,
   cancelListing,
+  getRecentSales,
 } from "@/app/actions/marketplace"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -79,6 +85,18 @@ type Transaction = MarketListing & {
   seller_username?: string // Make this optional
 }
 
+// Typ für kürzlich verkaufte Karten
+type RecentSale = {
+  id: string
+  seller_id: string
+  buyer_id: string
+  card_id: string
+  price: number
+  sold_at: string
+  card_level: number
+  card: Card
+}
+
 type PaginationInfo = {
   total: number
   page: number
@@ -89,11 +107,14 @@ type PaginationInfo = {
 export default function TradePage() {
   const { user } = useAuth()
   const [activeTab, setActiveTab] = useState("marketplace")
+  const [historyType, setHistoryType] = useState<"my" | "all">("my")
   const [marketListings, setMarketListings] = useState<MarketListing[]>([])
   const [userListings, setUserListings] = useState<MarketListing[]>([])
   const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [recentSales, setRecentSales] = useState<RecentSale[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
+  const [salesSearchTerm, setSalesSearchTerm] = useState("")
   const [rarityFilter, setRarityFilter] = useState<string>("all")
   const [sortOption, setSortOption] = useState<string>("newest")
   const [selectedListing, setSelectedListing] = useState<MarketListing | null>(null)
@@ -111,6 +132,7 @@ export default function TradePage() {
   const [marketPage, setMarketPage] = useState(1)
   const [userListingsPage, setUserListingsPage] = useState(1)
   const [transactionsPage, setTransactionsPage] = useState(1)
+  const [recentSalesPage, setRecentSalesPage] = useState(1)
   const [marketPagination, setMarketPagination] = useState<PaginationInfo>({
     total: 0,
     page: 1,
@@ -129,20 +151,40 @@ export default function TradePage() {
     pageSize: 20,
     totalPages: 0,
   })
+  const [recentSalesPagination, setRecentSalesPagination] = useState<PaginationInfo>({
+    total: 0,
+    page: 1,
+    pageSize: 20,
+    totalPages: 0,
+  })
 
-  // Debounced search function
+  // Debounced search function for marketplace
   const debouncedSearch = debounce(() => {
     setMarketPage(1) // Reset to page 1 when search changes
     loadMarketListings(1) // Load page 1 with the new search term
   }, 500)
 
-  // Effect for search term changes
+  // Debounced search function for recent sales
+  const debouncedSalesSearch = debounce(() => {
+    setRecentSalesPage(1) // Reset to page 1 when search changes
+    loadRecentSales(1) // Load page 1 with the new search term
+  }, 500)
+
+  // Effect for search term changes in marketplace
   useEffect(() => {
     if (activeTab === "marketplace") {
       setMarketPage(1) // Reset to page 1 when filters change
       debouncedSearch()
     }
   }, [searchTerm, rarityFilter])
+
+  // Effect for search term changes in recent sales
+  useEffect(() => {
+    if (activeTab === "sales-history") {
+      setRecentSalesPage(1) // Reset to page 1 when search changes
+      debouncedSalesSearch()
+    }
+  }, [salesSearchTerm])
 
   // Effect for sort option changes
   useEffect(() => {
@@ -152,6 +194,19 @@ export default function TradePage() {
     }
   }, [sortOption])
 
+  // Effect for history type changes
+  useEffect(() => {
+    if (activeTab === "sales-history") {
+      if (historyType === "my") {
+        setTransactionsPage(1)
+        loadTransactionHistory(1)
+      } else {
+        setRecentSalesPage(1)
+        loadRecentSales(1)
+      }
+    }
+  }, [historyType, activeTab])
+
   // Load data based on active tab
   useEffect(() => {
     if (!user?.username) return
@@ -160,12 +215,17 @@ export default function TradePage() {
     if (activeTab === "marketplace") {
       setMarketPage(1)
       loadMarketListings(1)
-    } else if (activeTab === "my-trades") {
+    } else if (activeTab === "sell") {
       setUserListingsPage(1)
       loadUserListings(1)
-    } else if (activeTab === "history") {
-      setTransactionsPage(1)
-      loadTransactionHistory(1)
+    } else if (activeTab === "sales-history") {
+      if (historyType === "my") {
+        setTransactionsPage(1)
+        loadTransactionHistory(1)
+      } else {
+        setRecentSalesPage(1)
+        loadRecentSales(1)
+      }
     }
   }, [activeTab, user?.username])
 
@@ -279,6 +339,39 @@ export default function TradePage() {
     }
   }
 
+  // Load recent sales with pagination
+  const loadRecentSales = async (pageToLoad = recentSalesPage) => {
+    setLoading(true)
+    try {
+      console.log("Loading recent sales page:", pageToLoad, "with search term:", salesSearchTerm)
+      const result = await getRecentSales(pageToLoad, 20, salesSearchTerm)
+      if (result.success) {
+        console.log("Recent sales loaded successfully:", result.sales?.length || 0, "items")
+        setRecentSales(result.sales || [])
+        if (result.pagination) {
+          console.log("Pagination info:", result.pagination)
+          setRecentSalesPagination(result.pagination)
+        }
+      } else {
+        console.error("Error in result:", result.error)
+        toast({
+          title: "Error",
+          description: result.error,
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Error loading recent sales:", error)
+      toast({
+        title: "Error",
+        description: "Failed to load recent sales",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
   // Handle page changes
   const handleMarketPageChange = (newPage: number) => {
     setMarketPage(newPage)
@@ -293,6 +386,12 @@ export default function TradePage() {
   const handleTransactionsPageChange = (newPage: number) => {
     setTransactionsPage(newPage)
     loadTransactionHistory(newPage)
+  }
+
+  const handleRecentSalesPageChange = (newPage: number) => {
+    console.log("Changing recent sales page to:", newPage)
+    setRecentSalesPage(newPage)
+    loadRecentSales(newPage)
   }
 
   const sendPayment = async () => {
@@ -410,10 +509,14 @@ export default function TradePage() {
 
     if (activeTab === "marketplace") {
       loadMarketListings()
-    } else if (activeTab === "my-trades") {
+    } else if (activeTab === "sell") {
       loadUserListings()
-    } else if (activeTab === "history") {
-      loadTransactionHistory()
+    } else if (activeTab === "sales-history") {
+      if (historyType === "my") {
+        loadTransactionHistory()
+      } else {
+        loadRecentSales()
+      }
     }
   }
 
@@ -483,19 +586,22 @@ export default function TradePage() {
               <TabsTrigger value="marketplace" className="h-10">
                 <div className="flex items-center justify-center gap-2">
                   <Users className="h-4 w-4" />
-                  <span>Marketplace</span>
+                  <span className="hidden sm:inline">Market</span>
+                  <span className="sm:hidden">Market</span>
                 </div>
               </TabsTrigger>
-              <TabsTrigger value="my-trades" className="h-10">
+              <TabsTrigger value="sell" className="h-10">
                 <div className="flex items-center justify-center gap-2">
-                  <ArrowLeftRight className="h-4 w-4" />
-                  <span>My Listings</span>
+                  <ShoppingBag className="h-4 w-4" />
+                  <span className="hidden sm:inline">Sell</span>
+                  <span className="sm:hidden">Sell</span>
                 </div>
               </TabsTrigger>
-              <TabsTrigger value="history" className="h-10">
+              <TabsTrigger value="sales-history" className="h-10">
                 <div className="flex items-center justify-center gap-2">
-                  <Clock className="h-4 w-4" />
-                  <span>History</span>
+                  <History className="h-4 w-4" />
+                  <span className="hidden sm:inline">Sales History</span>
+                  <span className="sm:hidden">History</span>
                 </div>
               </TabsTrigger>
             </TabsList>
@@ -609,8 +715,8 @@ export default function TradePage() {
               </div>
             </TabsContent>
 
-            {/* My Listings Tab */}
-            <TabsContent value="my-trades">
+            {/* Sell Tab (formerly My Listings) */}
+            <TabsContent value="sell">
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <h2 className="text-lg font-medium">My Listed Cards</h2>
@@ -720,53 +826,190 @@ export default function TradePage() {
               </div>
             </TabsContent>
 
-            {/* History Tab */}
-            <TabsContent value="history">
+            {/* Sales History Tab (combines both history types) */}
+            <TabsContent value="sales-history">
               <div className="space-y-4">
-                <h2 className="text-lg font-medium">Transaction History</h2>
+                {/* History Type Selector */}
+                <div className="bg-white rounded-xl p-2 shadow-sm">
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      variant={historyType === "my" ? "default" : "outline"}
+                      className={`rounded-lg ${
+                        historyType === "my" ? "bg-gradient-to-r from-violet-500 to-fuchsia-500" : ""
+                      }`}
+                      onClick={() => setHistoryType("my")}
+                    >
+                      <User className="h-4 w-4 mr-2" />
+                      My History
+                    </Button>
+                    <Button
+                      variant={historyType === "all" ? "default" : "outline"}
+                      className={`rounded-lg ${
+                        historyType === "all" ? "bg-gradient-to-r from-violet-500 to-fuchsia-500" : ""
+                      }`}
+                      onClick={() => setHistoryType("all")}
+                    >
+                      <Globe className="h-4 w-4 mr-2" />
+                      Market History
+                    </Button>
+                  </div>
+                </div>
 
-                {loading ? (
-                  <div className="space-y-3">
-                    {[...Array(3)].map((_, i) => (
-                      <div key={i} className="bg-white rounded-xl p-4 shadow-sm">
-                        <div className="flex gap-3">
-                          <Skeleton className="h-24 w-16 rounded-lg" />
-                          <div className="flex-1 space-y-2">
-                            <Skeleton className="h-4 w-3/4" />
-                            <Skeleton className="h-3 w-1/2" />
-                            <Skeleton className="h-6 w-1/3 mt-2" />
+                {/* My Transaction History */}
+                {historyType === "my" && (
+                  <>
+                    <div className="flex justify-between items-center">
+                      <h2 className="text-lg font-medium">My Transaction History</h2>
+                      <Badge variant="outline" className="bg-white">
+                        <Clock className="h-3 w-3 mr-1 text-blue-500" />
+                        Personal
+                      </Badge>
+                    </div>
+
+                    {loading ? (
+                      <div className="space-y-3">
+                        {[...Array(3)].map((_, i) => (
+                          <div key={i} className="bg-white rounded-xl p-4 shadow-sm">
+                            <div className="flex gap-3">
+                              <Skeleton className="h-24 w-16 rounded-lg" />
+                              <div className="flex-1 space-y-2">
+                                <Skeleton className="h-4 w-3/4" />
+                                <Skeleton className="h-3 w-1/2" />
+                                <Skeleton className="h-6 w-1/3 mt-2" />
+                              </div>
+                            </div>
                           </div>
+                        ))}
+                      </div>
+                    ) : transactions.length > 0 ? (
+                      <>
+                        <div className="space-y-3">
+                          {transactions.map((transaction) => (
+                            <TransactionCard key={transaction.id} transaction={transaction} />
+                          ))}
+                        </div>
+
+                        {/* Pagination */}
+                        <Pagination pagination={transactionsPagination} onPageChange={handleTransactionsPageChange} />
+                      </>
+                    ) : (
+                      <div className="bg-white rounded-xl p-6 shadow-sm text-center">
+                        <div className="flex flex-col items-center">
+                          <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-3">
+                            <Clock className="h-8 w-8 text-gray-400" />
+                          </div>
+                          <h3 className="text-lg font-medium mb-1">No Transaction History</h3>
+                          <p className="text-gray-500 text-sm mb-4">You haven't bought or sold any cards yet</p>
+                          <Link href="/collection">
+                            <Button variant="outline" size="sm" className="rounded-full">
+                              <Tag className="h-4 w-4 mr-1" />
+                              Browse Marketplace
+                            </Button>
+                          </Link>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                ) : transactions.length > 0 ? (
+                    )}
+                  </>
+                )}
+
+                {/* Market History (Recent Sales) */}
+                {historyType === "all" && (
                   <>
-                    <div className="space-y-3">
-                      {transactions.map((transaction) => (
-                        <TransactionCard key={transaction.id} transaction={transaction} />
-                      ))}
+                    <div className="flex justify-between items-center">
+                      <h2 className="text-lg font-medium">Market Sales History</h2>
+                      <Badge variant="outline" className="bg-white">
+                        <DollarSign className="h-3 w-3 mr-1 text-green-500" />
+                        Global
+                      </Badge>
                     </div>
 
-                    {/* Pagination */}
-                    <Pagination pagination={transactionsPagination} onPageChange={handleTransactionsPageChange} />
-                  </>
-                ) : (
-                  <div className="bg-white rounded-xl p-6 shadow-sm text-center">
-                    <div className="flex flex-col items-center">
-                      <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-3">
-                        <Clock className="h-8 w-8 text-gray-400" />
+                    {/* Search for Recent Sales */}
+                    <div className="bg-white rounded-xl p-3 shadow-sm">
+                      <div className="relative">
+                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
+                        <Input
+                          placeholder="Search cards, buyers or sellers..."
+                          className="pl-8"
+                          value={salesSearchTerm}
+                          onChange={(e) => setSalesSearchTerm(e.target.value)}
+                        />
                       </div>
-                      <h3 className="text-lg font-medium mb-1">No Transaction History</h3>
-                      <p className="text-gray-500 text-sm mb-4">You haven't bought or sold any cards yet</p>
-                      <Link href="/collection">
-                        <Button variant="outline" size="sm" className="rounded-full">
-                          <Tag className="h-4 w-4 mr-1" />
-                          Browse Marketplace
+                      <div className="flex justify-between items-center mt-2">
+                        <div className="text-sm text-gray-500">
+                          {recentSalesPagination.total} {recentSalesPagination.total === 1 ? "sale" : "sales"} found
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setSalesSearchTerm("")
+                            loadRecentSales(1)
+                          }}
+                          className="h-7 text-xs"
+                          disabled={!salesSearchTerm}
+                        >
+                          <X className="h-3 w-3 mr-1" />
+                          Clear
                         </Button>
-                      </Link>
+                      </div>
                     </div>
-                  </div>
+
+                    {/* Market Activity Info */}
+                    <div className="bg-white rounded-xl p-4 shadow-sm">
+                      <p className="text-sm text-gray-600">
+                        View all recent card sales in the marketplace. This helps you understand current market trends
+                        and card values.
+                      </p>
+                    </div>
+
+                    {loading ? (
+                      <div className="space-y-3">
+                        {[...Array(3)].map((_, i) => (
+                          <div key={i} className="bg-white rounded-xl p-4 shadow-sm">
+                            <div className="flex gap-3">
+                              <Skeleton className="h-24 w-16 rounded-lg" />
+                              <div className="flex-1 space-y-2">
+                                <Skeleton className="h-4 w-3/4" />
+                                <Skeleton className="h-3 w-1/2" />
+                                <Skeleton className="h-6 w-1/3 mt-2" />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : recentSales.length > 0 ? (
+                      <>
+                        <div className="space-y-3">
+                          {recentSales.map((sale) => (
+                            <RecentSaleCard key={sale.id} sale={sale} />
+                          ))}
+                        </div>
+
+                        {/* Pagination */}
+                        <Pagination pagination={recentSalesPagination} onPageChange={handleRecentSalesPageChange} />
+                      </>
+                    ) : (
+                      <div className="bg-white rounded-xl p-6 shadow-sm text-center">
+                        <div className="flex flex-col items-center">
+                          <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-3">
+                            <BarChart2 className="h-8 w-8 text-gray-400" />
+                          </div>
+                          <h3 className="text-lg font-medium mb-1">No Recent Sales</h3>
+                          <p className="text-gray-500 text-sm mb-4">
+                            {salesSearchTerm
+                              ? "No sales match your search criteria. Try a different search term."
+                              : "There haven't been any card sales recently"}
+                          </p>
+                          <Link href="/marketplace">
+                            <Button variant="outline" size="sm" className="rounded-full">
+                              <Tag className="h-4 w-4 mr-1" />
+                              Browse Marketplace
+                            </Button>
+                          </Link>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </TabsContent>
@@ -1311,6 +1554,135 @@ function TransactionCard({ transaction }: { transaction: Transaction }) {
                 <span className="font-bold">{transaction.price} WLD</span>
               </div>
               <div className="text-xs text-gray-400">{formatDate(transaction.sold_at || "")}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  )
+}
+
+// Recent Sale Card Component
+function RecentSaleCard({ sale }: { sale: RecentSale }) {
+  // Map rarity to color styles
+  const rarityStyles = {
+    common: {
+      border: "border-gray-400",
+      text: "text-gray-600",
+      badge: "bg-gray-500",
+    },
+    rare: {
+      border: "border-blue-500",
+      text: "text-blue-600",
+      badge: "bg-blue-500",
+    },
+    epic: {
+      border: "border-purple-500",
+      text: "text-purple-600",
+      badge: "bg-purple-500",
+    },
+    legendary: {
+      border: "border-yellow-500",
+      text: "text-yellow-600",
+      badge: "bg-amber-500",
+    },
+  }
+
+  const rarityStyle = rarityStyles[sale.card.rarity as keyof typeof rarityStyles] || rarityStyles.common
+
+  // Format date
+  const formatDate = (dateString: string) => {
+    if (!dateString) return "Unknown"
+    const date = new Date(dateString)
+    return new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(date)
+  }
+
+  // Calculate time ago
+  const getTimeAgo = (dateString: string) => {
+    if (!dateString) return "Unknown"
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffMs = now.getTime() - date.getTime()
+    const diffSec = Math.floor(diffMs / 1000)
+    const diffMin = Math.floor(diffSec / 60)
+    const diffHour = Math.floor(diffMin / 60)
+    const diffDay = Math.floor(diffHour / 24)
+
+    if (diffDay > 0) {
+      return `${diffDay} day${diffDay > 1 ? "s" : ""} ago`
+    } else if (diffHour > 0) {
+      return `${diffHour} hour${diffHour > 1 ? "s" : ""} ago`
+    } else if (diffMin > 0) {
+      return `${diffMin} minute${diffMin > 1 ? "s" : ""} ago`
+    } else {
+      return "Just now"
+    }
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className="bg-white rounded-xl overflow-hidden shadow-sm"
+    >
+      <div className="p-3">
+        <div className="flex gap-3">
+          {/* Card Image */}
+          <div className={`relative w-16 h-24 rounded-lg overflow-hidden border-2 ${rarityStyle.border}`}>
+            <Image
+              src={
+                sale.card.image_url ||
+                `/placeholder.svg?height=400&width=300&query=${encodeURIComponent(sale.card.character) || "/placeholder.svg"}`
+              }
+              alt={sale.card.name}
+              fill
+              className="object-cover"
+            />
+            <div className="absolute bottom-0 left-0 right-0 flex justify-center">
+              {renderStars(sale.card_level, "xs")}
+            </div>
+          </div>
+
+          {/* Card Details */}
+          <div className="flex-1">
+            <div className="flex justify-between items-start">
+              <div>
+                <h3 className="font-medium text-sm">{sale.card.name}</h3>
+                <p className="text-xs text-gray-500">{sale.card.character}</p>
+              </div>
+              <div className="flex flex-col items-end">
+                <Badge className={rarityStyle.badge}>{sale.card.rarity}</Badge>
+                <Badge variant="outline" className="mt-1 text-xs">
+                  Level {sale.card_level}
+                </Badge>
+              </div>
+            </div>
+
+            <div className="flex items-center mt-1 text-xs text-gray-500">
+              <span>
+                Seller: {sale.seller_id.length > 15 ? `${sale.seller_id.substring(0, 15)}...` : sale.seller_id}
+              </span>
+              <span className="mx-1">•</span>
+              <span>Buyer: {sale.buyer_id.length > 15 ? `${sale.buyer_id.substring(0, 15)}...` : sale.buyer_id}</span>
+            </div>
+
+            <div className="flex justify-between items-center mt-2">
+              <div className="flex items-center">
+                <span className="font-bold">{sale.price} WLD</span>
+                <Badge variant="outline" className="ml-2 bg-green-50 text-green-600 border-green-200">
+                  <DollarSign className="h-3 w-3 mr-1" />
+                  Sold
+                </Badge>
+              </div>
+              <div className="text-xs text-gray-400">
+                <span title={formatDate(sale.sold_at)}>{getTimeAgo(sale.sold_at)}</span>
+              </div>
             </div>
           </div>
         </div>

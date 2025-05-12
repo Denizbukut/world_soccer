@@ -466,8 +466,6 @@ export async function createListing(
 ) {
   try {
     // Detailliertes Logging für Debugging
-    console.log("=== CREATE LISTING START ===")
-    console.log("Parameters:", { username, userCardId, cardId, price, cardLevel })
 
     const supabase = createSupabaseServer()
 
@@ -976,6 +974,163 @@ export async function getTransactionHistory(username: string, page = 1, pageSize
     }
   } catch (error) {
     console.error("Error in getTransactionHistory:", error)
+    return { success: false, error: "An unexpected error occurred" }
+  }
+}
+
+/**
+ * Holt die kürzlich verkauften Karten mit Pagination
+ */
+export async function getRecentSales(page = 1, pageSize = DEFAULT_PAGE_SIZE, searchTerm = "") {
+  try {
+    console.log("=== GET RECENT SALES START ===")
+    console.log("Parameters:", { page, pageSize, searchTerm })
+
+    const supabase = createSupabaseServer()
+    const offset = (page - 1) * pageSize
+
+    console.log("Calculated offset:", offset)
+
+    // Wenn ein Suchbegriff vorhanden ist, suche zuerst nach passenden Karten
+    let matchingCardIds: string[] = []
+    if (searchTerm) {
+      console.log("Searching for cards matching:", searchTerm)
+      const { data: matchingCards, error: searchError } = await supabase
+        .from("cards")
+        .select("id")
+        .or(`name.ilike.%${searchTerm}%,character.ilike.%${searchTerm}%`)
+
+      if (searchError) {
+        console.error("Error searching cards:", searchError)
+        return { success: false, error: "Failed to search cards" }
+      }
+
+      matchingCardIds = matchingCards?.map((card) => card.id) || []
+      console.log(`Found ${matchingCardIds.length} matching cards for search term`)
+
+      // Wenn keine Karten gefunden wurden und es keine Benutzersuche ist, gib leere Ergebnisse zurück
+      if (matchingCardIds.length === 0 && !searchTerm.includes("@")) {
+        console.log("No matching cards found, returning empty results")
+        return {
+          success: true,
+          sales: [],
+          pagination: {
+            total: 0,
+            page,
+            pageSize,
+            totalPages: 1,
+          },
+        }
+      }
+    }
+
+    // Basisabfrage erstellen
+    let baseQuery = supabase.from("market_listings").select("*", { count: "exact" }).eq("status", "sold")
+
+    // Suchfilter anwenden, wenn vorhanden
+    if (searchTerm) {
+      if (searchTerm.includes("@")) {
+        // Benutzersuche (Verkäufer oder Käufer)
+        console.log("Searching for users:", searchTerm)
+        baseQuery = baseQuery.or(`seller_id.ilike.%${searchTerm}%,buyer_id.ilike.%${searchTerm}%`)
+      } else if (matchingCardIds.length > 0) {
+        // Kartensuche
+        console.log("Filtering by matching card IDs")
+        baseQuery = baseQuery.in("card_id", matchingCardIds)
+      }
+    }
+
+    // Zähle die Gesamtanzahl der gefilterten Verkäufe
+    const { count, error: countError } = await baseQuery
+
+    if (countError) {
+      console.error("Error counting recent sales:", countError)
+      return { success: false, error: "Failed to count recent sales" }
+    }
+
+    console.log(`Total matching sales: ${count}`)
+
+    // Hole die paginierten Verkäufe
+    let query = supabase.from("market_listings").select("*").eq("status", "sold").order("sold_at", { ascending: false })
+
+    // Wende die gleichen Suchfilter an
+    if (searchTerm) {
+      if (searchTerm.includes("@")) {
+        query = query.or(`seller_id.ilike.%${searchTerm}%,buyer_id.ilike.%${searchTerm}%`)
+      } else if (matchingCardIds.length > 0) {
+        query = query.in("card_id", matchingCardIds)
+      }
+    }
+
+    // Pagination anwenden
+    const { data: sales, error } = await query.range(offset, offset + pageSize - 1)
+
+    if (error) {
+      console.error("Error fetching recent sales:", error)
+      return { success: false, error: "Failed to fetch recent sales" }
+    }
+
+    console.log(`Fetched ${sales?.length || 0} sales for page ${page}`)
+
+    if (!sales || sales.length === 0) {
+      console.log("No sales found for this page")
+      return {
+        success: true,
+        sales: [],
+        pagination: {
+          total: count || 0,
+          page,
+          pageSize,
+          totalPages: Math.ceil((count || 0) / pageSize) || 1,
+        },
+      }
+    }
+
+    // Hole die Kartendetails effizient
+    const cardIds = [...new Set(sales.map((sale: any) => sale.card_id))]
+    console.log(`Fetching details for ${cardIds.length} unique cards`)
+
+    const { data: cards, error: cardsError } = await supabase
+      .from("cards")
+      .select("id, name, character, image_url, rarity")
+      .in("id", cardIds)
+
+    if (cardsError) {
+      console.error("Error fetching card details:", cardsError)
+      return { success: false, error: "Failed to fetch card details" }
+    }
+
+    console.log(`Fetched details for ${cards?.length || 0} cards`)
+
+    // Erstelle eine Map für effiziente Lookups
+    const cardMap = new Map()
+    cards?.forEach((card: Card) => {
+      cardMap.set(card.id, card)
+    })
+
+    // Kombiniere die Daten
+    const salesWithDetails = sales.map((sale: any) => {
+      const card = cardMap.get(sale.card_id)
+      return {
+        ...sale,
+        card,
+      }
+    })
+
+    console.log("=== GET RECENT SALES COMPLETE ===")
+
+    return {
+      success: true,
+      sales: salesWithDetails,
+      pagination: {
+        total: count || 0,
+        page,
+        pageSize,
+        totalPages: Math.ceil((count || 0) / pageSize) || 1,
+      },
+    }
+  } catch (error) {
+    console.error("Error in getRecentSales:", error)
     return { success: false, error: "An unexpected error occurred" }
   }
 }

@@ -45,10 +45,10 @@ export default function SellCardDialog({ isOpen, onClose, card, username, onSucc
   function getDefaultPrice(rarity: string, level: number): number {
     const basePrice =
       {
-        common: 50,
-        rare: 150,
-        epic: 500,
-        legendary: 2000,
+        common: 1,
+        rare: 1,
+        epic: 1,
+        legendary: 1,
       }[rarity] || 50
 
     // Erhöhe den Preis basierend auf dem Level

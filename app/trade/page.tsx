@@ -1666,10 +1666,10 @@ function RecentSaleCard({ sale }: { sale: RecentSale }) {
 
             <div className="flex items-center mt-1 text-xs text-gray-500">
               <span>
-                Seller: {sale.seller_id.length > 15 ? `${sale.seller_id.substring(0, 15)}...` : sale.seller_id}
+                Seller: {sale.seller_id.length > 15 ? `${sale.seller_id.substring(0, 12)}..` : sale.seller_id}
               </span>
               <span className="mx-1">•</span>
-              <span>Buyer: {sale.buyer_id.length > 15 ? `${sale.buyer_id.substring(0, 15)}...` : sale.buyer_id}</span>
+              <span>Buyer: {sale.buyer_id.length > 15 ? `${sale.buyer_id.substring(0, 12)}..` : sale.buyer_id}</span>
             </div>
 
             <div className="flex justify-between items-center mt-2">

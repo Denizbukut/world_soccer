@@ -46,6 +46,25 @@ const MAX_USER_LISTINGS = 7
 // Default page size for pagination
 const DEFAULT_PAGE_SIZE = 20
 
+// Card rarity type
+type CardRarity = "common" | "rare" | "epic" | "legendary"
+
+// Function to calculate score based on card rarity
+function getScoreForRarity(rarity: CardRarity): number {
+  switch (rarity) {
+    case "legendary":
+      return 100
+    case "epic":
+      return 40
+    case "rare":
+      return 25
+    case "common":
+      return 5
+    default:
+      return 0
+  }
+}
+
 /**
  * Holt alle aktiven Marketplace-Listings mit Pagination
  */
@@ -466,6 +485,8 @@ export async function createListing(
 ) {
   try {
     // Detailliertes Logging für Debugging
+    console.log("=== CREATE LISTING START ===")
+    console.log("Parameters:", { username, userCardId, cardId, price, cardLevel })
 
     const supabase = createSupabaseServer()
 
@@ -490,7 +511,7 @@ export async function createListing(
 
     // Hole die Benutzerinformationen (username ist bereits die ID)
     console.log("Fetching user data for:", username)
-    const { data: userData, error: userError } = await supabase
+    const { data: initialUserData, error: userError } = await supabase
       .from("users")
       .select("world_id")
       .eq("username", username)
@@ -501,13 +522,13 @@ export async function createListing(
       return { success: false, error: "User not found: " + userError.message }
     }
 
-    if (!userData) {
+    if (!initialUserData) {
       console.error("User data is null for username:", username)
       return { success: false, error: "User not found in database" }
     }
 
-    console.log("User data:", userData)
-    const worldId = userData.world_id
+    console.log("User data:", initialUserData)
+    const worldId = initialUserData.world_id
 
     // Überprüfe, ob der Benutzer die Karte besitzt
     console.log("Checking if user owns card:", { userCardId, username })
@@ -557,6 +578,50 @@ export async function createListing(
           existingListings[0].card_level +
           ").",
       }
+    }
+
+    // Get the card details to determine rarity and calculate score
+    const { data: cardDetails, error: cardDetailsError } = await supabase
+      .from("cards")
+      .select("rarity")
+      .eq("id", cardId)
+      .single()
+
+    if (cardDetailsError || !cardDetails) {
+      console.error("Error fetching card details:", cardDetailsError)
+      return { success: false, error: "Failed to fetch card details" }
+    }
+
+    // Calculate score based on card rarity
+    const scoreForCard = getScoreForRarity(cardDetails.rarity as CardRarity)
+
+    // Get user's current score
+    const { data: scoreUserData, error: userScoreError } = await supabase
+      .from("users")
+      .select("score")
+      .eq("username", username)
+      .single()
+
+    if (userScoreError) {
+      console.error("Error fetching user score:", userScoreError)
+      return { success: false, error: "Failed to fetch user score" }
+    }
+
+    // Calculate new score (deduct the points)
+    const currentScore = scoreUserData.score || 0
+    const newScore = Math.max(0, currentScore - scoreForCard) // Ensure score doesn't go below 0
+
+    console.log(`Deducting score for listing: ${username}: ${currentScore} -> ${newScore} (-${scoreForCard} points)`)
+
+    // Update user's score
+    const { error: updateScoreError } = await supabase
+      .from("users")
+      .update({ score: newScore })
+      .eq("username", username)
+
+    if (updateScoreError) {
+      console.error("Error updating score for listing:", updateScoreError)
+      return { success: false, error: "Failed to update user score" }
     }
 
     // Erstelle das Listing
@@ -658,6 +723,76 @@ export async function purchaseCard(username: string, listingId: string) {
 
     // Verhindere, dass Benutzer ihre eigenen Karten kaufen
     if (listing.seller_id === username) {
+      // Get the card details to determine rarity and calculate score
+      const { data: cardDetails, error: cardDetailsError } = await supabase
+        .from("cards")
+        .select("rarity")
+        .eq("id", listing.card_id)
+        .single()
+
+      if (cardDetailsError || !cardDetails) {
+        console.error("Error fetching card details:", cardDetailsError)
+        return { success: false, error: "Failed to fetch card details" }
+      }
+
+      // Calculate score based on card rarity
+      const scoreForCard = getScoreForRarity(cardDetails.rarity as CardRarity)
+      console.log(`Card transfer score: ${scoreForCard} points for ${cardDetails.rarity} rarity`)
+
+      // Get seller's current score
+      const { data: sellerData, error: sellerError } = await supabase
+        .from("users")
+        .select("score")
+        .eq("username", listing.seller_id)
+        .single()
+
+      if (sellerError || !sellerData) {
+        console.error("Error fetching seller score:", sellerError)
+        return { success: false, error: "Failed to fetch seller data" }
+      }
+
+      // Get buyer's current score
+      const { data: buyerScoreData, error: buyerScoreError } = await supabase
+        .from("users")
+        .select("score")
+        .eq("username", username)
+        .single()
+
+      if (buyerScoreError || !buyerScoreData) {
+        console.error("Error fetching buyer score:", buyerScoreError)
+        return { success: false, error: "Failed to fetch buyer score data" }
+      }
+
+      // Calculate new scores
+      const sellerCurrentScore = sellerData.score || 0
+      const buyerCurrentScore = buyerScoreData.score || 0
+      const sellerNewScore = Math.max(0, sellerCurrentScore - scoreForCard) // Ensure score doesn't go below 0
+      const buyerNewScore = buyerCurrentScore + scoreForCard
+
+      console.log(`Score transfer: Seller ${listing.seller_id}: ${sellerCurrentScore} -> ${sellerNewScore}`)
+      console.log(`Score transfer: Buyer ${username}: ${buyerCurrentScore} -> ${buyerNewScore}`)
+
+      // Update seller's score
+      const { error: updateSellerError } = await supabase
+        .from("users")
+        .update({ score: sellerNewScore })
+        .eq("username", listing.seller_id)
+
+      if (updateSellerError) {
+        console.error("Error updating seller score:", updateSellerError)
+        // Continue with the purchase even if score update fails
+      }
+
+      // Update buyer's score
+      const { error: updateBuyerError } = await supabase
+        .from("users")
+        .update({ score: buyerNewScore })
+        .eq("username", username)
+
+      if (updateBuyerError) {
+        console.error("Error updating buyer score:", updateBuyerError)
+        // Continue with the purchase even if score update fails
+      }
       return { success: false, error: "You cannot buy your own card" }
     }
 
@@ -775,6 +910,50 @@ export async function cancelListing(username: string, listingId: string) {
     if (listingError || !listing) {
       console.error("Error fetching listing:", listingError)
       return { success: false, error: "Listing not found or already sold" }
+    }
+
+    // Get the card details to determine rarity and calculate score
+    const { data: cardDetails, error: cardDetailsError } = await supabase
+      .from("cards")
+      .select("rarity")
+      .eq("id", listing.card_id)
+      .single()
+
+    if (cardDetailsError || !cardDetails) {
+      console.error("Error fetching card details:", cardDetailsError)
+      // Continue with cancellation even if score update fails
+    } else {
+      // Calculate score based on card rarity
+      const scoreForCard = getScoreForRarity(cardDetails.rarity as CardRarity)
+
+      // Get seller's current score
+      const { data: sellerData, error: sellerError } = await supabase
+        .from("users")
+        .select("score")
+        .eq("username", username)
+        .single()
+
+      if (sellerError || !sellerData) {
+        console.error("Error fetching seller score:", sellerError)
+        // Continue with cancellation even if score update fails
+      } else {
+        // Calculate new score (restore the points)
+        const currentScore = sellerData.score || 0
+        const newScore = currentScore + scoreForCard
+
+        console.log(`Restoring score on cancellation: ${username}: ${currentScore} -> ${newScore}`)
+
+        // Update seller's score
+        const { error: updateScoreError } = await supabase
+          .from("users")
+          .update({ score: newScore })
+          .eq("username", username)
+
+        if (updateScoreError) {
+          console.error("Error restoring score on cancellation:", updateScoreError)
+          // Continue with cancellation even if score update fails
+        }
+      }
     }
 
     // Gib die Karte zurück
@@ -977,6 +1156,8 @@ export async function getTransactionHistory(username: string, page = 1, pageSize
     return { success: false, error: "An unexpected error occurred" }
   }
 }
+
+// Add the getRecentSales function after the getTransactionHistory function
 
 /**
  * Holt die kürzlich verkauften Karten mit Pagination

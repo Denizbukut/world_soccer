@@ -833,16 +833,6 @@ export default function TradePage() {
                 <div className="bg-white rounded-xl p-2 shadow-sm">
                   <div className="grid grid-cols-2 gap-2">
                     <Button
-                      variant={historyType === "my" ? "default" : "outline"}
-                      className={`rounded-lg ${
-                        historyType === "my" ? "bg-gradient-to-r from-violet-500 to-fuchsia-500" : ""
-                      }`}
-                      onClick={() => setHistoryType("my")}
-                    >
-                      <User className="h-4 w-4 mr-2" />
-                      My History
-                    </Button>
-                    <Button
                       variant={historyType === "all" ? "default" : "outline"}
                       className={`rounded-lg ${
                         historyType === "all" ? "bg-gradient-to-r from-violet-500 to-fuchsia-500" : ""
@@ -852,6 +842,17 @@ export default function TradePage() {
                       <Globe className="h-4 w-4 mr-2" />
                       Market History
                     </Button>
+                    <Button
+                      variant={historyType === "my" ? "default" : "outline"}
+                      className={`rounded-lg ${
+                        historyType === "my" ? "bg-gradient-to-r from-violet-500 to-fuchsia-500" : ""
+                      }`}
+                      onClick={() => setHistoryType("my")}
+                    >
+                      <User className="h-4 w-4 mr-2" />
+                      My History
+                    </Button>
+                    
                   </div>
                 </div>
 

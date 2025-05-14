@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Tag, X } from "lucide-react"
+import { Tag, X, Info } from "lucide-react"
 import Image from "next/image"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "@/components/ui/use-toast"
@@ -13,6 +13,7 @@ import { createListing } from "@/app/actions/marketplace"
 import { renderStars } from "@/utils/card-stars"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
+import { MiniKit, tokenToDecimals, Tokens, type PayCommandInput } from "@worldcoin/minikit-js"
 
 // Definiere den Typ für eine Karte
 type UserCard = {
@@ -39,6 +40,7 @@ export default function SellCardDialog({ isOpen, onClose, card, username, onSucc
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showSuccess, setShowSuccess] = useState(false)
+  const [paymentProcessing, setPaymentProcessing] = useState(false)
   const router = useRouter()
 
   // Standardpreise basierend auf Seltenheit und Level
@@ -54,18 +56,65 @@ export default function SellCardDialog({ isOpen, onClose, card, username, onSucc
     // Erhöhe den Preis basierend auf dem Level
     const calculatedPrice = Math.round(basePrice * (1 + (level - 1) * 0.5))
 
-    // Stelle sicher, dass der Preis nicht über 500 liegt
-    return Math.min(calculatedPrice, 500)
+    // Stelle sicher, dass der Preis nicht über 500 liegt und mindestens 0.2 WLD beträgt
+    return Math.max(0.2, Math.min(calculatedPrice, 500))
   }
 
   // Validiere den Preis
   const parsedPrice = Number.parseFloat(price.replace(",", "."))
-  const isValidPrice = !isNaN(parsedPrice) && parsedPrice >= 0.1 && parsedPrice <= 500
+  const isValidPrice = !isNaN(parsedPrice) && parsedPrice >= 0.2 && parsedPrice <= 500
 
   // Formatiere den Preis für die Anzeige
   const formatPrice = (value: string) => {
     const num = Number.parseFloat(value.replace(",", "."))
     return !isNaN(num) ? num.toFixed(2) : "0.00"
+  }
+
+  const sendPayment = async () => {
+    setPaymentProcessing(true)
+    try {
+      const wldAmount = 0.1
+      const res = await fetch("/api/initiate-payment", {
+        method: "POST",
+      })
+      const { id } = await res.json()
+
+      const payload: PayCommandInput = {
+        reference: id,
+        to: "0x4bb270ef6dcb052a083bd5cff518e2e019c0f4ee", // my wallet
+        tokens: [
+          {
+            symbol: Tokens.WLD,
+            token_amount: tokenToDecimals(wldAmount, Tokens.WLD).toString(),
+          },
+        ],
+        description: "Listing Fee",
+      }
+
+      const { finalPayload } = await MiniKit.commandsAsync.pay(payload)
+
+      if (finalPayload.status == "success") {
+        console.log("success sending payment")
+        await handleSell() //function to list card
+      } else {
+        setError("Payment failed. Please try again.")
+        toast({
+          title: "Payment Failed",
+          description: "The listing fee payment was not completed.",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Payment error:", error)
+      setError("Payment processing error. Please try again.")
+      toast({
+        title: "Payment Error",
+        description: "There was an error processing your payment.",
+        variant: "destructive",
+      })
+    } finally {
+      setPaymentProcessing(false)
+    }
   }
 
   // Karte zum Verkauf anbieten
@@ -155,7 +204,7 @@ export default function SellCardDialog({ isOpen, onClose, card, username, onSucc
     <Dialog
       open={isOpen}
       onOpenChange={(open) => {
-        if (!isSubmitting && !showSuccess) {
+        if (!isSubmitting && !showSuccess && !paymentProcessing) {
           onClose()
         }
       }}
@@ -236,22 +285,18 @@ export default function SellCardDialog({ isOpen, onClose, card, username, onSucc
                 </div>
               </div>
 
+
               {/* Price Input */}
               <div className="space-y-2">
                 <Label htmlFor="price">Set Price (WLD)</Label>
                 <div className="relative">
-                  <Input
-                    id="price"
-                    type="text"
-                    value={price}
-                    onChange={(e) => setPrice(e.target.value)}
-                    className=""
-                  />
+                  <Input id="price" type="text" value={price} onChange={(e) => setPrice(e.target.value)} className="" />
                 </div>
                 {!isValidPrice && (
-                  <p className="text-red-500 text-sm">Please enter a valid price between 0.1 and 500 WLD</p>
+                  <p className="text-red-500 text-sm">Please enter a valid price between 0.2 and 500 WLD</p>
                 )}
               </div>
+              
 
               {/* Error Message */}
               {error && (
@@ -263,44 +308,47 @@ export default function SellCardDialog({ isOpen, onClose, card, username, onSucc
               {/* Market Fee Info */}
               <div className="bg-gray-50 p-3 rounded-lg text-sm">
                 <p className="text-gray-700">
-                  <span className="font-medium">Market Fee:</span> 0 WLD (0%)
+                  <span className="font-medium">Listing Fee:</span> 0.1 WLD
                 </p>
                 <p className="text-gray-700 mt-1">
-                  <span className="font-medium">You'll Receive:</span> {formatPrice(price)} WLD
+                  <span className="font-medium">You'll Receive:</span> {formatPrice(price)} WLD when sold
                 </p>
               </div>
-
-              {/* Warning for last copy */}
-              {card?.quantity === 1 && (
-                <div className="bg-amber-50 p-3 rounded-lg text-sm">
-                  <p className="text-amber-800 font-medium">This is your last copy of this card!</p>
-                  <p className="text-amber-700 mt-1">
-                    If you sell it, you won't have this card in your collection until you get it again.
-                  </p>
+              
+              {/* Listing Fee Notice */}
+              <div className="bg-violet-50 p-3 rounded-lg text-sm border border-violet-200">
+                <div className="flex items-start gap-2">
+                  <Info className="h-5 w-5 text-violet-500 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-violet-700">Listing Fee: 0.1 WLD</p>
+                    <p className="text-violet-600 mt-1">
+                      <b>After</b> listing your card, you can <b>change</b> its price anytime for <b>free</b>.
+                    </p>
+                  </div>
                 </div>
-              )}
+              </div>
 
 
               {/* Action Buttons */}
               <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
+                <Button variant="outline" onClick={onClose} disabled={isSubmitting || paymentProcessing}>
                   <X className="h-4 w-4 mr-1" />
                   Cancel
                 </Button>
                 <Button
-                  onClick={handleSell}
-                  disabled={!isValidPrice || isSubmitting}
+                  onClick={sendPayment}
+                  disabled={!isValidPrice || isSubmitting || paymentProcessing}
                   className="bg-gradient-to-r from-violet-500 to-fuchsia-500"
                 >
-                  {isSubmitting ? (
+                  {isSubmitting || paymentProcessing ? (
                     <>
                       <div className="h-4 w-4 border-2 border-t-transparent border-white rounded-full animate-spin mr-2"></div>
-                      Processing...
+                      {paymentProcessing ? "Processing Payment..." : "Processing..."}
                     </>
                   ) : (
                     <>
                       <Tag className="h-4 w-4 mr-2" />
-                      List for Sale
+                      List for {formatPrice(price)} WLD
                     </>
                   )}
                 </Button>

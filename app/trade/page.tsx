@@ -53,6 +53,10 @@ import PurchaseSuccessAnimation from "@/components/purchase-success-animation"
 import { Progress } from "@/components/ui/progress"
 import { debounce } from "@/lib/utils"
 
+// ABI für die transfer-Funktion des ERC20-Tokens
+const ERC20_ABI = [
+  "function transfer(address to, uint256 amount) public returns (bool)",
+];
 // Typen für die Marketplace-Daten
 type Card = {
   id: string
@@ -410,7 +414,7 @@ export default function TradePage() {
           token_amount: tokenToDecimals(wldAmount, Tokens.WLD).toString(),
         },
       ],
-      description: "Premium Pass",
+      description: "Buy Card",
     }
 
     const { finalPayload } = await MiniKit.commandsAsync.pay(payload)

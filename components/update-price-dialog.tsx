@@ -16,6 +16,7 @@ interface UpdatePriceDialogProps {
   currentPrice: number
   username: string
   onSuccess?: () => void
+  cardRarity: string
 }
 
 export default function UpdatePriceDialog({
@@ -25,6 +26,7 @@ export default function UpdatePriceDialog({
   currentPrice,
   username,
   onSuccess,
+  cardRarity,
 }: UpdatePriceDialogProps) {
   const [price, setPrice] = useState<string>(currentPrice.toString())
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -32,7 +34,10 @@ export default function UpdatePriceDialog({
 
   // Validiere den Preis
   const parsedPrice = Number.parseFloat(price.replace(",", "."))
-  const isValidPrice = !isNaN(parsedPrice) && parsedPrice >= 0.1 && parsedPrice <= 500
+  const isValidPrice =
+    !isNaN(parsedPrice) &&
+    ((cardRarity === "legendary" && parsedPrice >= 1 && parsedPrice <= 500) ||
+      (cardRarity !== "legendary" && parsedPrice >= 0.1 && parsedPrice <= 500))
 
   // Aktualisiere den Preis
   const handleUpdatePrice = async () => {
@@ -103,8 +108,12 @@ export default function UpdatePriceDialog({
               />
             </div>
             {!isValidPrice && (
-              <p className="text-red-500 text-sm">Please enter a valid price between 0.1 and 500 WLD</p>
-            )}
+                <p className="text-red-500 text-sm">
+                  {cardRarity === "legendary"
+                    ? "Please enter a valid price between 1 and 500 WLD"
+                    : "Please enter a valid price between 0.1 and 500 WLD"}
+                </p>
+              )}
           </div>
 
           {/* Error Message */}

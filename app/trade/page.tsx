@@ -1184,6 +1184,7 @@ export default function TradePage() {
             currentPrice={selectedListing.price}
             username={user?.username || ""}
             onSuccess={handlePriceUpdateSuccess}
+            cardRarity={selectedListing.card.rarity}
           />
         )}
 

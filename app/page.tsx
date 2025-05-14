@@ -1,8 +1,9 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useAuth } from "@/contexts/auth-context"
 import { claimDailyBonus } from "@/app/actions"
+import { getDailyDeal } from "@/app/actions/deals"
 import ProtectedRoute from "@/components/protected-route"
 import MobileNav from "@/components/mobile-nav"
 import { Button } from "@/components/ui/button"
@@ -26,12 +27,34 @@ import { motion, AnimatePresence } from "framer-motion"
 import Image from "next/image"
 import { getSupabaseBrowserClient } from "@/lib/supabase"
 import { Progress } from "@/components/ui/progress"
+import DealOfTheDayDialog from "@/components/deal-of-the-day-dialog"
 
 interface LevelReward {
   level: number
   standardClaimed: boolean
   premiumClaimed: boolean
   isSpecialLevel?: boolean
+}
+
+interface DailyDeal {
+  id: number
+  card_id: string
+  card_level: number
+  regular_tickets: number
+  legendary_tickets: number
+  price: number
+  description: string
+  discount_percentage: number
+  card_name: string
+  card_image_url: string
+  card_rarity: string
+  card_character: string
+}
+
+interface DealInteraction {
+  seen: boolean
+  dismissed: boolean
+  purchased: boolean
 }
 
 export default function Home() {
@@ -48,10 +71,66 @@ export default function Home() {
   const [levelRewards, setLevelRewards] = useState<LevelReward[]>([])
   const [lastLegendaryClaim, setLastLegendaryClaim] = useState<Date | null>(null)
 
+  // Deal of the Day state
+  const [dailyDeal, setDailyDeal] = useState<DailyDeal | null>(null)
+  const [dealInteraction, setDealInteraction] = useState<DealInteraction | null>(null)
+  const [showDealDialog, setShowDealDialog] = useState(false)
+  const [dealLoading, setDealLoading] = useState(false)
+
+  // Refs to track if effects have run
+  const hasCheckedDeal = useRef(false)
+  const hasCheckedClaims = useRef(false)
+  const hasCheckedRewards = useRef(false)
+
+  // Interval refs
+  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const rewardsIntervalRef = useRef<NodeJS.Timeout | null>(null)
+
   // Refresh user data when component mounts
   useEffect(() => {
     refreshUserData?.()
+
+    // Cleanup function
+    return () => {
+      // Clear all intervals when component unmounts
+      if (timerIntervalRef.current) clearInterval(timerIntervalRef.current)
+      if (rewardsIntervalRef.current) clearInterval(rewardsIntervalRef.current)
+    }
   }, [refreshUserData])
+
+  // Check for daily deal - only once when user data is available
+  useEffect(() => {
+    if (user?.username && !hasCheckedDeal.current) {
+      hasCheckedDeal.current = true
+      checkDailyDeal()
+    }
+  }, [user?.username])
+
+  // Check for daily deal
+  const checkDailyDeal = async () => {
+    if (!user?.username) return
+
+    setDealLoading(true)
+    try {
+      const result = await getDailyDeal(user.username)
+
+      console.log("Daily deal result:", result) // Debug log
+
+      if (result.success && result.deal) {
+        setDailyDeal(result.deal)
+        setDealInteraction(result.interaction)
+
+        // Show the deal dialog automatically if it hasn't been seen or dismissed
+        if (!result.interaction.seen && !result.interaction.dismissed && !result.interaction.purchased) {
+          setShowDealDialog(true)
+        }
+      }
+    } catch (error) {
+      console.error("Error checking daily deal:", error)
+    } finally {
+      setDealLoading(false)
+    }
+  }
 
   // Format time remaining as HH:MM:SS
   const formatTimeRemaining = (milliseconds: number) => {
@@ -66,7 +145,9 @@ export default function Home() {
 
   // Check if user can claim tickets and update countdown timer
   useEffect(() => {
-    if (!user?.username) return
+    if (!user?.username || hasCheckedClaims.current) return
+
+    hasCheckedClaims.current = true
 
     const checkClaimStatus = async () => {
       const supabase = getSupabaseBrowserClient()
@@ -152,22 +233,29 @@ export default function Home() {
 
     checkClaimStatus()
 
-    // Set up interval to update countdown timer
-    const interval = setInterval(() => {
-      if (timeUntilNextClaim && timeUntilNextClaim > 1000) {
-        setTimeUntilNextClaim((prevTime) => (prevTime ? prevTime - 1000 : null))
-      } else if (timeUntilNextClaim && timeUntilNextClaim <= 1000) {
-        setAlreadyClaimed(false)
-        setTimeUntilNextClaim(null)
-      }
+    // Set up interval to update countdown timer - client-side only, no API calls
+    timerIntervalRef.current = setInterval(() => {
+      setTimeUntilNextClaim((prevTime) => {
+        if (prevTime && prevTime > 1000) {
+          return prevTime - 1000
+        } else if (prevTime && prevTime <= 1000) {
+          setAlreadyClaimed(false)
+          return null
+        }
+        return prevTime
+      })
     }, 1000)
 
-    return () => clearInterval(interval)
-  }, [user?.username, timeUntilNextClaim])
+    return () => {
+      if (timerIntervalRef.current) clearInterval(timerIntervalRef.current)
+    }
+  }, [user?.username])
 
   // Check for unclaimed rewards
   useEffect(() => {
-    if (!user?.username) return
+    if (!user?.username || hasCheckedRewards.current) return
+
+    hasCheckedRewards.current = true
 
     const checkUnclaimedRewards = async () => {
       const supabase = getSupabaseBrowserClient()
@@ -220,10 +308,13 @@ export default function Home() {
 
     checkUnclaimedRewards()
 
-    // Set up interval to periodically check for new rewards
-    const rewardsInterval = setInterval(checkUnclaimedRewards, 60000) // Check every minute
+    // Check for new rewards much less frequently (every 5 minutes)
+    // This is a background task that doesn't need to run constantly
+    rewardsIntervalRef.current = setInterval(checkUnclaimedRewards, 5 * 60 * 1000)
 
-    return () => clearInterval(rewardsInterval)
+    return () => {
+      if (rewardsIntervalRef.current) clearInterval(rewardsIntervalRef.current)
+    }
   }, [user?.username, user?.level, hasPremium])
 
   const handleClaimBonus = async () => {
@@ -291,6 +382,25 @@ export default function Home() {
         setClaimLoading(false)
       }
     }
+  }
+
+  // Handle deal purchase success
+  const handleDealPurchaseSuccess = (newTickets: number, newLegendaryTickets: number) => {
+    setTickets(newTickets)
+    setLegendaryTickets(newLegendaryTickets)
+
+    // Update deal interaction state
+    if (dealInteraction) {
+      setDealInteraction({
+        ...dealInteraction,
+        purchased: true,
+      })
+    }
+
+    toast({
+      title: "Purchase Successful!",
+      description: "You've claimed today's special deal",
+    })
   }
 
   return (
@@ -430,6 +540,157 @@ export default function Home() {
               </div>
             </Link>
           </motion.div>
+
+          {/* Deal of the Day Card - Enhanced */}
+          {dailyDeal && dealInteraction && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1, duration: 0.4 }}
+              className="relative rounded-2xl shadow-md overflow-hidden"
+            >
+              <button onClick={() => setShowDealDialog(true)} className="w-full block relative">
+                {/* Background with animated gradient */}
+                <div className="absolute inset-0 bg-gradient-to-br from-violet-600 to-fuchsia-600 opacity-90">
+                  <motion.div
+                    className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(255,255,255,0.1),transparent_70%)]"
+                    animate={{
+                      backgroundPosition: ["0% 0%", "100% 100%"],
+                    }}
+                    transition={{
+                      duration: 10,
+                      repeat: Number.POSITIVE_INFINITY,
+                      repeatType: "reverse",
+                    }}
+                  />
+                </div>
+
+                {/* Floating particles */}
+                {[...Array(6)].map((_, i) => (
+                  <motion.div
+                    key={`particle-${i}`}
+                    className="absolute rounded-full bg-white/20"
+                    style={{
+                      width: Math.random() * 6 + 3,
+                      height: Math.random() * 6 + 3,
+                      left: `${Math.random() * 100}%`,
+                      top: `${Math.random() * 100}%`,
+                    }}
+                    animate={{
+                      y: [0, -15, 0],
+                      opacity: [0.4, 0.8, 0.4],
+                    }}
+                    transition={{
+                      duration: 2 + Math.random() * 3,
+                      repeat: Number.POSITIVE_INFINITY,
+                      delay: Math.random() * 2,
+                    }}
+                  />
+                ))}
+
+                <div className="relative p-4 flex items-center justify-between z-10">
+                  <div className="flex items-center gap-3">
+                    {/* Card preview */}
+                    <motion.div
+                      className="relative"
+                      animate={{
+                        y: [0, -4, 0],
+                      }}
+                      transition={{
+                        duration: 3,
+                        repeat: Number.POSITIVE_INFINITY,
+                        repeatType: "reverse",
+                      }}
+                    >
+                      <div className="w-12 h-16 rounded-lg border-2 border-white/30 overflow-hidden shadow-lg">
+                        {dailyDeal.card_image_url && (
+                          <Image
+                            src={dailyDeal.card_image_url || "/placeholder.svg"}
+                            alt={dailyDeal.card_name || "Card"}
+                            fill
+                            className="object-cover"
+                          />
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+
+                        {/* Level indicator */}
+                        <div className="absolute bottom-0 left-0 right-0 bg-black/60 py-0.5 flex items-center justify-center">
+                          <span className="text-xs font-bold text-white">★{dailyDeal.card_level}</span>
+                        </div>
+                      </div>
+                    </motion.div>
+
+                    <motion.div
+                      animate={{
+                        y: [0, -3, 0],
+                      }}
+                      transition={{
+                        duration: 2.5,
+                        repeat: Number.POSITIVE_INFINITY,
+                        repeatType: "reverse",
+                        delay: 0.5,
+                      }}
+                    >
+                      <h3 className="font-bold text-base text-white">Deal of the Day</h3>
+                      <div className="flex items-center gap-1 mt-1">
+                        <p className="text-xs text-white/80">
+                          {dailyDeal.card_name} • {dailyDeal.card_rarity}
+                        </p>
+                      </div>
+                    </motion.div>
+                  </div>
+
+                  <motion.div
+                    className="bg-white/20 rounded-full p-2 backdrop-blur-sm"
+                    animate={{
+                      x: [0, 5, 0],
+                    }}
+                    transition={{
+                      duration: 1.5,
+                      repeat: Number.POSITIVE_INFINITY,
+                      repeatType: "reverse",
+                    }}
+                  >
+                    <ChevronRight className="h-5 w-5 text-white" />
+                  </motion.div>
+                </div>
+
+                {/* Bottom info bar */}
+                <div className="relative bg-black/30 backdrop-blur-sm px-4 py-2 flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    {dailyDeal.regular_tickets > 0 && (
+                      <div className="flex items-center">
+                        <Ticket className="h-3.5 w-3.5 text-amber-300 mr-1" />
+                        <span className="text-xs font-medium text-white">+{dailyDeal.regular_tickets}</span>
+                      </div>
+                    )}
+
+                    {dailyDeal.legendary_tickets > 0 && (
+                      <div className="flex items-center ml-2">
+                        <Ticket className="h-3.5 w-3.5 text-blue-300 mr-1" />
+                        <span className="text-xs font-medium text-white">+{dailyDeal.legendary_tickets}</span>
+                      </div>
+                    )}
+                    <span className="text-xs font-medium text-white">Card Level: {dailyDeal.card_level}</span>
+                  </div>
+
+                  <div className="text-xs font-bold text-white">{dailyDeal.price.toFixed(2)} WLD</div>
+                </div>
+
+                {/* Shine effect */}
+                <motion.div
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-[-20deg]"
+                  initial={{ left: "-100%" }}
+                  animate={{ left: "100%" }}
+                  transition={{
+                    repeat: Number.POSITIVE_INFINITY,
+                    repeatDelay: 5,
+                    duration: 1.5,
+                  }}
+                />
+              </button>
+            </motion.div>
+          )}
 
           {/* Leaderboard Card - Horizontal */}
           <Link href="/leaderboard" className="block">
@@ -700,6 +961,17 @@ export default function Home() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Deal of the Day Dialog */}
+        {dailyDeal && dailyDeal.card_name && (
+          <DealOfTheDayDialog
+            isOpen={showDealDialog}
+            onClose={() => setShowDealDialog(false)}
+            deal={dailyDeal}
+            username={user?.username || ""}
+            onPurchaseSuccess={handleDealPurchaseSuccess}
+          />
+        )}
 
         <MobileNav />
       </div>

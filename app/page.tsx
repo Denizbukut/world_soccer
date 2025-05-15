@@ -20,6 +20,7 @@ import {
   BookOpen,
   Send,
   Trophy,
+  Coins,
 } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
 import Link from "next/link"
@@ -28,6 +29,9 @@ import Image from "next/image"
 import { getSupabaseBrowserClient } from "@/lib/supabase"
 import { Progress } from "@/components/ui/progress"
 import DealOfTheDayDialog from "@/components/deal-of-the-day-dialog"
+import { useTokenBalance } from "@/components/getTokenBalance"
+
+
 interface LevelReward {
   level: number
   standardClaimed: boolean
@@ -63,12 +67,21 @@ export default function Home() {
   const [timeUntilNextClaim, setTimeUntilNextClaim] = useState<number | null>(null)
   const [legendaryTickets, setLegendaryTickets] = useState(0)
   const [tickets, setTickets] = useState(0)
+  const [tokens, setTokens] = useState<string | null>(null);
   const [showClaimAnimation, setShowClaimAnimation] = useState(false)
   const [hasPremium, setHasPremium] = useState(false)
   const [canClaimLegendary, setCanClaimLegendary] = useState(false)
   const [unclaimedRewards, setUnclaimedRewards] = useState(0)
   const [levelRewards, setLevelRewards] = useState<LevelReward[]>([])
   const [lastLegendaryClaim, setLastLegendaryClaim] = useState<Date | null>(null)
+
+  // Timer display state
+  const [ticketTimerDisplay, setTicketTimerDisplay] = useState("00:00:00")
+  const [tokenTimerDisplay, setTokenTimerDisplay] = useState("00:00:00")
+
+  // Token minting state
+  const [tokenAlreadyClaimed, setTokenAlreadyClaimed] = useState(false)
+  const [timeUntilNextTokenClaim, setTimeUntilNextTokenClaim] = useState<number | null>(null)
 
   // Deal of the Day state
   const [dailyDeal, setDailyDeal] = useState<DailyDeal | null>(null)
@@ -80,10 +93,100 @@ export default function Home() {
   const hasCheckedDeal = useRef(false)
   const hasCheckedClaims = useRef(false)
   const hasCheckedRewards = useRef(false)
+  const hasCheckedTokens = useRef(false)
 
   // Interval refs
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const tokenTimerIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const rewardsIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const [transactionId, setTransactionId] = useState<string>("")
+  const [walletAddress, setWalletAddress] = useState<string>("")
+  
+
+  const tokenAbi = [
+    {
+      inputs: [
+        { internalType: "address", name: "to", type: "address" },
+        { internalType: "uint256", name: "amount", type: "uint256" },
+      ],
+      name: "mintToken",
+      outputs: [],
+      stateMutability: "nonpayable",
+      type: "function",
+    },
+  ]
+
+  // Hilfsfunktion, um zu überprüfen, ob der Benutzer einen Token beanspruchen kann
+  const checkCanClaimToken = async (username: string) => {
+    try {
+      const supabase = getSupabaseBrowserClient()
+      if (!supabase) return { canClaim: false }
+
+      const { data, error } = await supabase
+        .from("users")
+        .select("token_last_claimed")
+        .eq("username", username)
+        .single()
+
+      if (error) {
+        console.error("Error checking token claim status:", error)
+        return { canClaim: false }
+      }
+
+      // Überprüfen, ob der Benutzer in den letzten 24 Stunden einen Token beansprucht hat
+      if (data?.token_last_claimed) {
+        const lastClaimed = new Date(data.token_last_claimed as string)
+        const now = new Date()
+        const hoursSinceLastClaim = (now.getTime() - lastClaimed.getTime()) / (1000 * 60 * 60)
+
+        if (hoursSinceLastClaim < 24) {
+          const timeUntilNextClaim = 24 * 60 * 60 * 1000 - (now.getTime() - lastClaimed.getTime())
+          return {
+            canClaim: false,
+            alreadyClaimed: true,
+            timeUntilNextClaim,
+            nextClaimTime: new Date(lastClaimed.getTime() + 24 * 60 * 60 * 1000).toISOString(),
+          }
+        }
+      }
+
+      return { canClaim: true }
+    } catch (error) {
+      console.error("Error in checkCanClaimToken:", error)
+      return { canClaim: false }
+    }
+  }
+
+  // Format time remaining as HH:MM:SS
+  const formatTimeRemaining = (milliseconds: number) => {
+    if (!milliseconds || milliseconds <= 0) return "00:00:00"
+
+    // Ensure we're working with a positive number
+    milliseconds = Math.max(0, milliseconds)
+
+    const hours = Math.floor(milliseconds / (1000 * 60 * 60))
+    const minutes = Math.floor((milliseconds % (1000 * 60 * 60)) / (1000 * 60))
+    const seconds = Math.floor((milliseconds % (1000 * 60)) / 1000)
+
+    return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
+  }
+
+  // Update timer displays
+  const updateTicketTimerDisplay = (milliseconds: number | null) => {
+    if (milliseconds === null) {
+      setTicketTimerDisplay("00:00:00")
+    } else {
+      setTicketTimerDisplay(formatTimeRemaining(milliseconds))
+    }
+  }
+
+  const updateTokenTimerDisplay = (milliseconds: number | null) => {
+    if (milliseconds === null) {
+      setTokenTimerDisplay("00:00:00")
+    } else {
+      setTokenTimerDisplay(formatTimeRemaining(milliseconds))
+    }
+  }
 
   // Refresh user data when component mounts
   useEffect(() => {
@@ -93,9 +196,44 @@ export default function Home() {
     return () => {
       // Clear all intervals when component unmounts
       if (timerIntervalRef.current) clearInterval(timerIntervalRef.current)
+      if (tokenTimerIntervalRef.current) clearInterval(tokenTimerIntervalRef.current)
       if (rewardsIntervalRef.current) clearInterval(rewardsIntervalRef.current)
     }
   }, [refreshUserData])
+
+  // Lade die Wallet-Adresse des Benutzers
+  useEffect(() => {
+    if (user?.username) {
+      const fetchWalletAddress = async () => {
+        const supabase = getSupabaseBrowserClient()
+        if (!supabase) return
+
+        try {
+          const { data, error } = await supabase.from("users").select("world_id").eq("username", user.username).single()
+
+          if (error) {
+            console.error("Error fetching wallet address:", error)
+            return
+          }
+
+          if (data && data.world_id && typeof data.world_id === "string") {
+            setWalletAddress(data.world_id)
+
+            const balance = await useTokenBalance(data.world_id)
+            console.log(balance)
+            setTokens(balance)
+          } else {
+            // Fallback auf einen leeren String, wenn keine gültige Adresse gefunden wurde
+            setWalletAddress("")
+          }
+        } catch (error) {
+          console.error("Error in fetchWalletAddress:", error)
+        }
+      }
+
+      fetchWalletAddress()
+    }
+  }, [user?.username])
 
   // Check for daily deal - only once when user data is available
   useEffect(() => {
@@ -131,20 +269,10 @@ export default function Home() {
     }
   }
 
-  // Format time remaining as HH:MM:SS
-  const formatTimeRemaining = (milliseconds: number) => {
-    if (milliseconds <= 0) return "00:00:00"
-
-    const hours = Math.floor(milliseconds / (1000 * 60 * 60))
-    const minutes = Math.floor((milliseconds % (1000 * 60 * 60)) / (1000 * 60))
-    const seconds = Math.floor((milliseconds % (1000 * 60)) / 1000)
-
-    return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
-  }
-
-  // Check if user can claim tickets and update countdown timer
+  // Check if user can claim tickets and tokens and update countdown timers
   useEffect(() => {
     if (!user?.username || hasCheckedClaims.current) return
+
 
     hasCheckedClaims.current = true
 
@@ -153,10 +281,10 @@ export default function Home() {
       if (!supabase) return
 
       try {
-        // Get user data including ticket_last_claimed and tickets
+        // Get user data including ticket_last_claimed, token_last_claimed and tickets
         const { data, error } = await supabase
           .from("users")
-          .select("ticket_last_claimed, legendary_tickets, tickets, has_premium")
+          .select("ticket_last_claimed, token_last_claimed, legendary_tickets, tickets, tokens, has_premium")
           .eq("username", user.username)
           .single()
 
@@ -179,6 +307,8 @@ export default function Home() {
           setLegendaryTickets(data.legendary_tickets)
         }
 
+        
+
         // Check if user has claimed tickets in the last 12 hours
         if (data?.ticket_last_claimed && typeof data.ticket_last_claimed === "string") {
           const lastClaimedDate = new Date(data.ticket_last_claimed)
@@ -188,10 +318,32 @@ export default function Home() {
 
           if (timeSinceClaim < twelveHoursInMs) {
             setAlreadyClaimed(true)
-            setTimeUntilNextClaim(twelveHoursInMs - timeSinceClaim)
+            const newTimeUntilNextClaim = twelveHoursInMs - timeSinceClaim
+            setTimeUntilNextClaim(newTimeUntilNextClaim)
+            updateTicketTimerDisplay(newTimeUntilNextClaim)
           } else {
             setAlreadyClaimed(false)
             setTimeUntilNextClaim(null)
+            updateTicketTimerDisplay(null)
+          }
+        }
+
+        // Check if user has claimed token in the last 24 hours
+        if (data?.token_last_claimed && typeof data.token_last_claimed === "string") {
+          const lastTokenClaimedDate = new Date(data.token_last_claimed)
+          const now = new Date()
+          const twentyFourHoursInMs = 24 * 60 * 60 * 1000
+          const timeSinceTokenClaim = now.getTime() - lastTokenClaimedDate.getTime()
+
+          if (timeSinceTokenClaim < twentyFourHoursInMs) {
+            setTokenAlreadyClaimed(true)
+            const newTimeUntilNextTokenClaim = twentyFourHoursInMs - timeSinceTokenClaim
+            setTimeUntilNextTokenClaim(newTimeUntilNextTokenClaim)
+            updateTokenTimerDisplay(newTimeUntilNextTokenClaim)
+          } else {
+            setTokenAlreadyClaimed(false)
+            setTimeUntilNextTokenClaim(null)
+            updateTokenTimerDisplay(null)
           }
         }
 
@@ -231,24 +383,51 @@ export default function Home() {
     }
 
     checkClaimStatus()
+  }, [user?.username])
 
-    // Set up interval to update countdown timer - client-side only, no API calls
-    timerIntervalRef.current = setInterval(() => {
-      setTimeUntilNextClaim((prevTime) => {
-        if (prevTime && prevTime > 1000) {
-          return prevTime - 1000
-        } else if (prevTime && prevTime <= 1000) {
+  // Set up timer countdown
+  useEffect(() => {
+    // Clear any existing intervals
+    if (timerIntervalRef.current) clearInterval(timerIntervalRef.current)
+    if (tokenTimerIntervalRef.current) clearInterval(tokenTimerIntervalRef.current)
+
+    // Set up a single interval for both timers
+    const interval = setInterval(() => {
+      // Update ticket timer
+      if (timeUntilNextClaim && timeUntilNextClaim > 0) {
+        const newTime = timeUntilNextClaim - 1000
+        if (newTime <= 0) {
           setAlreadyClaimed(false)
-          return null
+          setTimeUntilNextClaim(null)
+          updateTicketTimerDisplay(null)
+        } else {
+          setTimeUntilNextClaim(newTime)
+          updateTicketTimerDisplay(newTime)
         }
-        return prevTime
-      })
+      }
+
+      // Update token timer
+      if (timeUntilNextTokenClaim && timeUntilNextTokenClaim > 0) {
+        const newTime = timeUntilNextTokenClaim - 1000
+        if (newTime <= 0) {
+          setTokenAlreadyClaimed(false)
+          setTimeUntilNextTokenClaim(null)
+          updateTokenTimerDisplay(null)
+        } else {
+          setTimeUntilNextTokenClaim(newTime)
+          updateTokenTimerDisplay(newTime)
+        }
+      }
     }, 1000)
 
-    return () => {
-      if (timerIntervalRef.current) clearInterval(timerIntervalRef.current)
-    }
-  }, [user?.username])
+    timerIntervalRef.current = interval
+
+    // Initial display update
+    if (timeUntilNextClaim) updateTicketTimerDisplay(timeUntilNextClaim)
+    if (timeUntilNextTokenClaim) updateTokenTimerDisplay(timeUntilNextTokenClaim)
+
+    return () => clearInterval(interval)
+  }, [])
 
   // Check for unclaimed rewards
   useEffect(() => {
@@ -343,9 +522,13 @@ export default function Home() {
           if (result.nextClaimTime) {
             const nextClaimDate = new Date(result.nextClaimTime)
             const now = new Date()
-            setTimeUntilNextClaim(nextClaimDate.getTime() - now.getTime())
+            const newTimeUntilNextClaim = nextClaimDate.getTime() - now.getTime()
+            setTimeUntilNextClaim(newTimeUntilNextClaim)
+            updateTicketTimerDisplay(newTimeUntilNextClaim)
           } else {
-            setTimeUntilNextClaim(12 * 60 * 60 * 1000) // 12 hours in milliseconds
+            const newTimeUntilNextClaim = 12 * 60 * 60 * 1000 // 12 hours in milliseconds
+            setTimeUntilNextClaim(newTimeUntilNextClaim)
+            updateTicketTimerDisplay(newTimeUntilNextClaim)
           }
 
           // Hide animation after it completes
@@ -357,6 +540,7 @@ export default function Home() {
         setAlreadyClaimed(true)
         if (result.timeUntilNextClaim) {
           setTimeUntilNextClaim(result.timeUntilNextClaim)
+          updateTicketTimerDisplay(result.timeUntilNextClaim)
         }
         toast({
           title: "Already Claimed",
@@ -441,7 +625,7 @@ export default function Home() {
         </header>
 
         <main className="p-4 space-y-5 max-w-lg mx-auto">
-          {/* User profile */}
+          {/* User profile with token count */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -450,7 +634,13 @@ export default function Home() {
           >
             <div className="flex flex-col">
               <div className="flex justify-between items-center mb-1">
-                <h2 className="font-semibold text-base">@{user?.username || "Trainer"}</h2>
+                <div className="flex items-center gap-2">
+                  <h2 className="font-semibold text-base">@{user?.username || "Trainer"}</h2>
+                  <div className="flex items-center gap-1 bg-green-100 px-2 py-0.5 rounded-full">
+                    <Coins className="h-3 w-3 text-green-600" />
+                    <span className="text-xs font-medium text-green-600">{tokens} $ANI</span>
+                  </div>
+                </div>
                 <div className="flex items-center">
                   <span className="text-sm text-black-500 mr-2">Level {user?.level || 1}</span>
                 </div>
@@ -539,6 +729,8 @@ export default function Home() {
               </div>
             </Link>
           </motion.div>
+
+          
 
           {/* Deal of the Day Card - Enhanced */}
           {dailyDeal && dealInteraction && (
@@ -691,6 +883,51 @@ export default function Home() {
             </motion.div>
           )}
 
+          {/* Quick actions */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.4 }}
+            className="grid grid-cols-2 gap-3"
+          >
+            <Link href="/collection" className="block">
+              <div className="bg-white rounded-2xl p-4 shadow-sm h-full transition-all duration-300 hover:shadow-md group">
+                <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center mb-3 group-hover:bg-violet-200 transition-colors duration-300">
+                  <CreditCard className="h-5 w-5 text-violet-500" />
+                </div>
+                <h3 className="font-medium text-base mb-0.5">Collection</h3>
+                <p className="text-xs text-gray-500">View your cards</p>
+              </div>
+            </Link>
+            <Link href="/catalog" className="block">
+              <div className="bg-white rounded-2xl p-4 shadow-sm h-full transition-all duration-300 hover:shadow-md group">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-r from-indigo-400 to-indigo-600 flex items-center justify-center mb-3 group-hover:opacity-90 transition-opacity duration-300">
+                  <BookOpen className="h-5 w-5 text-white" />
+                </div>
+                <h3 className="font-medium text-base mb-0.5">Gallery</h3>
+                <p className="text-xs text-gray-500">All cards</p>
+              </div>
+            </Link>
+            <Link href="/shop" className="block">
+              <div className="bg-white rounded-2xl p-4 shadow-sm h-full transition-all duration-300 hover:shadow-md group">
+                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mb-3 group-hover:bg-blue-200 transition-colors duration-300">
+                  <ShoppingCart className="h-5 w-5 text-blue-500" />
+                </div>
+                <h3 className="font-medium text-base mb-0.5">Shop</h3>
+                <p className="text-xs text-gray-500">Buy tickets</p>
+              </div>
+            </Link>
+            <Link href="/trade" className="block">
+              <div className="bg-white rounded-2xl p-4 shadow-sm h-full transition-all duration-300 hover:shadow-md group">
+                <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center mb-3 group-hover:bg-emerald-200 transition-colors duration-300">
+                  <Repeat className="h-5 w-5 text-emerald-500" />
+                </div>
+                <h3 className="font-medium text-base mb-0.5">Trade</h3>
+                <p className="text-xs text-gray-500">Exchange cards</p>
+              </div>
+            </Link>
+          </motion.div>
+
           {/* Leaderboard Card - Horizontal */}
           <Link href="/leaderboard" className="block">
             <div className="bg-white rounded-xl p-4 shadow-sm mb-4 hover:shadow-md transition-shadow">
@@ -749,10 +986,10 @@ export default function Home() {
                         <div className="h-3 w-3 border-2 border-t-transparent border-current rounded-full animate-spin mr-2"></div>
                         <span className="text-xs">Claiming...</span>
                       </div>
-                    ) : alreadyClaimed && timeUntilNextClaim ? (
+                    ) : alreadyClaimed ? (
                       <div className="flex items-center">
                         <Clock className="h-3 w-3 mr-1" />
-                        <span className="text-xs">{formatTimeRemaining(timeUntilNextClaim)}</span>
+                        <span className="text-xs">{ticketTimerDisplay}</span>
                       </div>
                     ) : (
                       <span className="text-xs">Claim Now</span>
@@ -822,51 +1059,6 @@ export default function Home() {
                 </Link>
               </div>
             </div>
-          </motion.div>
-
-          {/* Quick actions */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.4 }}
-            className="grid grid-cols-2 gap-3"
-          >
-            <Link href="/collection" className="block">
-              <div className="bg-white rounded-2xl p-4 shadow-sm h-full transition-all duration-300 hover:shadow-md group">
-                <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center mb-3 group-hover:bg-violet-200 transition-colors duration-300">
-                  <CreditCard className="h-5 w-5 text-violet-500" />
-                </div>
-                <h3 className="font-medium text-base mb-0.5">Collection</h3>
-                <p className="text-xs text-gray-500">View your cards</p>
-              </div>
-            </Link>
-            <Link href="/catalog" className="block">
-              <div className="bg-white rounded-2xl p-4 shadow-sm h-full transition-all duration-300 hover:shadow-md group">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-r from-indigo-400 to-indigo-600 flex items-center justify-center mb-3 group-hover:opacity-90 transition-opacity duration-300">
-                  <BookOpen className="h-5 w-5 text-white" />
-                </div>
-                <h3 className="font-medium text-base mb-0.5">Gallery</h3>
-                <p className="text-xs text-gray-500">All cards</p>
-              </div>
-            </Link>
-            <Link href="/shop" className="block">
-              <div className="bg-white rounded-2xl p-4 shadow-sm h-full transition-all duration-300 hover:shadow-md group">
-                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mb-3 group-hover:bg-blue-200 transition-colors duration-300">
-                  <ShoppingCart className="h-5 w-5 text-blue-500" />
-                </div>
-                <h3 className="font-medium text-base mb-0.5">Shop</h3>
-                <p className="text-xs text-gray-500">Buy tickets</p>
-              </div>
-            </Link>
-            <Link href="/trade" className="block">
-              <div className="bg-white rounded-2xl p-4 shadow-sm h-full transition-all duration-300 hover:shadow-md group">
-                <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center mb-3 group-hover:bg-emerald-200 transition-colors duration-300">
-                  <Repeat className="h-5 w-5 text-emerald-500" />
-                </div>
-                <h3 className="font-medium text-base mb-0.5">Trade</h3>
-                <p className="text-xs text-gray-500">Exchange cards</p>
-              </div>
-            </Link>
           </motion.div>
         </main>
 

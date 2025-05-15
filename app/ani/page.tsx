@@ -139,6 +139,12 @@ export default function ANIPage() {
   // Interval ref
   const tokenTimerIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
+  const sendHapticFeedbackCommand = () =>
+	MiniKit.commands.sendHapticFeedback({
+		hapticsType: 'impact',
+		style: 'light',
+	})
+
   const tokenAbi = [
     {
       inputs: [
@@ -308,6 +314,7 @@ export default function ANIPage() {
 }, [timeUntilNextTokenClaim])
 
   const handleMint = async () => {
+    sendHapticFeedbackCommand()
     if (!user) return
     if (!walletAddress) {
       toast({
@@ -360,9 +367,11 @@ export default function ANIPage() {
 
           // Aktualisiere die Tokens nach einer kurzen Verzögerung, um die Animation abzuspielen
           setTimeout(async () => {
-            const balance = await useTokenBalance(walletAddress)
-            console.log(balance)
-            setTokens(balance)
+            setTokens((prev) => {
+                const prevNumber = parseFloat(prev ?? "0")
+                const updated = (prevNumber + 1).toFixed(1) // z. B. 6.0000
+                return updated
+            })
 
             toast({
               title: "Success!",

@@ -152,6 +152,21 @@ export async function drawCards(username: string, packType: string, count = 1) {
   try {
     const supabase = createSupabaseServer()
 
+    // Zuerst alle Karten mit quantity 0 entfernen
+    console.log(`Removing cards with quantity 0 for user ${username}...`);
+    const { data: removedCards, error: removeError } = await supabase
+      .from("user_cards")
+      .delete()
+      .eq("user_id", username)
+      .eq("quantity", 0)
+      .select();
+
+    if (removeError) {
+      console.error("Error removing cards with quantity 0:", removeError);
+    } else {
+      console.log(`Successfully removed ${removedCards?.length || 0} cards with quantity 0`);
+    }
+
     // Get user data from database
     const { data: userData, error: userError } = await supabase
       .from("users")
@@ -286,7 +301,7 @@ export async function drawCards(username: string, packType: string, count = 1) {
       // Add card to user's collection
       const today = new Date().toISOString().split("T")[0] // Format as YYYY-MM-DD
 
-      // Check if user already has this card
+      // Check if user already has this card (excluding those with quantity 0 since we deleted them)
       const { data: existingCard, error: existingCardError } = await supabase
         .from("user_cards")
         .select("*")
@@ -301,33 +316,46 @@ export async function drawCards(username: string, packType: string, count = 1) {
 
       if (existingCard) {
         // Update quantity if user already has this card
+        const newQuantity = (existingCard.quantity || 0) + 1;
+        
+        console.log(`Updating existing card: ${selectedCard.name}, ID: ${existingCard.id}, Old quantity: ${existingCard.quantity}, New quantity: ${newQuantity}`);
+        
         const { error: updateCardError } = await supabase
           .from("user_cards")
-          .update({ quantity: (existingCard.quantity || 0) + 1 })
+          .update({ quantity: newQuantity })
           .eq("id", existingCard.id)
 
         if (updateCardError) {
           console.error("Error updating card quantity:", updateCardError)
+        } else {
+          console.log(`Successfully updated card quantity for ${selectedCard.name} to ${newQuantity}`);
         }
       } else {
         // Add new card to user's collection
-        const { error: insertCardError } = await supabase.from("user_cards").insert({
-          user_id: username,
-          card_id: selectedCard.id,
-          quantity: 1,
-          level: 1,
-          favorite: false,
-          obtained_at: today,
-        })
+        console.log(`Adding new card to collection: ${selectedCard.name}`);
+        
+        const { data: insertedCard, error: insertCardError } = await supabase
+          .from("user_cards")
+          .insert({
+            user_id: username,
+            card_id: selectedCard.id,
+            quantity: 1,
+            level: 1,
+            favorite: false,
+            obtained_at: today,
+          })
+          .select()
 
         if (insertCardError) {
           console.error("Error adding card to collection:", insertCardError)
+        } else {
+          console.log(`Successfully added new card to collection: ${selectedCard.name}, ID: ${insertedCard?.[0]?.id}`);
         }
       }
     }
 
+    // Rest der Funktion bleibt unverändert...
     // DIREKT HIER den Score aktualisieren - das ist der wichtigste Teil
-    // Hole den aktuellen Score des Benutzers
     const { data: currentUserData, error: currentUserError } = await supabase
       .from("users")
       .select("score")
@@ -396,6 +424,7 @@ export async function drawCards(username: string, packType: string, count = 1) {
         updatedUser?.legendary_tickets || (isLegendary ? newTicketCount : userData.legendary_tickets),
       scoreAdded: totalScoreToAdd,
       newScore: updatedUser?.score || newScore,
+      removedZeroQuantityCards: removedCards?.length || 0,
     }
   } catch (error) {
     console.error("Error drawing cards:", error)
@@ -411,6 +440,7 @@ export async function getUserCards(username: string) {
     const supabase = createSupabaseServer()
 
     // Ändere die Abfrage, um die ID aus der user_cards-Tabelle zurückzugeben
+    // Wichtig: Wir holen nur Karten mit quantity > 0, da nur diese in der Sammlung angezeigt werden sollen
     const { data: userCards, error: userCardsError } = await supabase
       .from("user_cards")
       .select(`
@@ -498,5 +528,73 @@ function determineRarity(packType: string): CardRarity {
     if (random < 6) return "epic" // 1 + 5 = 6
     if (random < 40) return "rare" // 6 + 34 = 40
     return "common" // Remaining 60%
+  }
+}
+
+/**
+ * Utility-Funktion zum Bereinigen von Karten mit Quantity 0
+ * Diese Funktion kann verwendet werden, um Karten mit Quantity 0 zu entfernen oder auf 1 zu setzen
+ */
+export async function cleanupZeroQuantityCards(username: string, action: 'remove' | 'fix' = 'fix') {
+  try {
+    const supabase = createSupabaseServer()
+    
+    // Finde alle Karten mit Quantity 0
+    const { data: zeroCards, error: fetchError } = await supabase
+      .from("user_cards")
+      .select("*")
+      .eq("user_id", username)
+      .eq("quantity", 0)
+    
+    if (fetchError) {
+      console.error("Error fetching zero quantity cards:", fetchError)
+      return { success: false, error: "Failed to fetch cards with zero quantity" }
+    }
+    
+    if (!zeroCards || zeroCards.length === 0) {
+      return { success: true, message: "No cards with zero quantity found", count: 0 }
+    }
+    
+    let successCount = 0;
+    
+    if (action === 'remove') {
+      // Entferne alle Karten mit Quantity 0
+      const { error: deleteError } = await supabase
+        .from("user_cards")
+        .delete()
+        .eq("user_id", username)
+        .eq("quantity", 0)
+      
+      if (deleteError) {
+        console.error("Error removing zero quantity cards:", deleteError)
+        return { success: false, error: "Failed to remove cards with zero quantity" }
+      }
+      
+      successCount = zeroCards.length;
+    } else {
+      // Setze Quantity auf 1 für alle Karten mit Quantity 0
+      for (const card of zeroCards) {
+        const { error: updateError } = await supabase
+          .from("user_cards")
+          .update({ quantity: 1 })
+          .eq("id", card.id)
+        
+        if (!updateError) {
+          successCount++;
+        } else {
+          console.error(`Error fixing card ${card.id}:`, updateError)
+        }
+      }
+    }
+    
+    return { 
+      success: true, 
+      message: `Successfully ${action === 'remove' ? 'removed' : 'fixed'} ${successCount} cards with zero quantity`,
+      count: successCount,
+      totalFound: zeroCards.length
+    }
+  } catch (error) {
+    console.error(`Error in cleanupZeroQuantityCards:`, error)
+    return { success: false, error: "An unexpected error occurred" }
   }
 }

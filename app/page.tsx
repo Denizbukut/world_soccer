@@ -28,7 +28,6 @@ import Image from "next/image"
 import { getSupabaseBrowserClient } from "@/lib/supabase"
 import { Progress } from "@/components/ui/progress"
 import DealOfTheDayDialog from "@/components/deal-of-the-day-dialog"
-
 interface LevelReward {
   level: number
   standardClaimed: boolean

@@ -16,7 +16,7 @@ export default function MobileNav() {
       <div className="flex items-center justify-around h-16 max-w-lg mx-auto px-4">
         <NavItem href="/" icon={<Home />} label="Home" isActive={pathname === "/"} />
         <NavItem href="/draw" icon={<Package />} label="Draw" isActive={pathname === "/draw"} />
-        <NavItem href="/ani" icon={<Coins />} label="ANI" isActive={pathname === "/ani"} />
+        <NavItem href="/ani" icon={<Coins />} label="$ANIME" isActive={pathname === "/ani"} />
         <NavItem href="/collection" icon={<CreditCard />} label="Collection" isActive={pathname === "/collection"} />
         <NavItem href="/trade" icon={<Repeat />} label="Trade" isActive={pathname === "/trade"} />
       </div>

@@ -605,7 +605,7 @@ export default function Home() {
                 <span className="font-medium text-sm">{legendaryTickets}</span>
               </div>
               <a
-                href="https://x.com/anime_world_tcg"
+                href="https://x.com/ani_labs_world"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="ml-1 bg-black text-white p-1.5 rounded-full hover:bg-gray-800 transition-colors duration-300 flex items-center justify-center shadow-md"

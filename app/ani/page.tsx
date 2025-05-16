@@ -348,7 +348,7 @@ export default function ANIPage() {
       const { finalPayload } = await MiniKit.commandsAsync.sendTransaction({
         transaction: [
           {
-            address: "0x67f89454E7429749d2b6b74740Db021A591e6ab1",
+            address: "0xD7f7B8137Aa3176d8578c78eC53a4D5258034257",
             abi: tokenAbi,
             functionName: "mintToken",
             args: [walletAddress, BigInt(Number(1) * 1e18)],
@@ -445,7 +445,7 @@ export default function ANIPage() {
                   <ArrowLeft className="h-4 w-4" />
                 </Button>
               </Link>
-              <h1 className="text-lg font-medium">$ANI Token</h1>
+              <h1 className="text-lg font-medium">$ANIME Token</h1>
             </div>
           </div>
         </header>
@@ -487,10 +487,10 @@ export default function ANIPage() {
                 <div className="bg-white/20 p-4 rounded-full backdrop-blur-sm mb-4">
                   <Coins className="h-8 w-8" />
                 </div>
-                <h2 className="text-sm font-medium text-indigo-100 mb-1">Your $ANI Balance</h2>
+                <h2 className="text-sm font-medium text-indigo-100 mb-1">Your $ANIME Balance</h2>
                 <div className="flex items-center">
                   <span className="text-5xl font-bold">{tokens}</span>
-                  <span className="ml-2 text-xl opacity-80">$ANI</span>
+                  <span className="ml-2 text-xl opacity-80">$ANIME</span>
                 </div>
 
                 {walletAddress ? (
@@ -528,7 +528,7 @@ export default function ANIPage() {
                 <Sparkles className="h-5 w-5 mr-2" />
                 Daily Token Claim
               </CardTitle>
-              <CardDescription className="text-indigo-100">Claim 1 $ANI token every 24 hours</CardDescription>
+              <CardDescription className="text-indigo-100">Claim 1 $ANIME token every 24 hours</CardDescription>
             </CardHeader>
             <CardContent className="p-6">
               {isLoading ? (
@@ -619,7 +619,7 @@ export default function ANIPage() {
                     times: [0, 0.3, 0.5, 1],
                   }}
                 >
-                  <div className="text-xl font-bold text-indigo-600">+1 $ANI Token!</div>
+                  <div className="text-xl font-bold text-indigo-600">+1 $ANIME Token!</div>
                   <div className="flex items-center gap-2">
                     <Coins className="h-6 w-6 text-indigo-500" />
                   </div>

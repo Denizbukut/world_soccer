@@ -638,7 +638,7 @@ export default function Home() {
                   <h2 className="font-semibold text-base">@{user?.username || "Trainer"}</h2>
                   <div className="flex items-center gap-1 bg-green-100 px-2 py-0.5 rounded-full">
                     <Coins className="h-3 w-3 text-green-600" />
-                    <span className="text-xs font-medium text-green-600">{tokens} $ANI</span>
+                    <span className="text-xs font-medium text-green-600">{tokens} $ANIME</span>
                   </div>
                 </div>
                 <div className="flex items-center">

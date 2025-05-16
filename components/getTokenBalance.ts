@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { ethers } from 'ethers';
 
 const provider = new ethers.JsonRpcProvider('https://worldchain-mainnet.g.alchemy.com/public');
-const tokenAddress = '0x67f89454E7429749d2b6b74740Db021A591e6ab1';
+const tokenAddress = '0xD7f7B8137Aa3176d8578c78eC53a4D5258034257';
 const ERC20_ABI = [
   'function balanceOf(address) view returns (uint256)',
   'function decimals() view returns (uint8)'

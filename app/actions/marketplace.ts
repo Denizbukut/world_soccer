@@ -693,6 +693,14 @@ export async function createListing(
 export async function purchaseCard(username: string, listingId: string) {
   try {
     const supabase = createSupabaseServer()
+    
+    // Vor dem Ziehen: Karten mit quantity 0 löschen
+    await supabase
+      .from("user_cards")
+      .delete()
+      .eq("user_id", username)
+      .eq("quantity", 0)
+
 
     // Hole die Benutzerinformationen (username ist bereits die ID)
     const { data: buyerData, error: buyerError } = await supabase

@@ -7,6 +7,7 @@ import { getDailyDeal } from "@/app/actions/deals"
 import ProtectedRoute from "@/components/protected-route"
 import MobileNav from "@/components/mobile-nav"
 import { Button } from "@/components/ui/button"
+import { useRouter } from "next/navigation"
 import {
   Ticket,
   Gift,
@@ -15,7 +16,6 @@ import {
   Clock,
   ChevronRight,
   Crown,
-  Bell,
   ShoppingCart,
   BookOpen,
   Send,
@@ -30,7 +30,6 @@ import { getSupabaseBrowserClient } from "@/lib/supabase"
 import { Progress } from "@/components/ui/progress"
 import DealOfTheDayDialog from "@/components/deal-of-the-day-dialog"
 import { useTokenBalance } from "@/components/getTokenBalance"
-
 
 interface LevelReward {
   level: number
@@ -60,6 +59,16 @@ interface DealInteraction {
   purchased: boolean
 }
 
+// Define the clan info interface
+/* 
+interface ClanInfo {
+  id: string
+  name: string
+  level: number
+  member_count: number
+}
+*/
+
 export default function Home() {
   const { user, updateUserTickets, refreshUserData } = useAuth()
   const [claimLoading, setClaimLoading] = useState(false)
@@ -67,13 +76,14 @@ export default function Home() {
   const [timeUntilNextClaim, setTimeUntilNextClaim] = useState<number | null>(null)
   const [legendaryTickets, setLegendaryTickets] = useState(0)
   const [tickets, setTickets] = useState(0)
-  const [tokens, setTokens] = useState<string | null>(null);
+  const [tokens, setTokens] = useState<string | null>(null)
   const [showClaimAnimation, setShowClaimAnimation] = useState(false)
   const [hasPremium, setHasPremium] = useState(false)
   const [canClaimLegendary, setCanClaimLegendary] = useState(false)
   const [unclaimedRewards, setUnclaimedRewards] = useState(0)
   const [levelRewards, setLevelRewards] = useState<LevelReward[]>([])
   const [lastLegendaryClaim, setLastLegendaryClaim] = useState<Date | null>(null)
+  // const [userClanInfo, setUserClanInfo] = useState<ClanInfo | null>(null)
 
   // Timer display state
   const [ticketTimerDisplay, setTicketTimerDisplay] = useState("00:00:00")
@@ -94,6 +104,7 @@ export default function Home() {
   const hasCheckedClaims = useRef(false)
   const hasCheckedRewards = useRef(false)
   const hasCheckedTokens = useRef(false)
+  const hasCheckedClan = useRef(false)
 
   // Interval refs
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null)
@@ -103,7 +114,8 @@ export default function Home() {
   const [walletAddress, setWalletAddress] = useState<string>("")
 
   const [price, setPrice] = useState<number | null>(null)
-  
+
+  const [tokenBalance, setTokenBalance] = useState<string | null>(null)
 
   const tokenAbi = [
     {
@@ -117,6 +129,102 @@ export default function Home() {
       type: "function",
     },
   ]
+
+  // Add the router constant inside the component:
+  const router = useRouter()
+
+  const fetchTokenBalance = async (address: string) => {
+    return await useTokenBalance(address)
+  }
+
+  // Fetch user's clan info
+  /*
+  useEffect(() => {
+    if (user?.username && !hasCheckedClan.current) {
+      hasCheckedClan.current = true
+
+      const fetchClanInfo = async () => {
+        const supabase = getSupabaseBrowserClient()
+        if (!supabase) return
+
+        try {
+          // First check if user has a clan_id
+          const { data: userData, error: userError } = await supabase
+            .from("users")
+            .select("clan_id")
+            .eq("username", user.username)
+            .single()
+
+          if (userError || !userData || !userData.clan_id) {
+            // User is not in a clan
+            setUserClanInfo(null)
+            return
+          }
+
+          // Get clan details using the clan_id
+          const { data: clanData, error: clanError } = await supabase
+            .from("clans")
+            .select("id, name, level, member_count")
+            .eq("id", userData.clan_id)
+            .single()
+
+          if (clanError || !clanData) {
+            console.error("Error fetching clan data:", clanError)
+            setUserClanInfo(null)
+            return
+          }
+
+          setUserClanInfo({
+            id: String(clanData.id),
+            name: String(clanData.name),
+            level: typeof clanData.level === "number" ? clanData.level : 1,
+            member_count: typeof clanData.member_count === "number" ? clanData.member_count : 1,
+          })
+        } catch (error) {
+          console.error("Error in fetchClanInfo:", error)
+          setUserClanInfo(null)
+        }
+      }
+
+      fetchClanInfo()
+    }
+  }, [user?.username])
+  */
+
+  const updateTicketTimerDisplay = (duration: number | null) => {
+    if (duration === null) {
+      setTicketTimerDisplay("00:00:00")
+      return
+    }
+
+    const hours = Math.floor(duration / (1000 * 60 * 60))
+    const minutes = Math.floor((duration % (1000 * 60 * 60)) / (1000 * 60))
+    const seconds = Math.floor((duration % (1000 * 60)) / 1000)
+
+    const formattedHours = String(hours).padStart(2, "0")
+    const formattedMinutes = String(minutes).padStart(2, "0")
+    const formattedSeconds = String(seconds).padStart(2, "0")
+
+    setTicketTimerDisplay(`${formattedHours}:${formattedMinutes}:${formattedSeconds}`)
+  }
+
+  const updateTokenTimerDisplay = (duration: number | null) => {
+    if (duration === null) {
+      setTokenTimerDisplay("00:00:00")
+      return
+    }
+
+    const hours = Math.floor(duration / (1000 * 60 * 60))
+    const minutes = Math.floor((duration % (1000 * 60 * 60)) / (1000 * 60))
+    const seconds = Math.floor((duration % (1000 * 60)) / 1000)
+
+    const formattedHours = String(hours).padStart(2, "0")
+    const formattedMinutes = String(minutes).padStart(2, "0")
+    const formattedSeconds = String(seconds).padStart(2, "0")
+
+    setTokenTimerDisplay(`${formattedHours}:${formattedMinutes}:${formattedSeconds}`)
+  }
+
   useEffect(() => {
     const fetchPrice = async () => {
       try {
@@ -137,89 +245,6 @@ export default function Home() {
   }, [])
 
   // Hilfsfunktion, um zu überprüfen, ob der Benutzer einen Token beanspruchen kann
-  const checkCanClaimToken = async (username: string) => {
-    try {
-      const supabase = getSupabaseBrowserClient()
-      if (!supabase) return { canClaim: false }
-
-      const { data, error } = await supabase
-        .from("users")
-        .select("token_last_claimed")
-        .eq("username", username)
-        .single()
-
-      if (error) {
-        console.error("Error checking token claim status:", error)
-        return { canClaim: false }
-      }
-
-      // Überprüfen, ob der Benutzer in den letzten 24 Stunden einen Token beansprucht hat
-      if (data?.token_last_claimed) {
-        const lastClaimed = new Date(data.token_last_claimed as string)
-        const now = new Date()
-        const hoursSinceLastClaim = (now.getTime() - lastClaimed.getTime()) / (1000 * 60 * 60)
-
-        if (hoursSinceLastClaim < 24) {
-          const timeUntilNextClaim = 24 * 60 * 60 * 1000 - (now.getTime() - lastClaimed.getTime())
-          return {
-            canClaim: false,
-            alreadyClaimed: true,
-            timeUntilNextClaim,
-            nextClaimTime: new Date(lastClaimed.getTime() + 24 * 60 * 60 * 1000).toISOString(),
-          }
-        }
-      }
-
-      return { canClaim: true }
-    } catch (error) {
-      console.error("Error in checkCanClaimToken:", error)
-      return { canClaim: false }
-    }
-  }
-
-  // Format time remaining as HH:MM:SS
-  const formatTimeRemaining = (milliseconds: number) => {
-    if (!milliseconds || milliseconds <= 0) return "00:00:00"
-
-    // Ensure we're working with a positive number
-    milliseconds = Math.max(0, milliseconds)
-
-    const hours = Math.floor(milliseconds / (1000 * 60 * 60))
-    const minutes = Math.floor((milliseconds % (1000 * 60 * 60)) / (1000 * 60))
-    const seconds = Math.floor((milliseconds % (1000 * 60)) / 1000)
-
-    return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
-  }
-
-  // Update timer displays
-  const updateTicketTimerDisplay = (milliseconds: number | null) => {
-    if (milliseconds === null) {
-      setTicketTimerDisplay("00:00:00")
-    } else {
-      setTicketTimerDisplay(formatTimeRemaining(milliseconds))
-    }
-  }
-
-  const updateTokenTimerDisplay = (milliseconds: number | null) => {
-    if (milliseconds === null) {
-      setTokenTimerDisplay("00:00:00")
-    } else {
-      setTokenTimerDisplay(formatTimeRemaining(milliseconds))
-    }
-  }
-
-  // Refresh user data when component mounts
-  useEffect(() => {
-    refreshUserData?.()
-
-    // Cleanup function
-    return () => {
-      // Clear all intervals when component unmounts
-      if (timerIntervalRef.current) clearInterval(timerIntervalRef.current)
-      if (tokenTimerIntervalRef.current) clearInterval(tokenTimerIntervalRef.current)
-      if (rewardsIntervalRef.current) clearInterval(rewardsIntervalRef.current)
-    }
-  }, [refreshUserData])
 
   // Lade die Wallet-Adresse des Benutzers
   useEffect(() => {
@@ -238,10 +263,6 @@ export default function Home() {
 
           if (data && data.world_id && typeof data.world_id === "string") {
             setWalletAddress(data.world_id)
-
-            const balance = await useTokenBalance(data.world_id)
-            console.log(balance)
-            setTokens(balance)
           } else {
             // Fallback auf einen leeren String, wenn keine gültige Adresse gefunden wurde
             setWalletAddress("")
@@ -254,6 +275,17 @@ export default function Home() {
       fetchWalletAddress()
     }
   }, [user?.username])
+
+  useEffect(() => {
+    if (walletAddress) {
+      const getTokenBalance = async () => {
+        const balance = await fetchTokenBalance(walletAddress)
+        setTokenBalance(balance)
+        setTokens(balance)
+      }
+      getTokenBalance()
+    }
+  }, [walletAddress])
 
   // Check for daily deal - only once when user data is available
   useEffect(() => {
@@ -293,7 +325,6 @@ export default function Home() {
   useEffect(() => {
     if (!user?.username || hasCheckedClaims.current) return
 
-
     hasCheckedClaims.current = true
 
     const checkClaimStatus = async () => {
@@ -301,7 +332,7 @@ export default function Home() {
       if (!supabase) return
 
       try {
-        // Get user data including ticket_last_claimed, token_last_claimed and tickets
+        // Get user data including ticket_last_claimed, token_last_claimed, legendary_tickets, tickets, tokens, has_premium
         const { data, error } = await supabase
           .from("users")
           .select("ticket_last_claimed, token_last_claimed, legendary_tickets, tickets, tokens, has_premium")
@@ -326,8 +357,6 @@ export default function Home() {
         if (data && typeof data.legendary_tickets === "number") {
           setLegendaryTickets(data.legendary_tickets)
         }
-
-        
 
         // Check if user has claimed tickets in the last 12 hours
         if (data?.ticket_last_claimed && typeof data.ticket_last_claimed === "string") {
@@ -608,12 +637,14 @@ export default function Home() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-[#f8f9ff] pb-20 text-black">
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white pb-20 text-black">
         {/* Header with glass effect */}
-        <header className="sticky top-0 z-10 backdrop-blur-md bg-white/80 border-b border-gray-100">
+        <header className="sticky top-0 z-10 backdrop-blur-md bg-white/90 border-b border-gray-100 shadow-sm">
           <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
             <div className="flex items-center">
-              <h1 className="text-xl font-semibold tracking-tight modern-title">Anime World</h1>
+              <h1 className="text-xl font-bold tracking-tight bg-gradient-to-r from-violet-600 to-fuchsia-600 bg-clip-text text-transparent">
+                Anime World
+              </h1>
             </div>
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
@@ -624,169 +655,156 @@ export default function Home() {
                 <Ticket className="h-3.5 w-3.5 text-blue-500" />
                 <span className="font-medium text-sm">{legendaryTickets}</span>
               </div>
-              
             </div>
           </div>
         </header>
 
-        <main className="p-4 space-y-5 max-w-lg mx-auto">
-       <motion.div
-  className="px-4"
-  animate={{ y: [0, -5, 0, 5, 0] }}
-  transition={{
-    duration: 6,
-    repeat: Infinity,
-    repeatType: "loop",
-    ease: "easeInOut",
-  }}
->
-  <div className="relative rounded-2xl bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-3 shadow-xl border border-gray-700/60 backdrop-blur-md">
+        <main className="p-3 space-y-4 max-w-lg mx-auto">
+          {/* Community Banner */}
+          <motion.div
+            className="px-2"
+            animate={{ y: [0, -3, 0, 3, 0] }}
+            transition={{
+              duration: 6,
+              repeat: Number.POSITIVE_INFINITY,
+              repeatType: "loop",
+              ease: "easeInOut",
+            }}
+          >
+            <div className="relative rounded-xl bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-2 shadow-xl border border-gray-700/60 backdrop-blur-md">
+              <div className="flex items-center justify-between">
+                <div className="text-white text-sm font-semibold tracking-wide flex items-center gap-2">
+                  <span>Join the Community</span>
+                  <span className="text-violet-400 text-xs animate-pulse">💬</span>
+                </div>
 
-    <div className="flex items-center justify-between">
-      {/* Titel – jetzt in Weiß */}
-      <div className="text-white text-sm font-semibold tracking-wide flex items-center gap-2">
-        <span>Join the Community</span>
-        <span className="text-violet-400 text-xs animate-pulse">💬</span>
-      </div>
+                <div className="flex gap-3">
+                  <a
+                    href="https://x.com/ani_labs_world"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="relative group w-9 h-9 rounded-full bg-black hover:bg-gray-800 flex items-center justify-center shadow-[0_0_8px_rgba(255,255,255,0.2)] transition"
+                  >
+                    <span className="text-white font-bold text-[13px] group-hover:scale-110 transition-transform">
+                      𝕏
+                    </span>
+                    <span className="absolute inset-0 rounded-full animate-ping bg-white opacity-5 group-hover:opacity-10" />
+                  </a>
 
-      {/* Social Icons */}
-      <div className="flex gap-3">
-        {/* X Icon */}
-        <a
-          href="https://x.com/ani_labs_world"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="relative group w-9 h-9 rounded-full bg-black hover:bg-gray-800 flex items-center justify-center shadow-[0_0_8px_rgba(255,255,255,0.2)] transition"
-        >
-          <span className="text-white font-bold text-[13px] group-hover:scale-110 transition-transform">
-            𝕏
-          </span>
-          <span className="absolute inset-0 rounded-full animate-ping bg-white opacity-5 group-hover:opacity-10" />
-        </a>
+                  <a
+                    href="https://t.me/animeworld_tcg"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="relative group w-9 h-9 rounded-full bg-blue-500 hover:bg-blue-600 flex items-center justify-center shadow-[0_0_10px_rgba(59,130,246,0.5)] transition"
+                  >
+                    <Send className="h-4 w-4 text-white group-hover:scale-110 transition-transform" />
+                    <span className="absolute inset-0 rounded-full animate-ping bg-white opacity-5 group-hover:opacity-10" />
+                  </a>
+                </div>
+              </div>
+            </div>
+          </motion.div>
 
-        {/* Telegram Icon */}
-        <a
-          href="https://t.me/animeworld_tcg"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="relative group w-9 h-9 rounded-full bg-blue-500 hover:bg-blue-600 flex items-center justify-center shadow-[0_0_10px_rgba(59,130,246,0.5)] transition"
-        >
-          <Send className="h-4 w-4 text-white group-hover:scale-110 transition-transform" />
-          <span className="absolute inset-0 rounded-full animate-ping bg-white opacity-5 group-hover:opacity-10" />
-        </a>
-      </div>
-    </div>
-
-  </div></motion.div>
-
-
-
-          {/* User profile with token count */}
+          {/* Compact User Info Section */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
-            className="bg-white rounded-2xl p-4 shadow-sm"
+            className="bg-white rounded-xl p-2.5 shadow-md border border-gray-100"
           >
-            <div className="flex flex-col">
-              <div className="flex justify-between items-center mb-1">
-                <div className="flex items-center gap-2">
-                  <h2 className="font-semibold text-base">@{user?.username || "Trainer"}</h2>
-                  <div className="flex items-center gap-1 bg-green-100 px-2 py-0.5 rounded-full">
-                    <Coins className="h-3 w-3 text-green-600" />
-                    <span className="text-xs font-medium text-green-600">{tokens} $ANIME</span>
-                  </div>
-                </div>
-                <div className="flex items-center">
-                  <span className="text-sm text-black-500 mr-2">Level {user?.level || 1}</span>
+            {/* Top row with username, level and tokens */}
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-1.5">
+                <h2 className="font-semibold text-sm">@{user?.username || "Trainer"}</h2>
+                <div className="flex items-center gap-1 bg-green-100 px-1.5 py-0.5 rounded-full">
+                  <Coins className="h-2.5 w-2.5 text-green-600" />
+                  <span className="text-[10px] font-medium text-green-600">{tokens} $ANIME</span>
                 </div>
               </div>
-              <div className="flex justify-between items-center mb-1">
-                <span className="text-xs text-gray-500">
-                  {user?.experience || 0} / {user?.nextLevelExp || 100} XP
-                </span>
-              </div>
-              <Progress
-                value={user?.experience ? (user.experience / user.nextLevelExp) * 100 : 0}
-                className="h-1.5 bg-gray-100"
-                indicatorClassName="bg-gradient-to-r from-violet-500 to-fuchsia-500"
-              />
+              <span className="text-xs font-medium bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded-full">
+                Lvl {user?.level || 1}
+              </span>
             </div>
-          </motion.div>
 
-          {/* Premium Pass Banner */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.05, duration: 0.4 }}
-            className={`bg-gradient-to-r ${
-              canClaimLegendary || unclaimedRewards > 0
-                ? "from-amber-400/40 to-amber-600/40 shadow-md"
-                : "from-amber-400/20 to-amber-600/20"
-            } rounded-2xl shadow-sm overflow-hidden`}
-          >
-            <Link href="/pass" className="block">
-              <div className="p-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
+            {/* Progress bar */}
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-[10px] text-gray-500">
+                {user?.experience || 0} / {user?.nextLevelExp || 100} XP
+              </span>
+            </div>
+            <Progress
+              value={user?.experience ? (user.experience / user.nextLevelExp) * 100 : 0}
+              className="h-1.5 bg-gray-100 mb-2"
+              indicatorClassName="bg-gradient-to-r from-violet-500 to-fuchsia-500"
+            />
+
+            {/* Bottom row with clan and game pass */}
+            <div className="grid grid-cols-1 gap-2">
+              {/* Clan Button - Commented out
+              <div
+                onClick={() => (userClanInfo ? router.push(`/clan/${userClanInfo.id}`) : router.push("/clan"))}
+                className="block cursor-pointer"
+              >
+                <div className="flex items-center gap-2 bg-gray-50 hover:bg-gray-100 transition-colors rounded-lg p-2">
                   <div
-                    className={`w-10 h-10 rounded-full bg-gradient-to-r from-amber-400 to-amber-600 flex items-center justify-center relative ${
-                      canClaimLegendary || unclaimedRewards > 0 ? "animate-pulse shadow-lg shadow-amber-200" : ""
+                    className={`w-7 h-7 rounded-full flex items-center justify-center ${
+                      userClanInfo
+                        ? "bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white"
+                        : "bg-gray-200 text-gray-400"
                     }`}
                   >
-                    <Crown className="h-5 w-5 text-white" />
+                    {userClanInfo ? <Shield className="h-3.5 w-3.5" /> : <Users className="h-3.5 w-3.5" />}
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium">{userClanInfo ? userClanInfo.name : "Join a Clan"}</p>
+                    {userClanInfo && (
+                      <p className="text-[10px] text-gray-500">
+                        <span className="bg-violet-100 text-violet-600 px-1 rounded text-[9px] mr-1">
+                          Lvl {userClanInfo.level}
+                        </span>
+                        {userClanInfo.member_count} members
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+              */}
+
+              {/* Game Pass */}
+              <Link href="/pass" className="block">
+                <div
+                  className={`flex items-center gap-2 rounded-lg p-2 ${
+                    canClaimLegendary || unclaimedRewards > 0
+                      ? "bg-amber-50 hover:bg-amber-100"
+                      : "bg-gray-50 hover:bg-gray-100"
+                  } transition-colors`}
+                >
+                  <div
+                    className={`w-7 h-7 rounded-full flex items-center justify-center relative ${
+                      canClaimLegendary || unclaimedRewards > 0
+                        ? "bg-gradient-to-r from-amber-400 to-amber-600 text-white"
+                        : "bg-gray-200 text-gray-400"
+                    }`}
+                  >
+                    <Crown className="h-3.5 w-3.5" />
                     {(canClaimLegendary || unclaimedRewards > 0) && (
-                      <div className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center animate-pulse">
-                        <Bell className="h-3.5 w-3.5 text-white" />
-                        {unclaimedRewards > 0 && (
-                          <span className="absolute -top-1 -right-1 bg-white text-red-500 text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center">
-                            {unclaimedRewards > 9 ? "9+" : unclaimedRewards}
-                          </span>
-                        )}
+                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
+                        <span className="text-[8px] font-bold text-white">
+                          {unclaimedRewards > 9 ? "9+" : unclaimedRewards || "!"}
+                        </span>
                       </div>
                     )}
                   </div>
                   <div>
-                    <h3
-                      className={`font-medium text-base ${
-                        canClaimLegendary || unclaimedRewards > 0 ? "text-amber-800" : ""
-                      }`}
-                    >
-                      Game Pass
-                    </h3>
-                    <p
-                      className={`text-xs ${
-                        canClaimLegendary || unclaimedRewards > 0 ? "text-amber-700" : "text-gray-600"
-                      }`}
-                    >
-                      {canClaimLegendary || unclaimedRewards > 0
-                        ? "Rewards available to claim!"
-                        : "Get Rewards by leveling up!"}
+                    <p className="text-xs font-medium">Game Pass</p>
+                    <p className="text-[10px] text-gray-500">
+                      {canClaimLegendary || unclaimedRewards > 0 ? "Claim rewards!" : "Level up rewards"}
                     </p>
                   </div>
                 </div>
-                <motion.div
-                  animate={
-                    canClaimLegendary || unclaimedRewards > 0
-                      ? {
-                          x: [0, 5, 0],
-                          transition: {
-                            repeat: Number.POSITIVE_INFINITY,
-                            repeatType: "reverse",
-                            duration: 1.5,
-                          },
-                        }
-                      : {}
-                  }
-                >
-                  <ChevronRight
-                    className={`h-5 w-5 ${canClaimLegendary || unclaimedRewards > 0 ? "text-amber-600" : "text-gray-400"}`}
-                  />
-                </motion.div>
-              </div>
-            </Link>
+              </Link>
+            </div>
           </motion.div>
-
-          
 
           {/* Deal of the Day Card - Enhanced */}
           {dailyDeal && dealInteraction && (
@@ -794,7 +812,7 @@ export default function Home() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1, duration: 0.4 }}
-              className="relative rounded-2xl shadow-md overflow-hidden"
+              className="relative rounded-2xl shadow-lg overflow-hidden border border-violet-200"
             >
               <button onClick={() => setShowDealDialog(true)} className="w-full block relative">
                 {/* Background with animated gradient */}
@@ -921,9 +939,9 @@ export default function Home() {
                     <span className="text-xs font-medium text-white">Card Level: {dailyDeal.card_level}</span>
                   </div>
 
-                  <div className="text-xs font-bold text-white">{price
-    ? `${(dailyDeal.price / price).toFixed(2)} WLD`
-    : `$${dailyDeal.price.toFixed(2)} USD`}</div>
+                  <div className="text-xs font-bold text-white">
+                    {price ? `${(dailyDeal.price / price).toFixed(2)} WLD` : `$${dailyDeal.price.toFixed(2)} USD`}
+                  </div>
                 </div>
 
                 {/* Shine effect */}
@@ -946,86 +964,58 @@ export default function Home() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.4 }}
-            className="grid grid-cols-2 gap-3"
+            className="grid grid-cols-4 gap-2"
           >
             <Link href="/collection" className="block">
-              <div className="bg-white rounded-2xl p-4 shadow-sm h-full transition-all duration-300 hover:shadow-md group">
-                <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center mb-3 group-hover:bg-violet-200 transition-colors duration-300">
-                  <CreditCard className="h-5 w-5 text-violet-500" />
+              <div className="bg-white rounded-xl p-2 shadow-md border border-gray-100 h-full transition-all duration-300 hover:shadow-lg hover:border-violet-200 group">
+                <div className="w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center mb-2 group-hover:bg-violet-200 transition-colors duration-300">
+                  <CreditCard className="h-4 w-4 text-violet-500" />
                 </div>
-                <h3 className="font-medium text-base mb-0.5">Collection</h3>
-                <p className="text-xs text-gray-500">View your cards</p>
+                <h3 className="font-medium text-xs mb-0">Collection</h3>
               </div>
             </Link>
             <Link href="/catalog" className="block">
-              <div className="bg-white rounded-2xl p-4 shadow-sm h-full transition-all duration-300 hover:shadow-md group">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-r from-indigo-400 to-indigo-600 flex items-center justify-center mb-3 group-hover:opacity-90 transition-opacity duration-300">
-                  <BookOpen className="h-5 w-5 text-white" />
+              <div className="bg-white rounded-xl p-2 shadow-md border border-gray-100 h-full transition-all duration-300 hover:shadow-lg hover:border-indigo-200 group">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-indigo-400 to-indigo-600 flex items-center justify-center mb-2 group-hover:opacity-90 transition-opacity duration-300">
+                  <BookOpen className="h-4 w-4 text-white" />
                 </div>
-                <h3 className="font-medium text-base mb-0.5">Gallery</h3>
-                <p className="text-xs text-gray-500">All cards</p>
+                <h3 className="font-medium text-xs mb-0">Gallery</h3>
               </div>
             </Link>
             <Link href="/shop" className="block">
-              <div className="bg-white rounded-2xl p-4 shadow-sm h-full transition-all duration-300 hover:shadow-md group">
-                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mb-3 group-hover:bg-blue-200 transition-colors duration-300">
-                  <ShoppingCart className="h-5 w-5 text-blue-500" />
+              <div className="bg-white rounded-xl p-2 shadow-md border border-gray-100 h-full transition-all duration-300 hover:shadow-lg hover:border-blue-200 group">
+                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center mb-2 group-hover:bg-blue-200 transition-colors duration-300">
+                  <ShoppingCart className="h-4 w-4 text-blue-500" />
                 </div>
-                <h3 className="font-medium text-base mb-0.5">Shop</h3>
-                <p className="text-xs text-gray-500">Buy tickets</p>
+                <h3 className="font-medium text-xs mb-0">Shop</h3>
               </div>
             </Link>
             <Link href="/trade" className="block">
-              <div className="bg-white rounded-2xl p-4 shadow-sm h-full transition-all duration-300 hover:shadow-md group">
-                <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center mb-3 group-hover:bg-emerald-200 transition-colors duration-300">
-                  <Repeat className="h-5 w-5 text-emerald-500" />
+              <div className="bg-white rounded-xl p-2 shadow-md border border-gray-100 h-full transition-all duration-300 hover:shadow-lg hover:border-emerald-200 group">
+                <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center mb-2 group-hover:bg-emerald-200 transition-colors duration-300">
+                  <Repeat className="h-4 w-4 text-emerald-500" />
                 </div>
-                <h3 className="font-medium text-base mb-0.5">Trade</h3>
-                <p className="text-xs text-gray-500">Exchange cards</p>
+                <h3 className="font-medium text-xs mb-0">Trade</h3>
               </div>
             </Link>
           </motion.div>
-
-          {/* Leaderboard Card - Horizontal */}
-          <Link href="/leaderboard" className="block">
-            <div className="bg-white rounded-xl p-4 shadow-sm mb-4 hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <div className="bg-violet-100 p-2 rounded-lg mr-3">
-                    <Trophy className="h-5 w-5 text-violet-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-sm">Leaderboard</h3>
-                    <p className="text-xs text-gray-500">See top players and rankings</p>
-                  </div>
-                </div>
-                <ChevronRight className="h-5 w-5 text-gray-400" />
-              </div>
-            </div>
-          </Link>
 
           {/* Daily bonus */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1, duration: 0.4 }}
-            className="bg-white rounded-2xl shadow-sm overflow-hidden"
+            className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden"
           >
             <div className="relative">
-              {/* Background pattern */}
-              <div className="absolute inset-0 opacity-5">
-                <div className="absolute -right-6 -top-6 w-24 h-24 rounded-full bg-violet-500"></div>
-                <div className="absolute -left-4 -bottom-8 w-20 h-20 rounded-full bg-fuchsia-500"></div>
-              </div>
-
-              <div className="relative p-4">
+              <div className="relative p-3">
                 <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center">
-                      <Gift className="h-5 w-5 text-violet-500" />
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center">
+                      <Gift className="h-4 w-4 text-violet-500" />
                     </div>
                     <div>
-                      <h3 className="font-medium text-base">Ticket Claim</h3>
+                      <h3 className="font-medium text-sm">Ticket Claim</h3>
                       <p className="text-xs text-gray-500">Get 3 tickets every 12 hours</p>
                     </div>
                   </div>
@@ -1058,34 +1048,50 @@ export default function Home() {
             </div>
           </motion.div>
 
+          {/* Leaderboard Card - Horizontal */}
+          <Link href="/leaderboard" className="block">
+            <div className="bg-white rounded-xl p-3 shadow-md border border-gray-100 mb-3 hover:shadow-lg hover:border-violet-200 transition-all duration-300">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <div className="bg-violet-100 p-1.5 rounded-lg mr-2">
+                    <Trophy className="h-4 w-4 text-violet-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-sm">Leaderboard</h3>
+                    <p className="text-xs text-gray-500">See top players and rankings</p>
+                  </div>
+                </div>
+                <ChevronRight className="h-4 w-4 text-gray-400" />
+              </div>
+            </div>
+          </Link>
+
           {/* Card packs */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.4 }}
-            className="bg-white rounded-2xl shadow-sm overflow-hidden"
+            className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden"
           >
-            <div className="p-4 pb-2">
-              <div className="flex justify-between items-center mb-3">
+            <div className="p-3 pb-2">
+              <div className="flex justify-between items-center mb-2">
                 <h3 className="font-medium text-base">Card Packs</h3>
                 <Link href="/draw" className="text-xs text-violet-500 font-medium flex items-center">
                   View all <ChevronRight className="h-3 w-3 ml-0.5" />
                 </Link>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2">
                 <Link href="/draw" className="block">
-                  <div className="relative overflow-hidden rounded-xl p-3 transition-all duration-300 hover:shadow-md group">
-                    {/* Animated background */}
-
-                    <div className="flex items-center justify-center mb-2">
-                      <div className="relative w-16 h-24 mx-auto transform group-hover:scale-105 transition-transform duration-300">
+                  <div className="relative overflow-hidden rounded-lg p-2 transition-all duration-300 hover:shadow-md group bg-gradient-to-b from-gray-50 to-white border border-gray-100 hover:border-violet-200">
+                    <div className="flex items-center justify-center mb-1">
+                      <div className="relative w-12 h-18 mx-auto transform group-hover:scale-105 transition-transform duration-300">
                         <Image src="/vibrant-purple-card-pack.png" alt="Regular Pack" fill className="object-contain" />
                       </div>
                     </div>
-                    <div className="bg-white rounded-lg p-2 text-center shadow-sm">
-                      <span className="font-medium text-sm">Regular Pack</span>
-                      <div className="flex items-center justify-center gap-1 mt-1">
+                    <div className="bg-white rounded-lg p-1.5 text-center shadow-sm">
+                      <span className="font-medium text-xs">Regular Pack</span>
+                      <div className="flex items-center justify-center gap-1 mt-0.5">
                         <Ticket className="h-3 w-3 text-amber-500" />
                         <span className="text-xs text-gray-500">1 Ticket</span>
                       </div>
@@ -1093,11 +1099,9 @@ export default function Home() {
                   </div>
                 </Link>
                 <Link href="/draw" className="block">
-                  <div className="relative overflow-hidden rounded-xl p-3 transition-all duration-300 hover:shadow-md group">
-                    {/* Animated background */}
-
-                    <div className="flex items-center justify-center mb-2">
-                      <div className="relative w-16 h-24 mx-auto transform group-hover:scale-105 transition-transform duration-300">
+                  <div className="relative overflow-hidden rounded-lg p-2 transition-all duration-300 hover:shadow-md group bg-gradient-to-b from-gray-50 to-white border border-gray-100 hover:border-blue-200">
+                    <div className="flex items-center justify-center mb-1">
+                      <div className="relative w-12 h-18 mx-auto transform group-hover:scale-105 transition-transform duration-300">
                         <Image
                           src="/anime-world-legendary-pack.png"
                           alt="Legendary Pack"
@@ -1106,9 +1110,9 @@ export default function Home() {
                         />
                       </div>
                     </div>
-                    <div className="bg-white rounded-lg p-2 text-center shadow-sm">
-                      <span className="font-medium text-sm">Legendary Pack</span>
-                      <div className="flex items-center justify-center gap-1 mt-1">
+                    <div className="bg-white rounded-lg p-1.5 text-center shadow-sm">
+                      <span className="font-medium text-xs">Legendary Pack</span>
+                      <div className="flex items-center justify-center gap-1 mt-0.5">
                         <Ticket className="h-3 w-3 text-blue-500" />
                         <span className="text-xs text-gray-500">1 L. Ticket</span>
                       </div>
@@ -1119,7 +1123,6 @@ export default function Home() {
             </div>
           </motion.div>
         </main>
-        
 
         {/* Ticket claim animation */}
         <AnimatePresence>

@@ -624,27 +624,54 @@ export default function Home() {
                 <Ticket className="h-3.5 w-3.5 text-blue-500" />
                 <span className="font-medium text-sm">{legendaryTickets}</span>
               </div>
-              <a
-                href="https://x.com/ani_labs_world"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="ml-1 bg-black text-white p-1.5 rounded-full hover:bg-gray-800 transition-colors duration-300 flex items-center justify-center shadow-md"
-              >
-                <span className="font-bold text-xs">𝕏</span>
-              </a>
-              <a
-                href="https://t.me/animeworld_tcg"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="ml-1 bg-blue-500 text-white p-1.5 rounded-full hover:bg-blue-600 transition-colors duration-300 flex items-center justify-center shadow-md"
-              >
-                <Send className="h-3.5 w-3.5 text-white" />
-              </a>
+              
             </div>
           </div>
         </header>
 
         <main className="p-4 space-y-5 max-w-lg mx-auto">
+       <div className="px-4 mt-4">
+  <div className="relative rounded-2xl bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-4 shadow-xl border border-gray-700/60 backdrop-blur-md">
+    <div className="flex items-center justify-between">
+      {/* Titel – jetzt in Weiß */}
+      <div className="text-white text-sm font-semibold tracking-wide flex items-center gap-2">
+        <span>Join the Community</span>
+        <span className="text-violet-400 text-xs animate-pulse">💬</span>
+      </div>
+
+      {/* Social Icons */}
+      <div className="flex gap-3">
+        {/* X Icon */}
+        <a
+          href="https://x.com/ani_labs_world"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="relative group w-9 h-9 rounded-full bg-black hover:bg-gray-800 flex items-center justify-center shadow-[0_0_8px_rgba(255,255,255,0.2)] transition"
+        >
+          <span className="text-white font-bold text-[13px] group-hover:scale-110 transition-transform">
+            𝕏
+          </span>
+          <span className="absolute inset-0 rounded-full animate-ping bg-white opacity-5 group-hover:opacity-10" />
+        </a>
+
+        {/* Telegram Icon */}
+        <a
+          href="https://t.me/animeworld_tcg"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="relative group w-9 h-9 rounded-full bg-blue-500 hover:bg-blue-600 flex items-center justify-center shadow-[0_0_10px_rgba(59,130,246,0.5)] transition"
+        >
+          <Send className="h-4 w-4 text-white group-hover:scale-110 transition-transform" />
+          <span className="absolute inset-0 rounded-full animate-ping bg-white opacity-5 group-hover:opacity-10" />
+        </a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+
           {/* User profile with token count */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -1083,6 +1110,7 @@ export default function Home() {
             </div>
           </motion.div>
         </main>
+        
 
         {/* Ticket claim animation */}
         <AnimatePresence>

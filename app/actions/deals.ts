@@ -141,7 +141,11 @@ export async function markDealAsDismissed(username: string, dealId: number) {
 export async function purchaseDeal(username: string, dealId: number) {
   try {
     const supabase = createSupabaseServer()
-
+    await supabase
+        .from("user_cards")
+        .delete()
+        .eq("user_id", username)
+        .eq("quantity", 0)
     // Get the deal details
     const { data: deal, error: dealError } = await supabase.from("daily_deals").select("*").eq("id", dealId).single()
 

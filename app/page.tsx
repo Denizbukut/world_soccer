@@ -630,8 +630,18 @@ export default function Home() {
         </header>
 
         <main className="p-4 space-y-5 max-w-lg mx-auto">
-       <div className="px-4 mt-4">
-  <div className="relative rounded-2xl bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-4 shadow-xl border border-gray-700/60 backdrop-blur-md">
+       <motion.div
+  className="px-4"
+  animate={{ y: [0, -5, 0, 5, 0] }}
+  transition={{
+    duration: 6,
+    repeat: Infinity,
+    repeatType: "loop",
+    ease: "easeInOut",
+  }}
+>
+  <div className="relative rounded-2xl bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-3 shadow-xl border border-gray-700/60 backdrop-blur-md">
+
     <div className="flex items-center justify-between">
       {/* Titel – jetzt in Weiß */}
       <div className="text-white text-sm font-semibold tracking-wide flex items-center gap-2">
@@ -667,8 +677,7 @@ export default function Home() {
       </div>
     </div>
 
-  </div>
-</div>
+  </div></motion.div>
 
 
 

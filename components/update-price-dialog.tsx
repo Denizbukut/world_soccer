@@ -37,7 +37,7 @@ export default function UpdatePriceDialog({
   const isValidPrice =
     !isNaN(parsedPrice) &&
     ((cardRarity === "legendary" && parsedPrice >= 1 && parsedPrice <= 500) ||
-      (cardRarity !== "legendary" && parsedPrice >= 0.1 && parsedPrice <= 500))
+      (cardRarity !== "legendary" && parsedPrice >= 0.3 && parsedPrice <= 500))
 
   // Aktualisiere den Preis
   const handleUpdatePrice = async () => {
@@ -111,7 +111,7 @@ export default function UpdatePriceDialog({
                 <p className="text-red-500 text-sm">
                   {cardRarity === "legendary"
                     ? "Please enter a valid price between 1 and 500 WLD"
-                    : "Please enter a valid price between 0.1 and 500 WLD"}
+                    : "Please enter a valid price between 0.3 and 500 WLD"}
                 </p>
               )}
           </div>

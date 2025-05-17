@@ -55,7 +55,7 @@ export default function SellCardDialog({ isOpen, onClose, card, username, onSucc
     const calculatedPrice = Math.round(basePrice * (1 + (level - 1) * 0.5))
 
     // Stelle sicher, dass der Preis nicht über 500 liegt und für legendäre Karten mindestens 1 ist
-    return Math.min(Math.max(calculatedPrice, rarity === "legendary" ? 1 : 0.1), 500)
+    return Math.min(Math.max(calculatedPrice, rarity === "legendary" ? 1 : 0.3), 500)
   }
 
   // Validiere den Preis
@@ -63,7 +63,7 @@ export default function SellCardDialog({ isOpen, onClose, card, username, onSucc
   const isValidPrice =
     !isNaN(parsedPrice) &&
     ((card.rarity === "legendary" && parsedPrice >= 1 && parsedPrice <= 500) ||
-      (card.rarity !== "legendary" && parsedPrice >= 0.1 && parsedPrice <= 500))
+      (card.rarity !== "legendary" && parsedPrice >= 0.3 && parsedPrice <= 500))
 
   // Formatiere den Preis für die Anzeige
   const formatPrice = (value: string) => {
@@ -249,7 +249,7 @@ export default function SellCardDialog({ isOpen, onClose, card, username, onSucc
                   <p className="text-red-500 text-sm">
                     {card.rarity === "legendary"
                       ? "Please enter a valid price between 1 and 500 WLD"
-                      : "Please enter a valid price between 0.1 and 500 WLD"}
+                      : "Please enter a valid price between 0.3 and 500 WLD"}
                   </p>
                 )}
               </div>

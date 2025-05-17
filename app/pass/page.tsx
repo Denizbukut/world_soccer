@@ -532,8 +532,8 @@ useEffect(() => {
 
   // Update the sendPayment function to reflect the promotional price
   const sendPayment = async () => {
-    const dollarAmount = 1.0
-    const fallbackWldAmount = 1.0
+    const dollarAmount = 1.5
+    const fallbackWldAmount = 1.5
     const wldAmount = price ? dollarAmount / price : fallbackWldAmount
     const res = await fetch("/api/initiate-payment", {
       method: "POST",
@@ -847,7 +847,7 @@ useEffect(() => {
                     <div className="flex-1">
                       <h4 className="font-bold text-gray-900 text-sm">Support the Game</h4>
                       <p className="text-gray-700 text-sm">
-                        Get <b>Premium Pass</b> for only <b>$1</b> and enjoy full benefits!
+                        Get <b>Premium Pass</b> for only <b>$1.50</b> and enjoy full benefits!
                       </p>
                     </div>
                   </div>

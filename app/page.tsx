@@ -101,6 +101,8 @@ export default function Home() {
   const rewardsIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const [transactionId, setTransactionId] = useState<string>("")
   const [walletAddress, setWalletAddress] = useState<string>("")
+
+  const [price, setPrice] = useState<number | null>(null)
   
 
   const tokenAbi = [
@@ -115,6 +117,24 @@ export default function Home() {
       type: "function",
     },
   ]
+  useEffect(() => {
+    const fetchPrice = async () => {
+      try {
+        const res = await fetch("/api/wld-price")
+        const json = await res.json()
+
+        if (json.price) {
+          setPrice(json.price)
+        } else {
+          console.warn("Preis nicht gefunden in JSON:", json)
+        }
+      } catch (err) {
+        console.error("Client error:", err)
+      }
+    }
+
+    fetchPrice()
+  }, [])
 
   // Hilfsfunktion, um zu überprüfen, ob der Benutzer einen Token beanspruchen kann
   const checkCanClaimToken = async (username: string) => {
@@ -865,7 +885,9 @@ export default function Home() {
                     <span className="text-xs font-medium text-white">Card Level: {dailyDeal.card_level}</span>
                   </div>
 
-                  <div className="text-xs font-bold text-white">{dailyDeal.price.toFixed(2)} WLD</div>
+                  <div className="text-xs font-bold text-white">{price
+    ? `${(dailyDeal.price / price).toFixed(2)} WLD`
+    : `$${dailyDeal.price.toFixed(2)} USD`}</div>
                 </div>
 
                 {/* Shine effect */}

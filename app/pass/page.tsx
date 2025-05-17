@@ -29,6 +29,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import type { PremiumPass, ClaimedReward } from "@/types/database"
 import { MiniKit, tokenToDecimals, Tokens, type PayCommandInput } from "@worldcoin/minikit-js"
 
+
 interface LevelReward {
   level: number
   standardClaimed: boolean
@@ -62,6 +63,7 @@ export default function PremiumPassPage() {
 
   // State for collapsible sections
   const [benefitsExpanded, setBenefitsExpanded] = useState(true)
+  const [price, setPrice] = useState<number | null>(null)
 
   // Add a new state for tracking which benefits are expanded
   const [expandedBenefits, setExpandedBenefits] = useState<Record<string, boolean>>({
@@ -78,6 +80,29 @@ export default function PremiumPassPage() {
       [benefit]: !prev[benefit],
     }))
   }
+  useEffect(() => {
+  const fetchPrice = async () => {
+    try {
+      const res = await fetch("/api/wld-price")
+      const json = await res.json()
+
+      if (json.price) {
+        setPrice(json.price)
+      } else {
+        console.warn("Preis nicht gefunden in JSON:", json)
+      }
+    } catch (err) {
+      console.error("Client error:", err)
+    }
+  }
+
+  fetchPrice()
+}, [])
+useEffect(() => {
+  if (price !== null) {
+    console.log("WLD Preis:", price)
+  }
+}, [price])
 
   // Format time remaining as HH:MM:SS
   const formatTimeRemaining = (milliseconds: number) => {
@@ -507,7 +532,9 @@ export default function PremiumPassPage() {
 
   // Update the sendPayment function to reflect the promotional price
   const sendPayment = async () => {
-    const wldAmount = 1 // Promotional price
+    const dollarAmount = 1.0
+    const fallbackWldAmount = 1.0
+    const wldAmount = price ? dollarAmount / price : fallbackWldAmount
     const res = await fetch("/api/initiate-payment", {
       method: "POST",
     })

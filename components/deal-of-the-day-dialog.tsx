@@ -55,12 +55,31 @@ export default function DealOfTheDayDialog({
   const [shouldMarkAsSeen, setShouldMarkAsSeen] = useState(false)
 
   const [isDealValid, setIsDealValid] = useState(!!deal)
+  const [price, setPrice] = useState<number | null>(null)
 
   useEffect(() => {
     setIsDealValid(!!deal)
   }, [deal])
 
   if (!isDealValid) return null
+  useEffect(() => {
+    const fetchPrice = async () => {
+      try {
+        const res = await fetch("/api/wld-price")
+        const json = await res.json()
+
+        if (json.price) {
+          setPrice(json.price)
+        } else {
+          console.warn("Preis nicht gefunden in JSON:", json)
+        }
+      } catch (err) {
+        console.error("Client error:", err)
+      }
+    }
+
+    fetchPrice()
+  }, [])
 
   // Map rarity to color styles
   const rarityStyles = {
@@ -107,7 +126,10 @@ export default function DealOfTheDayDialog({
 
   // Update the sendPayment function to reflect the promotional price
   const sendPayment = async () => {
-    const wldAmount = deal.price // Promotional price
+    const dollarAmount = deal.price
+    const fallbackWldAmount = deal.price
+    const wldAmount = price ? dollarAmount / price : fallbackWldAmount
+    
     const res = await fetch("/api/initiate-payment", {
       method: "POST",
     })
@@ -119,7 +141,7 @@ export default function DealOfTheDayDialog({
       tokens: [
         {
           symbol: Tokens.WLD,
-          token_amount: tokenToDecimals(wldAmount, Tokens.WLD).toString(),
+          token_amount: tokenToDecimals(parseFloat(wldAmount.toFixed(2)), Tokens.WLD).toString(),
         },
       ],
       description: "Buy Daily Deal",
@@ -356,7 +378,9 @@ export default function DealOfTheDayDialog({
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-400">Price:</p>
-                    <p className="text-2xl font-bold text-violet-400">{deal.price.toFixed(2)} WLD</p>
+                    <p className="text-2xl font-bold text-violet-400">{price
+    ? `${(deal.price / price).toFixed(2)} WLD`
+    : `$${deal.price.toFixed(2)} USD`}</p>
                   </div>
 
                   <Button

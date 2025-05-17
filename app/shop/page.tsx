@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { getSupabaseBrowserClient } from "@/lib/supabase"
 import { MiniKit, tokenToDecimals, Tokens, type PayCommandInput } from "@worldcoin/minikit-js"
+import { useEffect } from "react"
 
 export default function ShopPage() {
   const { user, updateUserTickets } = useAuth()
@@ -22,57 +23,79 @@ export default function ShopPage() {
   const [legendaryTickets, setLegendaryTickets] = useState<number>(
     user?.legendary_tickets ? Number(user.legendary_tickets) : 0,
   )
-
-  // Send payment function
-  const sendPayment = async (
-    amount: number,
-    packageId: string,
-    ticketAmount: number,
-    ticketType: "regular" | "legendary",
-  ) => {
-    setIsLoading({ ...isLoading, [packageId]: true })
-
+  const [price, setPrice] = useState<number | null>(null)
+  
+  useEffect(() => {
+  const fetchPrice = async () => {
     try {
-      const res = await fetch("/api/initiate-payment", {
-        method: "POST",
-      })
-      const { id } = await res.json()
+      const res = await fetch("/api/wld-price")
+      const json = await res.json()
 
-      const payload: PayCommandInput = {
-        reference: id,
-        to: "0x4bb270ef6dcb052a083bd5cff518e2e019c0f4ee", // wallet address
-        tokens: [
-          {
-            symbol: Tokens.WLD,
-            token_amount: tokenToDecimals(amount, Tokens.WLD).toString(),
-          },
-        ],
-        description: `${ticketAmount} ${ticketType === "legendary" ? "Legendary" : "Regular"} Tickets`,
-      }
-
-      const { finalPayload } = await MiniKit.commandsAsync.pay(payload)
-
-      if (finalPayload.status === "success") {
-        console.log("success sending payment")
-        await handleBuyTickets(packageId, ticketAmount, ticketType)
+      if (json.price) {
+        setPrice(json.price)
       } else {
-        toast({
-          title: "Payment Failed",
-          description: "Your payment could not be processed. Please try again.",
-          variant: "destructive",
-        })
-        setIsLoading({ ...isLoading, [packageId]: false })
+        console.warn("Preis nicht gefunden in JSON:", json)
       }
-    } catch (error) {
-      console.error("Payment error:", error)
+    } catch (err) {
+      console.error("Client error:", err)
+    }
+  }
+
+  fetchPrice()
+}, [])
+
+  const sendPayment = async (
+  dollarPrice: number,
+  packageId: string,
+  ticketAmount: number,
+  ticketType: "regular" | "legendary",
+) => {
+  setIsLoading({ ...isLoading, [packageId]: true })
+
+  try {
+    // WLD-Betrag berechnen (fallback = 1:1)
+    const roundedWldAmount = parseFloat((price ? dollarPrice / price : dollarPrice).toFixed(3))
+
+
+    const res = await fetch("/api/initiate-payment", { method: "POST" })
+    const { id } = await res.json()
+
+    const payload: PayCommandInput = {
+      reference: id,
+      to: "0x4bb270ef6dcb052a083bd5cff518e2e019c0f4ee",
+      tokens: [
+        {
+          symbol: Tokens.WLD,
+          token_amount: tokenToDecimals(roundedWldAmount, Tokens.WLD).toString(),
+        },
+      ],
+      description: `${ticketAmount} ${ticketType === "legendary" ? "Legendary" : "Regular"} Tickets`,
+    }
+
+    const { finalPayload } = await MiniKit.commandsAsync.pay(payload)
+
+    if (finalPayload.status === "success") {
+      console.log("success sending payment")
+      await handleBuyTickets(packageId, ticketAmount, ticketType)
+    } else {
       toast({
-        title: "Payment Error",
-        description: "An error occurred during payment. Please try again.",
+        title: "Payment Failed",
+        description: "Your payment could not be processed. Please try again.",
         variant: "destructive",
       })
       setIsLoading({ ...isLoading, [packageId]: false })
     }
+  } catch (error) {
+    console.error("Payment error:", error)
+    toast({
+      title: "Payment Error",
+      description: "An error occurred during payment. Please try again.",
+      variant: "destructive",
+    })
+    setIsLoading({ ...isLoading, [packageId]: false })
   }
+}
+
 
   // Handle buying tickets
   const handleBuyTickets = async (packageId: string, ticketAmount: number, ticketType: "regular" | "legendary") => {
@@ -154,7 +177,7 @@ export default function ShopPage() {
 
   // Regular ticket packages
   const regularPackages = [
-    { id: "reg-1", amount: 1, price: 0.1 },
+    { id: "reg-1", amount: 1, price: 0.11 },
     { id: "reg-3", amount: 3, price: 0.2 },
     { id: "reg-5", amount: 5, price: 0.3 },
     { id: "reg-10", amount: 10, price: 0.5 },
@@ -165,7 +188,7 @@ export default function ShopPage() {
     { id: "leg-1", amount: 1, price: 0.15 },
     { id: "leg-3", amount: 3, price: 0.3 },
     { id: "leg-5", amount: 5, price: 0.45 },
-    { id: "leg-10", amount: 10, price: 0.7 },
+    { id: "leg-10", amount: 10, price: 0.75 },
   ]
 
   return (
@@ -229,7 +252,16 @@ export default function ShopPage() {
                       <CardContent className="p-4 pt-0 pb-3">
                         <Separator className="my-3" />
                         <div className="flex items-center justify-between">
-                          <span className="text-base font-semibold">{pkg.price} WLD</span>
+                          <div className="flex items-baseline gap-2">
+  <span className="text-sm font-semibold">
+    {price
+      ? `${(pkg.price / price).toFixed(3)} WLD`
+      : `${pkg.price.toFixed(3)} WLD`}
+  </span>
+  <span className="text-xs text-gray-500">
+    (~${pkg.price.toFixed(2)})
+  </span>
+</div>
                         </div>
                       </CardContent>
                       <CardFooter className="p-4 pt-0">
@@ -273,7 +305,16 @@ export default function ShopPage() {
                       <CardContent className="p-4 pt-0 pb-3">
                         <Separator className="my-3" />
                         <div className="flex items-center justify-between">
-                          <span className="text-base font-semibold">{pkg.price} WLD</span>
+                          <div className="flex items-baseline gap-2">
+  <span className="text-sm font-semibold">
+    {price
+      ? `${(pkg.price / price).toFixed(3)} WLD`
+      : `${pkg.price.toFixed(3)} WLD`}
+  </span>
+  <span className="text-xs text-gray-500">
+    (~${pkg.price.toFixed(2)})
+  </span>
+</div>
                         </div>
                       </CardContent>
                       <CardFooter className="p-4 pt-0">

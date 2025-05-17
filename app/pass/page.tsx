@@ -840,18 +840,14 @@ useEffect(() => {
               {/* Limited Time Offer - Only show for non-premium users */}
               {!hasPremium && (
                 <div className="bg-white rounded-xl p-3 mb-4 relative overflow-hidden border border-gray-200 shadow-sm">
-                  <div className="absolute top-0 right-0">
-                    <div className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-bl-lg">80% DISCOUNT</div>
-                  </div>
-
                   <div className="relative flex items-center">
                     <div className="mr-3 bg-gray-100 p-2 rounded-lg">
                       <Sparkles className="h-5 w-5 text-amber-500" />
                     </div>
                     <div className="flex-1">
-                      <h4 className="font-bold text-gray-900 text-sm">Limited Time Offer!</h4>
+                      <h4 className="font-bold text-gray-900 text-sm">Support the Game</h4>
                       <p className="text-gray-700 text-sm">
-                        Get <b>Premium Pass</b> for only <b>1 WLD</b> until <b>May 15th</b>!
+                        Get <b>Premium Pass</b> for only <b>$1</b> and enjoy full benefits!
                       </p>
                     </div>
                   </div>

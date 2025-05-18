@@ -692,7 +692,7 @@ export default function Home() {
                   </a>
 
                   <a
-                    href="https://t.me/animeworld_tcg"
+                    href="https://t.me/+Dx-fEykc-BY5ZmQy"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="relative group w-9 h-9 rounded-full bg-blue-500 hover:bg-blue-600 flex items-center justify-center shadow-[0_0_10px_rgba(59,130,246,0.5)] transition"

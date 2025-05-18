@@ -324,6 +324,7 @@ export async function drawCards(username: string, packType: string, count = 1) {
           .from("user_cards")
           .update({ quantity: newQuantity })
           .eq("id", existingCard.id)
+          .eq("level", 1)
 
         if (updateCardError) {
           console.error("Error updating card quantity:", updateCardError)

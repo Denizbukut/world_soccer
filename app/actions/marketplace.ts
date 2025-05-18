@@ -693,30 +693,26 @@ export async function createListing(
 export async function purchaseCard(username: string, listingId: string) {
   try {
     const supabase = createSupabaseServer()
-    
-    // Vor dem Ziehen: Karten mit quantity 0 löschen
+
+    // 1. Käuferdaten aufräumen
     await supabase
       .from("user_cards")
       .delete()
       .eq("user_id", username)
       .eq("quantity", 0)
 
-
-    // Hole die Benutzerinformationen (username ist bereits die ID)
+    // 2. Käuferdaten holen
     const { data: buyerData, error: buyerError } = await supabase
       .from("users")
-      .select("coins")
+      .select("coins, score")
       .eq("username", username)
       .single()
 
     if (buyerError || !buyerData) {
-      console.error("Error fetching buyer:", buyerError)
       return { success: false, error: "Buyer not found" }
     }
 
-    const buyerCoins = buyerData.coins
-
-    // Hole das Listing
+    // 3. Listing holen
     const { data: listing, error: listingError } = await supabase
       .from("market_listings")
       .select("*")
@@ -725,88 +721,106 @@ export async function purchaseCard(username: string, listingId: string) {
       .single()
 
     if (listingError || !listing) {
-      console.error("Error fetching listing:", listingError)
       return { success: false, error: "Listing not found or already sold" }
     }
 
-    // Verhindere, dass Benutzer ihre eigenen Karten kaufen
+    // 4. Selbstkauf verhindern
     if (listing.seller_id === username) {
-      // Get the card details to determine rarity and calculate score
-      const { data: cardDetails, error: cardDetailsError } = await supabase
-        .from("cards")
-        .select("rarity")
-        .eq("id", listing.card_id)
-        .single()
-
-      if (cardDetailsError || !cardDetails) {
-        console.error("Error fetching card details:", cardDetailsError)
-        return { success: false, error: "Failed to fetch card details" }
-      }
-
-      // Calculate score based on card rarity
-      const scoreForCard = getScoreForRarity(cardDetails.rarity as CardRarity)
-      console.log(`Card transfer score: ${scoreForCard} points for ${cardDetails.rarity} rarity`)
-
-      // Get seller's current score
-      const { data: sellerData, error: sellerError } = await supabase
-        .from("users")
-        .select("score")
-        .eq("username", listing.seller_id)
-        .single()
-
-      if (sellerError || !sellerData) {
-        console.error("Error fetching seller score:", sellerError)
-        return { success: false, error: "Failed to fetch seller data" }
-      }
-
-      // Get buyer's current score
-      const { data: buyerScoreData, error: buyerScoreError } = await supabase
-        .from("users")
-        .select("score")
-        .eq("username", username)
-        .single()
-
-      if (buyerScoreError || !buyerScoreData) {
-        console.error("Error fetching buyer score:", buyerScoreError)
-        return { success: false, error: "Failed to fetch buyer score data" }
-      }
-
-      // Calculate new scores
-      const sellerCurrentScore = sellerData.score || 0
-      const buyerCurrentScore = buyerScoreData.score || 0
-      const sellerNewScore = Math.max(0, sellerCurrentScore - scoreForCard) // Ensure score doesn't go below 0
-      const buyerNewScore = buyerCurrentScore + scoreForCard
-
-      console.log(`Score transfer: Seller ${listing.seller_id}: ${sellerCurrentScore} -> ${sellerNewScore}`)
-      console.log(`Score transfer: Buyer ${username}: ${buyerCurrentScore} -> ${buyerNewScore}`)
-
-      // Update seller's score
-      const { error: updateSellerError } = await supabase
-        .from("users")
-        .update({ score: sellerNewScore })
-        .eq("username", listing.seller_id)
-
-      if (updateSellerError) {
-        console.error("Error updating seller score:", updateSellerError)
-        // Continue with the purchase even if score update fails
-      }
-
-      // Update buyer's score
-      const { error: updateBuyerError } = await supabase
-        .from("users")
-        .update({ score: buyerNewScore })
-        .eq("username", username)
-
-      if (updateBuyerError) {
-        console.error("Error updating buyer score:", updateBuyerError)
-        // Continue with the purchase even if score update fails
-      }
       return { success: false, error: "You cannot buy your own card" }
     }
 
-    // Starte eine Transaktion
-    // 1. Aktualisiere das Listing
-    const { error: updateListingError } = await supabase
+    // 5. Score vorbereiten
+    const { data: cardDetails, error: cardError } = await supabase
+      .from("cards")
+      .select("rarity")
+      .eq("id", listing.card_id)
+      .single()
+
+    if (cardError || !cardDetails) {
+      return { success: false, error: "Failed to fetch card details" }
+    }
+
+    const scoreForCard = getScoreForRarity(cardDetails.rarity)
+
+    // 6. Verkäuferdaten
+    const { data: sellerData, error: sellerError } = await supabase
+      .from("users")
+      .select("score")
+      .eq("username", listing.seller_id)
+      .single()
+
+    const sellerScore = sellerData?.score ?? 0
+    const buyerScore = buyerData?.score ?? 0
+
+    await supabase
+      .from("users")
+      .update({ score: Math.max(0, sellerScore - scoreForCard) })
+      .eq("username", listing.seller_id)
+
+    await supabase
+      .from("users")
+      .update({ score: buyerScore + scoreForCard })
+      .eq("username", username)
+
+    // 7. Verkäuferkarte bearbeiten
+    const { data: sellerCard, error: sellerCardError } = await supabase
+      .from("user_cards")
+      .select("id, quantity")
+      .eq("id", listing.user_card_id)
+      .eq("user_id", listing.seller_id)
+      .eq("card_id", listing.card_id)
+      .eq("level", listing.card_level)
+      .single()
+
+    if (sellerCardError || !sellerCard) {
+      return { success: false, error: "Seller's card not found" }
+    }
+
+    if (sellerCard.quantity > 1) {
+      await supabase
+        .from("user_cards")
+        .update({ quantity: sellerCard.quantity - 1 })
+        .eq("id", sellerCard.id)
+    } else {
+      await supabase
+        .from("user_cards")
+        .delete()
+        .eq("id", sellerCard.id)
+    }
+
+    // 8. Käuferkarte prüfen: gleiche card_id + level
+    const { data: buyerCard, error: buyerCardError } = await supabase
+      .from("user_cards")
+      .select("id, quantity")
+      .eq("user_id", username)
+      .eq("card_id", listing.card_id)
+      .eq("level", listing.card_level)
+      .single()
+
+    if (buyerCard && !buyerCardError) {
+      // Karte existiert → quantity erhöhen
+      await supabase
+        .from("user_cards")
+        .update({ quantity: buyerCard.quantity + 1 })
+        .eq("id", buyerCard.id)
+    } else {
+      // Neue Karte anlegen
+      const { error: insertError } = await supabase.from("user_cards").insert({
+        user_id: username,
+        card_id: listing.card_id,
+        quantity: 1,
+        level: listing.card_level || 1,
+        favorite: false,
+        obtained_at: new Date().toISOString().split("T")[0],
+      })
+
+      if (insertError) {
+        return { success: false, error: "Failed to add card to your collection" }
+      }
+    }
+
+    // 9. Listing aktualisieren
+    await supabase
       .from("market_listings")
       .update({
         status: "sold",
@@ -814,15 +828,9 @@ export async function purchaseCard(username: string, listingId: string) {
         sold_at: new Date().toISOString(),
       })
       .eq("id", listingId)
-      .eq("status", "active")
 
-    if (updateListingError) {
-      console.error("Error updating listing:", updateListingError)
-      return { success: false, error: "Failed to update listing" }
-    }
-
-    // 4. Erstelle einen Eintrag in der trades-Tabelle
-    const { error: tradeError } = await supabase.from("trades").insert({
+    // 10. Trade speichern
+    await supabase.from("trades").insert({
       seller_id: listing.seller_id,
       buyer_id: username,
       user_card_id: listing.user_card_id,
@@ -831,72 +839,16 @@ export async function purchaseCard(username: string, listingId: string) {
       created_at: new Date().toISOString(),
     })
 
-    if (tradeError) {
-      console.error("Error creating trade record:", tradeError)
-      // Wir setzen hier keinen Rollback ein, da der Handel bereits abgeschlossen ist
-    }
-
-    // 5. Aktualisiere die user_cards-Tabelle
-    // Prüfe zuerst, ob der Käufer die Karte bereits besitzt
-    const { data: existingCard, error: existingCardError } = await supabase
-      .from("user_cards")
-      .select("id, quantity")
-      .eq("user_id", username)
-      .eq("card_id", listing.card_id)
-      .eq("level", listing.card_level)
-      .single()
-
-    if (existingCardError && existingCardError.code !== "PGRST116") {
-      // PGRST116 bedeutet "No rows returned", was in Ordnung ist
-      console.error("Error checking existing card:", existingCardError)
-      return { success: false, error: "Failed to check if you already own this card" }
-    }
-
-    if (existingCard) {
-      // Aktualisiere die Anzahl, wenn der Käufer die Karte bereits besitzt
-      const { error: updateCardError } = await supabase
-        .from("user_cards")
-        .update({ quantity: existingCard.quantity + 1 })
-        .eq("id", existingCard.id)
-
-      if (updateCardError) {
-        console.error("Error updating card quantity:", updateCardError)
-        return { success: false, error: "Failed to add card to your collection" }
-      }
-    } else {
-      // Ändere den Besitzer der Karte, wenn der Käufer sie noch nicht besitzt
-      const { error: updateCardError } = await supabase
-        .from("user_cards")
-        .update({ user_id: username, quantity: 1 })
-        .eq("id", listing.user_card_id)
-
-      if (updateCardError) {
-        console.error("Error updating card owner:", updateCardError)
-        // Füge eine neue Karte hinzu, wenn die Aktualisierung fehlschlägt
-        const { error: insertCardError } = await supabase.from("user_cards").insert({
-          user_id: username,
-          card_id: listing.card_id,
-          quantity: 1,
-          level: listing.card_level || 1,
-          favorite: false,
-          obtained_at: new Date().toISOString().split("T")[0], // Format as YYYY-MM-DD
-        })
-
-        if (insertCardError) {
-          console.error("Error adding card to collection:", insertCardError)
-          return { success: false, error: "Failed to add card to your collection" }
-        }
-      }
-    }
-
     revalidatePath("/trade")
     revalidatePath("/collection")
+
     return { success: true, message: "Card purchased successfully" }
   } catch (error) {
     console.error("Error in purchaseCard:", error)
     return { success: false, error: "An unexpected error occurred" }
   }
 }
+
 
 /**
  * Storniert ein Listing und gibt die Karte zurück

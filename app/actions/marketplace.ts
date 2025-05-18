@@ -781,11 +781,13 @@ export async function purchaseCard(username: string, listingId: string) {
         .from("user_cards")
         .update({ quantity: sellerCard.quantity - 1 })
         .eq("id", sellerCard.id)
+        .eq("level", listing.card_level)
     } else {
       await supabase
         .from("user_cards")
         .delete()
         .eq("id", sellerCard.id)
+        .eq("level", listing.card_level)
     }
 
     // 8. Käuferkarte prüfen: gleiche card_id + level

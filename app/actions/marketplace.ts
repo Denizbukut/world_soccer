@@ -805,6 +805,7 @@ export async function purchaseCard(username: string, listingId: string) {
         .from("user_cards")
         .update({ quantity: buyerCard.quantity + 1 })
         .eq("id", buyerCard.id)
+        .eq("level", listing.card_level)
     } else {
       // Neue Karte anlegen
       const { error: insertError } = await supabase.from("user_cards").insert({

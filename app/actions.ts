@@ -307,6 +307,7 @@ export async function drawCards(username: string, packType: string, count = 1) {
         .select("*")
         .eq("user_id", username)
         .eq("card_id", selectedCard.id)
+        .eq("level", 1)  // wichtig!
         .single()
 
       if (existingCardError && existingCardError.code !== "PGRST116") {

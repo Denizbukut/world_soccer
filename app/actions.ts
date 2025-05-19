@@ -211,7 +211,11 @@ export async function drawCards(username: string, packType: string, count = 1) {
     }
 
     // Get available cards from database
-    const { data: availableCards, error: cardsError } = await supabase.from("cards").select("*")
+    const { data: availableCards, error: cardsError } = await supabase
+      .from("cards")
+      .select("*")
+      .eq("obtainable", true)
+
 
     if (cardsError || !availableCards || availableCards.length === 0) {
       console.error("Error fetching available cards:", cardsError)

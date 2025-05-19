@@ -763,7 +763,7 @@ export async function purchaseCard(username: string, listingId: string) {
       .eq("username", username)
 
     // 7. Verkäuferkarte bearbeiten
-    const { data: sellerCard, error: sellerCardError } = await supabase
+    let { data: sellerCard, error: sellerCardError } = await supabase
       .from("user_cards")
       .select("id, quantity")
       .eq("id", listing.user_card_id)
@@ -773,8 +773,37 @@ export async function purchaseCard(username: string, listingId: string) {
       .single()
 
     if (sellerCardError || !sellerCard) {
-      return { success: false, error: "Seller's card not found" }
-    }
+      console.warn("Seller card not found by user_card_id – creating fallback card...")
+
+      const { error: recreateError } = await supabase.from("user_cards").insert({
+        id: listing.user_card_id, // gleiche ID wie im Listing
+        user_id: listing.seller_id,
+        card_id: listing.card_id,
+        quantity: 1,
+        level: listing.card_level || 1,
+        favorite: false,
+        obtained_at: new Date().toISOString().split("T")[0],
+      })
+      if (recreateError) {
+    return { success: false, error: "Failed to recreate seller's card entry: " + recreateError.message }
+  }
+
+  // Jetzt sellerCard neu laden
+  const { data: recreatedCard, error: refetchError } = await supabase
+    .from("user_cards")
+    .select("id, quantity")
+    .eq("id", listing.user_card_id)
+    .eq("user_id", listing.seller_id)
+    .eq("card_id", listing.card_id)
+    .eq("level", listing.card_level)
+    .single()
+
+  if (refetchError || !recreatedCard) {
+    return { success: false, error: "Card recreated, but failed to fetch it again." }
+  }
+
+  sellerCard = recreatedCard // 🧠 Setze sellerCard, damit der folgende Code funktioniert
+}
 
     if (sellerCard.quantity > 1) {
       await supabase

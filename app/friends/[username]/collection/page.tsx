@@ -24,7 +24,7 @@ export default async function UserCollectionPage({
     .single()
 
   if (userError || !userData) {
-    redirect("/leaderboard")
+    redirect("/friends")
   }
 
   // Get user cards

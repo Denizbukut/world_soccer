@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Users, UserPlus, Check, X } from "lucide-react"
 import Link from "next/link"
+import MobileNav from "@/components/mobile-nav"
 
 export default function FriendsPage() {
   const { user } = useAuth()
@@ -131,7 +132,9 @@ const handleCancelRequest = async (receiver: string) => {
               <li key={f} className="flex justify-between items-center p-3 bg-white rounded shadow">
                 <span className="font-medium">@{f}</span>
                 <div className="flex gap-2">
-                  
+                  <Button variant="outline" size="sm" asChild>
+                    <Link href={`/friends/${f}/collection`}>View</Link>
+                  </Button>
                   <Button size="sm" variant="destructive" onClick={() => handleRemove(f)}>
                     Remove
                   </Button>
@@ -184,6 +187,9 @@ const handleCancelRequest = async (receiver: string) => {
           </ul>
         </>
       )}
+      <MobileNav />
     </div>
+    
   )
+  
 }

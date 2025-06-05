@@ -1059,7 +1059,7 @@ export default function Home() {
                   <div className="relative overflow-hidden rounded-lg p-2 transition-all duration-300 hover:shadow-md group bg-gradient-to-b from-gray-50 to-white border border-gray-100 hover:border-violet-200">
                     <div className="flex items-center justify-center mb-1">
                       <div className="relative w-12 h-18 mx-auto transform group-hover:scale-105 transition-transform duration-300">
-                        <Image src="/vibrant-purple-card-pack.png" alt="Regular Pack" fill className="object-contain" />
+                        <Image src="/vibrant-purple-card-pack.jpg" alt="Regular Pack" fill className="object-contain" />
                       </div>
                     </div>
                     <div className="bg-white rounded-lg p-1.5 text-center shadow-sm">
@@ -1076,7 +1076,7 @@ export default function Home() {
                     <div className="flex items-center justify-center mb-1">
                       <div className="relative w-12 h-18 mx-auto transform group-hover:scale-105 transition-transform duration-300">
                         <Image
-                          src="/anime-world-legendary-pack.png"
+                          src="/anime-world-legendary-pack.jpg"
                           alt="Legendary Pack"
                           fill
                           className="object-contain"

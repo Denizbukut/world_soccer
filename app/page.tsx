@@ -22,6 +22,7 @@ import {
   Trophy,
   Coins,
   Sparkles,
+  Users
 } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
 import Link from "next/link"
@@ -715,17 +716,13 @@ export default function Home() {
           >
             {/* Top row with username, level and tokens */}
             <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-1.5">
-                <h2 className="font-semibold text-sm">@{user?.username || "Trainer"}</h2>
-                <div className="flex items-center gap-1 bg-green-100 px-1.5 py-0.5 rounded-full">
-                  <Coins className="h-2.5 w-2.5 text-green-600" />
-                  <span className="text-[10px] font-medium text-green-600">{tokens} $ANIME</span>
-                </div>
-              </div>
-              <span className="text-xs font-medium bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded-full">
-                Lvl {user?.level || 1}
-              </span>
-            </div>
+  <div className="flex items-center gap-2">
+    <h2 className="font-semibold text-sm">@{user?.username}</h2>
+    <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-xs">{tokens} $ANIME</span>
+  </div>
+  <span className="bg-violet-100 text-violet-700 text-xs px-2 py-0.5 rounded-full">Lvl {user?.level}</span>
+</div>
+
 
             {/* Progress bar */}
             <div className="flex justify-between items-center mb-1">
@@ -961,53 +958,37 @@ export default function Home() {
           )}
 
           {/* Quick actions */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.4 }}
-            className="grid grid-cols-4 gap-2"
-          >
-            <Link href="/collection" className="block">
-              <div className="bg-white rounded-xl p-2 shadow-md border border-gray-100 h-full transition-all duration-300 hover:shadow-lg hover:border-violet-200 group">
-                <div className="w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center mb-2 group-hover:bg-violet-200 transition-colors duration-300">
-                  <CreditCard className="h-4 w-4 text-violet-500" />
-                </div>
-                <h3 className="font-medium text-xs mb-0">Collection</h3>
-              </div>
-            </Link>
-            <Link href="/catalog" className="block">
-              <div className="bg-white rounded-xl p-2 shadow-md border border-gray-100 h-full transition-all duration-300 hover:shadow-lg hover:border-indigo-200 group">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-indigo-400 to-indigo-600 flex items-center justify-center mb-2 group-hover:opacity-90 transition-opacity duration-300">
-                  <BookOpen className="h-4 w-4 text-white" />
-                </div>
-                <h3 className="font-medium text-xs mb-0">Gallery</h3>
-              </div>
-            </Link>
-            <Link href="/shop" className="block">
-              <div className="bg-white rounded-xl p-2 shadow-md border border-gray-100 h-full transition-all duration-300 hover:shadow-lg hover:border-blue-200 group">
-                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center mb-2 group-hover:bg-blue-200 transition-colors duration-300">
-                  <ShoppingCart className="h-4 w-4 text-blue-500" />
-                </div>
-                <h3 className="font-medium text-xs mb-0">Shop</h3>
-              </div>
-            </Link>
-            <Link href="/trade" className="block">
-              <div className="bg-white rounded-xl p-2 shadow-md border border-gray-100 h-full transition-all duration-300 hover:shadow-lg hover:border-emerald-200 group">
-                <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center mb-2 group-hover:bg-emerald-200 transition-colors duration-300">
-                  <Repeat className="h-4 w-4 text-emerald-500" />
-                </div>
-                <h3 className="font-medium text-xs mb-0">Trade</h3>
-              </div>
-            </Link>
-            <Link href="/friends" className="block">
-              <div className="bg-white rounded-xl p-2 shadow-md border border-gray-100 h-full transition-all duration-300 hover:shadow-lg hover:border-blue-200 group">
-                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center mb-2 group-hover:bg-blue-200 transition-colors duration-300">
-                  <Sparkles className="h-4 w-4 text-blue-500" />
-                </div>
-                <h3 className="font-medium text-xs mb-0">Friends</h3>
-              </div>
-            </Link>
-          </motion.div>
+         <section className="space-y-2">
+  <div className="flex items-center gap-2">
+    <h2 className="text-sm font-semibold text-gray-800">Quick Access</h2>
+  </div>
+
+  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+    {[
+      { href: "/collection", label: "Collection", icon: CreditCard, color: "violet" },
+      { href: "/catalog", label: "Gallery", icon: BookOpen, color: "indigo" },
+      { href: "/shop", label: "Shop", icon: ShoppingCart, color: "blue" },
+      { href: "/trade", label: "Trade", icon: Repeat, color: "emerald" },
+      { href: "/friends", label: "Friends", icon: Users, color: "pink" },
+      { href: "/leaderboard", label: "Leaderboard", icon: Trophy, color: "amber" },
+    ].map((item, i) => {
+      const Icon = item.icon
+      return (
+        <Link href={item.href} key={i} className="group block">
+          <div className="bg-white rounded-lg px-2 py-2 shadow-sm border border-gray-100 hover:shadow-md hover:border-gray-200 transition-all flex flex-col items-center text-center">
+            <div
+              className={`w-7 h-7 rounded-full flex items-center justify-center bg-${item.color}-100 group-hover:bg-${item.color}-200 transition`}
+            >
+              <Icon className={`h-4 w-4 text-${item.color}-600`} />
+            </div>
+            <span className="mt-1 text-[11px] font-medium text-gray-700 leading-tight">{item.label}</span>
+          </div>
+        </Link>
+      )
+    })}
+  </div>
+</section>
+
 
           {/* Daily bonus */}
           <motion.div
@@ -1057,23 +1038,6 @@ export default function Home() {
             </div>
           </motion.div>
 
-          {/* Leaderboard Card - Horizontal */}
-          <Link href="/leaderboard" className="block">
-            <div className="bg-white rounded-xl p-3 shadow-md border border-gray-100 mb-3 hover:shadow-lg hover:border-violet-200 transition-all duration-300">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <div className="bg-violet-100 p-1.5 rounded-lg mr-2">
-                    <Trophy className="h-4 w-4 text-violet-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-sm">Leaderboard</h3>
-                    <p className="text-xs text-gray-500">See top players and rankings</p>
-                  </div>
-                </div>
-                <ChevronRight className="h-4 w-4 text-gray-400" />
-              </div>
-            </div>
-          </Link>
 
           {/* Card packs */}
           <motion.div

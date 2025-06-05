@@ -22,7 +22,8 @@ import {
   Trophy,
   Coins,
   Sparkles,
-  Users
+  Users,
+  CheckCircle,
 } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
 import Link from "next/link"
@@ -364,7 +365,7 @@ export default function Home() {
         if (data?.ticket_last_claimed && typeof data.ticket_last_claimed === "string") {
           const lastClaimedDate = new Date(data.ticket_last_claimed)
           const now = new Date()
-          const twelveHoursInMs = 12 * 60 * 60 * 1000
+          const twelveHoursInMs = 24 * 60 * 60 * 1000
           const timeSinceClaim = now.getTime() - lastClaimedDate.getTime()
 
           if (timeSinceClaim < twelveHoursInMs) {
@@ -438,47 +439,39 @@ export default function Home() {
 
   // Set up timer countdown
   useEffect(() => {
-    // Clear any existing intervals
-    if (timerIntervalRef.current) clearInterval(timerIntervalRef.current)
-    if (tokenTimerIntervalRef.current) clearInterval(tokenTimerIntervalRef.current)
+  if (timerIntervalRef.current) clearInterval(timerIntervalRef.current)
 
-    // Set up a single interval for both timers
-    const interval = setInterval(() => {
-      // Update ticket timer
-      if (timeUntilNextClaim && timeUntilNextClaim > 0) {
-        const newTime = timeUntilNextClaim - 1000
-        if (newTime <= 0) {
-          setAlreadyClaimed(false)
-          setTimeUntilNextClaim(null)
-          updateTicketTimerDisplay(null)
-        } else {
-          setTimeUntilNextClaim(newTime)
-          updateTicketTimerDisplay(newTime)
-        }
+  const interval = setInterval(() => {
+    if (timeUntilNextClaim && timeUntilNextClaim > 0) {
+      const newTime = timeUntilNextClaim - 1000
+      if (newTime <= 0) {
+        setAlreadyClaimed(false)
+        setTimeUntilNextClaim(null)
+        updateTicketTimerDisplay(null)
+      } else {
+        setTimeUntilNextClaim(newTime)
+        updateTicketTimerDisplay(newTime)
       }
+    }
 
-      // Update token timer
-      if (timeUntilNextTokenClaim && timeUntilNextTokenClaim > 0) {
-        const newTime = timeUntilNextTokenClaim - 1000
-        if (newTime <= 0) {
-          setTokenAlreadyClaimed(false)
-          setTimeUntilNextTokenClaim(null)
-          updateTokenTimerDisplay(null)
-        } else {
-          setTimeUntilNextTokenClaim(newTime)
-          updateTokenTimerDisplay(newTime)
-        }
+    if (timeUntilNextTokenClaim && timeUntilNextTokenClaim > 0) {
+      const newTime = timeUntilNextTokenClaim - 1000
+      if (newTime <= 0) {
+        setTokenAlreadyClaimed(false)
+        setTimeUntilNextTokenClaim(null)
+        updateTokenTimerDisplay(null)
+      } else {
+        setTimeUntilNextTokenClaim(newTime)
+        updateTokenTimerDisplay(newTime)
       }
-    }, 1000)
+    }
+  }, 1000)
 
-    timerIntervalRef.current = interval
+  timerIntervalRef.current = interval
 
-    // Initial display update
-    if (timeUntilNextClaim) updateTicketTimerDisplay(timeUntilNextClaim)
-    if (timeUntilNextTokenClaim) updateTokenTimerDisplay(timeUntilNextTokenClaim)
+  return () => clearInterval(interval)
+}, [timeUntilNextClaim, timeUntilNextTokenClaim]) // ✅ Dependencies hinzugefügt
 
-    return () => clearInterval(interval)
-  }, [])
 
   // Check for unclaimed rewards
   useEffect(() => {
@@ -577,7 +570,7 @@ export default function Home() {
             setTimeUntilNextClaim(newTimeUntilNextClaim)
             updateTicketTimerDisplay(newTimeUntilNextClaim)
           } else {
-            const newTimeUntilNextClaim = 12 * 60 * 60 * 1000 // 12 hours in milliseconds
+            const newTimeUntilNextClaim = 24 * 60 * 60 * 1000 // 12 hours in milliseconds
             setTimeUntilNextClaim(newTimeUntilNextClaim)
             updateTicketTimerDisplay(newTimeUntilNextClaim)
           }
@@ -958,36 +951,43 @@ export default function Home() {
           )}
 
           {/* Quick actions */}
-         <section className="space-y-2">
-  <div className="flex items-center gap-2">
-    <h2 className="text-sm font-semibold text-gray-800">Quick Access</h2>
+         <section className="space-y-3">
+  <h2 className="text-sm font-semibold text-gray-800">Quick Access</h2>
+
+  <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+    {[
+      { href: "/collection", label: "Collection", icon: CreditCard, color: "text-violet-600", bg: "bg-violet-100" },
+      { href: "/catalog", label: "Gallery", icon: BookOpen, color: "text-indigo-600", bg: "bg-indigo-100" },
+      { href: "/shop", label: "Shop", icon: ShoppingCart, color: "text-pink-600", bg: "bg-pink-100" },
+      { href: "/trade", label: "Trade", icon: Repeat, color: "text-emerald-600", bg: "bg-emerald-100" },
+      { href: "/friends", label: "Friends", icon: Users, color: "text-rose-600", bg: "bg-rose-100" },
+      { href: "/missions", label: "Missions", icon: Trophy, color: "text-amber-600", bg: "bg-amber-100" },
+    ].map(({ href, label, icon: Icon, color, bg }, i) => (
+      <Link key={i} href={href} className="group block">
+        <div className="rounded-lg bg-white border border-gray-100 p-3 flex flex-col items-center hover:bg-gray-50 transition">
+          <div className={`w-9 h-9 rounded-full ${bg} flex items-center justify-center`}>
+            <Icon className={`h-4.5 w-4.5 ${color}`} />
+          </div>
+          <span className="mt-2 text-[11px] text-gray-700 font-medium text-center leading-tight">{label}</span>
+        </div>
+      </Link>
+    ))}
   </div>
 
-  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-    {[
-      { href: "/collection", label: "Collection", icon: CreditCard, color: "violet" },
-      { href: "/catalog", label: "Gallery", icon: BookOpen, color: "indigo" },
-      { href: "/shop", label: "Shop", icon: ShoppingCart, color: "blue" },
-      { href: "/trade", label: "Trade", icon: Repeat, color: "emerald" },
-      { href: "/friends", label: "Friends", icon: Users, color: "pink" },
-      { href: "/leaderboard", label: "Leaderboard", icon: Trophy, color: "amber" },
-    ].map((item, i) => {
-      const Icon = item.icon
-      return (
-        <Link href={item.href} key={i} className="group block">
-          <div className="bg-white rounded-lg px-2 py-2 shadow-sm border border-gray-100 hover:shadow-md hover:border-gray-200 transition-all flex flex-col items-center text-center">
-            <div
-              className={`w-7 h-7 rounded-full flex items-center justify-center bg-${item.color}-100 group-hover:bg-${item.color}-200 transition`}
-            >
-              <Icon className={`h-4 w-4 text-${item.color}-600`} />
-            </div>
-            <span className="mt-1 text-[11px] font-medium text-gray-700 leading-tight">{item.label}</span>
-          </div>
-        </Link>
-      )
-    })}
-  </div>
+  {/* Full-width Leaderboard Card */}
+  <Link href="/leaderboard" className="block">
+    <div className="w-full rounded-lg bg-white border border-gray-100 p-3 flex items-center gap-3 hover:bg-gray-50 transition">
+      <div className="w-9 h-9 rounded-full bg-purple-100 flex items-center justify-center">
+        <Crown className="h-5 w-5 text-purple-600" />
+      </div>
+      <span className="text-sm font-medium text-gray-800">View Leaderboard</span>
+    </div>
+  </Link>
 </section>
+
+
+
+
 
 
           {/* Daily bonus */}
@@ -1006,7 +1006,7 @@ export default function Home() {
                     </div>
                     <div>
                       <h3 className="font-medium text-sm">Ticket Claim</h3>
-                      <p className="text-xs text-gray-500">Get 3 tickets every 12 hours</p>
+                      <p className="text-xs text-gray-500">Get 3 tickets every 24 hours</p>
                     </div>
                   </div>
                   <Button

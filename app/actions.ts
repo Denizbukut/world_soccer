@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache"
 import { createClient } from "@supabase/supabase-js"
+import {  incrementMission } from "@/app/actions/missions"
+
 
 // Card rarity types
 type CardRarity = "common" | "rare" | "epic" | "legendary"
@@ -183,7 +185,7 @@ export async function drawCards(username: string, packType: string, count = 1) {
     const isLegendary = packType === "legendary"
     const ticketField = isLegendary ? "legendary_tickets" : "tickets"
     const currentTickets = userData[ticketField] || 0
-
+    
     if (currentTickets < count) {
       return {
         success: false,
@@ -241,6 +243,7 @@ export async function drawCards(username: string, packType: string, count = 1) {
       const hasPremium = userData.has_premium || false
 
       if (isLegendary) {
+        
         // Legendary pack rarity distribution: Common 10%, Rare 40%, Epic 40%, Legendary 10%
         if (random < 10) {
           rarity = "common"
@@ -271,6 +274,7 @@ export async function drawCards(username: string, packType: string, count = 1) {
           cardPool = legendaryCards
         }
       } else {
+        await incrementMission(username, "open_regular_pack", count)
         // Regular pack rarity distribution: Common 50%, Rare 34%, Epic 14%, Legendary 2%
         if (random < 50) {
           rarity = "common"
@@ -296,6 +300,11 @@ export async function drawCards(username: string, packType: string, count = 1) {
       // Select a random card from the pool
       const selectedCard = cardPool[Math.floor(Math.random() * cardPool.length)]
       drawnCards.push(selectedCard)
+
+      if (selectedCard.rarity === "legendary") {
+        await incrementMission(username, "draw_legendary_card")
+      }
+
 
       // Punkte für diese Karte berechnen und zur Gesamtpunktzahl hinzufügen
       const cardPoints = getScoreForRarity(selectedCard.rarity)

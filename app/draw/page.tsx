@@ -13,6 +13,7 @@ import { Ticket, Crown, Sparkles, Star } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
 import { motion, AnimatePresence, useAnimation, useMotionValue, useTransform } from "framer-motion"
 import Image from "next/image"
+import { incrementMission } from "@/app/actions/missions"
 
 // Rarität definieren
 type CardRarity = "common" | "rare" | "epic" | "legendary"
@@ -186,7 +187,18 @@ export default function DrawPage() {
 
     try {
       const result = await drawCards(user.username, cardType, 1)
+      if (result.drawnCards?.[0]?.rarity === "legendary") {
+
+        await incrementMission(user.username, "draw_legendary_card")
+      }
       console.log("Draw result:", result)
+      if(cardType === "legendary"){
+        await incrementMission(user.username, "open_legendary_pack")
+        
+      }else {
+        await incrementMission(user.username, "open_regular_pack")
+      }
+      
 
       if (result.success && result.drawnCards && result.drawnCards.length > 0) {
         // Set drawn cards

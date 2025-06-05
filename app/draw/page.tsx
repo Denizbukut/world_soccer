@@ -476,8 +476,8 @@ export default function DrawPage() {
                         <Image
                           src={
                             activeTab === "legendary"
-                              ? "/anime-world-legendary-pack.png"
-                              : "/vibrant-purple-card-pack.png"
+                              ? "/anime-world-legendary-pack.jpg"
+                              : "/vibrant-purple-card-pack.jpg"
                           }
                           alt="Card Pack"
                           fill
@@ -646,7 +646,7 @@ export default function DrawPage() {
                   >
                     <Image
                       src={
-                        activeTab === "legendary" ? "/anime-world-legendary-pack.png" : "/vibrant-purple-card-pack.png"
+                        activeTab === "legendary" ? "/anime-world-legendary-pack.jpg" : "/vibrant-purple-card-pack.jpg"
                       }
                       alt="Card Pack"
                       fill

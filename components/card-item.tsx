@@ -48,12 +48,8 @@ export function CardItem({
   isCollection = false,
   hideOverlay = false,
 }: CardItemProps) {
-  // Ensure we have a valid card with all required properties
-  if (!id) {
-    return null
-  }
+  if (!id) return null
 
-  // Map rarity to color and border styles
   const rarityStyles = {
     common: {
       border: "border-4 border-gray-400",
@@ -82,18 +78,10 @@ export function CardItem({
   }
 
   const rarityStyle = rarityStyles[rarity as keyof typeof rarityStyles] || rarityStyles.common
-
-  // Generate a descriptive query for the character
-  const query = `${character} from anime, high quality, detailed, vibrant colors`
-  const placeholderUrl = `/placeholder.svg?height=400&width=300&query=${encodeURIComponent(query)}`
-
-  // Use the provided imageUrl, or generate a placeholder
+  const placeholderUrl = "/placeholder.svg"
   const cardImageUrl = imageUrl || placeholderUrl
-
-  // Create a composite ID that includes the level when in collection view
   const cardDetailUrl = isCollection ? `/cards/${id}-level-${level}` : `/cards/${id}`
 
-  // Create card wrapper based on whether it's clickable or selectable
   const CardWrapper = ({ children }: { children: React.ReactNode }) => {
     if (selectable) {
       return (
@@ -101,7 +89,7 @@ export function CardItem({
           onClick={onClick}
           className={cn(
             "cursor-pointer h-full transition-all duration-300",
-            selected ? "ring-4 ring-blue-500 scale-105" : "",
+            selected ? "ring-4 ring-blue-500 scale-105" : ""
           )}
         >
           {children}
@@ -124,28 +112,19 @@ export function CardItem({
     )
   }
 
-  const rarityColors = {
-    common: "bg-gray-400 text-gray-800",
-    rare: "bg-blue-500 text-white",
-    epic: "bg-purple-500 text-white",
-    legendary: "bg-yellow-500 text-black",
-  }
-
   return (
     <CardWrapper>
       <div
         className={cn(
           "h-full rounded-xl overflow-hidden",
           "hover:shadow-lg transition-shadow duration-300",
-          owned ? "" : "opacity-60 grayscale",
+          owned ? "" : "opacity-60 grayscale"
         )}
       >
         <div className="relative aspect-[3/4] w-full overflow-hidden">
-          {/* Card with rarity-based styling */}
           <div className={`w-full h-full relative rounded-xl ${isCollection || hideOverlay ? "" : rarityStyle.border}`}>
-            {/* Card image */}
             <Image
-              src={cardImageUrl || "/placeholder.svg"}
+              src={cardImageUrl}
               alt={`${name} - ${character}`}
               fill
               sizes="(max-width: 640px) 20vw, (max-width: 768px) 16vw, (max-width: 1024px) 20vw, 33vw"
@@ -153,14 +132,12 @@ export function CardItem({
               priority={false}
             />
 
-            {/* Quantity badge (if more than 1) */}
             {quantity > 1 && (
               <div className="absolute top-1 right-1 bg-black/70 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">
                 x{quantity}
               </div>
             )}
 
-            {/* Card name overlay - only show if not in collection view and not hidden */}
             {!isCollection && !hideOverlay && (
               <div className="absolute top-1 left-1 right-1">
                 <div className="bg-gradient-to-r from-black/70 via-black/50 to-transparent px-2 py-1 rounded-lg backdrop-blur-sm inline-block">
@@ -169,12 +146,10 @@ export function CardItem({
               </div>
             )}
 
-            {/* Level stars - only show in collection view */}
             {isCollection && (
               <div className="absolute bottom-1 left-0 right-0 flex justify-center">{renderStars(level, "xs")}</div>
             )}
 
-            {/* Special effects for legendary and epic cards */}
             {(rarity === "legendary" || rarity === "epic") && (
               <motion.div
                 className={`absolute inset-0 pointer-events-none mix-blend-overlay rounded-xl ${

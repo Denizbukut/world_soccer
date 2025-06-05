@@ -6,7 +6,6 @@ import ProtectedRoute from "@/components/protected-route"
 import MobileNav from "@/components/mobile-nav"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { useDebouncedValue } from "@/components/useDebouncedValue"
 import { motion } from "framer-motion"
 import {
   Users,
@@ -119,11 +118,7 @@ export default function TradePage() {
   const [recentSales, setRecentSales] = useState<RecentSale[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
-const debouncedSearchTerm = useDebouncedValue(searchTerm, 500)
-
-const [salesSearchTerm, setSalesSearchTerm] = useState("")
-const debouncedSalesSearchTerm = useDebouncedValue(salesSearchTerm, 500)
-
+  const [salesSearchTerm, setSalesSearchTerm] = useState("")
   const [rarityFilter, setRarityFilter] = useState<string>("all")
   const [sortOption, setSortOption] = useState<string>("newest")
   const [selectedListing, setSelectedListing] = useState<MarketListing | null>(null)
@@ -181,13 +176,62 @@ const debouncedSalesSearchTerm = useDebouncedValue(salesSearchTerm, 500)
 
   // Effect for search term changes in marketplace
   useEffect(() => {
-  if (!user?.username) return
-  if (activeTab !== "marketplace") return
+    if (activeTab === "marketplace") {
+      setMarketPage(1) // Reset to page 1 when filters change
+      debouncedSearch()
+    }
+  }, [searchTerm, rarityFilter])
 
-  setMarketPage(1)
-  loadMarketListings(1)
-}, [activeTab, user?.username, debouncedSearchTerm, rarityFilter, sortOption])
+  // Effect for search term changes in recent sales
+  useEffect(() => {
+    if (activeTab === "sales-history") {
+      setRecentSalesPage(1) // Reset to page 1 when search changes
+      debouncedSalesSearch()
+    }
+  }, [salesSearchTerm])
 
+  // Effect for sort option changes
+  useEffect(() => {
+    if (activeTab === "marketplace") {
+      setMarketPage(1) // Reset to page 1 when sort changes
+      loadMarketListings(1)
+    }
+  }, [sortOption])
+
+  // Effect for history type changes
+  useEffect(() => {
+    if (activeTab === "sales-history") {
+      if (historyType === "my") {
+        setTransactionsPage(1)
+        loadTransactionHistory(1)
+      } else {
+        setRecentSalesPage(1)
+        loadRecentSales(1)
+      }
+    }
+  }, [historyType, activeTab])
+
+  // Load data based on active tab
+  useEffect(() => {
+    if (!user?.username) return
+
+    // Reset pagination when changing tabs
+    if (activeTab === "marketplace") {
+      setMarketPage(1)
+      loadMarketListings(1)
+    } else if (activeTab === "sell") {
+      setUserListingsPage(1)
+      loadUserListings(1)
+    } else if (activeTab === "sales-history") {
+      if (historyType === "my") {
+        setTransactionsPage(1)
+        loadTransactionHistory(1)
+      } else {
+        setRecentSalesPage(1)
+        loadRecentSales(1)
+      }
+    }
+  }, [activeTab, user?.username])
 
   // Load market listings with pagination
   const loadMarketListings = async (pageToLoad = marketPage) => {
@@ -202,10 +246,9 @@ const debouncedSalesSearchTerm = useDebouncedValue(salesSearchTerm, 500)
       }
 
       // Add search term to filters if present
-      if (debouncedSearchTerm) {
-  filters.search = debouncedSearchTerm
-}
-
+      if (searchTerm) {
+        filters.search = searchTerm
+      }
 
       const result = await getMarketListings(pageToLoad, 20, filters)
       if (result.success) {
@@ -305,8 +348,7 @@ const debouncedSalesSearchTerm = useDebouncedValue(salesSearchTerm, 500)
     setLoading(true)
     try {
       console.log("Loading recent sales page:", pageToLoad, "with search term:", salesSearchTerm)
-      const result = await getRecentSales(pageToLoad, 20, debouncedSalesSearchTerm)
-
+      const result = await getRecentSales(pageToLoad, 20, salesSearchTerm)
       if (result.success) {
         console.log("Recent sales loaded successfully:", result.sales?.length || 0, "items")
         setRecentSales(result.sales || [])

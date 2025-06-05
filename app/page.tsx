@@ -21,6 +21,7 @@ import {
   Send,
   Trophy,
   Coins,
+  Sparkles,
 } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
 import Link from "next/link"
@@ -996,6 +997,14 @@ export default function Home() {
                   <Repeat className="h-4 w-4 text-emerald-500" />
                 </div>
                 <h3 className="font-medium text-xs mb-0">Trade</h3>
+              </div>
+            </Link>
+            <Link href="/friends" className="block">
+              <div className="bg-white rounded-xl p-2 shadow-md border border-gray-100 h-full transition-all duration-300 hover:shadow-lg hover:border-blue-200 group">
+                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center mb-2 group-hover:bg-blue-200 transition-colors duration-300">
+                  <Sparkles className="h-4 w-4 text-blue-500" />
+                </div>
+                <h3 className="font-medium text-xs mb-0">Friends</h3>
               </div>
             </Link>
           </motion.div>

@@ -5,21 +5,29 @@ import { useAuth } from "@/contexts/auth-context"
 import ProtectedRoute from "@/components/protected-route"
 import MobileNav from "@/components/mobile-nav"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { motion } from "framer-motion"
 import {
+  Users,
+  ShoppingBag,
   Clock,
+  Search,
+  Plus,
+  Tag,
   ShoppingCart,
   X,
+  ArrowUpDown,
+  Filter,
   RefreshCw,
   Edit,
+  AlertCircle,
   ChevronLeft,
   ChevronRight,
   DollarSign,
-  Wrench,
-  Database,
-  AlertTriangle,
-  ArrowLeft,
+  BarChart2,
+  History,
+  User,
+  Globe,
 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
@@ -32,15 +40,25 @@ import {
   cancelListing,
   getRecentSales,
 } from "@/app/actions/marketplace"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
+import { Skeleton } from "@/components/ui/skeleton"
 import { renderStars } from "@/utils/card-stars"
+import UpdatePriceDialog from "@/components/update-price-dialog"
+import TiltableCard from "@/components/tiltable-card"
 import { MiniKit, tokenToDecimals, Tokens, type PayCommandInput } from "@worldcoin/minikit-js"
+import PurchaseSuccessAnimation from "@/components/purchase-success-animation"
+import { Progress } from "@/components/ui/progress"
 import { debounce } from "@/lib/utils"
 
 // ABI für die transfer-Funktion des ERC20-Tokens
-const ERC20_ABI = ["function transfer(address to, uint256 amount) public returns (bool)"]
+const ERC20_ABI = [
+  "function transfer(address to, uint256 amount) public returns (bool)",
+];
 // Typen für die Marketplace-Daten
-type CardType = {
+type Card = {
   id: string
   name: string
   character: string
@@ -59,7 +77,7 @@ type MarketListing = {
   sold_at?: string
   user_card_id: number | string
   card_level: number
-  card: CardType
+  card: Card
   seller_username: string
   seller_world_id?: string
 }
@@ -80,7 +98,7 @@ type RecentSale = {
   price: number
   sold_at: string
   card_level: number
-  card: CardType
+  card: Card
 }
 
 type PaginationInfo = {
@@ -551,22 +569,6 @@ export default function TradePage() {
     )
   }
 
-  // Calculate time remaining (example - you can make this dynamic)
-  const maintenanceEndTime = new Date()
-  maintenanceEndTime.setHours(maintenanceEndTime.getHours() + 18) // 18 hours remaining example
-
-  const formatTimeRemaining = () => {
-    const now = new Date()
-    const diff = maintenanceEndTime.getTime() - now.getTime()
-    const hours = Math.floor(diff / (1000 * 60 * 60))
-    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-
-    if (hours > 0) {
-      return `${hours}h ${minutes}m remaining`
-    }
-    return `${minutes}m remaining`
-  }
-
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-[#f8f9ff] pb-20">
@@ -574,122 +576,627 @@ export default function TradePage() {
         <header className="sticky top-0 z-10 backdrop-blur-md bg-white/80 border-b border-gray-100">
           <div className="max-w-lg mx-auto px-4 py-3">
             <div className="flex justify-between items-center">
-              <div className="flex items-center gap-3">
-                <Link href="/dashboard">
-                  <Button variant="ghost" size="sm" className="text-gray-500">
-                    <ArrowLeft className="h-4 w-4" />
-                  </Button>
-                </Link>
-                <h1 className="text-lg font-medium">Trade Center</h1>
-              </div>
-              <Badge variant="destructive" className="animate-pulse">
-                Maintenance
-              </Badge>
+              <h1 className="text-lg font-medium">Trade Center</h1>
+              <Button variant="ghost" size="sm" onClick={handleRefresh} disabled={loading} className="text-gray-500">
+                <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+              </Button>
             </div>
           </div>
         </header>
 
         <main className="p-4 max-w-lg mx-auto">
-          <div className="space-y-6">
-            {/* Main Maintenance Notice */}
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-              <Card className="border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50">
-                <CardHeader className="text-center pb-4">
-                  <div className="mx-auto w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mb-4">
-                    <Wrench className="h-8 w-8 text-amber-600" />
-                  </div>
-                  <CardTitle className="text-xl text-amber-800">Scheduled Maintenance</CardTitle>
-                </CardHeader>
-                <CardContent className="text-center space-y-4">
-                  <div className="bg-white/60 rounded-lg p-4">
-                    <div className="flex items-center justify-center gap-2 mb-2">
-                      <AlertTriangle className="h-5 w-5 text-amber-600" />
-                      <span className="font-semibold text-amber-800">Trading Temporarily Unavailable</span>
-                    </div>
-                    <p className="text-amber-700 text-sm leading-relaxed">
-                      We're performing essential database maintenance to improve your trading experience. The Trade
-                      Center will be temporarily closed for up to 24 hours.
-                    </p>
-                  </div>
+          <Tabs defaultValue="marketplace" className="w-full" onValueChange={setActiveTab}>
+            <TabsList className="grid w-full grid-cols-3 bg-white h-12 p-1 mb-4">
+              <TabsTrigger value="marketplace" className="h-10">
+                <div className="flex items-center justify-center gap-2">
+                  <Users className="h-4 w-4" />
+                  <span className="hidden sm:inline">Market</span>
+                  <span className="sm:hidden">Market</span>
+                </div>
+              </TabsTrigger>
+              <TabsTrigger value="sell" className="h-10">
+                <div className="flex items-center justify-center gap-2">
+                  <ShoppingBag className="h-4 w-4" />
+                  <span className="hidden sm:inline">Sell</span>
+                  <span className="sm:hidden">Sell</span>
+                </div>
+              </TabsTrigger>
+              <TabsTrigger value="sales-history" className="h-10">
+                <div className="flex items-center justify-center gap-2">
+                  <History className="h-4 w-4" />
+                  <span className="hidden sm:inline">Sales History</span>
+                  <span className="sm:hidden">History</span>
+                </div>
+              </TabsTrigger>
+            </TabsList>
 
-                  <div className="flex items-center justify-center gap-2 text-amber-700">
-                    <Clock className="h-4 w-4" />
-                    <span className="text-sm font-medium">Estimated time: ~ 24 hours</span>
+            {/* Marketplace Tab */}
+            <TabsContent value="marketplace">
+              <div className="space-y-4">
+                {/* Search and Filter */}
+                <div className="bg-white rounded-xl p-3 shadow-sm">
+                  <div className="flex gap-2 mb-3">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
+                      <Input
+                        placeholder="Search cards or sellers..."
+                        className="pl-8"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                      />
+                    </div>
+                    <Select value={rarityFilter} onValueChange={setRarityFilter}>
+                      <SelectTrigger className="w-[130px]">
+                        <Filter className="h-4 w-4 mr-2" />
+                        <SelectValue placeholder="Rarity" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Rarities</SelectItem>
+                        <SelectItem value="common">Common</SelectItem>
+                        <SelectItem value="rare">Rare</SelectItem>
+                        <SelectItem value="epic">Epic</SelectItem>
+                        <SelectItem value="legendary">Legendary</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                </CardContent>
-              </Card>
-            </motion.div>
+                  <div className="flex justify-between items-center">
+                    <div className="text-sm text-gray-500">
+                      {marketPagination.total} {marketPagination.total === 1 ? "card" : "cards"} available
+                    </div>
+                    <Select value={sortOption} onValueChange={setSortOption}>
+                      <SelectTrigger className="w-[130px] h-8 text-xs">
+                        <ArrowUpDown className="h-3 w-3 mr-1" />
+                        <SelectValue placeholder="Sort by" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="newest">Newest First</SelectItem>
+                        <SelectItem value="oldest">Oldest First</SelectItem>
+                        <SelectItem value="price_low">Price: Low to High</SelectItem>
+                        <SelectItem value="price_high">Price: High to Low</SelectItem>
+                        <SelectItem value="level_high">Level: High to Low</SelectItem>
+                        <SelectItem value="level_low">Level: Low to High</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
 
-            {/* What's Being Updated */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-            >
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <Database className="h-5 w-5 text-blue-600" />
-                    What We're Improving
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex items-start gap-3">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
-                    <div>
-                      <p className="font-medium text-sm">Database Optimization</p>
-                      <p className="text-xs text-gray-600">Improving trading speed and reliability</p>
-                    </div>
+                {/* Listings */}
+                {loading ? (
+                  <div className="space-y-3">
+                    {[...Array(3)].map((_, i) => (
+                      <div key={i} className="bg-white rounded-xl p-4 shadow-sm">
+                        <div className="flex gap-3">
+                          <Skeleton className="h-24 w-16 rounded-lg" />
+                          <div className="flex-1 space-y-2">
+                            <Skeleton className="h-4 w-3/4" />
+                            <Skeleton className="h-3 w-1/2" />
+                            <Skeleton className="h-6 w-1/3 mt-2" />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <div className="flex items-start gap-3">
-                    <div className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0"></div>
-                    <div>
-                      <p className="font-medium text-sm">Security Updates</p>
-                      <p className="text-xs text-gray-600">Enhanced protection for your transactions</p>
+                ) : marketListings.length > 0 ? (
+                  <>
+                    <div className="space-y-3">
+                      {marketListings.map((listing) => (
+                        <MarketplaceCard
+                          key={listing.id}
+                          listing={listing}
+                          onPurchase={() => {
+                            setSelectedListing(listing)
+                            setShowPurchaseDialog(true)
+                          }}
+                          onShowDetails={() => handleShowCardDetails(listing)}
+                        />
+                      ))}
                     </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="w-2 h-2 bg-purple-500 rounded-full mt-2 flex-shrink-0"></div>
-                    <div>
-                      <p className="font-medium text-sm">Performance Improvements</p>
-                      <p className="text-xs text-gray-600">Faster loading and smoother experience</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
 
-            {/* What You Can Do */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.4 }}
-            >
-            </motion.div>
-
-            {/* Status Updates */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.6 }}
-            >
-              <Card className="bg-gray-50">
-                <CardContent className="pt-6">
-                  <div className="text-center space-y-3">
-                    <div className="flex items-center justify-center gap-2">
-                      <RefreshCw className="h-4 w-4 text-gray-500 animate-spin" />
-                      <span className="text-sm font-medium text-gray-700">Maintenance in Progress</span>
+                    {/* Pagination */}
+                    <Pagination pagination={marketPagination} onPageChange={handleMarketPageChange} />
+                  </>
+                ) : (
+                  <div className="bg-white rounded-xl p-6 shadow-sm text-center">
+                    <div className="flex flex-col items-center">
+                      <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-3">
+                        <Tag className="h-8 w-8 text-gray-400" />
+                      </div>
+                      <h3 className="text-lg font-medium mb-1">No Cards Found</h3>
+                      <p className="text-gray-500 text-sm mb-4">
+                        {searchTerm || rarityFilter !== "all"
+                          ? "Try adjusting your search or filters"
+                          : "There are no cards available for purchase right now"}
+                      </p>
+                      <Link href="/collection">
+                        <Button variant="outline" size="sm" className="rounded-full">
+                          <Plus className="h-4 w-4 mr-1" />
+                          Sell Your Cards
+                        </Button>
+                      </Link>
                     </div>
-                    <p className="text-xs text-gray-500">We'll notify you as soon as trading is available again</p>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+
+            {/* Sell Tab (formerly My Listings) */}
+            <TabsContent value="sell">
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h2 className="text-lg font-medium">My Listed Cards</h2>
+                  <Link href={listingLimitReached ? "#" : "/collection"}>
+                    <Button
+                      size="sm"
+                      className={`rounded-full ${
+                        listingLimitReached
+                          ? "bg-gray-400 cursor-not-allowed"
+                          : "bg-gradient-to-r from-violet-500 to-fuchsia-500"
+                      }`}
+                      disabled={listingLimitReached}
+                      onClick={(e) => {
+                        if (listingLimitReached) {
+                          e.preventDefault()
+                          toast({
+                            title: "Listing Limit Reached",
+                            description: `You can only list a maximum of ${maxListings} cards at a time. Please remove some listings before adding more.`,
+                            variant: "destructive",
+                          })
+                        }
+                      }}
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Sell Card
+                    </Button>
+                  </Link>
+                </div>
+
+                {/* Listing Limit Indicator */}
+                <div className="bg-white rounded-xl p-4 shadow-sm">
+                  <div className="flex justify-between items-center mb-2">
+                    <div className="flex items-center">
+                      <span className="font-medium">Listing Limit</span>
+                      {listingLimitReached && (
+                        <div className="ml-2 flex items-center text-red-500">
+                          <AlertCircle className="h-4 w-4 mr-1" />
+                          <span className="text-sm">Limit reached</span>
+                        </div>
+                      )}
+                    </div>
+                    <span className={`font-medium ${listingLimitReached ? "text-red-500" : "text-gray-700"}`}>
+                      {listingCount}/{maxListings}
+                    </span>
+                  </div>
+                  <Progress
+                    value={(listingCount / maxListings) * 100}
+                    className={`h-2 ${listingLimitReached ? "bg-red-100" : "bg-gray-100"}`}
+                    indicatorClassName={listingLimitReached ? "bg-red-500" : "bg-violet-500"}
+                  />
+                  <p className="text-xs text-gray-500 mt-2">
+                    {listingLimitReached
+                      ? "You've reached the maximum number of cards you can list. Cancel some listings to add more."
+                      : `You can list ${maxListings - listingCount} more card${maxListings - listingCount !== 1 ? "s" : ""}.`}
+                  </p>
+                </div>
+
+                {loading ? (
+                  <div className="space-y-3">
+                    {[...Array(2)].map((_, i) => (
+                      <div key={i} className="bg-white rounded-xl p-4 shadow-sm">
+                        <div className="flex gap-3">
+                          <Skeleton className="h-24 w-16 rounded-lg" />
+                          <div className="flex-1 space-y-2">
+                            <Skeleton className="h-4 w-3/4" />
+                            <Skeleton className="h-3 w-1/2" />
+                            <Skeleton className="h-6 w-1/3 mt-2" />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : userListings.length > 0 ? (
+                  <>
+                    <div className="space-y-3">
+                      {userListings.map((listing) => (
+                        <MyListingCard
+                          key={listing.id}
+                          listing={listing}
+                          onCancel={() => handleCancelListing(listing.id)}
+                          onUpdatePrice={() => handleUpdatePrice(listing)}
+                          cancelLoading={cancelLoading}
+                        />
+                      ))}
+                    </div>
+
+                    {/* Pagination */}
+                    <Pagination pagination={userListingsPagination} onPageChange={handleUserListingsPageChange} />
+                  </>
+                ) : (
+                  <div className="bg-white rounded-xl p-6 shadow-sm text-center">
+                    <div className="flex flex-col items-center">
+                      <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-3">
+                        <Tag className="h-8 w-8 text-gray-400" />
+                      </div>
+                      <h3 className="text-lg font-medium mb-1">No Listed Cards</h3>
+                      <p className="text-gray-500 text-sm mb-4">You haven't listed any cards for sale yet</p>
+                      <Link href="/collection">
+                        <Button className="rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500">
+                          <Plus className="h-4 w-4 mr-1" />
+                          Sell Your First Card
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+
+            {/* Sales History Tab (combines both history types) */}
+            <TabsContent value="sales-history">
+              <div className="space-y-4">
+                {/* History Type Selector */}
+                <div className="bg-white rounded-xl p-2 shadow-sm">
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      variant={historyType === "all" ? "default" : "outline"}
+                      className={`rounded-lg ${
+                        historyType === "all" ? "bg-gradient-to-r from-violet-500 to-fuchsia-500" : ""
+                      }`}
+                      onClick={() => setHistoryType("all")}
+                    >
+                      <Globe className="h-4 w-4 mr-2" />
+                      Market History
+                    </Button>
+                    <Button
+                      variant={historyType === "my" ? "default" : "outline"}
+                      className={`rounded-lg ${
+                        historyType === "my" ? "bg-gradient-to-r from-violet-500 to-fuchsia-500" : ""
+                      }`}
+                      onClick={() => setHistoryType("my")}
+                    >
+                      <User className="h-4 w-4 mr-2" />
+                      My History
+                    </Button>
                     
                   </div>
-                </CardContent>
-              </Card>
-            </motion.div>
+                </div>
 
-            
-          </div>
+                {/* My Transaction History */}
+                {historyType === "my" && (
+                  <>
+                    <div className="flex justify-between items-center">
+                      <h2 className="text-lg font-medium">My Transaction History</h2>
+                      <Badge variant="outline" className="bg-white">
+                        <Clock className="h-3 w-3 mr-1 text-blue-500" />
+                        Personal
+                      </Badge>
+                    </div>
+
+                    {loading ? (
+                      <div className="space-y-3">
+                        {[...Array(3)].map((_, i) => (
+                          <div key={i} className="bg-white rounded-xl p-4 shadow-sm">
+                            <div className="flex gap-3">
+                              <Skeleton className="h-24 w-16 rounded-lg" />
+                              <div className="flex-1 space-y-2">
+                                <Skeleton className="h-4 w-3/4" />
+                                <Skeleton className="h-3 w-1/2" />
+                                <Skeleton className="h-6 w-1/3 mt-2" />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : transactions.length > 0 ? (
+                      <>
+                        <div className="space-y-3">
+                          {transactions.map((transaction) => (
+                            <TransactionCard key={transaction.id} transaction={transaction} />
+                          ))}
+                        </div>
+
+                        {/* Pagination */}
+                        <Pagination pagination={transactionsPagination} onPageChange={handleTransactionsPageChange} />
+                      </>
+                    ) : (
+                      <div className="bg-white rounded-xl p-6 shadow-sm text-center">
+                        <div className="flex flex-col items-center">
+                          <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-3">
+                            <Clock className="h-8 w-8 text-gray-400" />
+                          </div>
+                          <h3 className="text-lg font-medium mb-1">No Transaction History</h3>
+                          <p className="text-gray-500 text-sm mb-4">You haven't bought or sold any cards yet</p>
+                          <Link href="/collection">
+                            <Button variant="outline" size="sm" className="rounded-full">
+                              <Tag className="h-4 w-4 mr-1" />
+                              Browse Marketplace
+                            </Button>
+                          </Link>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* Market History (Recent Sales) */}
+                {historyType === "all" && (
+                  <>
+                    <div className="flex justify-between items-center">
+                      <h2 className="text-lg font-medium">Market Sales History</h2>
+                      <Badge variant="outline" className="bg-white">
+                        <DollarSign className="h-3 w-3 mr-1 text-green-500" />
+                        Global
+                      </Badge>
+                    </div>
+
+                    {/* Search for Recent Sales */}
+                    <div className="bg-white rounded-xl p-3 shadow-sm">
+                      <div className="relative">
+                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
+                        <Input
+                          placeholder="Search cards, buyers or sellers..."
+                          className="pl-8"
+                          value={salesSearchTerm}
+                          onChange={(e) => setSalesSearchTerm(e.target.value)}
+                        />
+                      </div>
+                      <div className="flex justify-between items-center mt-2">
+                        <div className="text-sm text-gray-500">
+                          {recentSalesPagination.total} {recentSalesPagination.total === 1 ? "sale" : "sales"} found
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setSalesSearchTerm("")
+                            loadRecentSales(1)
+                          }}
+                          className="h-7 text-xs"
+                          disabled={!salesSearchTerm}
+                        >
+                          <X className="h-3 w-3 mr-1" />
+                          Clear
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Market Activity Info */}
+                    <div className="bg-white rounded-xl p-4 shadow-sm">
+                      <p className="text-sm text-gray-600">
+                        View all recent card sales in the marketplace. This helps you understand current market trends
+                        and card values.
+                      </p>
+                    </div>
+
+                    {loading ? (
+                      <div className="space-y-3">
+                        {[...Array(3)].map((_, i) => (
+                          <div key={i} className="bg-white rounded-xl p-4 shadow-sm">
+                            <div className="flex gap-3">
+                              <Skeleton className="h-24 w-16 rounded-lg" />
+                              <div className="flex-1 space-y-2">
+                                <Skeleton className="h-4 w-3/4" />
+                                <Skeleton className="h-3 w-1/2" />
+                                <Skeleton className="h-6 w-1/3 mt-2" />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : recentSales.length > 0 ? (
+                      <>
+                        <div className="space-y-3">
+                          {recentSales.map((sale) => (
+                            <RecentSaleCard key={sale.id} sale={sale} />
+                          ))}
+                        </div>
+
+                        {/* Pagination */}
+                        <Pagination pagination={recentSalesPagination} onPageChange={handleRecentSalesPageChange} />
+                      </>
+                    ) : (
+                      <div className="bg-white rounded-xl p-6 shadow-sm text-center">
+                        <div className="flex flex-col items-center">
+                          <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-3">
+                            <BarChart2 className="h-8 w-8 text-gray-400" />
+                          </div>
+                          <h3 className="text-lg font-medium mb-1">No Recent Sales</h3>
+                          <p className="text-gray-500 text-sm mb-4">
+                            {salesSearchTerm
+                              ? "No sales match your search criteria. Try a different search term."
+                              : "There haven't been any card sales recently"}
+                          </p>
+                          <Link href="/marketplace">
+                            <Button variant="outline" size="sm" className="rounded-full">
+                              <Tag className="h-4 w-4 mr-1" />
+                              Browse Marketplace
+                            </Button>
+                          </Link>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </TabsContent>
+          </Tabs>
         </main>
+
+        {/* Card Details Dialog */}
+        <Dialog open={showCardDetailsDialog} onOpenChange={setShowCardDetailsDialog}>
+          <DialogContent className="sm:max-w-md bg-black/80 border-none">
+            <DialogHeader>
+              <DialogTitle className="text-white">Card Details</DialogTitle>
+            </DialogHeader>
+            {selectedListing && (
+              <div className="space-y-6">
+                <div className="flex flex-col items-center">
+                  {/* TiltableCard */}
+                  <div className="w-64 mx-auto mb-6">
+                    <TiltableCard
+                      id={selectedListing.card_id}
+                      name={selectedListing.card.name}
+                      character={selectedListing.card.character}
+                      imageUrl={selectedListing.card.image_url}
+                      rarity={selectedListing.card.rarity}
+                      level={selectedListing.card_level}
+                    />
+                  </div>
+
+                  {/* Verkäufer und Preis */}
+                  <div className="bg-white/10 backdrop-blur-md p-4 rounded-lg w-full text-white">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-gray-300">Seller:</span>
+                      <span className="font-medium">
+                        {selectedListing.seller_username.length > 15
+                          ? `${selectedListing.seller_username.substring(0, 15)}...`
+                          : selectedListing.seller_username}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-300">Price:</span>
+                      <div className="flex items-center">
+                        <span className="font-bold text-lg">{selectedListing.price} WLD</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Kaufen-Button */}
+                  {selectedListing.seller_id !== user?.username && (
+                    <Button
+                      onClick={() => {
+                        setShowCardDetailsDialog(false)
+                        setShowPurchaseDialog(true)
+                      }}
+                      className="w-full mt-4 bg-gradient-to-r from-violet-500 to-fuchsia-500"
+                    >
+                      <ShoppingCart className="h-4 w-4 mr-2" />
+                      Buy Now
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Purchase Dialog */}
+        <Dialog open={showPurchaseDialog} onOpenChange={setShowPurchaseDialog}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Confirm Purchase</DialogTitle>
+              <DialogDescription>You are about to purchase this card. This action cannot be undone.</DialogDescription>
+            </DialogHeader>
+            {selectedListing && (
+              <div className="space-y-4">
+                <div className="flex gap-4 items-center">
+                  <div className="relative w-20 h-28 overflow-hidden rounded-lg">
+                    <Image
+                      src={
+                        selectedListing.card.image_url ||
+                        `/placeholder.svg?height=400&width=300&query=${
+                          encodeURIComponent(selectedListing.card.character) || "/placeholder.svg"
+                        }`
+                      }
+                      alt={selectedListing.card.name}
+                      fill
+                      className="object-cover"
+                    />
+                    <div className="absolute bottom-0 left-0 right-0 flex justify-center">
+                      {renderStars(selectedListing.card_level, "xs")}
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-medium">{selectedListing.card.name}</h3>
+                    <p className="text-sm text-gray-500">{selectedListing.card.character}</p>
+                    <div className="flex items-center mt-1">
+                      <Badge
+                        className={`
+                        ${selectedListing.card.rarity === "common" ? "bg-gray-500" : ""}
+                        ${selectedListing.card.rarity === "rare" ? "bg-blue-500" : ""}
+                        ${selectedListing.card.rarity === "epic" ? "bg-purple-500" : ""}
+                        ${selectedListing.card.rarity === "legendary" ? "bg-amber-500" : ""}
+                      `}
+                      >
+                        {selectedListing.card.rarity}
+                      </Badge>
+                      <div className="ml-2 flex items-center">
+                        <span className="text-xs mr-1">Level {selectedListing.card_level}</span>
+                        {renderStars(selectedListing.card_level, "xs")}
+                      </div>
+                    </div>
+                    <div className="flex items-center mt-2">
+                      <span className="font-bold text-lg">{selectedListing.price} WLD</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-amber-50 p-3 rounded-lg text-sm">
+                  <p className="text-amber-800">
+                    <span className="font-medium">Seller:</span>{" "}
+                    {selectedListing.seller_username.length > 15
+                      ? `${selectedListing.seller_username.substring(0, 15)}...`
+                      : selectedListing.seller_username}
+                  </p>
+
+                  {(user?.coins || 0) < selectedListing.price && (
+                    <p className="text-red-500 mt-1 font-medium">You don't have enough WLD for this purchase!</p>
+                  )}
+                  {selectedListing.seller_id === user?.username && (
+                    <p className="text-red-500 mt-1 font-medium">You cannot buy your own card!</p>
+                  )}
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => setShowPurchaseDialog(false)}>
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={sendPayment}
+                    disabled={
+                      purchaseLoading ||
+                      (user?.coins || 0) < selectedListing.price ||
+                      selectedListing.seller_id === user?.username
+                    }
+                    className="bg-gradient-to-r from-violet-500 to-fuchsia-500"
+                  >
+                    {purchaseLoading ? (
+                      <>
+                        <div className="h-4 w-4 border-2 border-t-transparent border-white rounded-full animate-spin mr-2"></div>
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <ShoppingCart className="h-4 w-4 mr-2" />
+                        Buy Now
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Update Price Dialog */}
+        {selectedListing && (
+          <UpdatePriceDialog
+            isOpen={showUpdatePriceDialog}
+            onClose={() => setShowUpdatePriceDialog(false)}
+            listingId={selectedListing.id}
+            currentPrice={selectedListing.price}
+            username={user?.username || ""}
+            onSuccess={handlePriceUpdateSuccess}
+            cardRarity={selectedListing.card.rarity}
+          />
+        )}
+
+        {/* Purchase Success Animation */}
+        {selectedListing && (
+          <PurchaseSuccessAnimation
+            show={showPurchaseSuccess}
+            onComplete={handleSuccessAnimationComplete}
+            cardImageUrl={selectedListing.card.image_url}
+            cardName={selectedListing.card.name}
+          />
+        )}
 
         <MobileNav />
       </div>

@@ -39,7 +39,7 @@ export default function CollectionPage() {
         if (!supabase) return
         const { data: userCardsData, error: userCardsError } = await supabase
           .from("user_cards")
-          .select("id, card_id, quantity, level")
+          .select(`id, card_id, quantity, level`)
           .eq("user_id", user.username)
           .gt("quantity", 0)
 
@@ -62,10 +62,13 @@ export default function CollectionPage() {
         }
 
         // 2. Get the card IDs to fetch
-        const cardIds = userCardsData.map((item) => item.card_id)
+        const cardIds = userCardsData.map((uc) => uc.card_id)
 
         // 3. Fetch the card details
-        const { data: cardsData, error: cardsError } = await supabase.from("cards").select("*").in("id", cardIds)
+        const { data: cardsData, error: cardsError } = await supabase
+          .from("cards")
+          .select("id, name, character, image_url, rarity ")
+          .in("id", cardIds)
 
         if (cardsError) {
           console.error("Error fetching card details:", cardsError)
@@ -75,27 +78,32 @@ export default function CollectionPage() {
             variant: "destructive",
           })
           setUserCards([])
-        } else {
-          // 4. Create a map of card details by ID
-          const cardDetailsMap = new Map()
-          cardsData?.forEach((card) => {
-            cardDetailsMap.set(card.id, card)
-          })
+        setLoading(false)
+          return
+        }
+
+        const cardMap = new Map()
+        cardsData?.forEach((c) => {
+          cardMap.set(c.id, c)
+        })
 
           // 5. Combine the data
-          const processedCards = userCardsData.map((userCard) => {
-            const cardDetails = cardDetailsMap.get(userCard.card_id) || {}
+           const processedCards = userCardsData
+          .map((userCard) => {
+            const details = cardMap.get(userCard.card_id)
+            if (!details) return null
             return {
               id: userCard.id,
               cardId: userCard.card_id,
               quantity: userCard.quantity,
               level: userCard.level || 1,
-              ...cardDetails,
+              ...details,
             }
           })
+          .filter(Boolean)
 
-          setUserCards(processedCards)
-        }
+        
+        setUserCards(processedCards)
       } catch (err) {
         console.error("Unexpected error:", err)
         toast({

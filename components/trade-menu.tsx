@@ -80,7 +80,7 @@ export default function TradeMenu() {
         setMarketListings(listings)
       }
     } else if (activeTab === "my-listings") {
-      const result = await getUserListings(user!.id)
+      const result = await getUserListings(user!.username)
       if (result.success) {
         let listings = result.listings || []
 
@@ -126,15 +126,16 @@ export default function TradeMenu() {
   const fetchUserCards = async () => {
     if (!user) return
 
+
     setLoadingUserCards(true)
     try {
       const supabase = getSupabaseBrowserClient()
-
+      if(!supabase) return
       // First, get the user_cards with card_id and quantity
       const { data: userCardsData, error: userCardsError } = await supabase
         .from("user_cards")
         .select("id, card_id, quantity")
-        .eq("user_id", user.id)
+        .eq("user_id", user.username)
         .gt("quantity", 0)
 
       if (userCardsError) {
@@ -156,7 +157,7 @@ export default function TradeMenu() {
       }
 
       // Extract card IDs
-      const cardIds = userCardsData.map((card) => card.card_id)
+      const cardIds = userCardsData.map((uc) => uc.card_id)
 
       // Fetch the actual card details
       const { data: cardsData, error: cardsError } = await supabase
@@ -177,21 +178,21 @@ export default function TradeMenu() {
       }
 
       // Create a map of card details by ID for easy lookup
-      const cardsMap = new Map()
-      cardsData.forEach((card) => {
-        cardsMap.set(card.id, card)
+      const cardMap = new Map()
+      cardsData?.forEach((c) => {
+        cardMap.set(c.id, c)
       })
 
       // Combine the data
       const combinedData = userCardsData
         .map((userCard) => {
-          const cardDetails = cardsMap.get(userCard.card_id)
-          if (!cardDetails) return null
+          const details = cardMap.get(userCard.card_id)
+          if (!details) return null
 
           return {
             id: userCard.id,
             quantity: userCard.quantity,
-            cards: cardDetails,
+            cards: details,
           }
         })
         .filter(Boolean) // Remove any null entries
@@ -229,7 +230,7 @@ export default function TradeMenu() {
 
     setLoadingAction(true)
     try {
-      const result = await listCardForSale(user!.id, selectedCard.cards.id, Number(price))
+      const result = await listCardForSale(user!.username, selectedCard.cards.id, Number(price))
 
       if (result.success) {
         toast({
@@ -260,7 +261,7 @@ export default function TradeMenu() {
   const handleCancelListing = async (listingId: string) => {
     setLoadingAction(true)
     try {
-      const result = await cancelListing(user!.id, listingId)
+      const result = await cancelListing(user!.username, listingId)
 
       if (result.success) {
         toast({
@@ -292,7 +293,7 @@ export default function TradeMenu() {
 
     setLoadingAction(true)
     try {
-      const result = await buyCard(user!.id, selectedListing.id)
+      const result = await buyCard(user!.username, selectedListing.id)
 
       if (result.success) {
         toast({
@@ -657,10 +658,10 @@ export default function TradeMenu() {
                             <Button
                               className="bg-orange-600 hover:bg-orange-700"
                               onClick={() => handleBuyCard(listing)}
-                              disabled={listing.seller_id === user?.id}
+                              disabled={listing.seller_id === user?.username}
                               size="sm"
                             >
-                              {listing.seller_id === user?.id ? "Your Listing" : "Buy Card"}
+                              {listing.seller_id === user?.username ? "Your Listing" : "Buy Card"}
                             </Button>
                           </div>
                         </CardContent>

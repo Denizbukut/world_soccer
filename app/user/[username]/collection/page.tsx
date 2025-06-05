@@ -57,7 +57,9 @@ export default async function UserCollectionPage({ params }: { params: { usernam
   console.log("Fetching user cards...")
   const { data: userCards, error: userCardsError } = await supabase
     .from("user_cards")
-    .select("*")
+    .select(
+      `id, user_id, card_id, quantity, favorite, obtained_at, level`,
+    )
     .eq("user_id", username)
     .gt("quantity", 0)
 
@@ -88,35 +90,24 @@ export default async function UserCollectionPage({ params }: { params: { usernam
   let combinedCards: CombinedCard[] = []
 
   if (userCards && userCards.length > 0) {
-    // Extract all card IDs
-    const cardIds = userCards.map((card) => card.card_id)
-    console.log(`Fetching details for ${cardIds.length} cards...`)
+    const cardIds = userCards.map((uc) => uc.card_id)
+    const { data: cardsData, error: cardsError } = await supabase
+      .from("cards")
+      .select("id, name, character, image_url, rarity, created_at")
+      .in("id", cardIds)
 
-    // STEP 3: Fetch card details
-    const { data: cardDetails, error: cardDetailsError } = await supabase.from("cards").select("*").in("id", cardIds)
-
-    if (cardDetailsError) {
-      console.error("Error fetching card details:", cardDetailsError)
+    if (cardsError) {
+      console.error("Error fetching card details:", cardsError)
     }
-
-    console.log(`Found details for ${cardDetails?.length || 0} cards`)
-
-    // STEP 4: Create a map for quick lookup of card details by ID
-    const cardDetailsMap = new Map<string, CardDetails>()
-    if (cardDetails) {
-      cardDetails.forEach((card) => {
-        cardDetailsMap.set(card.id, card)
-      })
-    }
-
-    // STEP 5: Combine user cards with their details
-    combinedCards = userCards.map((userCard) => {
-      const details = cardDetailsMap.get(userCard.card_id) || null
-      return {
-        ...userCard,
-        cardDetails: details,
-      }
+    const cardMap = new Map()
+    cardsData?.forEach((c) => {
+      cardMap.set(c.id, c)
     })
+
+    combinedCards = userCards.map((userCard) => ({
+      ...userCard,
+      cardDetails: cardMap.get(userCard.card_id) || null,
+    }))
   }
 
   // Calculate collection stats

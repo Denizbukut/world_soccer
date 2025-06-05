@@ -41,9 +41,10 @@ export default function CardCatalog({ username, searchTerm = "" }: CardCatalogPr
       const supabase = getSupabaseBrowserClient()
 
       // Fetch all cards
+      if(!supabase) return
       const { data: cards, error: cardsError } = await supabase
         .from("cards")
-        .select("*")
+        .select("id, name, character, image_url, rarity, type")
         .order("rarity", { ascending: false })
 
       if (cardsError) {
@@ -59,15 +60,16 @@ export default function CardCatalog({ username, searchTerm = "" }: CardCatalogPr
           .from("user_cards")
           .select("card_id")
           .eq("user_id", username)
+          .gt("quantity", 0)
 
-        if (userCardsError) {
-          console.error("Error fetching user cards:", userCardsError)
-        } else {
+        if (!userCardsError && userCardData) {
           const userCardMap: Record<string, boolean> = {}
-          userCardData?.forEach((item) => {
+           userCardData.forEach((item) => {
             userCardMap[item.card_id] = true
           })
           setUserCards(userCardMap)
+          } else {
+          setUserCards({})
         }
       }
 

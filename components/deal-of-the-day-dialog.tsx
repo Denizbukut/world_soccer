@@ -25,7 +25,9 @@ interface DailyDeal {
   card_image_url: string
   card_rarity: string
   card_character: string
+  obtainable?: boolean // 👈 hinzufügen
 }
+
 
 interface DealInteraction {
   seen: boolean

@@ -190,11 +190,12 @@ export default function DrawPage() {
       if (result.drawnCards?.[0]?.rarity === "legendary") {
 
         await incrementMission(user.username, "draw_legendary_card")
+        
       }
       console.log("Draw result:", result)
       if(cardType === "legendary"){
         await incrementMission(user.username, "open_legendary_pack")
-        
+        await incrementMission(user.username, "open_3_legendary_packs")
       }else {
         await incrementMission(user.username, "open_regular_pack")
       }

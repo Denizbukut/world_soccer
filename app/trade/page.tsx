@@ -6,6 +6,7 @@ import ProtectedRoute from "@/components/protected-route"
 import MobileNav from "@/components/mobile-nav"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useDebouncedValue } from "@/components/useDebouncedValue"
 import { motion } from "framer-motion"
 import {
   Users,
@@ -118,7 +119,11 @@ export default function TradePage() {
   const [recentSales, setRecentSales] = useState<RecentSale[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
-  const [salesSearchTerm, setSalesSearchTerm] = useState("")
+const debouncedSearchTerm = useDebouncedValue(searchTerm, 500)
+
+const [salesSearchTerm, setSalesSearchTerm] = useState("")
+const debouncedSalesSearchTerm = useDebouncedValue(salesSearchTerm, 500)
+
   const [rarityFilter, setRarityFilter] = useState<string>("all")
   const [sortOption, setSortOption] = useState<string>("newest")
   const [selectedListing, setSelectedListing] = useState<MarketListing | null>(null)
@@ -176,19 +181,21 @@ export default function TradePage() {
 
   // Effect for search term changes in marketplace
   useEffect(() => {
-    if (activeTab === "marketplace") {
-      setMarketPage(1) // Reset to page 1 when filters change
-      debouncedSearch()
-    }
-  }, [searchTerm, rarityFilter])
+  if (activeTab === "marketplace") {
+    setMarketPage(1)
+    loadMarketListings(1)
+  }
+}, [debouncedSearchTerm, rarityFilter])
+
 
   // Effect for search term changes in recent sales
   useEffect(() => {
-    if (activeTab === "sales-history") {
-      setRecentSalesPage(1) // Reset to page 1 when search changes
-      debouncedSalesSearch()
-    }
-  }, [salesSearchTerm])
+  if (activeTab === "sales-history") {
+    setRecentSalesPage(1)
+    loadRecentSales(1)
+  }
+}, [debouncedSalesSearchTerm])
+
 
   // Effect for sort option changes
   useEffect(() => {
@@ -246,9 +253,10 @@ export default function TradePage() {
       }
 
       // Add search term to filters if present
-      if (searchTerm) {
-        filters.search = searchTerm
-      }
+      if (debouncedSearchTerm) {
+  filters.search = debouncedSearchTerm
+}
+
 
       const result = await getMarketListings(pageToLoad, 20, filters)
       if (result.success) {
@@ -348,7 +356,8 @@ export default function TradePage() {
     setLoading(true)
     try {
       console.log("Loading recent sales page:", pageToLoad, "with search term:", salesSearchTerm)
-      const result = await getRecentSales(pageToLoad, 20, salesSearchTerm)
+      const result = await getRecentSales(pageToLoad, 20, debouncedSalesSearchTerm)
+
       if (result.success) {
         console.log("Recent sales loaded successfully:", result.sales?.length || 0, "items")
         setRecentSales(result.sales || [])

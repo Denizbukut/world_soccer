@@ -803,7 +803,7 @@ export default function Home() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1, duration: 0.4 }}
-              className="relative rounded-2xl shadow-lg overflow-hidden border border-violet-200"
+              className="relative z-0 rounded-2xl shadow-lg overflow-hidden border border-violet-200"
             >
               <button onClick={() => setShowDealDialog(true)} className="w-full block relative">
                 {/* Background with animated gradient */}

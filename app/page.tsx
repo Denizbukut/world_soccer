@@ -579,7 +579,7 @@ export default function Home() {
           setTimeout(() => {
             setShowClaimAnimation(false)
           }, 1000)
-        }, 1500)
+        }, 0)
       } else if (result.alreadyClaimed) {
         setAlreadyClaimed(true)
         if (result.timeUntilNextClaim) {

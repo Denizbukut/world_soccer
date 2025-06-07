@@ -75,14 +75,14 @@ export async function claimDailyBonus(username: string) {
       const now = new Date()
       const hoursSinceLastClaim = (now.getTime() - lastClaimed.getTime()) / (1000 * 60 * 60)
 
-      if (hoursSinceLastClaim < 12) {
-        const timeUntilNextClaim = 12 * 60 * 60 * 1000 - (now.getTime() - lastClaimed.getTime())
+      if (hoursSinceLastClaim < 24) {
+        const timeUntilNextClaim = 24 * 60 * 60 * 1000 - (now.getTime() - lastClaimed.getTime())
         return {
           success: false,
           error: "Already claimed within the last 12 hours",
           alreadyClaimed: true,
           timeUntilNextClaim,
-          nextClaimTime: new Date(lastClaimed.getTime() + 12 * 60 * 60 * 1000).toISOString(),
+          nextClaimTime: new Date(lastClaimed.getTime() + 24 * 60 * 60 * 1000).toISOString(),
         }
       }
     }
@@ -107,7 +107,7 @@ export async function claimDailyBonus(username: string) {
     return {
       success: true,
       newTicketCount: newTicketCount || 0,
-      nextClaimTime: new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString(),
+      nextClaimTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
     }
   } catch (error) {
     console.error("Error claiming daily bonus:", error)

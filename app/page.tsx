@@ -1039,62 +1039,7 @@ export default function Home() {
           </motion.div>
 
 
-          {/* Card packs */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.4 }}
-            className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden"
-          >
-            <div className="p-3 pb-2">
-              <div className="flex justify-between items-center mb-2">
-                <h3 className="font-medium text-base">Card Packs</h3>
-                <Link href="/draw" className="text-xs text-violet-500 font-medium flex items-center">
-                  View all <ChevronRight className="h-3 w-3 ml-0.5" />
-                </Link>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <Link href="/draw" className="block">
-                  <div className="relative overflow-hidden rounded-lg p-2 transition-all duration-300 hover:shadow-md group bg-gradient-to-b from-gray-50 to-white border border-gray-100 hover:border-violet-200">
-                    <div className="flex items-center justify-center mb-1">
-                      <div className="relative w-12 h-18 mx-auto transform group-hover:scale-105 transition-transform duration-300">
-                        <Image src="/vibrant-purple-card-pack.jpg" alt="Regular Pack" fill className="object-contain" />
-                      </div>
-                    </div>
-                    <div className="bg-white rounded-lg p-1.5 text-center shadow-sm">
-                      <span className="font-medium text-xs">Regular Pack</span>
-                      <div className="flex items-center justify-center gap-1 mt-0.5">
-                        <Ticket className="h-3 w-3 text-amber-500" />
-                        <span className="text-xs text-gray-500">1 Ticket</span>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-                <Link href="/draw" className="block">
-                  <div className="relative overflow-hidden rounded-lg p-2 transition-all duration-300 hover:shadow-md group bg-gradient-to-b from-gray-50 to-white border border-gray-100 hover:border-blue-200">
-                    <div className="flex items-center justify-center mb-1">
-                      <div className="relative w-12 h-18 mx-auto transform group-hover:scale-105 transition-transform duration-300">
-                        <Image
-                          src="/anime-world-legendary-pack.jpg"
-                          alt="Legendary Pack"
-                          fill
-                          className="object-contain"
-                        />
-                      </div>
-                    </div>
-                    <div className="bg-white rounded-lg p-1.5 text-center shadow-sm">
-                      <span className="font-medium text-xs">Legendary Pack</span>
-                      <div className="flex items-center justify-center gap-1 mt-0.5">
-                        <Ticket className="h-3 w-3 text-blue-500" />
-                        <span className="text-xs text-gray-500">1 L. Ticket</span>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              </div>
-            </div>
-          </motion.div>
+         
         </main>
 
         {/* Ticket claim animation */}

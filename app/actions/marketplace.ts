@@ -212,28 +212,22 @@ export async function getMarketListings(page = 1, pageSize = DEFAULT_PAGE_SIZE, 
     // Apply sorting based on the sort option
     let sortedQuery = baseQuery
 
-    if (filters.sort) {
-      switch (filters.sort) {
-        case "newest":
-          sortedQuery = baseQuery.order("created_at", { ascending: false })
-          break
-        case "oldest":
-          sortedQuery = baseQuery.order("created_at", { ascending: true })
-          break
-        case "price_low":
-          sortedQuery = baseQuery.order("price", { ascending: true })
-          break
-        case "price_high":
-          sortedQuery = baseQuery.order("price", { ascending: false })
-          break
-        // For rarity and level sorting, we'll handle it client-side after fetching the data
-        default:
-          sortedQuery = baseQuery.order("created_at", { ascending: false })
-      }
+    // Apply sorting based on the sort option
+    if (filters.sort === "level_high") {
+      sortedQuery = baseQuery.order("card_level", { ascending: false })
+    } else if (filters.sort === "level_low") {
+      sortedQuery = baseQuery.order("card_level", { ascending: true })
+    } else if (filters.sort === "price_low") {
+      sortedQuery = baseQuery.order("price", { ascending: true })
+    } else if (filters.sort === "price_high") {
+      sortedQuery = baseQuery.order("price", { ascending: false })
+    } else if (filters.sort === "oldest") {
+      sortedQuery = baseQuery.order("created_at", { ascending: true })
     } else {
-      // Default sort by newest
+      // Default: newest first
       sortedQuery = baseQuery.order("created_at", { ascending: false })
     }
+
 
     // Fetch the listings with pagination
     const { data: listings, error } = await sortedQuery.range(adjustedOffset, adjustedOffset + pageSize - 1)
@@ -321,10 +315,6 @@ export async function getMarketListings(page = 1, pageSize = DEFAULT_PAGE_SIZE, 
           rarityOrder[a.card.rarity as keyof typeof rarityOrder]
         )
       })
-    } else if (filters.sort === "level_high") {
-      sortedListings.sort((a, b) => b.card_level - a.card_level)
-    } else if (filters.sort === "level_low") {
-      sortedListings.sort((a, b) => a.card_level - b.card_level)
     }
 
     // Calculate final pagination info based on filtered results

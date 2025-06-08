@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Edit, X } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
 import { updateListingPrice } from "@/app/actions/marketplace"
+import { useEffect } from "react"
 
 interface UpdatePriceDialogProps {
   isOpen: boolean
@@ -31,13 +32,37 @@ export default function UpdatePriceDialog({
   const [price, setPrice] = useState<string>(currentPrice.toString())
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+const [priceUsdPerWLD, setPriceUsdPerWLD] = useState<number | null>(null)
+
+useEffect(() => {
+  const fetchPrice = async () => {
+    try {
+      const res = await fetch("/api/wld-price")
+      const json = await res.json()
+      if (json.price) {
+        setPriceUsdPerWLD(json.price)
+      }
+    } catch (err) {
+      console.error("Fehler beim Laden des WLD-Preises:", err)
+    }
+  }
+
+  fetchPrice()
+}, [])
 
   // Validiere den Preis
   const parsedPrice = Number.parseFloat(price.replace(",", "."))
+  const minWldPrice = priceUsdPerWLD
+  ? (cardRarity === "legendary" ? 1 / priceUsdPerWLD : 0.15 / priceUsdPerWLD)
+  : cardRarity === "legendary"
+    ? 1
+    : 0.3
+
+
   const isValidPrice =
-    !isNaN(parsedPrice) &&
-    ((cardRarity === "legendary" && parsedPrice >= 1 && parsedPrice <= 500) ||
-      (cardRarity !== "legendary" && parsedPrice >= 0.3 && parsedPrice <= 500))
+  !isNaN(parsedPrice) &&
+  parsedPrice >= minWldPrice 
+
 
   // Aktualisiere den Preis
   const handleUpdatePrice = async () => {
@@ -109,10 +134,9 @@ export default function UpdatePriceDialog({
             </div>
             {!isValidPrice && (
                 <p className="text-red-500 text-sm">
-                  {cardRarity === "legendary"
-                    ? "Please enter a valid price between 1 and 500 WLD"
-                    : "Please enter a valid price between 0.3 and 500 WLD"}
-                </p>
+  {`Starting price is ${minWldPrice.toFixed(3)} WLD (~$${(minWldPrice * (priceUsdPerWLD || 1)).toFixed(2)})`}
+</p>
+
               )}
           </div>
 

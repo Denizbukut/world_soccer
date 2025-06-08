@@ -9,7 +9,8 @@ import Image from "next/image"
 import { motion } from "framer-motion"
 import { renderStars } from "@/utils/card-stars"
 import { useRouter } from "next/navigation"
-
+import { useState } from "react";
+import CardDetailModal from "@/components/CardDetailModal";
 
 interface CardItemProps {
   id: string
@@ -87,22 +88,22 @@ export function CardItem({
   const cardDetailUrl = isCollection ? `/cards/${id}-level-${level}` : `/cards/${id}`
 
   const router = useRouter()
+  const [modalOpen, setModalOpen] = useState(false);
+
 
 const handleCardClick = () => {
-  if (isCollection) {
-    const url = `/cards/${id}-level-${level}` +
-      `?name=${encodeURIComponent(name)}` +
-      `&character=${encodeURIComponent(character)}` +
-      `&rarity=${rarity}` +
-      `&imageUrl=${encodeURIComponent(imageUrl || "")}` +
-      `&level=${level}` +
-      `&quantity=${quantity}`
+  const url = `/cards/${id}-level-${level}` +
+    `?name=${encodeURIComponent(name)}` +
+    `&character=${encodeURIComponent(character)}` +
+    `&imageUrl=${encodeURIComponent(imageUrl || "")}` +
+    `&rarity=${rarity}` +
+    `&level=${level}` +
+    `&quantity=${quantity}`;
 
-    router.push(url)
-  } else {
-    router.push(`/cards/${id}`)
-  }
-}
+  router.push(url);
+};
+
+
 
 
   const CardWrapper = ({ children }: { children: React.ReactNode }) => {
@@ -137,6 +138,7 @@ const handleCardClick = () => {
   }
 
   return (
+  <>
     <CardWrapper>
       <div
         className={cn(
@@ -193,7 +195,26 @@ const handleCardClick = () => {
         </div>
       </div>
     </CardWrapper>
-  )
+
+    {isCollection && (
+      <CardDetailModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        card={{
+          id,
+          name,
+          character,
+          imageUrl,
+          rarity,
+          level,
+          quantity: quantity || 1,
+        }}
+      />
+    )}
+  </>
+)
+
+  
 }
 
 export default CardItem

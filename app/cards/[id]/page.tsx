@@ -159,116 +159,142 @@ export default function CardDetailPage() {
   const [showSellDialog, setShowSellDialog] = useState(false)
   const [selectedUserCard, setSelectedUserCard] = useState<UserCard | null>(null)
   const [specificLevelRequested, setSpecificLevelRequested] = useState<number | null>(null)
+  const [readonlyView, setReadonlyView] = useState(false)
+const [cardFromParams, setCardFromParams] = useState<Card | null>(null)
+
+
 
   const cardId = params.id as string
 
   useEffect(() => {
-    async function fetchCardDetails() {
-      if (!cardId || !user) return
+  async function fetchCardDetails() {
+    if (!cardId || !user) return;
 
-      setLoading(true)
-      const supabase = getSupabaseBrowserClient()
-      if (!supabase) return
+    const searchParams = new URLSearchParams(window.location.search);
+    const hasClientData = searchParams.has("name") && searchParams.has("character");
 
-      try {
-        // Parse the composite ID to extract the actual card ID and level
-        let actualCardId = cardId
-        let specificLevel = null
+    // 🚫 Card wurde aus der Collection geöffnet → kein Supabase-Request
+    if (hasClientData) {
+      setReadonlyView(true);
 
-        // Check if the ID contains a level indicator
-        const levelMatch = cardId.match(/^(.+)-level-(\d+)$/)
-        if (levelMatch) {
-          actualCardId = levelMatch[1]
-          specificLevel = Number.parseInt(levelMatch[2], 10)
-          setSpecificLevelRequested(specificLevel)
-        }
+      const id = cardId.split("-level-")[0];
+      const name = searchParams.get("name")!;
+      const character = searchParams.get("character")!;
+      const imageUrl = searchParams.get("imageUrl") || undefined;
+      const rarity = searchParams.get("rarity")!;
+      const level = parseInt(searchParams.get("level") || "1", 10);
+      const quantity = parseInt(searchParams.get("quantity") || "1", 10);
 
-        console.log(`Fetching card: ${actualCardId}, specific level: ${specificLevel}`)
+      setCard({
+        id,
+        name,
+        character,
+        image_url: imageUrl,
+        rarity,
+      });
 
-        // Fetch card details
-        const { data: cardData, error: cardError } = await supabase
-          .from("cards")
-          .select("*")
-          .eq("id", actualCardId)
-          .single()
+      setUserCard({
+        id: "virtual",
+        user_id: user.username,
+        card_id: id,
+        quantity,
+        level,
+        favorite: false,
+      });
 
-        if (cardError) {
-          console.error("Error fetching card:", cardError)
-          toast({
-            title: "Error",
-            description: "Failed to load card details",
-            variant: "destructive",
-          })
-        } else {
-          const validCard = toCard(cardData)
-          if (validCard) {
-            setCard(validCard)
-          } else {
-            toast({
-              title: "Error",
-              description: "Invalid card data received",
-              variant: "destructive",
-            })
-          }
-        }
-
-        // Check if user owns this card
-        let userCardsQuery = supabase
-          .from("user_cards")
-          .select("*")
-          .eq("user_id", user.username)
-          .eq("card_id", actualCardId)
-
-        // If a specific level was requested, filter by that level
-        if (specificLevel !== null) {
-          userCardsQuery = userCardsQuery.eq("level", specificLevel)
-        }
-
-        const { data: userCardsData, error: userCardsError } = await userCardsQuery
-
-        if (userCardsError) {
-          console.error("Error fetching user cards:", userCardsError)
-        } else if (userCardsData && userCardsData.length > 0) {
-          // User owns this card
-          setOwned(true)
-
-          const validUserCards = toUserCards(userCardsData)
-          setAllUserCards(validUserCards)
-
-          if (validUserCards.length > 0) {
-            // If a specific level was requested, find that card
-            if (specificLevel !== null) {
-              const specificLevelCard = validUserCards.find((card) => card.level === specificLevel)
-              if (specificLevelCard) {
-                setUserCard(specificLevelCard)
-                setFavorite(Boolean(specificLevelCard.favorite))
-              } else {
-                // Fallback to highest level if specific level not found
-                const highestLevelCard = validUserCards.reduce((prev, current) => {
-                  return (prev.level || 1) > (current.level || 1) ? prev : current
-                })
-                setUserCard(highestLevelCard)
-                setFavorite(Boolean(highestLevelCard.favorite))
-              }
-            } else {
-              // No specific level requested, use highest level card
-              const highestLevelCard = validUserCards.reduce((prev, current) => {
-                return (prev.level || 1) > (current.level || 1) ? prev : current
-              })
-              setUserCard(highestLevelCard)
-              setFavorite(Boolean(highestLevelCard.favorite))
-            }
-          }
-        }
-      } catch (error) {
-        console.error("Error in fetchCardDetails:", error)
-      } finally {
-        setLoading(false)
-      }
+      setOwned(true);
+      setLoading(false);
+      return;
     }
 
-    fetchCardDetails()
-  }, [cardId, user])
+    // ✅ Echte Card-Detail-Seite mit Supabase-Daten
+    setReadonlyView(false);
+    setLoading(true);
+
+    const supabase = getSupabaseBrowserClient();
+    if (!supabase) return;
+
+    try {
+      let actualCardId = cardId;
+      let specificLevel = null;
+
+      const levelMatch = cardId.match(/^(.+)-level-(\d+)$/);
+      if (levelMatch) {
+        actualCardId = levelMatch[1];
+        specificLevel = Number.parseInt(levelMatch[2], 10);
+        setSpecificLevelRequested(specificLevel);
+      }
+
+      // Card-Daten laden
+      const { data: cardData, error: cardError } = await supabase
+        .from("cards")
+        .select("*")
+        .eq("id", actualCardId)
+        .single();
+
+      if (cardError || !cardData) {
+        console.error("Error loading card:", cardError);
+        toast({
+          title: "Error",
+          description: "Failed to load card data",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const validCard = toCard(cardData);
+      if (!validCard) {
+        toast({
+          title: "Error",
+          description: "Invalid card data received",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setCard(validCard);
+
+      // UserCards laden
+      let userCardsQuery = supabase
+        .from("user_cards")
+        .select("*")
+        .eq("user_id", user.username)
+        .eq("card_id", actualCardId);
+
+      if (specificLevel !== null) {
+        userCardsQuery = userCardsQuery.eq("level", specificLevel);
+      }
+
+      const { data: userCardsData, error: userCardsError } = await userCardsQuery;
+
+      if (userCardsError || !userCardsData || userCardsData.length === 0) {
+        setOwned(false);
+        return;
+      }
+
+      setOwned(true);
+
+      const validUserCards = toUserCards(userCardsData);
+      setAllUserCards(validUserCards);
+
+      const preferredCard =
+        specificLevel !== null
+          ? validUserCards.find((uc) => uc.level === specificLevel) ??
+            validUserCards.reduce((a, b) => (a.level! > b.level! ? a : b))
+          : validUserCards.reduce((a, b) => (a.level! > b.level! ? a : b));
+
+      setUserCard(preferredCard);
+      setFavorite(Boolean(preferredCard.favorite));
+    } catch (error) {
+      console.error("Unexpected error in fetchCardDetails:", error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  fetchCardDetails();
+}, [cardId, user]);
+
 
   const handleToggleFavorite = async () => {
     if (!user || !userCard) return
@@ -309,184 +335,148 @@ export default function CardDetailPage() {
 
   // Aktualisiere die handleLevelUp-Funktion, um das maximale Level zu berücksichtigen
   const handleLevelUp = async () => {
-    if (!user || !card || !userCard) return
+  if (!user || !card || !userCard) return;
 
-    // Prüfe, ob das maximale Level bereits erreicht ist
-    if ((userCard.level || 1) >= MAX_CARD_LEVEL) {
+  if (userCard.id === "virtual") {
+    const supabase = getSupabaseBrowserClient();
+    if (!supabase) return;
+
+    const { data, error } = await supabase
+      .from("user_cards")
+      .select("*")
+      .eq("user_id", user.username)
+      .eq("card_id", card.id)
+      .eq("level", Number(userCard.level))
+      .limit(1)
+      .single();
+
+    if (error || !data) {
       toast({
-        title: "Maximum Level Reached",
-        description: "This card has already reached its maximum level.",
-        variant: "default",
-      })
-      return
-    }
-
-    setLevelUpLoading(true)
-    const supabase = getSupabaseBrowserClient()
-
-    try {
-      if (!supabase) return
-
-      // Check if user has enough quantity of this card
-      if ((userCard.quantity || 0) < 2) {
-        toast({
-          title: "Level up failed",
-          description: "You need at least 2 cards of the same type and level",
-          variant: "destructive",
-        })
-        setLevelUpLoading(false)
-        return
-      }
-
-      // Calculate the new level
-      const currentLevel = userCard.level || 1
-      const nextLevel = currentLevel + 1
-      setNewLevel(nextLevel)
-
-      // 1. Decrease quantity of the current card by 2
-      const { error: updateError } = await supabase
-        .from("user_cards")
-        .update({ quantity: userCard.quantity - 2 })
-        .eq("id", userCard.id)
-
-      if (updateError) {
-        console.error("Error updating card quantity:", updateError)
-        toast({
-          title: "Level up failed",
-          description: "Failed to update card quantity",
-          variant: "destructive",
-        })
-        setLevelUpLoading(false)
-        return
-      }
-
-      // 2. Check if user already has this card at the next level
-      const { data: existingCardsData, error: existingCardError } = await supabase
-        .from("user_cards")
-        .select("*")
-        .eq("user_id", user.username)
-        .eq("card_id", card.id)
-        .eq("level", nextLevel)
-
-      if (existingCardError) {
-        console.error("Error checking for existing higher level card:", existingCardError)
-      }
-
-      // 3. If user already has this card at the next level, increment quantity
-      if (existingCardsData && existingCardsData.length > 0) {
-        const existingCardRaw = existingCardsData[0]
-        console.log("Existing card data for level up:", existingCardRaw)
-
-        const existingCard = toUserCard(existingCardRaw)
-
-        if (!existingCard) {
-          console.error("Invalid existing card data:", existingCardRaw)
-
-          // Fallback approach - try to work with the raw data directly
-          // First check if existingCardRaw is an object and has an id property
-          if (
-            existingCardRaw &&
-            typeof existingCardRaw === "object" &&
-            "id" in existingCardRaw &&
-            (typeof existingCardRaw.id === "string" || typeof existingCardRaw.id === "number")
-          ) {
-            const quantity =
-              typeof existingCardRaw.quantity === "number"
-                ? existingCardRaw.quantity
-                : typeof existingCardRaw.quantity === "string"
-                  ? Number.parseInt(existingCardRaw.quantity, 10) || 0
-                  : 0
-
-            const { error: incrementError } = await supabase
-              .from("user_cards")
-              .update({ quantity: quantity + 1 })
-              .eq("id", existingCardRaw.id)
-
-            if (incrementError) {
-              console.error("Error incrementing higher level card quantity:", incrementError)
-              toast({
-                title: "Level up failed",
-                description: "Failed to update higher level card",
-                variant: "destructive",
-              })
-              setLevelUpLoading(false)
-              return
-            }
-          } else {
-            console.error("Cannot proceed with level up: existing card data is invalid and missing required id")
-            toast({
-              title: "Level up failed",
-              description: "Invalid card data structure",
-              variant: "destructive",
-            })
-            setLevelUpLoading(false)
-            return
-          }
-        } else {
-          const { error: incrementError } = await supabase
-            .from("user_cards")
-            .update({ quantity: (existingCard.quantity || 0) + 1 })
-            .eq("id", existingCard.id)
-
-          if (incrementError) {
-            console.error("Error incrementing higher level card quantity:", incrementError)
-            toast({
-              title: "Level up failed",
-              description: "Failed to update higher level card",
-              variant: "destructive",
-            })
-            setLevelUpLoading(false)
-            return
-          }
-        }
-      } else {
-        // 4. If user doesn't have this card at the next level, create a new entry
-        const { error: insertError } = await supabase.from("user_cards").insert({
-          user_id: user.username,
-          card_id: card.id,
-          quantity: 1,
-          level: nextLevel,
-          favorite: false,
-          obtained_at: new Date().toISOString().split("T")[0], // Format as YYYY-MM-DD
-        })
-
-        if (insertError) {
-          console.error("Error creating higher level card:", insertError)
-          toast({
-            title: "Level up failed",
-            description: "Failed to create higher level card: " + insertError.message,
-            variant: "destructive",
-          })
-          setLevelUpLoading(false)
-          return
-        }
-      }
-
-      // Show level up animation
-      setShowLevelUpAnimation(true)
-
-      // Wait for animation to complete before refreshing
-      setTimeout(() => {
-        setShowLevelUpAnimation(false)
-
-        // Refresh the page to show updated card
-        window.location.reload()
-      }, 3000)
-    } catch (error) {
-      console.error("Error during level up:", error)
-      toast({
-        title: "Level Up Failed",
-        description: "There was an error leveling up your card",
+        title: "Level up failed",
+        description: "Could not find this card in your collection.",
         variant: "destructive",
-      })
-      setLevelUpLoading(false)
+      });
+      return;
     }
+
+    const realCard = toUserCard(data);
+    if (!realCard) return;
+
+    setUserCard(realCard);
+    await doLevelUp(realCard); // 👉 Direkt starten
+    return;
   }
 
-  const handleSellCard = (userCardItem: UserCard) => {
-    setSelectedUserCard(userCardItem)
-    setShowSellDialog(true)
+  await doLevelUp(userCard);
+};
+
+  const doLevelUp = async (uc: UserCard) => {
+  if (!user || !card) return;
+
+  const supabase = getSupabaseBrowserClient();
+  if (!supabase) return;
+
+  if ((uc.quantity || 0) < 2) {
+    toast({
+      title: "Level up failed",
+      description: "You need at least 2 cards of the same type and level",
+      variant: "destructive",
+    });
+    return;
   }
+
+  const currentLevel = uc.level || 1;
+  const nextLevel = currentLevel + 1;
+  setNewLevel(nextLevel);
+  setLevelUpLoading(true);
+
+  try {
+    // Reduziere aktuelle Karte
+    const { error: updateError } = await supabase
+      .from("user_cards")
+      .update({ quantity: uc.quantity - 2 })
+      .eq("id", uc.id);
+
+    if (updateError) throw updateError;
+
+    // Prüfe ob Karte auf nächstem Level existiert
+    const { data: existingCardsData } = await supabase
+      .from("user_cards")
+      .select("*")
+      .eq("user_id", user.username)
+      .eq("card_id", card.id)
+      .eq("level", nextLevel);
+
+    if (existingCardsData && existingCardsData.length > 0) {
+      const existingCard = toUserCard(existingCardsData[0]);
+      if (existingCard) {
+        await supabase
+          .from("user_cards")
+          .update({ quantity: existingCard.quantity + 1 })
+          .eq("id", existingCard.id);
+      }
+    } else {
+      await supabase.from("user_cards").insert({
+        user_id: user.username,
+        card_id: card.id,
+        level: nextLevel,
+        quantity: 1,
+        favorite: false,
+        obtained_at: new Date().toISOString().split("T")[0],
+      });
+    }
+
+    setShowLevelUpAnimation(true);
+    setTimeout(() => {
+      setShowLevelUpAnimation(false);
+      window.location.reload();
+    }, 3000);
+  } catch (error) {
+    toast({
+      title: "Level Up Failed",
+      description: "Something went wrong during the level up.",
+      variant: "destructive",
+    });
+  } finally {
+    setLevelUpLoading(false);
+  }
+};
+
+
+  const handleSellCard = async (userCardItem: UserCard) => {
+  // Wenn Card-ID nicht aus der DB stammt (z. B. "virtual"), versuche echten Eintrag zu laden
+  if (userCardItem.id === "virtual") {
+    const supabase = getSupabaseBrowserClient();
+    if (!supabase || !user) return;
+    const { data, error } = await supabase
+      .from("user_cards")
+      .select("*")
+      .eq("user_id", user.username)
+      .eq("card_id", userCardItem.card_id)
+      .eq("level", Number(userCardItem.level))
+      .limit(1)
+      .single();
+
+    if (error || !data) {
+      toast({
+        title: "Not found",
+        description: "Could not find this card in your collection.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const realCard = toUserCard(data);
+    if (!realCard) return;
+
+    setSelectedUserCard(realCard);
+  } else {
+    setSelectedUserCard(userCardItem);
+  }
+
+  setShowSellDialog(true);
+};
+
 
   const handleSellSuccess = () => {
     toast({
@@ -853,6 +843,40 @@ export default function CardDetailPage() {
                     </div>
                   </div>
                 )}
+                
+
+{/* Fallback: zeige aktuelle userCard, wenn allUserCards leer */}
+{owned && userCard && allUserCards.length === 0 && (
+  <div className="mt-4 pt-3 border-t border-gray-100">
+    <h4 className="text-sm font-medium text-gray-700 mb-2">Your Card:</h4>
+    <div className="flex justify-between items-center">
+      <div className="flex flex-col">
+        <div className="flex items-center">
+          <span className="mr-2 font-medium">Level {userCard.level}</span>
+          
+        </div>
+        <div className="flex mt-1">{renderStars(userCard.level || 1, "xs")}</div>
+      </div>
+      <div className="flex items-center gap-2">
+        <Badge variant="outline" className="bg-gray-50 text-sm">
+          x{userCard.quantity}
+        </Badge>
+        {userCard.quantity > 0 && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-8 rounded-full border-violet-300 text-violet-600 hover:bg-violet-50"
+            onClick={() => handleSellCard(userCard)}
+          >
+            <Tag className="h-3 w-3 mr-1" />
+            Sell
+          </Button>
+        )}
+      </div>
+    </div>
+  </div>
+)}
+
               </motion.div>
 
               {/* Level Up Section - nur anzeigen, wenn der User die Karte besitzt */}

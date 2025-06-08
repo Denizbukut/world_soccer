@@ -13,6 +13,7 @@ import { createListing } from "@/app/actions/marketplace"
 import { renderStars } from "@/utils/card-stars"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
+import { useEffect } from "react"
 
 // Definiere den Typ für eine Karte
 type UserCard = {
@@ -39,8 +40,24 @@ export default function SellCardDialog({ isOpen, onClose, card, username, onSucc
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showSuccess, setShowSuccess] = useState(false)
+  const [priceUsdPerWLD, setPriceUsdPerWLD] = useState<number | null>(null)
   const router = useRouter()
+useEffect(() => {
+  const fetchPrice = async () => {
+    try {
+      const res = await fetch("/api/wld-price")
+      const json = await res.json()
 
+      if (json.price) {
+        setPriceUsdPerWLD(json.price)
+      }
+    } catch (err) {
+      console.error("Failed to fetch WLD price", err)
+    }
+  }
+
+  fetchPrice()
+}, [])
   // Standardpreise basierend auf Seltenheit und Level
   function getDefaultPrice(rarity: string, level: number): number {
     const basePrice =
@@ -60,12 +77,21 @@ export default function SellCardDialog({ isOpen, onClose, card, username, onSucc
 
   // Validiere den Preis
   const parsedPrice = Number.parseFloat(price.replace(",", "."))
-  const isValidPrice = !isNaN(parsedPrice) && parsedPrice >= 0.1 && parsedPrice <= 500
+  const minWldPrice = priceUsdPerWLD
+  ? (card.rarity === "legendary" ? 1 / priceUsdPerWLD : 0.15 / priceUsdPerWLD)
+  : card.rarity === "legendary"
+    ? 1
+    : 0.3
+
+const isValidPrice =
+  !isNaN(parsedPrice) &&
+  parsedPrice >= minWldPrice
+
 
   // Formatiere den Preis für die Anzeige
   const formatPrice = (value: string) => {
     const num = Number.parseFloat(value.replace(",", "."))
-    return !isNaN(num) ? num.toFixed(2) : "0.00"
+    return !isNaN(num) ? num.toFixed(3) : "0.000"
   }
 
   // Karte zum Verkauf anbieten
@@ -249,8 +275,11 @@ export default function SellCardDialog({ isOpen, onClose, card, username, onSucc
                   />
                 </div>
                 {!isValidPrice && (
-                  <p className="text-red-500 text-sm">Please enter a valid price between 0.1 and 500 WLD</p>
-                )}
+  <p className="text-red-500 text-sm">
+    {`Starting price is ${minWldPrice.toFixed(3)} WLD (~$${(minWldPrice * (priceUsdPerWLD || 1)).toFixed(2)})`}
+  </p>
+)}
+
               </div>
 
               {/* Error Message */}

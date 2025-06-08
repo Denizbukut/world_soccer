@@ -20,11 +20,14 @@ export default function LoginPage() {
   const [referralCode, setReferralCode] = useState("")
   const router = useRouter()
   const { login } = useAuth()
-  const searchParams = useSearchParams()
-useEffect(() => {
-  const ref = searchParams.get("ref")
-  if (ref) setReferralCode(ref)
-}, [searchParams])
+  useEffect(() => {
+  if (typeof window !== "undefined") {
+    const urlParams = new URLSearchParams(window.location.search)
+    const ref = urlParams.get("ref")
+    if (ref) setReferralCode(ref)
+  }
+}, [])
+
 
 
 

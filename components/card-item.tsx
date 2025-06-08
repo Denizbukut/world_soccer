@@ -8,6 +8,8 @@ import { cn } from "@/lib/utils"
 import Image from "next/image"
 import { motion } from "framer-motion"
 import { renderStars } from "@/utils/card-stars"
+import { useRouter } from "next/navigation"
+
 
 interface CardItemProps {
   id: string
@@ -28,6 +30,8 @@ interface CardItemProps {
   isCollection?: boolean
   hideOverlay?: boolean
 }
+
+
 
 export function CardItem({
   id,
@@ -82,6 +86,25 @@ export function CardItem({
   const cardImageUrl = imageUrl || placeholderUrl
   const cardDetailUrl = isCollection ? `/cards/${id}-level-${level}` : `/cards/${id}`
 
+  const router = useRouter()
+
+const handleCardClick = () => {
+  if (isCollection) {
+    const url = `/cards/${id}-level-${level}` +
+      `?name=${encodeURIComponent(name)}` +
+      `&character=${encodeURIComponent(character)}` +
+      `&rarity=${rarity}` +
+      `&imageUrl=${encodeURIComponent(imageUrl || "")}` +
+      `&level=${level}` +
+      `&quantity=${quantity}`
+
+    router.push(url)
+  } else {
+    router.push(`/cards/${id}`)
+  }
+}
+
+
   const CardWrapper = ({ children }: { children: React.ReactNode }) => {
     if (selectable) {
       return (
@@ -106,10 +129,11 @@ export function CardItem({
     }
 
     return (
-      <Link href={cardDetailUrl} className="block h-full">
+      <div onClick={handleCardClick} className="block h-full cursor-pointer">
         {children}
-      </Link>
+      </div>
     )
+
   }
 
   return (

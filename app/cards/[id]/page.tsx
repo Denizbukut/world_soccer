@@ -15,6 +15,8 @@ import TiltableCard from "@/components/tiltable-card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { renderStars, getStarInfo } from "@/utils/card-stars"
 import SellCardDialog from "@/components/sell-card-dialog"
+import { useSearchParams } from "next/navigation"
+
 
 // Define types for our data
 interface UserCard {
@@ -160,10 +162,48 @@ export default function CardDetailPage() {
   const [selectedUserCard, setSelectedUserCard] = useState<UserCard | null>(null)
   const [specificLevelRequested, setSpecificLevelRequested] = useState<number | null>(null)
 
+  
+
+  const searchParams = useSearchParams()
+
+  const nameFromUrl = searchParams.get("name")
+  const characterFromUrl = searchParams.get("character")
+  const rarityFromUrl = searchParams.get("rarity")
+  const imageUrlFromUrl = searchParams.get("imageUrl")
+  const levelFromUrl = Number(searchParams.get("level") || "1")
+  const quantityFromUrl = Number(searchParams.get("quantity") || "1")
+
+  useEffect(() => {
+  if (nameFromUrl && characterFromUrl && rarityFromUrl) {
+    setCard({
+      id: cardId,
+      name: nameFromUrl,
+      character: characterFromUrl,
+      rarity: rarityFromUrl,
+      image_url: imageUrlFromUrl || undefined,
+    })
+
+    setUserCard({
+      id: `${cardId}-${levelFromUrl}`,
+      user_id: user?.username || "",
+      card_id: cardId,
+      quantity: quantityFromUrl,
+      level: levelFromUrl,
+    })
+
+    setOwned(true)
+    setLoading(false)
+  }
+}, [nameFromUrl, characterFromUrl, rarityFromUrl])
+
+
+
   const cardId = params.id as string
 
   useEffect(() => {
     async function fetchCardDetails() {
+      if (nameFromUrl && characterFromUrl && rarityFromUrl) return
+
       if (!cardId || !user) return
 
       setLoading(true)

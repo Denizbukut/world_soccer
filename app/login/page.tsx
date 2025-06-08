@@ -8,12 +8,26 @@ import { MiniKit } from "@worldcoin/minikit-js"
 import { createClient } from "@supabase/supabase-js"
 import Image from "next/image"
 import { Globe } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { useSearchParams } from "next/navigation"
+import { useEffect } from "react"
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
+  const [referralWarning, setReferralWarning] = useState<string | null>(null)
+
   const [error, setError] = useState<string | null>(null)
+  const [referralCode, setReferralCode] = useState("")
   const router = useRouter()
   const { login } = useAuth()
+  const searchParams = useSearchParams()
+useEffect(() => {
+  const ref = searchParams.get("ref")
+  if (ref) setReferralCode(ref)
+}, [searchParams])
+
+
+
 
   const signInWithWallet = async () => {
     setIsLoading(true)
@@ -85,6 +99,25 @@ export default function LoginPage() {
               console.error("Error creating new user:", insertError)
             } else {
               console.log("New user created successfully:", newUser)
+              if (referralCode.trim().toLowerCase()) {
+      const { data: referrer, error: referrerError } = await supabase
+        .from("users")
+        .select("username")
+        .eq("username", referralCode)
+        .single()
+
+      if (referrer && !referrerError) {
+        await supabase.from("referrals").insert({
+          referrer_username: referralCode,
+          referred_username: userIdentifier,
+        })
+      } else {
+        setReferralWarning("This referral code is invalid.")
+      }
+    }
+  
+
+
             }
           } else {
             console.log("User already exists:", existingUser)
@@ -153,6 +186,18 @@ export default function LoginPage() {
         className="mb-20 w-full max-w-xs px-4 z-10"
       >
         {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">{error}</div>}
+        <Input
+          placeholder="Referral code (optional)"
+          value={referralCode}
+          onChange={(e) => setReferralCode(e.target.value)}
+          className="mb-4"
+        />
+        {referralWarning && (
+  <div className="bg-yellow-50 border border-yellow-300 text-yellow-800 px-3 py-2 rounded mb-3 text-sm">
+    {referralWarning}
+  </div>
+)}
+
         <button
           onClick={signInWithWallet}
           style= {{ backgroundColor: "#2E5283"}}

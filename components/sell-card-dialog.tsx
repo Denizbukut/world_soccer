@@ -45,25 +45,22 @@ export default function SellCardDialog({ isOpen, onClose, card, username, onSucc
   function getDefaultPrice(rarity: string, level: number): number {
     const basePrice =
       {
-        common: 1,
-        rare: 1,
-        epic: 1,
-        legendary: 1,
+        common: 50,
+        rare: 150,
+        epic: 500,
+        legendary: 2000,
       }[rarity] || 50
 
     // Erhöhe den Preis basierend auf dem Level
     const calculatedPrice = Math.round(basePrice * (1 + (level - 1) * 0.5))
 
-    // Stelle sicher, dass der Preis nicht über 500 liegt und für legendäre Karten mindestens 1 ist
-    return Math.min(Math.max(calculatedPrice, rarity === "legendary" ? 1 : 0.3), 500)
+    // Stelle sicher, dass der Preis nicht über 500 liegt
+    return Math.min(calculatedPrice, 500)
   }
 
   // Validiere den Preis
   const parsedPrice = Number.parseFloat(price.replace(",", "."))
-  const isValidPrice =
-    !isNaN(parsedPrice) &&
-    ((card.rarity === "legendary" && parsedPrice >= 1 && parsedPrice <= 500) ||
-      (card.rarity !== "legendary" && parsedPrice >= 0.3 && parsedPrice <= 500))
+  const isValidPrice = !isNaN(parsedPrice) && parsedPrice >= 0.1 && parsedPrice <= 500
 
   // Formatiere den Preis für die Anzeige
   const formatPrice = (value: string) => {
@@ -243,14 +240,16 @@ export default function SellCardDialog({ isOpen, onClose, card, username, onSucc
               <div className="space-y-2">
                 <Label htmlFor="price">Set Price (WLD)</Label>
                 <div className="relative">
-                  <Input id="price" type="text" value={price} onChange={(e) => setPrice(e.target.value)} className="" />
+                  <Input
+                    id="price"
+                    type="text"
+                    value={price}
+                    onChange={(e) => setPrice(e.target.value)}
+                    className=""
+                  />
                 </div>
                 {!isValidPrice && (
-                  <p className="text-red-500 text-sm">
-                    {card.rarity === "legendary"
-                      ? "Please enter a valid price between 1 and 500 WLD"
-                      : "Please enter a valid price between 0.3 and 500 WLD"}
-                  </p>
+                  <p className="text-red-500 text-sm">Please enter a valid price between 0.1 and 500 WLD</p>
                 )}
               </div>
 
@@ -270,6 +269,17 @@ export default function SellCardDialog({ isOpen, onClose, card, username, onSucc
                   <span className="font-medium">You'll Receive:</span> {formatPrice(price)} WLD
                 </p>
               </div>
+
+              {/* Warning for last copy */}
+              {card?.quantity === 1 && (
+                <div className="bg-amber-50 p-3 rounded-lg text-sm">
+                  <p className="text-amber-800 font-medium">This is your last copy of this card!</p>
+                  <p className="text-amber-700 mt-1">
+                    If you sell it, you won't have this card in your collection until you get it again.
+                  </p>
+                </div>
+              )}
+
 
               {/* Action Buttons */}
               <div className="flex justify-end gap-2">

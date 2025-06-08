@@ -1,8 +1,17 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog"
+
 import { useAuth } from "@/contexts/auth-context"
 import { claimDailyBonus } from "@/app/actions"
+import { claimReferralRewardForUser, getReferredUsers } from "@/app/actions/referrals"
 import { getDailyDeal } from "@/app/actions/deals"
 import ProtectedRoute from "@/components/protected-route"
 import MobileNav from "@/components/mobile-nav"
@@ -75,6 +84,7 @@ interface ClanInfo {
 export default function Home() {
   const { user, updateUserTickets, refreshUserData } = useAuth()
   const [claimLoading, setClaimLoading] = useState(false)
+  const [referralLoading, setReferralLoading] = useState(false)
   const [alreadyClaimed, setAlreadyClaimed] = useState(false)
   const [timeUntilNextClaim, setTimeUntilNextClaim] = useState<number | null>(null)
   const [legendaryTickets, setLegendaryTickets] = useState(0)
@@ -87,6 +97,13 @@ export default function Home() {
   const [levelRewards, setLevelRewards] = useState<LevelReward[]>([])
   const [lastLegendaryClaim, setLastLegendaryClaim] = useState<Date | null>(null)
   // const [userClanInfo, setUserClanInfo] = useState<ClanInfo | null>(null)
+  const [referredUsers, setReferredUsers] = useState<{
+      id: number
+      username: string
+      level: number
+      reward_claimed: boolean
+    }[]>([])
+
 
   // Timer display state
   const [ticketTimerDisplay, setTicketTimerDisplay] = useState("00:00:00")
@@ -101,6 +118,7 @@ export default function Home() {
   const [dealInteraction, setDealInteraction] = useState<DealInteraction | null>(null)
   const [showDealDialog, setShowDealDialog] = useState(false)
   const [dealLoading, setDealLoading] = useState(false)
+  const [showReferralDialog, setShowReferralDialog] = useState(false)
 
   // Refs to track if effects have run
   const hasCheckedDeal = useRef(false)
@@ -108,7 +126,13 @@ export default function Home() {
   const hasCheckedRewards = useRef(false)
   const hasCheckedTokens = useRef(false)
   const hasCheckedClan = useRef(false)
+const [copied, setCopied] = useState(false)
 
+
+  const handleCopy = () => {
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
   // Interval refs
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const tokenTimerIntervalRef = useRef<NodeJS.Timeout | null>(null)
@@ -193,6 +217,12 @@ export default function Home() {
     }
   }, [user?.username])
   */
+ useEffect(() => {
+  if (user?.username) {
+    getReferredUsers(user.username).then(setReferredUsers)
+    }
+  }, [user?.username])
+
 
   const updateTicketTimerDisplay = (duration: number | null) => {
     if (duration === null) {
@@ -227,6 +257,8 @@ export default function Home() {
 
     setTokenTimerDisplay(`${formattedHours}:${formattedMinutes}:${formattedSeconds}`)
   }
+
+
 
   useEffect(() => {
     const fetchPrice = async () => {
@@ -630,6 +662,8 @@ export default function Home() {
     })
   }
 
+  
+
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white pb-20 text-black">
@@ -950,6 +984,32 @@ export default function Home() {
             </motion.div>
           )}
 
+          {/* Referrals */}
+<motion.div
+  initial={{ opacity: 0, y: 8 }}
+  animate={{ opacity: 1, y: 0 }}
+  transition={{ duration: 0.3 }}
+>
+  <button
+    onClick={() => setShowReferralDialog(true)}
+    className="w-full relative rounded-xl bg-gradient-to-r from-yellow-200 to-amber-300 text-amber-900 font-semibold py-3 px-4 shadow-md hover:brightness-105 transition flex items-center justify-center gap-2 border border-amber-300"
+  >
+    <Gift className="w-4 h-4 text-amber-700" />
+    <span>Referrals</span>
+
+    {/* Optional: Badge für neue Belohnung */}
+    {referredUsers.some(u => u.level >= 5 && !u.reward_claimed) && (
+      <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow">
+        NEW
+      </span>
+    )}
+  </button>
+</motion.div>
+
+
+
+
+
           {/* Quick actions */}
          <section className="space-y-3">
   <h2 className="text-sm font-semibold text-gray-800">Quick Access</h2>
@@ -985,9 +1045,56 @@ export default function Home() {
   </Link>
 </section>
 
+        {/* Referral Program */}
+        {referredUsers.length > 0 && (
+  <motion.div
+    initial={{ opacity: 0, y: 10 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ delay: 0.2, duration: 0.4 }}
+    className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden p-3"
+  >
+    <h4 className="text-sm font-semibold mb-2">Your Referrals</h4>
+    <div className="space-y-2 max-h-64 overflow-y-auto">
+      {referredUsers.map((ref) => (
+        <div
+          key={ref.username}
+          className="flex justify-between items-center border-b border-gray-100 pb-2"
+        >
+          <div className="text-sm">
+            @{ref.username} <span className="text-xs text-gray-500">(Lvl {ref.level})</span>
+          </div>
+          {ref.reward_claimed ? (
+            <CheckCircle className="h-4 w-4 text-green-500" />
+          ) : ref.level >= 5 ? (
+            <Button
+              size="sm"
+              className="text-xs"
+              onClick={async () => {
+                if (!user?.username) return
+                const res = await claimReferralRewardForUser(user.username, ref.username)
 
+                if (res.success) {
+                  toast({ title: "Referral Claimed", description: `+5 Tickets, +3 Legendary` })
+                  setReferredUsers((prev) =>
+                    prev.map((r) => r.username === ref.username ? { ...r, reward_claimed: true } : r)
+                  )
 
-
+                  await refreshUserData?.()
+                } else {
+                  toast({ title: "Error", description: res.error, variant: "destructive" })
+                }
+              }}
+            >
+              Claim
+            </Button>
+          ) : (
+            <span className="text-xs text-gray-400">Waiting...</span>
+          )}
+        </div>
+      ))}
+    </div>
+  </motion.div>
+)}
 
 
           {/* Daily bonus */}
@@ -1041,6 +1148,135 @@ export default function Home() {
 
          
         </main>
+       {showClaimAnimation && (
+  <motion.div
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+    className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center"
+  >
+    <div className="relative">
+      {[...Array(3)].map((_, i) => (
+        <motion.div
+          key={i}
+          className="absolute"
+          initial={{ x: 0, y: 0, scale: 0 }}
+          animate={{
+            x: [0, (i - 1) * 30],
+            y: [0, -60],
+            scale: [0, 1.2, 1],
+            opacity: [1, 0],
+          }}
+          transition={{ duration: 1.5, delay: i * 0.2 }}
+        >
+          <div className="bg-white rounded-lg p-2 shadow-lg flex items-center gap-2 border-2 border-blue-300">
+            <Ticket className="h-5 w-5 text-blue-500" />
+            <span className="font-bold text-blue-600">+1</span>
+          </div>
+        </motion.div>
+      ))}
+    </div>
+  </motion.div>
+)}
+
+
+
+<Dialog open={showReferralDialog} onOpenChange={setShowReferralDialog}>
+  <DialogContent>
+    <DialogTitle className="text-lg font-bold">🎁 Invite Friends & Earn Rewards</DialogTitle>
+    <DialogDescription className="text-sm text-gray-600">
+      Share your referral link and earn bonus tickets when they reach level 5!
+    </DialogDescription>
+
+    {/* Your referral link */}
+    <div className="mt-4">
+      <div className="text-sm font-semibold text-gray-800 mb-1">Your Code:</div>
+      <div className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded px-3 py-2">
+        <span className="truncate text-sm font-mono text-gray-700">
+          {user?.username}
+        </span>
+        <Button
+      size="sm"
+      onClick={() => {
+        const link = `https://worldcoin.org/mini-app?app_id=app_976ccdfba5aa4d5b3b31d628d74ea936&ref=${user?.username}`
+        navigator.clipboard.writeText(link)
+        handleCopy()
+      }}
+    >
+      {copied ? "Copied!" : "Copy link"}
+    </Button>
+
+      </div>
+      
+    </div>
+    {/* Rewards overview */}
+    <div className="mt-6 bg-amber-50 border border-amber-200 rounded-lg p-3">
+      <h4 className="text-sm font-semibold text-amber-700 mb-1">What you get:</h4>
+      <ul className="text-sm text-amber-800 list-disc list-inside space-y-1">
+        <li><strong>+5</strong> Regular Tickets</li>
+        <li><strong>+3</strong> Legendary Tickets</li>
+        <li>Once your friend reaches <strong>Level 5</strong></li>
+      </ul>
+    </div>
+
+    {/* Referred users list */}
+    <div className="mt-6">
+      <h4 className="text-sm font-semibold text-gray-800 mb-2">Your Referrals</h4>
+      {referredUsers.length === 0 ? (
+        <p className="text-xs text-gray-500">No referrals yet.</p>
+      ) : (
+        <div className="space-y-2 max-h-48 overflow-y-auto">
+          {referredUsers.map((ref) => (
+            <div key={ref.username} className="flex justify-between items-center border-b pb-1">
+              <span className="text-sm">
+                @{ref.username} <span className="text-gray-500 text-xs">(Lvl {ref.level})</span>
+              </span>
+              {ref.reward_claimed ? (
+                <CheckCircle className="h-4 w-4 text-green-500" />
+              ) : ref.level >= 5 ? (
+                <Button
+  size="sm"
+  className="text-xs"
+  onClick={async () => {
+  if (!user?.username) return
+  const res = await claimReferralRewardForUser(user.username, ref.username)
+
+  if (res.success) {
+    setShowClaimAnimation(true)
+
+    if (typeof res.newTicketCount === "number" || typeof res.newLegendaryTicketCount === "number") {
+      await updateUserTickets(res.newTicketCount, res.newLegendaryTicketCount)
+      setTickets(res.newTicketCount)
+      setLegendaryTickets(res.newLegendaryTicketCount)
+    }
+
+    setReferredUsers((prev) =>
+      prev.map((r) =>
+        r.username === ref.username ? { ...r, reward_claimed: true } : r
+      )
+    )
+
+    setTimeout(() => setShowClaimAnimation(false), 1500)
+  } else {
+    toast({ title: "Error", description: res.error, variant: "destructive" })
+  }
+}}
+
+>
+  Claim
+</Button>
+
+
+              ) : (
+                <span className="text-xs text-gray-400">Waiting...</span>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  </DialogContent>
+</Dialog>
 
         {/* Ticket claim animation */}
         <AnimatePresence>
@@ -1147,5 +1383,8 @@ export default function Home() {
         <MobileNav />
       </div>
     </ProtectedRoute>
+    
+  
   )
+  
 }

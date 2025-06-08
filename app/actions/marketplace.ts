@@ -527,7 +527,7 @@ export async function createListing(
       .select("quantity, level")
       .eq("id", userCardId)
       .eq("user_id", username)
-      .single()
+      .maybeSingle()
 
     if (userCardError) {
       console.error("Error checking user card:", userCardError)

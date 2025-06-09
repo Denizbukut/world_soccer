@@ -251,7 +251,7 @@ export async function drawCards(username: string, packType: string, count = 1) {
         } else if (random < 50) {
           rarity = "rare"
           cardPool = rareCards
-        } else if (random < 90) {
+        } else if (random < 85) {
           rarity = "epic"
           cardPool = epicCards
         } else {
@@ -266,7 +266,7 @@ export async function drawCards(username: string, packType: string, count = 1) {
         } else if (random < 75) {
           rarity = "rare"
           cardPool = rareCards
-        } else if (random < 95) {
+        } else if (random < 94) {
           rarity = "epic"
           cardPool = epicCards
         } else {
@@ -282,7 +282,7 @@ export async function drawCards(username: string, packType: string, count = 1) {
         } else if (random < 84) {
           rarity = "rare"
           cardPool = rareCards
-        } else if (random < 98) {
+        } else if (random < 96) {
           rarity = "epic"
           cardPool = epicCards
         } else {

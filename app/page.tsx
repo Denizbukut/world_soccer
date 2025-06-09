@@ -830,6 +830,47 @@ const [copied, setCopied] = useState(false)
               </Link>
             </div>
           </motion.div>
+                {/* Weekly Contest Banner */}
+<motion.div
+  initial={{ opacity: 0, y: 20, scale: 0.95 }}
+  animate={{ opacity: 1, y: 0, scale: 1 }}
+  transition={{ duration: 0.6, ease: "easeOut", delay: 0.3 }}
+  whileHover={{ scale: 1.02 }}
+  className="relative"
+>
+  {/* Shine Effekt */}
+  <div className="absolute inset-0 overflow-hidden rounded-xl pointer-events-none">
+    <div className="shine animate-shine"></div>
+  </div>
+
+  <Link href="/weekly-contest">
+    <div className="relative w-full bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-400 text-white rounded-xl p-4 shadow-xl hover:brightness-110 transition flex items-center justify-between border-2 border-emerald-400">
+      <div className="flex items-center gap-3">
+        <Trophy className="w-6 h-6 text-white animate-bounce-slow" />
+        <div>
+          <h3 className="text-base font-bold">Weekly Contest</h3>
+          <p className="text-xs text-white/90">
+            Compete for legendary pulls and win WLD!
+          </p>
+        </div>
+      </div>
+
+      {/* Animierter Kreis um Chevron */}
+      <motion.div
+        className="bg-white/20 rounded-full p-2 backdrop-blur-sm"
+        animate={{ x: [0, 5, 0] }}
+        transition={{
+          duration: 1.5,
+          repeat: Infinity,
+          repeatType: "reverse",
+        }}
+      >
+        <ChevronRight className="w-4 h-4 text-white" />
+      </motion.div>
+    </div>
+  </Link>
+</motion.div>
+
 
           {/* Deal of the Day Card - Enhanced */}
           {dailyDeal && dealInteraction && (
@@ -1045,56 +1086,7 @@ const [copied, setCopied] = useState(false)
   </Link>
 </section>
 
-        {/* Referral Program */}
-        {referredUsers.length > 0 && (
-  <motion.div
-    initial={{ opacity: 0, y: 10 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ delay: 0.2, duration: 0.4 }}
-    className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden p-3"
-  >
-    <h4 className="text-sm font-semibold mb-2">Your Referrals</h4>
-    <div className="space-y-2 max-h-64 overflow-y-auto">
-      {referredUsers.map((ref) => (
-        <div
-          key={ref.username}
-          className="flex justify-between items-center border-b border-gray-100 pb-2"
-        >
-          <div className="text-sm">
-            @{ref.username} <span className="text-xs text-gray-500">(Lvl {ref.level})</span>
-          </div>
-          {ref.reward_claimed ? (
-            <CheckCircle className="h-4 w-4 text-green-500" />
-          ) : ref.level >= 5 ? (
-            <Button
-              size="sm"
-              className="text-xs"
-              onClick={async () => {
-                if (!user?.username) return
-                const res = await claimReferralRewardForUser(user.username, ref.username)
-
-                if (res.success) {
-                  toast({ title: "Referral Claimed", description: `+5 Tickets, +3 Legendary` })
-                  setReferredUsers((prev) =>
-                    prev.map((r) => r.username === ref.username ? { ...r, reward_claimed: true } : r)
-                  )
-
-                  await refreshUserData?.()
-                } else {
-                  toast({ title: "Error", description: res.error, variant: "destructive" })
-                }
-              }}
-            >
-              Claim
-            </Button>
-          ) : (
-            <span className="text-xs text-gray-400">Waiting...</span>
-          )}
-        </div>
-      ))}
-    </div>
-  </motion.div>
-)}
+    
 
 
           {/* Daily bonus */}
@@ -1368,6 +1360,10 @@ const [copied, setCopied] = useState(false)
             </motion.div>
           )}
         </AnimatePresence>
+
+  
+
+
 
         {/* Deal of the Day Dialog */}
         {dailyDeal && dailyDeal.card_name && (

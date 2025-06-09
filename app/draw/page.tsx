@@ -14,6 +14,7 @@ import { toast } from "@/components/ui/use-toast"
 import { motion, AnimatePresence, useAnimation, useMotionValue, useTransform } from "framer-motion"
 import Image from "next/image"
 import { incrementMission } from "@/app/actions/missions"
+import { incrementLegendaryDraw } from "../actions/weekly-contest"
 
 // Rarität definieren
 type CardRarity = "common" | "rare" | "epic" | "legendary"
@@ -190,7 +191,7 @@ export default function DrawPage() {
       if (result.drawnCards?.[0]?.rarity === "legendary") {
 
         await incrementMission(user.username, "draw_legendary_card")
-        
+        await incrementLegendaryDraw(user.username)
       }
       console.log("Draw result:", result)
       if(cardType === "legendary"){

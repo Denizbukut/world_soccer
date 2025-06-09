@@ -334,11 +334,11 @@ const buyLegendaryTicket = async () => {
 
   const aniTokenAddress = "0x4d0f53f8810221579627eF6Dd4d64Ca107b2BEF8"
   const burnAddress = "0x000000000000000000000000000000000000dEaD"
-  const amountToBurn = BigInt(2 * 1e18)
+  const amountToBurn = BigInt(3 * 1e18)
 
   toast({
     title: "Processing",
-    description: "Burning 2 $ANI tokens...",
+    description: "Burning 3 $ANI tokens...",
   })
 
   try {
@@ -358,7 +358,7 @@ const buyLegendaryTicket = async () => {
     // Optional: Update aniTokens in UI
     setAniTokens((prev) => {
       const prevNumber = parseFloat(prev ?? "0")
-      const updated = (prevNumber - 2).toFixed(1)
+      const updated = (prevNumber - 3).toFixed(1)
       return updated
     })
 
@@ -378,7 +378,7 @@ const buyLegendaryTicket = async () => {
 
     toast({
       title: "Success",
-      description: "You received 1 Legendary Ticket for 2 $ANI!",
+      description: "You received 1 Legendary Ticket for 3 $ANI!",
     })
 
     refreshUserData?.()
@@ -979,7 +979,7 @@ setAniTokens(aniBalance)
         </div>
       ) : (
         <>
-          Buy 1 Legendary Ticket with 2 $ANI
+          Buy 1 Legendary Ticket for 3 $ANI
         </>
       )}
     </Button>

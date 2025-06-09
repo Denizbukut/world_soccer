@@ -14,10 +14,7 @@ import MobileNav from "@/components/mobile-nav"
 import ProtectedRoute from "@/components/protected-route"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { MiniKit } from "@worldcoin/minikit-js"
-import { useTokenBalance } from "@/components/getTokenBalance"
-
-
-
+import { useTokenBalance, useAniTokenBalance } from "@/components/getTokenBalance"
 
 const ClaimButton = ({ onClaim, disabled, loading }: { onClaim: () => void; disabled: boolean; loading: boolean }) => {
   if (disabled) {
@@ -140,6 +137,13 @@ const [lastSwapTime, setLastSwapTime] = useState<Date | null>(null)
   const [swapCooldown, setSwapCooldown] = useState<number | null>(null)
   const [swapTimerDisplay, setSwapTimerDisplay] = useState("00:00:00")
   const [canSwap, setCanSwap] = useState(true)
+  const [aniTokens, setAniTokens] = useState<string | null>(null)
+const [canAniSwap, setCanAniSwap] = useState(true)
+const [aniSwapCooldown, setAniSwapCooldown] = useState<number | null>(null)
+const [aniSwapTimerDisplay, setAniSwapTimerDisplay] = useState("00:00:00")
+const aniSwapRef = useRef<NodeJS.Timeout | null>(null)
+
+const [aniSwapLoading, setAniSwapLoading] = useState(false)
 
   const swapInterval = 12 * 60 * 60 * 1000 // 12h in ms
   const swapTimerRef = useRef<NodeJS.Timeout | null>(null)
@@ -265,6 +269,134 @@ setSwapTimerDisplay(formatTimeRemaining(swapInterval))
 
 }
 
+const buyLegendaryTicket = async () => {
+  if (!user || !walletAddress) {
+    toast({
+      title: "Error",
+      description: "No wallet connected.",
+      variant: "destructive",
+    })
+    return
+  }
+
+  const supabase = getSupabaseBrowserClient()
+  if (!supabase) return
+
+  // Fetch current data
+  const { data, error } = await supabase
+    .from("users")
+    .select("legendary_tickets, last_ani_swap")
+    .eq("username", user.username)
+    .single()
+
+  if (error) {
+    toast({
+      title: "Error",
+      description: "Could not check last swap time.",
+      variant: "destructive",
+    })
+    return
+  }
+
+  const lastSwap =
+    typeof data?.last_ani_swap === "string" || typeof data?.last_ani_swap === "number"
+      ? new Date(data.last_ani_swap)
+      : null
+
+  const now = new Date()
+  const twelveHours = 12 * 60 * 60 * 1000
+
+  if (lastSwap && now.getTime() - lastSwap.getTime() < twelveHours) {
+    const remaining = twelveHours - (now.getTime() - lastSwap.getTime())
+    const hours = Math.floor(remaining / (1000 * 60 * 60))
+    const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60))
+
+    toast({
+      title: "Cooldown Active",
+      description: `You can exchange again in ${hours}h ${minutes}min.`,
+    })
+    return
+  }
+
+  // Burn 2 $ANI tokens
+  const aniTokenAbi = [
+    {
+      inputs: [
+        { internalType: "address", name: "to", type: "address" },
+        { internalType: "uint256", name: "amount", type: "uint256" },
+      ],
+      name: "transfer",
+      outputs: [{ internalType: "bool", name: "", type: "bool" }],
+      stateMutability: "nonpayable",
+      type: "function",
+    },
+  ]
+
+  const aniTokenAddress = "0x4d0f53f8810221579627eF6Dd4d64Ca107b2BEF8"
+  const burnAddress = "0x000000000000000000000000000000000000dEaD"
+  const amountToBurn = BigInt(2 * 1e18)
+
+  toast({
+    title: "Processing",
+    description: "Burning 2 $ANI tokens...",
+  })
+
+  try {
+    const { finalPayload } = await MiniKit.commandsAsync.sendTransaction({
+      transaction: [
+        {
+          address: aniTokenAddress,
+          abi: aniTokenAbi,
+          functionName: "transfer",
+          args: [burnAddress, amountToBurn],
+        },
+      ],
+    })
+
+    if (finalPayload.status !== "success") throw new Error("Blockchain transaction failed")
+
+    // Optional: Update aniTokens in UI
+    setAniTokens((prev) => {
+      const prevNumber = parseFloat(prev ?? "0")
+      const updated = (prevNumber - 2).toFixed(1)
+      return updated
+    })
+
+    // Update legendary tickets and cooldown
+    const { error: updateError } = await supabase
+      .from("users")
+      .update({
+        legendary_tickets:
+          (typeof data?.legendary_tickets === "number"
+            ? data.legendary_tickets
+            : Number(data?.legendary_tickets) || 0) + 1,
+        last_ani_swap: now.toISOString(),
+      })
+      .eq("username", user.username)
+
+    if (updateError) throw new Error("Failed to update legendary tickets")
+
+    toast({
+      title: "Success",
+      description: "You received 1 Legendary Ticket for 2 $ANI!",
+    })
+
+    refreshUserData?.()
+
+    setCanAniSwap(false)
+    setAniSwapCooldown(twelveHours)
+    setAniSwapTimerDisplay(formatTimeRemaining(twelveHours))
+  } catch (error: any) {
+    console.error("buyLegendaryTicket Error:", error)
+    toast({
+      title: "Error",
+      description: error.message || "Something went wrong.",
+      variant: "destructive",
+    })
+  }
+}
+
+
 
 
   const sendHapticFeedbackCommand = () =>
@@ -369,6 +501,26 @@ useEffect(() => {
     if (swapTimerRef.current) clearInterval(swapTimerRef.current)
   }
 }, [swapCooldown])
+useEffect(() => {
+  if (!aniSwapCooldown || aniSwapCooldown <= 0) return
+  if (aniSwapRef.current) clearInterval(aniSwapRef.current)
+  aniSwapRef.current = setInterval(() => {
+    setAniSwapCooldown((prev) => {
+      if (!prev || prev <= 1000) {
+        clearInterval(aniSwapRef.current!)
+        setCanAniSwap(true)
+        setAniSwapTimerDisplay("00:00:00")
+        return null
+      }
+      const updated = prev - 1000
+      setAniSwapTimerDisplay(formatTimeRemaining(updated))
+      return updated
+    })
+  }, 1000)
+  return () => {
+    if (aniSwapRef.current) clearInterval(aniSwapRef.current)
+  }
+}, [aniSwapCooldown])
 
 
 useEffect(() => {
@@ -378,16 +530,18 @@ useEffect(() => {
     if(!supabase) return
     const { data } = await supabase
       .from("users")
-      .select("world_id, last_ticket_swap")
+      .select("world_id, last_ticket_swap, last_ani_swap")
       .eq("username", user.username)
       .single()
 
     if (typeof data?.world_id === "string") {
   setWalletAddress(data.world_id)
 
-  // hole Token Balance sofort danach
   const balance = await useTokenBalance(data.world_id)
-  setTokens(balance)
+const aniBalance = await useAniTokenBalance(data.world_id)
+
+setTokens(balance)
+setAniTokens(aniBalance)
 }
 
     if (typeof data?.last_ticket_swap === "string" || typeof data?.last_ticket_swap === "number") {
@@ -401,9 +555,22 @@ useEffect(() => {
         setCanSwap(true)
       }
     }
+    
+  if (typeof data?.last_ani_swap === "string" || typeof data?.last_ani_swap === "number") {
+    const last = new Date(data.last_ani_swap)
+    const diff = new Date().getTime() - last.getTime()
+    if (diff < swapInterval) {
+      setAniSwapCooldown(swapInterval - diff)
+      setCanAniSwap(false)
+    } else {
+      setCanAniSwap(true)
+    }
   }
+  }
+
   fetchWallet()
 }, [user?.username])
+
 
 
   // Check claim status and set up timer
@@ -633,14 +800,27 @@ useEffect(() => {
               ))}
             </div>
 
-            <div className="relative p-6 z-10">
+            <div className="relative p-6 z-0">
               <div className="flex flex-col items-center text-center">
                 
-                <h2 className="text-sm font-medium text-indigo-100 mb-1">Your $ANIME Balance</h2>
-                <div className="flex items-center">
-                  <span className="text-5xl font-bold">{tokens}</span>
-                  <span className="ml-2 text-xl opacity-80">$ANIME</span>
-                </div>
+               <div className="flex flex-col items-center text-center space-y-3">
+  <div>
+    <h2 className="text-sm font-medium text-indigo-100 mb-1">Your $ANIME Balance</h2>
+    <div className="flex items-center justify-center">
+      <span className="text-4xl font-bold">{tokens ?? "0.0"}</span>
+      <span className="ml-1 text-lg opacity-80">$ANIME</span>
+    </div>
+  </div>
+
+  <div>
+    <h2 className="text-sm font-medium text-indigo-100 mb-1">Your $ANI Balance</h2>
+    <div className="flex items-center justify-center">
+      <span className="text-2xl font-bold">{aniTokens ?? "0.0"}</span>
+      <span className="ml-1 text-lg opacity-80">$ANI</span>
+    </div>
+  </div>
+</div>
+
 
                 {walletAddress ? (
                   <div className="mt-4 bg-white/10 rounded-full px-4 py-2 text-xs backdrop-blur-sm">
@@ -670,53 +850,60 @@ useEffect(() => {
             </div>
           </div>
 
-          {/* Daily Token Claim Card */}
-          <Card className="overflow-hidden border-0 shadow-lg">
-            <CardHeader className="bg-gradient-to-r from-indigo-500 to-violet-500 text-white">
-              <CardTitle className="flex items-center">
-                <Sparkles className="h-5 w-5 mr-2" />
-                Daily Token Claim
-              </CardTitle>
-              <CardDescription className="text-indigo-100">Claim 1 $ANIME token every 24 hours</CardDescription>
-            </CardHeader>
-            <CardContent className="p-6">
-              {isLoading ? (
-                <div className="flex justify-center py-8">
-                  <div className="h-8 w-8 border-4 border-t-transparent border-indigo-500 rounded-full animate-spin"></div>
-                </div>
-              ) : tokenAlreadyClaimed ? (
-                <div className="space-y-4">
-                  <div className="bg-indigo-50 rounded-xl p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center">
-                        <Clock className="h-4 w-4 text-indigo-500 mr-2" />
-                        <span className="text-sm font-medium text-indigo-700">Next claim available in:</span>
-                      </div>
-                      <span className="text-sm font-mono text-indigo-700">{tokenTimerDisplay}</span>
-                    </div>
-                    <Progress
-                      value={calculateTimePercentage()}
-                      className="h-2 bg-indigo-100"
-                      indicatorClassName="bg-indigo-500"
-                    />
-                  </div>
+          <Card className="overflow-hidden border-0 shadow-md rounded-xl text-sm">
+  <CardHeader className="bg-gradient-to-r from-indigo-500 to-violet-500 text-white px-4 py-3">
+    <CardTitle className="flex items-center text-base">
+      <Sparkles className="h-4 w-4 mr-2" />
+      Daily Token Claim
+    </CardTitle>
+    <CardDescription className="text-indigo-100 text-xs">
+      Claim 1 $ANIME every 24 hours
+    </CardDescription>
+  </CardHeader>
 
-                  <ClaimButton onClaim={handleMint} disabled={true} loading={tokenClaimLoading} />
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="bg-indigo-50 rounded-xl p-4">
-                    <div className="flex items-center">
-                      <Sparkles className="h-5 w-5 text-indigo-500 mr-2" />
-                      <p className="text-indigo-700 text-sm font-medium">Your daily token is ready to claim!</p>
-                    </div>
-                  </div>
+  <CardContent className="p-4 space-y-3">
+    {isLoading ? (
+      <div className="flex justify-center py-4">
+        <div className="h-6 w-6 border-2 border-t-transparent border-indigo-500 rounded-full animate-spin"></div>
+      </div>
+    ) : tokenAlreadyClaimed ? (
+      <>
+        <div className="bg-indigo-50 rounded-lg p-3">
+          <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center">
+              <Clock className="h-4 w-4 text-indigo-500 mr-2" />
+              <span className="text-xs text-indigo-700 font-medium">
+                Next claim in:
+              </span>
+            </div>
+            <span className="text-xs font-mono text-indigo-700">
+              {tokenTimerDisplay}
+            </span>
+          </div>
+          <Progress
+            value={calculateTimePercentage()}
+            className="h-1 bg-indigo-100"
+            indicatorClassName="bg-indigo-500"
+          />
+        </div>
 
-                  <ClaimButton onClaim={handleMint} disabled={false} loading={tokenClaimLoading} />
-                </div>
-              )}
-            </CardContent>
-          </Card>
+        <ClaimButton onClaim={handleMint} disabled={true} loading={tokenClaimLoading} />
+      </>
+    ) : (
+      <>
+        <div className="bg-indigo-50 rounded-lg p-3 flex items-center">
+          <Sparkles className="h-4 w-4 text-indigo-500 mr-2" />
+          <p className="text-xs text-indigo-700 font-medium">
+            Your daily token is ready!
+          </p>
+        </div>
+
+        <ClaimButton onClaim={handleMint} disabled={false} loading={tokenClaimLoading} />
+      </>
+    )}
+  </CardContent>
+</Card>
+
           {canSwap ? (
   <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="w-full">
     <Button
@@ -739,6 +926,76 @@ useEffect(() => {
 
 
 )}
+<div className="mt-6">
+  <Link
+    href="https://worldcoin.org/mini-app?app_id=app_4593f73390a9843503ec096086b43612&draft_id=meta_cd699d087d791836e8d49377e0cd4cf2"
+    target="_blank"
+    rel="noopener noreferrer"
+    className="block"
+  >
+    <motion.div
+      initial={{ y: 0 }}
+      animate={{ y: [0, -5, 0] }}
+      transition={{
+        duration: 2,
+        repeat: Infinity,
+        ease: "easeInOut",
+      }}
+      whileHover={{ scale: 1.03 }}
+      whileTap={{ scale: 0.97 }}
+      className="w-full rounded-xl bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 border border-gray-700 px-5 py-4 shadow-md flex items-center justify-between"
+    >
+      <div className="flex items-center space-x-4">
+        <img
+          src="/ani_labs_black.png"
+          alt="Ani Labs Logo"
+          className="h-10 w-10 object-contain"
+        />
+        <div className="flex flex-col">
+          <span className="text-white font-semibold text-base">NEW APP: Ani Labs</span>
+          <span className="text-gray-300 text-sm">Claim $ANI every 24 Hours</span>
+        </div>
+      </div>
+      <ArrowLeft className="w-5 h-5 rotate-180 text-gray-400" />
+    </motion.div>
+  </Link>
+</div>
+
+
+
+
+
+{canAniSwap ? (
+  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="w-full">
+    <Button
+      onClick={buyLegendaryTicket}
+      disabled={aniSwapLoading}
+      className="w-full h-14 text-white font-bold bg-gradient-to-r from-purple-600 to-pink-500 shadow-lg rounded-xl"
+    >
+      {aniSwapLoading ? (
+        <div className="flex items-center justify-center">
+          <div className="h-5 w-5 border-2 border-t-transparent border-white rounded-full animate-spin mr-2"></div>
+          <span>Processing...</span>
+        </div>
+      ) : (
+        <>
+          Buy 1 Legendary Ticket with 2 $ANI
+        </>
+      )}
+    </Button>
+  </motion.div>
+) : (
+  <motion.div whileTap={{ scale: 0.98 }} className="w-full">
+    <Button
+      disabled
+      className="w-full h-14 text-white font-bold bg-gradient-to-r from-purple-600 to-pink-500 shadow-lg rounded-xl"
+    >
+      Legendary Ticket available in {aniSwapTimerDisplay}
+    </Button>
+  </motion.div>
+)}
+
+
 
 
 

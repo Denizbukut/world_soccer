@@ -568,7 +568,7 @@ useEffect(() => {
     try {
       // Calculate expiry date (1 month from now)
       const expiryDate = new Date()
-      expiryDate.setMonth(expiryDate.getMonth() + 1)
+      expiryDate.setDate(expiryDate.getDate() + 14)
 
       // Check if user already has a premium pass record
       const { data: existingPass, error: checkError } = await supabase
@@ -926,11 +926,11 @@ useEffect(() => {
                         <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mr-2">
                           <Calendar className="h-3 w-3 text-amber-600" />
                         </div>
-                        <span className="text-sm">30 Days Duration</span>
+                        <span className="text-sm">14 Days Duration</span>
                       </div>
 
                       <p className="text-xs text-gray-600 mt-2 pl-7">
-                        Premium Pass is valid for <b>30 days</b> from purchase
+                        Premium Pass is valid for <b>14 days</b> from purchase
                       </p>
                     </div>
                   </div>

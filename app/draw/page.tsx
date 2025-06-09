@@ -622,6 +622,24 @@ export default function DrawPage() {
               </motion.div>
             )}
           </AnimatePresence>
+          {showPackSelection && (
+  <motion.div
+    initial={{ opacity: 0, y: 10 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ delay: 0.2, duration: 0.4 }}
+    className="mt-4 text-center"
+  >
+    <Button
+      variant="outline"
+      onClick={() => window.location.href = "/shop"}
+      className="w-full border border-gray-300 text-gray-700 hover:bg-gray-50"
+    >
+      <Ticket className="h-4 w-4 mr-2 text-orange-500" />
+      Need more tickets? Visit the Shop
+    </Button>
+  </motion.div>
+)}
+
 
           {/* Pack Animation Screen */}
           <AnimatePresence>

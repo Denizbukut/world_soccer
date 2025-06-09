@@ -1059,7 +1059,7 @@ const [copied, setCopied] = useState(false)
     {[
       { href: "/collection", label: "Collection", icon: CreditCard, color: "text-violet-600", bg: "bg-violet-100" },
       { href: "/catalog", label: "Gallery", icon: BookOpen, color: "text-indigo-600", bg: "bg-indigo-100" },
-      { href: "/shop", label: "Shop", icon: ShoppingCart, color: "text-pink-600", bg: "bg-pink-100" },
+      { href: "/shop", label: "Ticket Shop", icon: ShoppingCart, color: "text-pink-600", bg: "bg-pink-100" },
       { href: "/trade", label: "Trade", icon: Repeat, color: "text-emerald-600", bg: "bg-emerald-100" },
       { href: "/friends", label: "Friends", icon: Users, color: "text-rose-600", bg: "bg-rose-100" },
       { href: "/missions", label: "Missions", icon: Trophy, color: "text-amber-600", bg: "bg-amber-100" },

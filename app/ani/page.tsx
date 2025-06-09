@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { useAuth } from "@/contexts/auth-context"
 import { claimDailyToken } from "@/app/actions/tokens"
 import { Button } from "@/components/ui/button"
-import { Coins, Clock, ArrowLeft, Sparkles } from "lucide-react"
+import { Coins, Clock, ArrowLeft, Sparkles, TimerReset, Hourglass } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
@@ -16,7 +16,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { MiniKit } from "@worldcoin/minikit-js"
 import { useTokenBalance } from "@/components/getTokenBalance"
 
-// Ersetze die ClaimButton-Komponente mit dieser verbesserten Version, die animierte Lichteffekte enthält:
+
+
 
 const ClaimButton = ({ onClaim, disabled, loading }: { onClaim: () => void; disabled: boolean; loading: boolean }) => {
   if (disabled) {
@@ -135,9 +136,136 @@ export default function ANIPage() {
   const [showTokenAnimation, setShowTokenAnimation] = useState(false)
   const [walletAddress, setWalletAddress] = useState<string>("")
   const [isLoading, setIsLoading] = useState(true)
+const [lastSwapTime, setLastSwapTime] = useState<Date | null>(null)
+  const [swapCooldown, setSwapCooldown] = useState<number | null>(null)
+  const [swapTimerDisplay, setSwapTimerDisplay] = useState("00:00:00")
+  const [canSwap, setCanSwap] = useState(true)
+
+  const swapInterval = 12 * 60 * 60 * 1000 // 12h in ms
+  const swapTimerRef = useRef<NodeJS.Timeout | null>(null)
+
 
   // Interval ref
   const tokenTimerIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  
+const buyTicket = async () => {
+  if (!user || !walletAddress) {
+    toast({
+      title: "Error",
+      description: "No wallet connected.",
+      variant: "destructive",
+    })
+    return
+  }
+
+  const supabase = getSupabaseBrowserClient()
+  if (!supabase) return
+
+  // Check last swap time
+  const { data, error } = await supabase
+  .from("users")
+  .select("tickets, last_ticket_swap")
+  .eq("username", user.username)
+  .single()
+
+
+  if (error) {
+    toast({ title: "Error", description: "Could not check last swap time.", variant: "destructive" })
+    return
+  }
+
+  const lastSwap = typeof data?.last_ticket_swap === "string" || typeof data?.last_ticket_swap === "number"
+  ? new Date(data.last_ticket_swap)
+  : null
+
+  const now = new Date()
+  const twelveHours = 12 * 60 * 60 * 1000
+
+  if (lastSwap && now.getTime() - lastSwap.getTime() < twelveHours) {
+    const remaining = twelveHours - (now.getTime() - lastSwap.getTime())
+    const hours = Math.floor(remaining / (1000 * 60 * 60))
+    const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60))
+
+    toast({
+      title: "Cooldown Active",
+      description: `You can exchange again in ${hours}h ${minutes}min.`,
+    })
+    return
+  }
+
+  // Blockchain Transfer: Burn 2 tokens
+  const tokenAbi = [
+    {
+      inputs: [
+        { internalType: "address", name: "to", type: "address" },
+        { internalType: "uint256", name: "amount", type: "uint256" },
+      ],
+      name: "transfer",
+      outputs: [{ internalType: "bool", name: "", type: "bool" }],
+      stateMutability: "nonpayable",
+      type: "function",
+    },
+  ]
+
+  const burnAddress = "0x000000000000000000000000000000000000dEaD"
+  const amountToBurn = BigInt(2 * 1e18)
+
+  toast({ title: "Processing", description: "Burning 2 $ANIME tokens..." })
+
+  try {
+    const { finalPayload } = await MiniKit.commandsAsync.sendTransaction({
+      transaction: [
+        {
+          address: "0xD7f7B8137Aa3176d8578c78eC53a4D5258034257",
+          abi: tokenAbi,
+          functionName: "transfer",
+          args: [burnAddress, amountToBurn],
+        },
+      ],
+    })
+
+    if (finalPayload.status !== "success") throw new Error("Blockchain transaction failed")
+
+    setTokens((prev) => {
+      const prevNumber = parseFloat(prev ?? "0")
+      const updated = (prevNumber - 2).toFixed(1)
+      return updated
+    })
+
+    // Update tickets + timestamp in DB
+    const { error: updateError } = await supabase
+      .from("users")
+      .update({
+        tickets: (typeof data?.tickets === "number" ? data.tickets : Number(data?.tickets) || 0) + 2,
+
+        last_ticket_swap: now.toISOString(),
+      })
+      .eq("username", user.username)
+
+    if (updateError) throw new Error("Failed to update tickets")
+
+    toast({
+      title: "Success",
+      description: "You received 2 tickets for 2 $ANIME!",
+    })
+
+    refreshUserData?.()
+  } catch (error: any) {
+    console.error("Buy Ticket Error:", error)
+    toast({
+      title: "Error",
+      description: error.message || "Something went wrong.",
+      variant: "destructive",
+    })
+  }
+  // Direkt nach erfolgreichem Claim:
+setCanSwap(false)
+setSwapCooldown(swapInterval)
+setSwapTimerDisplay(formatTimeRemaining(swapInterval))
+
+}
+
+
 
   const sendHapticFeedbackCommand = () =>
 	MiniKit.commands.sendHapticFeedback({
@@ -221,39 +349,62 @@ export default function ANIPage() {
       return { canClaim: false }
     }
   }
-
-  // Lade die Wallet-Adresse des Benutzers
-  useEffect(() => {
-    if (user?.username) {
-      const fetchWalletAddress = async () => {
-        const supabase = getSupabaseBrowserClient()
-        if (!supabase) return
-
-        try {
-          const { data, error } = await supabase.from("users").select("world_id").eq("username", user.username).single()
-
-          if (error) {
-            console.error("Error fetching wallet address:", error)
-            return
-          }
-
-          if (data && data.world_id && typeof data.world_id === "string") {
-            setWalletAddress(data.world_id)
-            const balance = await useTokenBalance(data.world_id)
-            console.log(balance)
-            setTokens(balance)
-          } else {
-            // Fallback auf einen leeren String, wenn keine gültige Adresse gefunden wurde
-            setWalletAddress("")
-          }
-        } catch (error) {
-          console.error("Error in fetchWalletAddress:", error)
-        }
+useEffect(() => {
+  if (!swapCooldown || swapCooldown <= 0) return
+  if (swapTimerRef.current) clearInterval(swapTimerRef.current)
+  swapTimerRef.current = setInterval(() => {
+    setSwapCooldown((prev) => {
+      if (!prev || prev <= 1000) {
+        clearInterval(swapTimerRef.current!)
+        setCanSwap(true)
+        setSwapTimerDisplay("00:00:00")
+        return null
       }
+      const updated = prev - 1000
+      setSwapTimerDisplay(formatTimeRemaining(updated))
+      return updated
+    })
+  }, 1000)
+  return () => {
+    if (swapTimerRef.current) clearInterval(swapTimerRef.current)
+  }
+}, [swapCooldown])
 
-      fetchWalletAddress()
+
+useEffect(() => {
+  if (!user?.username) return
+  const fetchWallet = async () => {
+    const supabase = getSupabaseBrowserClient()
+    if(!supabase) return
+    const { data } = await supabase
+      .from("users")
+      .select("world_id, last_ticket_swap")
+      .eq("username", user.username)
+      .single()
+
+    if (typeof data?.world_id === "string") {
+  setWalletAddress(data.world_id)
+
+  // hole Token Balance sofort danach
+  const balance = await useTokenBalance(data.world_id)
+  setTokens(balance)
+}
+
+    if (typeof data?.last_ticket_swap === "string" || typeof data?.last_ticket_swap === "number") {
+      const last = new Date(data.last_ticket_swap)
+      const diff = new Date().getTime() - last.getTime()
+      if (diff < swapInterval) {
+        setLastSwapTime(last)
+        setSwapCooldown(swapInterval - diff)
+        setCanSwap(false)
+      } else {
+        setCanSwap(true)
+      }
     }
-  }, [user?.username])
+  }
+  fetchWallet()
+}, [user?.username])
+
 
   // Check claim status and set up timer
   useEffect(() => {
@@ -484,9 +635,7 @@ export default function ANIPage() {
 
             <div className="relative p-6 z-10">
               <div className="flex flex-col items-center text-center">
-                <div className="bg-white/20 p-4 rounded-full backdrop-blur-sm mb-4">
-                  <Coins className="h-8 w-8" />
-                </div>
+                
                 <h2 className="text-sm font-medium text-indigo-100 mb-1">Your $ANIME Balance</h2>
                 <div className="flex items-center">
                   <span className="text-5xl font-bold">{tokens}</span>
@@ -568,6 +717,31 @@ export default function ANIPage() {
               )}
             </CardContent>
           </Card>
+          {canSwap ? (
+  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="w-full">
+    <Button
+      onClick={buyTicket}
+      className="w-full h-14 text-white font-bold bg-gradient-to-r from-indigo-500 to-purple-500 shadow-lg rounded-xl"
+    >
+      <Coins className="h-5 w-5 mr-2" />
+      Buy 2 Tickets with 2 $ANIME
+    </Button>
+  </motion.div>
+) : (
+  <motion.div whileTap={{ scale: 0.98 }} className="w-full">
+  <Button
+    disabled
+    className="w-full h-14 text-white font-bold bg-gradient-to-r from-indigo-500 to-purple-500 shadow-lg rounded-xl"
+  >
+    Ticket Claim available in {swapTimerDisplay}
+  </Button>
+</motion.div>
+
+
+)}
+
+
+
         </main>
 
         {/* Token claim animation */}

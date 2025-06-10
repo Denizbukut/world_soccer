@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-
+import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import Link from "next/link"
 import type { Card } from "@/types/card"
 import { cn } from "@/lib/utils"
@@ -12,16 +12,12 @@ import { useState } from "react";
 import CardDetailModal from "@/components/CardDetailModal";
 
 const getCloudflareImageUrl = (imageId?: string) => {
-  if (!imageId) return "/placeholder.svg"
-
-  // Beispiel: "/anime-images/akaza.jpeg" -> "akaza"
-  const filename = imageId.split("/").pop()?.split(".")[0]
-  const accountHash = "XzDC73E1_W9KpqiyASTByA"
-
-  if (!filename) return "/placeholder.svg"
-
-  return `https://imagedelivery.net/${accountHash}/${filename}/cards`
+  if (!imageId) return "/placeholder.svg";
+  const key = imageId.replace(/^.*[\\/]/, ""); // Nur Dateiname extrahieren
+  return `/api/image?key=${key}`;
 }
+
+
 
 
 interface CardItemProps {
@@ -98,15 +94,12 @@ export function CardItem({
 
   const rarityStyle = rarityStyles[rarity as keyof typeof rarityStyles] || rarityStyles.common
   const placeholderUrl = "/placeholder.svg"
-  const cardImageUrl = getCloudflareImageUrl(imageId)
+  const cardImageUrl = getCloudflareImageUrl(imageUrl)
 
   const cardDetailUrl = isCollection ? `/cards/${id}-level-${level}` : `/cards/${id}`
 
   const router = useRouter()
   const [modalOpen, setModalOpen] = useState(false);
-
-  console.log(cardImageUrl)
-
 
 const handleCardClick = () => {
   const url = `/cards/${id}-level-${level}` +

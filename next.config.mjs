@@ -10,8 +10,7 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'imagedelivery.net',
-        pathname: '/XzDC73E1_W9KpqiyASTByA/**',
+        hostname: '**.r2.cloudflarestorage.com',
       },
     ],
   },

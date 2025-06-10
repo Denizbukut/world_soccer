@@ -4,7 +4,6 @@ import type React from "react"
 
 import { useState, useEffect, useRef } from "react"
 import { useAuth } from "@/contexts/auth-context"
-import { drawCards } from "@/app/actions"
 import { updateScoreForCards, updateScoreForLevelUp } from "@/app/actions/update-score"
 import ProtectedRoute from "@/components/protected-route"
 import MobileNav from "@/components/mobile-nav"
@@ -174,85 +173,71 @@ export default function DrawPage() {
     y.set(0, true)
   }
 
-  const handleSelectPack = async (cardType: string) => {
-    if (!user) {
-      toast({ title: "Error", description: "You must be logged in.", variant: "destructive" })
-      return
-    }
-
-    setIsDrawing(true)
-    setShowPackSelection(false)
-    setShowPackAnimation(true)
-    setCurrentCardIndex(0)
-    setCardRevealed(false)
-
-    try {
-      const result = await drawCards(user.username, cardType, 1)
-      if (result.drawnCards?.[0]?.rarity === "legendary") {
-
-        await incrementMission(user.username, "draw_legendary_card")
-        await incrementLegendaryDraw(user.username)
-      }
-      console.log("Draw result:", result)
-      if(cardType === "legendary"){
-        await incrementMission(user.username, "open_legendary_pack")
-        await incrementMission(user.username, "open_3_legendary_packs")
-      }else {
-        await incrementMission(user.username, "open_regular_pack")
-      }
-      
-
-      if (result.success && result.drawnCards && result.drawnCards.length > 0) {
-        // Set drawn cards
-        setDrawnCards(result.drawnCards)
-        console.log("Drawn cards set:", result.drawnCards)
-
-        // Update ticket counts in state
-        if (typeof result.newTicketCount === "number") {
-          setTickets(result.newTicketCount)
-        }
-        if (typeof result.newLegendaryTicketCount === "number") {
-          setLegendaryTickets(result.newLegendaryTicketCount)
-        }
-
-        // Update the context as well to ensure consistency across the app
-        await updateUserTickets?.(
-          typeof result.newTicketCount === "number" ? result.newTicketCount : tickets,
-          typeof result.newLegendaryTicketCount === "number" ? result.newLegendaryTicketCount : legendaryTickets,
-        )
-
-        // Store XP gained for animation
-        const xpAmount = cardType === "legendary" ? 100 : 50
-        setXpGained(xpAmount)
-
-        // Update user's XP in context
-        const { leveledUp, newLevel: updatedLevel } = (await updateUserExp?.(xpAmount)) || { leveledUp: false }
-
-        // If user leveled up, store the new level for animation
-        if (leveledUp && updatedLevel) {
-          setNewLevel(updatedLevel)
-        }
-      } else {
-        console.error("Draw failed or no cards returned:", result.error)
-        toast({
-          title: "Error",
-          description: result.error || "Failed to draw cards",
-          variant: "destructive",
-        })
-        setDrawnCards(FALLBACK_CARDS.slice(0, 1))
-      }
-    } catch (error) {
-      console.error("Error drawing cards:", error)
-      toast({
-        title: "Error",
-        description: "Something went wrong while drawing cards.",
-        variant: "destructive",
-      })
-      setDrawnCards(FALLBACK_CARDS.slice(0, 1))
-    } finally {
-      setIsDrawing(false)
-    }
+ const handleSelectPack = async (cardType: string) => {
+  if (!user) {
+    toast({ title: "Error", description: "You must be logged in.", variant: "destructive" })
+    return
   }
+
+  setIsDrawing(true)
+  setShowPackSelection(false)
+  setShowPackAnimation(true)
+  setCurrentCardIndex(0)
+  setCardRevealed(false)
+
+  try {
+    const response = await fetch("/api/draw", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        username: user.username,
+        cardType,
+      }),
+    })
+
+    const result = await response.json()
+
+    if (result.drawnCards?.[0]?.rarity === "legendary") {
+      await incrementMission(user.username, "draw_legendary_card")
+      await incrementLegendaryDraw(user.username)
+    }
+
+    if (cardType === "legendary") {
+      await incrementMission(user.username, "open_legendary_pack")
+      await incrementMission(user.username, "open_3_legendary_packs")
+    } else {
+      await incrementMission(user.username, "open_regular_pack")
+    }
+
+    if (result.success && result.drawnCards?.length > 0) {
+      setDrawnCards(result.drawnCards)
+      setTickets(result.newTicketCount ?? tickets)
+      setLegendaryTickets(result.newLegendaryTicketCount ?? legendaryTickets)
+
+      await updateUserTickets?.(
+        result.newTicketCount ?? tickets,
+        result.newLegendaryTicketCount ?? legendaryTickets
+      )
+
+      const xpAmount = cardType === "legendary" ? 100 : 50
+      setXpGained(xpAmount)
+
+      const { leveledUp, newLevel: updatedLevel } = (await updateUserExp?.(xpAmount)) || {}
+      if (leveledUp && updatedLevel) {
+        setNewLevel(updatedLevel)
+      }
+    } else {
+      toast({ title: "Error", description: result.error || "Draw failed", variant: "destructive" })
+      setDrawnCards(FALLBACK_CARDS.slice(0, 1))
+    }
+  } catch (err) {
+    toast({ title: "Error", description: "Something went wrong.", variant: "destructive" })
+    setDrawnCards(FALLBACK_CARDS.slice(0, 1))
+  } finally {
+    setIsDrawing(false)
+  }
+}
+
 
   const handleOpenPack = () => {
     setPackOpened(true)

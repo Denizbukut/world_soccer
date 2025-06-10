@@ -142,7 +142,7 @@ export default function TradePage() {
   const [listingCount, setListingCount] = useState(0)
   const [maxListings, setMaxListings] = useState(7)
   const [listingLimitReached, setListingLimitReached] = useState(false)
-
+const [hasInitialized, setHasInitialized] = useState(false)
   // Pagination states
   const [marketPage, setMarketPage] = useState(1)
   const [userListingsPage, setUserListingsPage] = useState(1)
@@ -187,64 +187,54 @@ export default function TradePage() {
     loadRecentSales(1) // Load page 1 with the new search term
   }, 500)
 
-  // Effect for search term changes in marketplace
   useEffect(() => {
-    if (activeTab === "marketplace") {
-      setMarketPage(1) // Reset to page 1 when filters change
-      debouncedSearch()
-    }
-  }, [searchTerm, rarityFilter])
+  if (!user?.username || hasInitialized) return
 
-  // Effect for search term changes in recent sales
-  useEffect(() => {
-    if (activeTab === "sales-history") {
-      setRecentSalesPage(1) // Reset to page 1 when search changes
+  if (activeTab === "marketplace") {
+    setMarketPage(1)
+    loadMarketListings(1)
+  } else if (activeTab === "sell") {
+    setUserListingsPage(1)
+    loadUserListings(1)
+  } else if (activeTab === "sales-history") {
+    if (historyType === "my") {
+      setTransactionsPage(1)
+      loadTransactionHistory(1)
+    } else {
+      setRecentSalesPage(1)
+      loadRecentSales(1)
+    }
+  }
+
+  setHasInitialized(true)
+}, [user?.username])
+
+useEffect(() => {
+  if (!user?.username || !hasInitialized) return
+
+  if (activeTab === "marketplace") {
+    setMarketPage(1)
+    debouncedSearch()
+    loadMarketListings(1)
+  }
+
+  if (activeTab === "sales-history") {
+    if (historyType === "my") {
+      setTransactionsPage(1)
+      loadTransactionHistory(1)
+    } else {
+      setRecentSalesPage(1)
       debouncedSalesSearch()
+      loadRecentSales(1)
     }
-  }, [salesSearchTerm])
+  }
 
-  // Effect for sort option changes
-  useEffect(() => {
-    if (activeTab === "marketplace") {
-      setMarketPage(1) // Reset to page 1 when sort changes
-      loadMarketListings(1)
-    }
-  }, [sortOption])
+  if (activeTab === "sell") {
+    setUserListingsPage(1)
+    loadUserListings(1)
+  }
+}, [activeTab, searchTerm, rarityFilter, sortOption, historyType, salesSearchTerm])
 
-  // Effect for history type changes
-  useEffect(() => {
-    if (activeTab === "sales-history") {
-      if (historyType === "my") {
-        setTransactionsPage(1)
-        loadTransactionHistory(1)
-      } else {
-        setRecentSalesPage(1)
-        loadRecentSales(1)
-      }
-    }
-  }, [historyType, activeTab])
-
-  // Load data based on active tab
-  useEffect(() => {
-    if (!user?.username) return
-
-    // Reset pagination when changing tabs
-    if (activeTab === "marketplace") {
-      setMarketPage(1)
-      loadMarketListings(1)
-    } else if (activeTab === "sell") {
-      setUserListingsPage(1)
-      loadUserListings(1)
-    } else if (activeTab === "sales-history") {
-      if (historyType === "my") {
-        setTransactionsPage(1)
-        loadTransactionHistory(1)
-      } else {
-        setRecentSalesPage(1)
-        loadRecentSales(1)
-      }
-    }
-  }, [activeTab, user?.username])
 
   // Load market listings with pagination
   const loadMarketListings = async (pageToLoad = marketPage) => {

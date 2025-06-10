@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
+
 import Link from "next/link"
 import type { Card } from "@/types/card"
 import { cn } from "@/lib/utils"
@@ -12,9 +12,13 @@ import { useState } from "react";
 import CardDetailModal from "@/components/CardDetailModal";
 
 const getCloudflareImageUrl = (imageId?: string) => {
-  if (!imageId) return "/placeholder.svg";
-  const key = imageId.replace(/^.*[\\/]/, ""); // Nur Dateiname extrahieren
-  return `/api/image?key=${key}`;
+  if (!imageId) return "/placeholder.svg"
+
+  // Entfernt führenden Slash und "anime-images/" Prefix
+  const cleaned = imageId.replace(/^\/?anime-images\//, "")
+  console.log(cleaned)
+
+  return `https://pub-303e485435884ad386e3d7f50ee45a80.r2.dev/${cleaned}`
 }
 
 
@@ -100,6 +104,9 @@ export function CardItem({
 
   const router = useRouter()
   const [modalOpen, setModalOpen] = useState(false);
+
+  console.log(cardImageUrl)
+
 
 const handleCardClick = () => {
   const url = `/cards/${id}-level-${level}` +

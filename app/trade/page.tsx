@@ -110,10 +110,15 @@ type PaginationInfo = {
   totalPages: number
 }
 const getCloudflareImageUrl = (imageId?: string) => {
-    if (!imageId) return "/placeholder.svg"
-    const accountHash = "XzDC73E1_W9KpqiyASTByA" // deine Cloudflare-Account-ID
-    return `https://imagedelivery.net/${accountHash}/${imageId}/cards`
-  }
+  if (!imageId) return "/placeholder.svg"
+
+  // Entfernt führenden Slash und "anime-images/" Prefix
+  const cleaned = imageId.replace(/^\/?anime-images\//, "")
+  console.log(cleaned)
+
+  return `https://ani-labs.xyz/${cleaned}`
+}
+
 
 export default function TradePage() {
   const { user } = useAuth()
@@ -1100,7 +1105,7 @@ export default function TradePage() {
                 <div className="flex gap-4 items-center">
                   <div className="relative w-20 h-28 overflow-hidden rounded-lg">
                     <img
-                      src={getCloudflareImageUrl(selectedListing.card.image_id)
+                      src={getCloudflareImageUrl(selectedListing.card.image_url)
                       }
                       alt="Card"
                       loading="lazy"
@@ -1274,7 +1279,7 @@ function MarketplaceCard({
             onClick={onShowDetails}
           >
             <img
-              src={getCloudflareImageUrl(listing.card.image_id)
+              src={getCloudflareImageUrl(listing.card.image_url)
               }
               alt="Card"
               loading="lazy"
@@ -1396,7 +1401,7 @@ function MyListingCard({
           {/* Card Image */}
           <div className={`relative w-16 h-24 rounded-lg overflow-hidden border-2 ${rarityStyle.border}`}>
             <img
-              src={getCloudflareImageUrl(listing.card.image_id)}
+              src={getCloudflareImageUrl(listing.card.image_url)}
               alt="Card"
               loading="lazy"
               className="w-full h-full object-cover"
@@ -1516,7 +1521,7 @@ function TransactionCard({ transaction }: { transaction: Transaction }) {
           {/* Card Image */}
           <div className={`relative w-16 h-24 rounded-lg overflow-hidden border-2 ${rarityStyle.border}`}>
             <img
-              src={getCloudflareImageUrl(transaction.card.image_id)}
+              src={getCloudflareImageUrl(transaction.card.image_url)}
               alt="Card"
               loading="lazy"
               className="w-full h-full object-cover"
@@ -1637,7 +1642,7 @@ function RecentSaleCard({ sale }: { sale: RecentSale }) {
           {/* Card Image */}
           <div className={`relative w-16 h-24 rounded-lg overflow-hidden border-2 ${rarityStyle.border}`}>
             <img
-              src={getCloudflareImageUrl(sale.card.image_id)}
+              src={getCloudflareImageUrl(sale.card.image_url)}
               alt="Card"
               loading="lazy"
               className="w-full h-full object-cover"

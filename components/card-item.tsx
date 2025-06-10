@@ -18,7 +18,7 @@ const getCloudflareImageUrl = (imageId?: string) => {
   const cleaned = imageId.replace(/^\/?anime-images\//, "")
   console.log(cleaned)
 
-  return `https://pub-303e485435884ad386e3d7f50ee45a80.r2.dev/${cleaned}`
+  return `https://ani-labs.xyz/${cleaned}`
 }
 
 

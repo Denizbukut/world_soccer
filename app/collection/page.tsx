@@ -67,7 +67,7 @@ export default function CollectionPage() {
         // 3. Fetch the card details
         const { data: cardsData, error: cardsError } = await supabase
           .from("cards")
-          .select("id, name, character, image_url, rarity, image_id ")
+          .select("id, name, character, image_url, rarity")
           .in("id", cardIds)
 
         if (cardsError) {
@@ -366,7 +366,6 @@ export default function CollectionPage() {
                         rarity={card.rarity}
                         level={card.level || 1}
                         quantity={card.quantity}
-                        imageId={card.image_id}
                         owned={true}
                         isCollection={true}
                       />

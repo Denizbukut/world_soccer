@@ -10,7 +10,9 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: '**.r2.cloudflarestorage.com',
+        hostname: 'ani-labs.xyz',
+        port: '', // optional, wenn kein Port
+        pathname: '/**', // 🔥 Wichtig, damit alle Pfade erlaubt sind
       },
     ],
   },

@@ -42,7 +42,6 @@ interface CardItemProps {
   selectable?: boolean
   isCollection?: boolean
   hideOverlay?: boolean
-  imageId?: string
 }
 
 
@@ -52,7 +51,6 @@ export function CardItem({
   name,
   character,
   imageUrl,
-  imageId,
   rarity,
   type,
   owned = false,

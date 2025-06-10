@@ -65,6 +65,15 @@ export default function TiltableCard({
       gradient: "from-yellow-300/30 to-yellow-100/30",
     },
   }
+  const getCloudflareImageUrl = (imageId?: string) => {
+  if (!imageId) return "/placeholder.svg"
+
+  // Entfernt führenden Slash und "anime-images/" Prefix
+  const cleaned = imageId.replace(/^\/?anime-images\//, "")
+  console.log(cleaned)
+
+  return `https://ani-labs.xyz/${cleaned}`
+}
 
   const rarityStyle = rarityStyles[rarity as keyof typeof rarityStyles] || rarityStyles.common
 
@@ -73,7 +82,7 @@ export default function TiltableCard({
   const placeholderUrl = `/placeholder.svg?height=400&width=300&query=${encodeURIComponent(query)}`
 
   // Use the provided imageUrl, or generate a placeholder
-  const cardImageUrl = imageUrl || placeholderUrl
+  const cardImageUrl = getCloudflareImageUrl(imageUrl) || placeholderUrl
 
   // Handle card tilt effect with improved sensitivity for reflections
   const handleCardMove = (event: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
@@ -151,12 +160,11 @@ export default function TiltableCard({
         {/* Card with rarity-based styling */}
         <div className={`w-full h-full relative rounded-xl overflow-hidden ${rarityStyle.border}`}>
           {/* Card image */}
-          <Image
+          <img
             src={cardImageUrl || "/placeholder.svg"}
-            alt={`${name} - ${character}`}
-            fill
-            className={`object-cover ${!owned ? "filter grayscale" : ""}`}
-            priority
+            alt="Card"
+            className="w-full h-full object-cover"
+            loading = "eager"
           />
 
           {/* Card name overlay - more compact */}

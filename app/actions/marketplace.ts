@@ -32,7 +32,6 @@ type Card = {
   name: string
   character: string
   image_url?: string
-  image_id?: string
   rarity: "common" | "rare" | "epic" | "legendary"
 }
 
@@ -259,7 +258,7 @@ export async function getMarketListings(page = 1, pageSize = DEFAULT_PAGE_SIZE, 
     // 2. Fetch card details in a single query
     const { data: cards, error: cardsError } = await supabase
       .from("cards")
-      .select("id, name, character, image_url, rarity, image_id")
+      .select("id, name, character, image_url, rarity")
       .in("id", cardIds)
 
     if (cardsError) {
@@ -392,7 +391,7 @@ export async function getUserListings(username: string, page = 1, pageSize = DEF
 
     const { data: cards, error: cardsError } = await supabase
       .from("cards")
-      .select("id, name, character, image_url, rarity,image_id")
+      .select("id, name, character, image_url, rarity")
       .in("id", cardIds)
 
     if (cardsError) {
@@ -1096,7 +1095,7 @@ export async function getTransactionHistory(username: string, page = 1, pageSize
 
     const { data: cards, error: cardsError } = await supabase
       .from("cards")
-      .select("id, name, character, image_url, rarity, image_id")
+      .select("id, name, character, image_url, rarity")
       .in("id", cardIds)
 
     if (cardsError) {
@@ -1256,7 +1255,7 @@ export async function getRecentSales(page = 1, pageSize = DEFAULT_PAGE_SIZE, sea
 
     const { data: cards, error: cardsError } = await supabase
       .from("cards")
-      .select("id, name, character, image_url, rarity, image_id")
+      .select("id, name, character, image_url, rarity")
       .in("id", cardIds)
 
     if (cardsError) {

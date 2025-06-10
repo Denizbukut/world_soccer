@@ -64,7 +64,6 @@ type Card = {
   name: string
   character: string
   image_url?: string
-  image_id?: string
   rarity: "common" | "rare" | "epic" | "legendary"
 }
 

@@ -52,6 +52,7 @@ import { MiniKit, tokenToDecimals, Tokens, type PayCommandInput } from "@worldco
 import PurchaseSuccessAnimation from "@/components/purchase-success-animation"
 import { Progress } from "@/components/ui/progress"
 import { debounce } from "@/lib/utils"
+import { Card } from "@/components/ui/card"
 
 // ABI für die transfer-Funktion des ERC20-Tokens
 const ERC20_ABI = [
@@ -63,6 +64,7 @@ type Card = {
   name: string
   character: string
   image_url?: string
+  image_id?: string
   rarity: "common" | "rare" | "epic" | "legendary"
 }
 
@@ -107,6 +109,11 @@ type PaginationInfo = {
   pageSize: number
   totalPages: number
 }
+const getCloudflareImageUrl = (imageId?: string) => {
+    if (!imageId) return "/placeholder.svg"
+    const accountHash = "XzDC73E1_W9KpqiyASTByA" // deine Cloudflare-Account-ID
+    return `https://imagedelivery.net/${accountHash}/${imageId}/cards`
+  }
 
 export default function TradePage() {
   const { user } = useAuth()
@@ -161,6 +168,8 @@ export default function TradePage() {
     pageSize: 20,
     totalPages: 0,
   })
+  
+
 
   // Debounced search function for marketplace
   const debouncedSearch = debounce(() => {
@@ -1090,16 +1099,12 @@ export default function TradePage() {
               <div className="space-y-4">
                 <div className="flex gap-4 items-center">
                   <div className="relative w-20 h-28 overflow-hidden rounded-lg">
-                    <Image
-                      src={
-                        selectedListing.card.image_url ||
-                        `/placeholder.svg?height=400&width=300&query=${
-                          encodeURIComponent(selectedListing.card.character) || "/placeholder.svg"
-                        }`
+                    <img
+                      src={getCloudflareImageUrl(selectedListing.card.image_id)
                       }
-                      alt={selectedListing.card.name}
-                      fill
-                      className="object-cover"
+                      alt="Card"
+                      loading="lazy"
+                      className="w-full h-full object-cover"
                     />
                     <div className="absolute bottom-0 left-0 right-0 flex justify-center">
                       {renderStars(selectedListing.card_level, "xs")}
@@ -1268,16 +1273,12 @@ function MarketplaceCard({
             className={`relative w-16 h-24 rounded-lg overflow-hidden border-2 ${rarityStyle.border} cursor-pointer`}
             onClick={onShowDetails}
           >
-            <Image
-              src={
-                listing.card.image_url ||
-                `/placeholder.svg?height=400&width=300&query=${
-                  encodeURIComponent(listing.card.character) || "/placeholder.svg"
-                }`
+            <img
+              src={getCloudflareImageUrl(listing.card.image_id)
               }
-              alt={listing.card.name}
-              fill
-              className="object-cover"
+              alt="Card"
+              loading="lazy"
+              className="w-full h-full object-cover"
             />
             <div className="absolute bottom-0 left-0 right-0 flex justify-center">
               {renderStars(listing.card_level, "xs")}
@@ -1394,14 +1395,11 @@ function MyListingCard({
         <div className="flex gap-3">
           {/* Card Image */}
           <div className={`relative w-16 h-24 rounded-lg overflow-hidden border-2 ${rarityStyle.border}`}>
-            <Image
-              src={
-                listing.card.image_url ||
-                `/placeholder.svg?height=400&width=300&query=${encodeURIComponent(listing.card.character) || "/placeholder.svg"}`
-              }
-              alt={listing.card.name}
-              fill
-              className="object-cover"
+            <img
+              src={getCloudflareImageUrl(listing.card.image_id)}
+              alt="Card"
+              loading="lazy"
+              className="w-full h-full object-cover"
             />
             <div className="absolute bottom-0 left-0 right-0 flex justify-center">
               {renderStars(listing.card_level, "xs")}
@@ -1517,14 +1515,11 @@ function TransactionCard({ transaction }: { transaction: Transaction }) {
         <div className="flex gap-3">
           {/* Card Image */}
           <div className={`relative w-16 h-24 rounded-lg overflow-hidden border-2 ${rarityStyle.border}`}>
-            <Image
-              src={
-                transaction.card.image_url ||
-                `/placeholder.svg?height=400&width=300&query=${encodeURIComponent(transaction.card.character) || "/placeholder.svg"}`
-              }
-              alt={transaction.card.name}
-              fill
-              className="object-cover"
+            <img
+              src={getCloudflareImageUrl(transaction.card.image_id)}
+              alt="Card"
+              loading="lazy"
+              className="w-full h-full object-cover"
             />
             <div className="absolute bottom-0 left-0 right-0 flex justify-center">
               {renderStars(transaction.card_level, "xs")}
@@ -1641,14 +1636,11 @@ function RecentSaleCard({ sale }: { sale: RecentSale }) {
         <div className="flex gap-3">
           {/* Card Image */}
           <div className={`relative w-16 h-24 rounded-lg overflow-hidden border-2 ${rarityStyle.border}`}>
-            <Image
-              src={
-                sale.card.image_url ||
-                `/placeholder.svg?height=400&width=300&query=${encodeURIComponent(sale.card.character) || "/placeholder.svg"}`
-              }
-              alt={sale.card.name}
-              fill
-              className="object-cover"
+            <img
+              src={getCloudflareImageUrl(sale.card.image_id)}
+              alt="Card"
+              loading="lazy"
+              className="w-full h-full object-cover"
             />
             <div className="absolute bottom-0 left-0 right-0 flex justify-center">
               {renderStars(sale.card_level, "xs")}

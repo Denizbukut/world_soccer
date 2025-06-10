@@ -206,6 +206,7 @@ export default function CatalogPage() {
                       name={card.name}
                       character={card.character}
                       imageUrl={card.image_url}
+                      imageId={card.image_id}
                       rarity={card.rarity}
                       level={userCards[card.id]?.level || 1}
                       owned={userCards[card.id]?.owned || false}
@@ -239,6 +240,7 @@ export default function CatalogPage() {
                     name={card.name}
                     character={card.character}
                     imageUrl={card.image_url}
+                    imageId={card.image_id}
                     rarity={card.rarity}
                     level={userCards[card.id]?.level || 1}
                     owned={userCards[card.id]?.owned || false}

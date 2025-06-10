@@ -12,6 +12,19 @@ import { useRouter } from "next/navigation"
 import { useState } from "react";
 import CardDetailModal from "@/components/CardDetailModal";
 
+const getCloudflareImageUrl = (imageId?: string) => {
+  if (!imageId) return "/placeholder.svg"
+
+  // Beispiel: "/anime-images/akaza.jpeg" -> "akaza"
+  const filename = imageId.split("/").pop()?.split(".")[0]
+  const accountHash = "XzDC73E1_W9KpqiyASTByA"
+
+  if (!filename) return "/placeholder.svg"
+
+  return `https://imagedelivery.net/${accountHash}/${filename}/cards`
+}
+
+
 interface CardItemProps {
   id: string
   name: string
@@ -30,6 +43,7 @@ interface CardItemProps {
   selectable?: boolean
   isCollection?: boolean
   hideOverlay?: boolean
+  imageId?: string
 }
 
 
@@ -39,6 +53,7 @@ export function CardItem({
   name,
   character,
   imageUrl,
+  imageId,
   rarity,
   type,
   owned = false,
@@ -84,11 +99,14 @@ export function CardItem({
 
   const rarityStyle = rarityStyles[rarity as keyof typeof rarityStyles] || rarityStyles.common
   const placeholderUrl = "/placeholder.svg"
-  const cardImageUrl = imageUrl || placeholderUrl
+  const cardImageUrl = getCloudflareImageUrl(imageId)
+
   const cardDetailUrl = isCollection ? `/cards/${id}-level-${level}` : `/cards/${id}`
 
   const router = useRouter()
   const [modalOpen, setModalOpen] = useState(false);
+
+  console.log(cardImageUrl)
 
 
 const handleCardClick = () => {
@@ -156,6 +174,7 @@ const handleCardClick = () => {
               sizes="(max-width: 640px) 20vw, (max-width: 768px) 16vw, (max-width: 1024px) 20vw, 33vw"
               className="object-cover"
               priority={false}
+              loading="lazy"
             />
 
             {quantity > 1 && (

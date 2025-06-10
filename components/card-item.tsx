@@ -5,7 +5,6 @@ import type React from "react"
 import Link from "next/link"
 import type { Card } from "@/types/card"
 import { cn } from "@/lib/utils"
-import Image from "next/image"
 import { motion } from "framer-motion"
 import { renderStars } from "@/utils/card-stars"
 import { useRouter } from "next/navigation"
@@ -167,13 +166,11 @@ const handleCardClick = () => {
       >
         <div className="relative aspect-[3/4] w-full overflow-hidden">
           <div className={`w-full h-full relative rounded-xl ${isCollection || hideOverlay ? "" : rarityStyle.border}`}>
-            <Image
+            <img
               src={cardImageUrl}
-              alt={`${name} - ${character}`}
-              fill
+              alt="Card"
               sizes="(max-width: 640px) 20vw, (max-width: 768px) 16vw, (max-width: 1024px) 20vw, 33vw"
-              className="object-cover"
-              priority={false}
+              className="w-full h-full object-cover"
               loading="lazy"
             />
 

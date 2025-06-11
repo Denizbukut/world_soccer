@@ -239,12 +239,17 @@ export async function drawCards(username: string, packType: string, count = 1) {
       let rarity: CardRarity
       let cardPool: any[]
 
+
       // Check if user has premium to determine drop rates
       const hasPremium = userData.has_premium || false
+      if (!isLegendary) {
+        await incrementMission(username, "open_regular_pack")
+      }
+
 
       if (isLegendary) {
         
-        // Legendary pack rarity distribution: Common 10%, Rare 40%, Epic 40%, Legendary 10%
+// Legendary pack rarity distribution: Common 10%, Rare 40%, Epic 40%, Legendary 10%
         if (random < 10) {
           rarity = "common"
           cardPool = commonCards
@@ -258,7 +263,10 @@ export async function drawCards(username: string, packType: string, count = 1) {
           rarity = "legendary"
           cardPool = legendaryCards
         }
-      } else if (hasPremium) {
+        
+        
+      } 
+      else if (hasPremium) {
         // Premium user regular pack: Common 35%, Rare 40%, Epic 20%, Legendary 5%
         if (random < 35) {
           rarity = "common"
@@ -274,7 +282,7 @@ export async function drawCards(username: string, packType: string, count = 1) {
           cardPool = legendaryCards
         }
       } else {
-        await incrementMission(username, "open_regular_pack", count)
+        
         // Regular pack rarity distribution: Common 50%, Rare 34%, Epic 14%, Legendary 2%
         if (random < 50) {
           rarity = "common"

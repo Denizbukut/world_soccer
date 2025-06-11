@@ -4,13 +4,13 @@ import { drawCards } from "@/app/actions"
 
 export async function POST(req: Request) {
   try {
-    const { username, cardType } = await req.json()
+    const { username, cardType, count = 1 } = await req.json()
 
     if (!username || !cardType) {
       return NextResponse.json({ error: "Missing parameters" }, { status: 400 })
     }
 
-    const result = await drawCards(username, cardType, 1)
+    const result = await drawCards(username, cardType, count)
 
     return NextResponse.json(result)
   } catch (error) {

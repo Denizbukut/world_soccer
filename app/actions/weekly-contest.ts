@@ -8,7 +8,7 @@ function createSupabaseServer() {
   })
 }
 
-export async function incrementLegendaryDraw(username: string) {
+export async function incrementLegendaryDraw(username: string, count = 1) {
   const supabase = createSupabaseServer()
   const weekStart = "2025-06-09" // für diese Woche fix (global synchron)
   const contestEnd = new Date("2025-06-15T23:59:59Z")
@@ -29,13 +29,13 @@ export async function incrementLegendaryDraw(username: string) {
     await supabase.from("weekly_contest_entries").insert({
       user_id: username,
       week_start_date: weekStart,
-      legendary_count: 1,
+      legendary_count: count,
     })
   } else {
     const currentCount = data?.legendary_count || 0
     await supabase
       .from("weekly_contest_entries")
-      .update({ legendary_count: currentCount + 1, updated_at: new Date().toISOString() })
+      .update({ legendary_count: currentCount + count, updated_at: new Date().toISOString() })
       .eq("user_id", username)
       .eq("week_start_date", weekStart)
   }

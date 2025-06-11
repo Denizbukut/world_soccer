@@ -2,13 +2,13 @@
 
 import type React from "react"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { useAuth } from "@/contexts/auth-context"
 import { updateScoreForCards, updateScoreForLevelUp } from "@/app/actions/update-score"
 import ProtectedRoute from "@/components/protected-route"
 import MobileNav from "@/components/mobile-nav"
 import { Button } from "@/components/ui/button"
-import { Ticket, Crown, Sparkles, Star } from "lucide-react"
+import { Ticket, Crown, Star } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
 import { motion, AnimatePresence, useAnimation, useMotionValue, useTransform } from "framer-motion"
 import Image from "next/image"
@@ -82,6 +82,7 @@ export default function DrawPage() {
   const [tickets, setTickets] = useState(0)
   const [hasPremiumPass, setHasPremiumPass] = useState(false)
   const [isUpdatingScore, setIsUpdatingScore] = useState(false)
+  const [isMultiDraw, setIsMultiDraw] = useState(false) // Neu: für 5-Karten-Ziehen
 
   // Animation states
   const [showPackSelection, setShowPackSelection] = useState(true)
@@ -173,91 +174,146 @@ export default function DrawPage() {
     y.set(0, true)
   }
 
- const handleSelectPack = async (cardType: string) => {
-  if (!user) {
-    toast({ title: "Error", description: "You must be logged in.", variant: "destructive" })
-    return
-  }
-
-  setIsDrawing(true)
-  setShowPackSelection(false)
-  setShowPackAnimation(true)
-  setCurrentCardIndex(0)
-  setCardRevealed(false)
-
-  try {
-    const response = await fetch("/api/draw", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        username: user.username,
-        cardType,
-      }),
-    })
-
-    const result = await response.json()
-
-    if (result.drawnCards?.[0]?.rarity === "legendary") {
-      await incrementMission(user.username, "draw_legendary_card")
-      await incrementLegendaryDraw(user.username)
-    }
-
-    if (cardType === "legendary") {
-      await incrementMission(user.username, "open_legendary_pack")
-      await incrementMission(user.username, "open_3_legendary_packs")
-    } else {
-      await incrementMission(user.username, "open_regular_pack")
-    }
-
-    if (result.success && result.drawnCards?.length > 0) {
-      setDrawnCards(result.drawnCards)
-      setTickets(result.newTicketCount ?? tickets)
-      setLegendaryTickets(result.newLegendaryTicketCount ?? legendaryTickets)
-
-      await updateUserTickets?.(
-        result.newTicketCount ?? tickets,
-        result.newLegendaryTicketCount ?? legendaryTickets
-      )
-
-      const xpAmount = cardType === "legendary" ? 100 : 50
-      setXpGained(xpAmount)
-
-      const { leveledUp, newLevel: updatedLevel } = (await updateUserExp?.(xpAmount)) || {}
-      if (leveledUp && updatedLevel) {
-        setNewLevel(updatedLevel)
+  const handleSelectPack = useCallback(
+    async (cardType: string, count = 1) => {
+      // Verhindere mehrfache Aufrufe wenn bereits ein Draw läuft
+      if (isDrawing) {
+        console.log("Draw already in progress, ignoring request")
+        return
       }
-    } else {
-      toast({ title: "Error", description: result.error || "Draw failed", variant: "destructive" })
-      setDrawnCards(FALLBACK_CARDS.slice(0, 1))
-    }
-  } catch (err) {
-    toast({ title: "Error", description: "Something went wrong.", variant: "destructive" })
-    setDrawnCards(FALLBACK_CARDS.slice(0, 1))
-  } finally {
-    setIsDrawing(false)
-  }
-}
 
+      if (!user) {
+        toast({ title: "Error", description: "You must be logged in.", variant: "destructive" })
+        return
+      }
+
+      // Prüfen ob genug Tickets vorhanden sind
+      const requiredTickets = count
+      const availableTickets = cardType === "legendary" ? legendaryTickets : tickets
+
+      if (availableTickets < requiredTickets) {
+        toast({
+          title: "Not enough tickets",
+          description: `You need ${requiredTickets} ${cardType === "legendary" ? "legendary " : ""}tickets but only have ${availableTickets}.`,
+          variant: "destructive",
+        })
+        return
+      }
+
+      // Setze Drawing State sofort um weitere Aufrufe zu verhindern
+      setIsDrawing(true)
+      setIsMultiDraw(count > 1)
+      setShowPackSelection(false)
+      setShowPackAnimation(true)
+      setCurrentCardIndex(0)
+      setCardRevealed(false)
+
+      console.log(`Starting draw: ${count} ${cardType} pack(s)`)
+
+      try {
+        const response = await fetch("/api/draw", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            username: user.username,
+            cardType,
+            count,
+          }),
+        })
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+
+        const result = await response.json()
+        console.log("Draw result received:", result)
+
+        // Mission tracking für legendary cards - zähle alle legendären Karten auf einmal
+        const legendaryCards = result.drawnCards?.filter((card: any) => card.rarity === "legendary") || []
+        if (legendaryCards.length > 0) {
+          // Add legendary card mission update
+          await incrementMission(user.username, "draw_legendary_card", legendaryCards.length)
+
+          // Use the optimized batch update for weekly contest
+          await incrementLegendaryDraw(user.username, legendaryCards.length)
+        }
+
+        if (cardType === "legendary") {
+          await incrementMission(user.username, "open_legendary_pack", count)
+          await incrementMission(user.username, "open_3_legendary_packs", count)
+        } else {
+          await incrementMission(user.username, "open_regular_pack", count)
+        }
+
+        if (result.success && result.drawnCards?.length > 0) {
+          setDrawnCards(result.drawnCards)
+          setTickets(result.newTicketCount ?? tickets)
+          setLegendaryTickets(result.newLegendaryTicketCount ?? legendaryTickets)
+
+          await updateUserTickets?.(
+            result.newTicketCount ?? tickets,
+            result.newLegendaryTicketCount ?? legendaryTickets,
+          )
+
+          let xpAmount = cardType === "legendary" ? 100 * count : 50 * count
+
+          if (user?.username === "jiraiya") {
+            xpAmount = 10 * count
+          }
+          setXpGained(xpAmount)
+
+          const { leveledUp, newLevel: updatedLevel } = (await updateUserExp?.(xpAmount)) || {}
+          if (leveledUp && updatedLevel) {
+            setNewLevel(updatedLevel)
+          }
+        } else {
+          console.error("Draw failed:", result.error)
+          toast({ title: "Error", description: result.error || "Draw failed", variant: "destructive" })
+          setDrawnCards(FALLBACK_CARDS.slice(0, count))
+        }
+      } catch (err) {
+        console.error("Draw error:", err)
+        toast({ title: "Error", description: "Something went wrong.", variant: "destructive" })
+        setDrawnCards(FALLBACK_CARDS.slice(0, count))
+      } finally {
+        // Stelle sicher, dass isDrawing zurückgesetzt wird, aber erst nach einer kurzen Verzögerung
+        // um sicherzustellen, dass alle State-Updates abgeschlossen sind
+        setTimeout(() => {
+          setIsDrawing(false)
+        }, 100)
+      }
+    },
+    [isDrawing, user, legendaryTickets, tickets, updateUserTickets, updateUserExp],
+  )
 
   const handleOpenPack = () => {
     setPackOpened(true)
 
-    // After a delay, show the rarity text of the first card
-    setTimeout(() => {
-      setShowPackAnimation(false)
-      setShowRarityText(true)
-
-      // After the rarity animation completes, show the cards
+    // Für Multi-Draw: Überspringe Rarity-Animation
+    if (isMultiDraw) {
       setTimeout(() => {
-        setShowRarityText(false)
+        setShowPackAnimation(false)
         setShowCards(true)
-
-        // Reveal card after a short delay
         setTimeout(() => {
           setCardRevealed(true)
         }, 500)
-      }, 2000) // Wait for rarity animation to complete
-    }, 2500) // Increased from 1000ms to 2500ms for pack opening
+      }, 2500)
+    } else {
+      // Normale Single-Card Animation
+      setTimeout(() => {
+        setShowPackAnimation(false)
+        setShowRarityText(true)
+
+        setTimeout(() => {
+          setShowRarityText(false)
+          setShowCards(true)
+
+          setTimeout(() => {
+            setCardRevealed(true)
+          }, 500)
+        }, 2000)
+      }, 2500)
+    }
   }
 
   const finishCardReview = async () => {
@@ -266,7 +322,6 @@ export default function DrawPage() {
     setIsUpdatingScore(true)
 
     try {
-      // HIER: Aktualisiere den Score für die gezogenen Karten
       console.log("Updating score for drawn cards:", drawnCards)
       const scoreResult = await updateScoreForCards(user.username, drawnCards)
 
@@ -274,7 +329,6 @@ export default function DrawPage() {
         console.log("Score updated successfully:", scoreResult)
         setScoreGained(scoreResult.addedScore)
 
-        // Aktualisiere auch den Score im Context
         if (updateUserScore) {
           updateUserScore(scoreResult.addedScore)
         }
@@ -292,39 +346,60 @@ export default function DrawPage() {
       setIsUpdatingScore(false)
     }
 
-    // Hide card display
     setShowCards(false)
 
-    // Show XP animation
-    setShowXpAnimation(true)
+    // Für Multi-Draw: Überspringe XP-Animation
+    if (isMultiDraw) {
+      setShowXpAnimation(true)
 
-    // After XP animation completes
-    setTimeout(() => {
-      setShowXpAnimation(false)
+setTimeout(() => {
+  setShowXpAnimation(false)
 
-      // Now show level up animation if applicable
-      if (newLevel > 1) {
-        setShowLevelUpAnimation(true)
+  if (newLevel > 1) {
+    setShowLevelUpAnimation(true)
 
-        // Aktualisiere den Score für das Level-Up
-        if (user) {
-          updateScoreForLevelUp(user.username)
-            .then((result) => {
-              if (result.success && updateUserScore) {
-                console.log("Level-up score updated successfully:", result)
-                updateUserScore(result.addedScore || 0)
-              } else {
-                console.error("Failed to update level-up score:", result.error)
-              }
-            })
-            .catch((error) => {
-              console.error("Error updating level-up score:", error)
-            })
+    if (user) {
+      updateScoreForLevelUp(user.username)
+        .then((result) => {
+          if (result.success && updateUserScore) {
+            updateUserScore(result.addedScore || 0)
+          }
+        })
+        .catch(console.error)
+    }
+  } else {
+    resetStates()
+  }
+}, 1000)
+    } else {
+      // Normale Single-Card Animation
+      setShowXpAnimation(true)
+
+      setTimeout(() => {
+        setShowXpAnimation(false)
+
+        if (newLevel > 1) {
+          setShowLevelUpAnimation(true)
+
+          if (user) {
+            updateScoreForLevelUp(user.username)
+              .then((result) => {
+                if (result.success && updateUserScore) {
+                  console.log("Level-up score updated successfully:", result)
+                  updateUserScore(result.addedScore || 0)
+                } else {
+                  console.error("Failed to update level-up score:", result.error)
+                }
+              })
+              .catch((error) => {
+                console.error("Error updating level-up score:", error)
+              })
+          }
+        } else {
+          resetStates()
         }
-      } else {
-        resetStates()
-      }
-    }, 1000) // Changed from 2000 to 1000 for faster animation
+      }, 1000)
+    }
   }
 
   const resetStates = () => {
@@ -334,14 +409,14 @@ export default function DrawPage() {
     setCardRevealed(false)
     setXpGained(0)
     setScoreGained(0)
-    setNewLevel(1) // Reset the new level
+    setNewLevel(1)
+    setIsMultiDraw(false) // Reset Multi-Draw Flag
 
-    // Refresh user data after completing the draw
     refreshUserData?.()
 
     toast({
-      title: "Card Added",
-      description: "The card has been added to your collection!",
+      title: "Cards Added",
+      description: `${isMultiDraw ? "The cards have" : "The card has"} been added to your collection!`,
       variant: "default",
     })
   }
@@ -580,51 +655,84 @@ export default function DrawPage() {
                         )}
                       </div>
 
-                      <Button
-                        onClick={() => handleSelectPack(activeTab === "legendary" ? "legendary" : "common")}
-                        disabled={isDrawing || (activeTab === "legendary" ? legendaryTickets < 1 : tickets < 1)}
-                        className={
-                          activeTab === "legendary"
-                            ? "w-full bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 rounded-full"
-                            : "w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 rounded-full"
-                        }
-                      >
-                        {isDrawing ? (
-                          <div className="flex items-center justify-center">
-                            <div className="h-5 w-5 border-2 border-t-transparent border-white rounded-full animate-spin mr-2"></div>
-                            <span>Opening...</span>
-                          </div>
-                        ) : (
-                          <>
-                            <Ticket className="h-4 w-4 mr-2" />
-                            Open Pack (1 {activeTab === "legendary" ? "Legendary " : ""}Ticket)
-                          </>
-                        )}
-                      </Button>
+                      {/* Pack Buttons - Improved Horizontal Layout */}
+                      <div className="w-full flex gap-4">
+                        {/* Single Pack Button - Left */}
+                        <Button
+                          onClick={() =>
+                            !isDrawing && handleSelectPack(activeTab === "legendary" ? "legendary" : "common")
+                          }
+                          disabled={isDrawing || (activeTab === "legendary" ? legendaryTickets < 1 : tickets < 1)}
+                          className={
+                            activeTab === "legendary"
+                              ? "flex-1 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-xl py-4 shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                              : "flex-1 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-xl py-4 shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                          }
+                        >
+                          {isDrawing ? (
+                            <div className="flex items-center justify-center">
+                              <div className="h-4 w-4 border-2 border-t-transparent border-white rounded-full animate-spin mr-2"></div>
+                              <span className="text-sm font-medium">Opening...</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <Ticket className="h-5 w-5" />
+                              <span className="font-bold text-base">1 Pack</span>
+                            </div>
+                          )}
+                        </Button>
+
+                        {/* 5 Pack Button - Right */}
+                        <Button
+                          onClick={() =>
+                            !isDrawing && handleSelectPack(activeTab === "legendary" ? "legendary" : "common", 5)
+                          }
+                          disabled={isDrawing || (activeTab === "legendary" ? legendaryTickets < 5 : tickets < 5)}
+                          className={
+                            isDrawing || (activeTab === "legendary" ? legendaryTickets < 5 : tickets < 5)
+                              ? "flex-1 bg-gray-300 text-gray-500 rounded-xl py-4 shadow-sm cursor-not-allowed opacity-60"
+                              : activeTab === "legendary"
+                                ? "flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl py-4 shadow-lg hover:shadow-xl transition-all duration-200 border-2 border-blue-400"
+                                : "flex-1 bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white rounded-xl py-4 shadow-lg hover:shadow-xl transition-all duration-200 border-2 border-orange-400"
+                          }
+                        >
+                          {isDrawing ? (
+                            <div className="flex items-center justify-center">
+                              <div className="h-4 w-4 border-2 border-t-transparent border-current rounded-full animate-spin mr-2"></div>
+                              <span className="text-sm font-medium">Opening...</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <Ticket className="h-5 w-5" />
+                              <span className="font-bold text-base">5 Packs</span>
+                            </div>
+                          )}
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </motion.div>
               </motion.div>
             )}
           </AnimatePresence>
-          {showPackSelection && (
-  <motion.div
-    initial={{ opacity: 0, y: 10 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ delay: 0.2, duration: 0.4 }}
-    className="mt-4 text-center"
-  >
-    <Button
-      variant="outline"
-      onClick={() => window.location.href = "/shop"}
-      className="w-full border border-gray-300 text-gray-700 hover:bg-gray-50"
-    >
-      <Ticket className="h-4 w-4 mr-2 text-orange-500" />
-      Need more tickets? Visit the Shop
-    </Button>
-  </motion.div>
-)}
 
+          {showPackSelection && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.4 }}
+              className="mt-4 text-center"
+            >
+              <Button
+                variant="outline"
+                onClick={() => (window.location.href = "/shop")}
+                className="w-full border border-gray-300 text-gray-700 hover:bg-gray-50"
+              >
+                <Ticket className="h-4 w-4 mr-2 text-orange-500" />
+                Need more tickets? Visit the Shop
+              </Button>
+            </motion.div>
+          )}
 
           {/* Pack Animation Screen */}
           <AnimatePresence>
@@ -735,9 +843,9 @@ export default function DrawPage() {
             )}
           </AnimatePresence>
 
-          {/* Rarity Text Animation */}
+          {/* Rarity Text Animation - nur für Single Draw */}
           <AnimatePresence>
-            {showRarityText && drawnCards.length > 0 && (
+            {showRarityText && drawnCards.length > 0 && !isMultiDraw && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -794,144 +902,261 @@ export default function DrawPage() {
                 {/* Dark overlay */}
                 <div className="absolute inset-0 bg-black opacity-80" />
 
-                {/* Card */}
+                {/* Cards Container */}
                 <div className="relative z-10 flex flex-col items-center">
-                  {getCurrentCard() && (
-                    <div className="perspective-1000 mb-8">
-                      <motion.div
-                        ref={cardRef}
-                        className="w-80 h-[30rem] preserve-3d cursor-pointer touch-none"
-                        initial={{ rotateY: 0 }}
-                        animate={{ rotateY: cardRevealed ? 0 : 180 }}
-                        transition={{
-                          type: "spring",
-                          stiffness: 70,
-                          damping: 15,
-                          duration: 1.5,
-                        }}
-                        onMouseMove={handleCardMove}
-                        onMouseLeave={handleCardLeave}
-                        onTouchMove={handleCardMove}
-                        onTouchEnd={handleCardLeave}
-                        style={{
-                          transformStyle: "preserve-3d",
-                        }}
-                      >
-                        {/* Card Front - This will show after flip */}
+                  {isMultiDraw ? (
+                    // Multi-Card Display (5 große Karten nebeneinander)
+                    <div className="flex gap-1 mb-8 overflow-x-auto max-w-full px-2 h-[60vh]">
+                      {drawnCards.map((card, index) => {
+                        const rarityStyles = getRarityStyles(card?.rarity)
+                        return (
+                          <motion.div
+                            key={`multi-card-${index}`}
+                            className={`flex-shrink-0 w-16 h-full rounded-xl overflow-hidden border-4 relative ${rarityStyles.border}`}
+                            initial={{ opacity: 0, y: -100 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{
+                              delay: index * 0.2,
+                              duration: 0.5,
+                              type: "spring",
+                              stiffness: 260,
+                              damping: 20,
+                            }}
+                            style={{
+                              background: `linear-gradient(135deg, ${
+                                card?.rarity === "legendary"
+                                  ? "rgba(255, 215, 0, 0.3), rgba(255, 193, 7, 0.1)"
+                                  : card?.rarity === "epic"
+                                    ? "rgba(147, 51, 234, 0.3), rgba(139, 69, 193, 0.1)"
+                                    : card?.rarity === "rare"
+                                      ? "rgba(59, 130, 246, 0.3), rgba(96, 165, 250, 0.1)"
+                                      : "rgba(107, 114, 128, 0.3), rgba(156, 163, 175, 0.1)"
+                              })`,
+                            }}
+                          >
+                            {/* Karten-Bild */}
+                            <div className="absolute inset-0 w-full h-full">
+                              <Image
+                                src={card?.image_url || "/placeholder.svg?height=400&width=80"}
+                                alt={card?.name || "Card"}
+                                fill
+                                className="object-cover object-center"
+                                style={{ objectPosition: "center" }}
+                                onError={(e) => {
+                                  ;(e.target as HTMLImageElement).src = "/placeholder.svg?height=400&width=80"
+                                }}
+                              />
+                            </div>
+
+                            {/* Rarity Overlay Hintergrund */}
+                            <div className={`absolute inset-0 bg-gradient-to-t ${rarityStyles.gradient} opacity-60`} />
+
+                            {/* Rarity Glow Effect */}
+                            <div
+                              className={`absolute inset-0 ${rarityStyles.glow} opacity-40`}
+                              style={{
+                                boxShadow: `inset 0 0 20px ${
+                                  card?.rarity === "legendary"
+                                    ? "rgba(255, 215, 0, 0.5)"
+                                    : card?.rarity === "epic"
+                                      ? "rgba(147, 51, 234, 0.5)"
+                                      : card?.rarity === "rare"
+                                        ? "rgba(59, 130, 246, 0.5)"
+                                        : "rgba(107, 114, 128, 0.5)"
+                                }`,
+                              }}
+                            />
+
+                            {/* Card Content Overlays */}
+                            <div className="absolute inset-0 flex flex-col justify-end p-1">
+                              {/* Bottom section mit Rarity */}
+                              <div className="bg-black/70 backdrop-blur-sm rounded px-1 py-0.5 flex items-center justify-center">
+                                <span className={`text-xs font-bold anime-text ${rarityStyles.text}`}>
+                                  {card?.rarity?.charAt(0).toUpperCase()}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Special effects für legendary und epic cards */}
+                            {(card?.rarity === "legendary" || card?.rarity === "epic") && (
+                              <motion.div
+                                className={`absolute inset-0 pointer-events-none mix-blend-overlay rounded-xl ${
+                                  card?.rarity === "legendary" ? "bg-yellow-300" : "bg-purple-300"
+                                }`}
+                                animate={{
+                                  opacity: [0.1, 0.3, 0.1],
+                                }}
+                                transition={{
+                                  duration: 2,
+                                  repeat: Number.POSITIVE_INFINITY,
+                                  repeatType: "reverse",
+                                }}
+                              />
+                            )}
+
+                            {/* Shine effect - nur für legendary cards */}
+                            {card?.rarity === "legendary" && (
+                              <motion.div
+                                className="absolute inset-0 pointer-events-none"
+                                style={{
+                                  background:
+                                    "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.6) 50%, transparent 100%)",
+                                  backgroundSize: "200% 100%",
+                                }}
+                                animate={{
+                                  backgroundPosition: ["-200% 0%", "200% 0%"],
+                                }}
+                                transition={{
+                                  duration: 3,
+                                  repeat: Number.POSITIVE_INFINITY,
+                                  repeatType: "loop",
+                                  delay: index * 0.2,
+                                }}
+                              />
+                            )}
+                          </motion.div>
+                        )
+                      })}
+                    </div>
+                  ) : (
+                    // Single Card Display (Original)
+                    getCurrentCard() && (
+                      <div className="perspective-1000 mb-8">
                         <motion.div
-                          className={`absolute w-full h-full backface-hidden rounded-xl overflow-hidden ${
-                            getRarityStyles(getCurrentCard()?.rarity).border
-                          }`}
+                          ref={cardRef}
+                          className="w-80 h-[30rem] preserve-3d cursor-pointer touch-none"
+                          initial={{ rotateY: 0 }}
+                          animate={{ rotateY: cardRevealed ? 0 : 180 }}
+                          transition={{
+                            type: "spring",
+                            stiffness: 70,
+                            damping: 15,
+                            duration: 1.5,
+                          }}
+                          onMouseMove={handleCardMove}
+                          onMouseLeave={handleCardLeave}
+                          onTouchMove={handleCardMove}
+                          onTouchEnd={handleCardLeave}
                           style={{
-                            rotateX: rotateX,
-                            rotateY: rotateY,
                             transformStyle: "preserve-3d",
                           }}
                         >
-                          {/* Full art image takes up the entire card */}
-                          <div className="absolute inset-0 w-full h-full">
-                            <Image
-                              src={getCurrentCard()?.image_url || "/placeholder.svg?height=300&width=200"}
-                              alt={getCurrentCard()?.name}
-                              fill
-                              className="object-cover"
-                              onError={(e) => {
-                                ;(e.target as HTMLImageElement).src = "/placeholder.svg?height=300&width=200"
-                              }}
-                            />
-                          </div>
-
-                          {/* Dynamic light reflection effect - more responsive to tilt */}
+                          {/* Card Front - This will show after flip */}
                           <motion.div
-                            className="absolute inset-0 mix-blend-overlay"
+                            className={`absolute w-full h-full backface-hidden rounded-xl overflow-hidden ${
+                              getRarityStyles(getCurrentCard()?.rarity).border
+                            }`}
                             style={{
-                              background:
-                                "radial-gradient(circle at 50% 50%, rgba(255,255,255,0.8) 0%, transparent 50%)",
-                              backgroundPosition: `${reflectionX}% ${reflectionY}%`,
-                              opacity: Math.max(
-                                0.1,
-                                reflectionOpacity.get() * (Math.abs(rotateX.get() / 15) + Math.abs(rotateY.get() / 15)),
-                              ),
+                              rotateX: rotateX,
+                              rotateY: rotateY,
+                              transformStyle: "preserve-3d",
                             }}
-                          />
-
-                          {/* Holographic overlay effect based on tilt */}
-                          <motion.div
-                            className="absolute inset-0 pointer-events-none"
-                            style={{
-                              background:
-                                "linear-gradient(45deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0.1) 100%)",
-                              backgroundPosition: `${reflectionX.get()}% ${reflectionY.get()}%`,
-                              backgroundSize: "200% 200%",
-                              opacity: Math.abs(rotateX.get() / 30) + Math.abs(rotateY.get() / 30),
-                            }}
-                          />
-
-                          {/* Card Content Overlays - Improved styling with smaller backgrounds and better positioning */}
-                          <div className="absolute inset-0 flex flex-col justify-between">
-                            {/* Top section with name - smaller background, closer to top edge */}
-                            <div className="pt-1 pl-1">
-                              <div className="bg-gradient-to-r from-black/70 via-black/50 to-transparent px-2 py-1 rounded-lg max-w-[85%] backdrop-blur-sm inline-block">
-                                <h3 className="font-bold text-white text-lg drop-shadow-md anime-text">
-                                  {getCurrentCard()?.name}
-                                </h3>
-                              </div>
+                          >
+                            {/* Full art image takes up the entire card */}
+                            <div className="absolute inset-0 w-full h-full">
+                              <Image
+                                src={getCurrentCard()?.image_url || "/placeholder.svg?height=300&width=200"}
+                                alt={getCurrentCard()?.name}
+                                fill
+                                className="object-cover"
+                                onError={(e) => {
+                                  ;(e.target as HTMLImageElement).src = "/placeholder.svg?height=300&width=200"
+                                }}
+                              />
                             </div>
 
-                            {/* Bottom section with rarity - smaller background, closer to bottom edge */}
-                            <div className="pb-1 pr-1 flex justify-end">
-                              <div className="bg-gradient-to-l from-black/70 via-black/50 to-transparent px-2 py-1 rounded-lg flex items-center gap-1 backdrop-blur-sm">
-                                <span className="text-white text-sm font-semibold anime-text">
-                                  {getCurrentCard()?.rarity?.toUpperCase()}
-                                </span>
-                                {getCurrentCard()?.rarity === "legendary" && (
-                                  <Sparkles className="h-4 w-4 text-yellow-400" />
-                                )}
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Special effects for legendary and epic cards */}
-                          {(getCurrentCard()?.rarity === "legendary" || getCurrentCard()?.rarity === "epic") && (
+                            {/* Dynamic light reflection effect - more responsive to tilt */}
                             <motion.div
-                              className={`absolute inset-0 pointer-events-none mix-blend-overlay rounded-xl ${
-                                getCurrentCard()?.rarity === "legendary" ? "bg-yellow-300" : "bg-purple-300"
-                              }`}
-                              animate={{
-                                opacity: [0.1, 0.3, 0.1],
-                              }}
-                              transition={{
-                                duration: 2,
-                                repeat: Number.POSITIVE_INFINITY,
-                                repeatType: "reverse",
+                              className="absolute inset-0 mix-blend-overlay"
+                              style={{
+                                background:
+                                  "radial-gradient(circle at 50% 50%, rgba(255,255,255,0.8) 0%, transparent 50%)",
+                                backgroundPosition: `${reflectionX}% ${reflectionY}%`,
+                                opacity: Math.max(
+                                  0.1,
+                                  reflectionOpacity.get() *
+                                    (Math.abs(rotateX.get() / 15) + Math.abs(rotateY.get() / 15)),
+                                ),
                               }}
                             />
-                          )}
 
-                          {/* Shine effect based on tilt */}
-                          <motion.div
-                            className="absolute inset-0 pointer-events-none"
-                            style={{
-                              background:
-                                "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.8) 50%, transparent 100%)",
-                              backgroundSize: "200% 100%",
-                              backgroundPosition: `${reflectionX.get()}% 0%`,
-                              opacity: reflectionOpacity,
-                            }}
-                          />
-                        </motion.div>
+                            {/* Holographic overlay effect based on tilt */}
+                            <motion.div
+                              className="absolute inset-0 pointer-events-none"
+                              style={{
+                                background:
+                                  "linear-gradient(45deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0.1) 100%)",
+                                backgroundPosition: `${reflectionX.get()}% ${reflectionY.get()}%`,
+                                backgroundSize: "200% 200%",
+                                opacity: Math.abs(rotateX.get() / 30) + Math.abs(rotateY.get() / 30),
+                              }}
+                            />
 
-                        {/* Card Back - This will show first */}
-                        <div className="absolute w-full h-full backface-hidden rotateY-180 rounded-xl bg-gradient-to-b from-blue-800 to-purple-900 border-4 border-yellow-500 flex items-center justify-center">
-                          <div className="text-white text-center">
-                            <h3 className="font-bold text-2xl anime-text">ANIME WORLD</h3>
+                            {/* Card Content Overlays - Improved styling with smaller backgrounds and better positioning */}
+                            <div className="absolute inset-0 flex flex-col justify-between">
+                              {/* Top section with name - smaller background, closer to top edge */}
+                              <div className="pt-1 pl-1">
+                                <div className="bg-gradient-to-r from-black/70 via-black/50 to-transparent px-2 py-1 rounded-lg max-w-[85%] backdrop-blur-sm inline-block">
+                                  <h3 className="font-bold text-white text-lg drop-shadow-md anime-text">
+                                    {getCurrentCard()?.name}
+                                  </h3>
+                                </div>
+                              </div>
+
+                              {/* Bottom section with rarity - smaller background, closer to bottom edge */}
+                              <div className="pb-1 pr-1 flex justify-end">
+                                <div className="bg-gradient-to-l from-black/70 via-black/50 to-transparent px-2 py-1 rounded-lg flex items-center gap-1 backdrop-blur-sm">
+                                  <span className="text-white text-sm font-semibold anime-text">
+                                    {getCurrentCard()?.rarity?.toUpperCase()}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Special effects für legendary und epic cards */}
+                            {(getCurrentCard()?.rarity === "legendary" || getCurrentCard()?.rarity === "epic") && (
+                              <motion.div
+                                className={`absolute inset-0 pointer-events-none mix-blend-overlay rounded-xl ${
+                                  getCurrentCard()?.rarity === "legendary" ? "bg-yellow-300" : "bg-purple-300"
+                                }`}
+                                animate={{
+                                  opacity: [0.1, 0.3, 0.1],
+                                }}
+                                transition={{
+                                  duration: 2,
+                                  repeat: Number.POSITIVE_INFINITY,
+                                  repeatType: "reverse",
+                                }}
+                              />
+                            )}
+
+                            {/* Shine effect based on tilt - nur für legendary cards */}
+                            {getCurrentCard()?.rarity === "legendary" && (
+                              <motion.div
+                                className="absolute inset-0 pointer-events-none"
+                                style={{
+                                  background:
+                                    "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.8) 50%, transparent 100%)",
+                                  backgroundSize: "200% 100%",
+                                  backgroundPosition: `${reflectionX.get()}% 0%`,
+                                  opacity: reflectionOpacity,
+                                }}
+                              />
+                            )}
+                          </motion.div>
+
+                          {/* Card Back - This will show first */}
+                          <div className="absolute w-full h-full backface-hidden rotateY-180 rounded-xl bg-gradient-to-b from-blue-800 to-purple-900 border-4 border-yellow-500 flex items-center justify-center">
+                            <div className="text-white text-center">
+                              <h3 className="font-bold text-2xl anime-text">ANIME WORLD</h3>
+                            </div>
                           </div>
-                        </div>
-                      </motion.div>
-                    </div>
+                        </motion.div>
+                      </div>
+                    )
                   )}
 
-                  {/* Button to add card to collection */}
+                  {/* Button to add card(s) to collection */}
                   <Button
                     onClick={() => finishCardReview()}
                     disabled={isUpdatingScore}
@@ -948,7 +1173,7 @@ export default function DrawPage() {
                         <span>Updating...</span>
                       </div>
                     ) : (
-                      "Add to Collection"
+                      `Add ${isMultiDraw ? "Cards" : "Card"} to Collection`
                     )}
                   </Button>
                 </div>
@@ -956,9 +1181,9 @@ export default function DrawPage() {
             )}
           </AnimatePresence>
 
-          {/* XP Gain Animation */}
+          {/* XP Gain Animation - nur für Single Draw */}
           <AnimatePresence>
-            {showXpAnimation && (
+            {showXpAnimation &&  (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -973,7 +1198,7 @@ export default function DrawPage() {
                     opacity: [0, 1, 1, 0],
                   }}
                   transition={{
-                    duration: 1, // Changed from 2 to 1 for faster animation
+                    duration: 1,
                     times: [0, 0.3, 0.5, 1],
                   }}
                 >
@@ -1003,8 +1228,8 @@ export default function DrawPage() {
                       opacity: [0, 0.8, 0],
                     }}
                     transition={{
-                      duration: 0.8, // Changed from 1.5 to 0.8 for faster animation
-                      delay: Math.random() * 0.2, // Reduced delay from 0.3 to 0.2
+                      duration: 0.8,
+                      delay: Math.random() * 0.2,
                     }}
                   />
                 ))}

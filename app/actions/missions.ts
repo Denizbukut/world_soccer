@@ -133,17 +133,26 @@ export async function incrementMission(username: string, key: string, amount = 1
   if (error && error.code === "PGRST116") {
     const mission = DAILY_MISSIONS.find((m) => m.key === key)
     if (!mission) return { success: false }
+
+    const progress = Math.min(amount, mission.goal)
+
     await supabase.from("daily_mission_progress").insert({
       user_id: username,
       mission_key: key,
       goal: mission.goal,
-      progress: amount,
+      progress,
+      reward_claimed: false,
+      mission_date: today,
     })
-  } else {
-    const newProgress = Math.min((existing?.progress || 0) + amount, existing.goal)
+  } else if (existing) {
+    const newProgress = Math.min((existing.progress || 0) + amount, existing.goal)
+
     await supabase
       .from("daily_mission_progress")
-      .update({ progress: newProgress, updated_at: new Date().toISOString() })
+      .update({
+        progress: newProgress,
+        updated_at: new Date().toISOString(),
+      })
       .eq("user_id", username)
       .eq("mission_date", today)
       .eq("mission_key", key)
@@ -151,6 +160,7 @@ export async function incrementMission(username: string, key: string, amount = 1
 
   return { success: true }
 }
+
 
 export async function claimMissionReward(username: string, key: string) {
   const supabase = createSupabaseServer()

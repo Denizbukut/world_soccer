@@ -20,25 +20,48 @@ type Entry = {
   legendary_count: number
 }
 
+type UserStats = {
+  legendary_count: number
+  rank: number | null
+}
+
 export default function WeeklyContestPage() {
   const { user } = useAuth()
   const router = useRouter()
-  const [entries, setEntries] = useState<Entry[]>([])
+  const [leaderboard, setLeaderboard] = useState<Entry[]>([])
+  const [userStats, setUserStats] = useState<UserStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [countdown, setCountdown] = useState(CONTEST_END_TIMESTAMP - Date.now())
 
   useEffect(() => {
-    const fetchEntries = async () => {
-      const res = await fetch("/api/weekly-contest")
-      const data = await res.json()
-      if (data.success) {
-        setEntries(data.data)
+    const fetchData = async () => {
+      try {
+        // Fetch leaderboard (top 20)
+        const leaderboardRes = await fetch("/api/weekly-contest/leaderboard")
+        const leaderboardData = await leaderboardRes.json()
+
+        if (leaderboardData.success) {
+          setLeaderboard(leaderboardData.data)
+        }
+
+        // Fetch user stats if user is logged in
+        if (user?.username) {
+          const userRes = await fetch(`/api/weekly-contest/user?username=${encodeURIComponent(user.username)}`)
+          const userData = await userRes.json()
+
+          if (userData.success) {
+            setUserStats(userData.data)
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching contest data:", error)
+      } finally {
+        setLoading(false)
       }
-      setLoading(false)
     }
 
-    fetchEntries()
-  }, [])
+    fetchData()
+  }, [user?.username])
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -60,8 +83,6 @@ export default function WeeklyContestPage() {
 
   const time = formatCountdown(countdown)
   const contestEnded = countdown <= 0
-  const userEntry = entries.find((e) => e.user_id === user?.username)
-  const top20 = entries.slice(0, 20)
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white via-emerald-50 to-white pb-24">
@@ -108,7 +129,8 @@ export default function WeeklyContestPage() {
         {/* Contest Mission Headline Box */}
         <div className="bg-white border border-emerald-200 rounded-xl shadow-sm p-4 text-center">
           <h2 className="text-lg sm:text-xl font-bold text-emerald-700 leading-snug">
-            Your Mission:<br />
+            Your Mission:
+            <br />
             Pull as many <span className="text-amber-500">Legendary Cards</span> from Packs as possible!
           </h2>
         </div>
@@ -116,14 +138,20 @@ export default function WeeklyContestPage() {
         {/* User Progress */}
         <div className="bg-white border border-emerald-200 rounded-xl shadow-sm p-4">
           <h2 className="text-sm font-semibold text-emerald-700 mb-1">Your Progress</h2>
-          {userEntry ? (
-            <p className="text-sm text-gray-700">
-              You pulled{" "}
-              <span className="font-bold text-emerald-600">
-                {userEntry.legendary_count}
-              </span>{" "}
-              legendary card{userEntry.legendary_count !== 1 && "s"} this week.
-            </p>
+          {loading ? (
+            <p className="text-sm text-gray-500">Loading your stats...</p>
+          ) : userStats ? (
+            <div className="space-y-1">
+              <p className="text-sm text-gray-700">
+                You pulled <span className="font-bold text-emerald-600">{userStats.legendary_count}</span> legendary
+                card{userStats.legendary_count !== 1 && "s"} this week.
+              </p>
+              {userStats.rank && (
+                <p className="text-xs text-gray-600">
+                  Current rank: <span className="font-semibold">#{userStats.rank}</span>
+                </p>
+              )}
+            </div>
           ) : (
             <p className="text-sm text-gray-500">No legendary cards pulled yet this week.</p>
           )}
@@ -148,11 +176,11 @@ export default function WeeklyContestPage() {
           <h2 className="text-sm font-semibold text-emerald-700 mb-2">Top 20 Players</h2>
           {loading ? (
             <p className="text-center text-gray-500">Loading leaderboard...</p>
-          ) : top20.length === 0 ? (
+          ) : leaderboard.length === 0 ? (
             <p className="text-center text-gray-500">No entries yet this week.</p>
           ) : (
             <div className="space-y-2">
-              {top20.map((entry, index) => (
+              {leaderboard.map((entry, index) => (
                 <div
                   key={entry.user_id}
                   className={`flex justify-between items-center px-4 py-2 rounded-lg ${
@@ -164,13 +192,10 @@ export default function WeeklyContestPage() {
                   <div className="flex items-center gap-3">
                     <span className="text-sm font-bold w-6 text-gray-600">{index + 1}</span>
                     <span className="text-sm text-gray-800 truncate max-w-[120px]">
-                    {entry.user_id.length > 14 ? `${entry.user_id.slice(0, 14)}…` : entry.user_id}
+                      {entry.user_id.length > 14 ? `${entry.user_id.slice(0, 14)}…` : entry.user_id}
                     </span>
-
                   </div>
-                  <span className="text-sm font-semibold text-emerald-600">
-                    {entry.legendary_count}
-                  </span>
+                  <span className="text-sm font-semibold text-emerald-600">{entry.legendary_count}</span>
                 </div>
               ))}
             </div>

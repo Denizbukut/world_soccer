@@ -11,7 +11,6 @@ export async function GET() {
     .select("user_id, legendary_count")
     .eq("week_start_date", weekStart)
     .order("legendary_count", { ascending: false })
-    .limit(50)
 
   if (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 })

@@ -15,6 +15,7 @@ import Image from "next/image"
 import { incrementMission } from "@/app/actions/missions"
 import { incrementLegendaryDraw } from "../actions/weekly-contest"
 
+
 // Rarität definieren
 type CardRarity = "common" | "rare" | "epic" | "legendary"
 
@@ -83,6 +84,7 @@ export default function DrawPage() {
   const [hasPremiumPass, setHasPremiumPass] = useState(false)
   const [isUpdatingScore, setIsUpdatingScore] = useState(false)
   const [isMultiDraw, setIsMultiDraw] = useState(false) // Neu: für 5-Karten-Ziehen
+const [cardsArePreloaded, setCardsArePreloaded] = useState(false)
 
   // Animation states
   const [showPackSelection, setShowPackSelection] = useState(true)
@@ -113,6 +115,21 @@ export default function DrawPage() {
   const reflectionX = useTransform(x, [-100, 100], ["30%", "70%"])
   const reflectionY = useTransform(y, [-100, 100], ["30%", "70%"])
   const reflectionOpacity = useTransform(x, [-100, 0, 100], [0.7, 0.3, 0.7])
+
+  const preloadCardImages = async (cards: any[]) => {
+  const promises = cards.map(
+    (card) =>
+      new Promise<void>((resolve) => {
+        const img = new window.Image()
+        img.src = card.image_url || "/placeholder.svg"
+        img.onload = () => resolve()
+        img.onerror = () => resolve()
+      }),
+  )
+  await Promise.all(promises)
+  setCardsArePreloaded(true)
+}
+
 
   // Set isClient to true once component mounts
   useEffect(() => {
@@ -291,14 +308,13 @@ export default function DrawPage() {
 
   // Für Multi-Draw: Überspringe Rarity-Animation und verkürze Verzögerung
   if (isMultiDraw) {
+  preloadCardImages(drawnCards).then(() => {
     setTimeout(() => {
       setShowCards(true)
       setCardRevealed(true)
-      // Pack-Animation erst NACH dem Setzen der Card-States beenden
-      
       setShowPackAnimation(false)
-      
-    }, 2500) // Verkürzt von 2500ms auf 1000ms, da keine Rarity-Animation
+    }, 2500)
+  })
   } else {
     // Single-Draw Ablauf mit Karten-Flip-Animation
     setTimeout(() => {
@@ -419,7 +435,7 @@ setTimeout(() => {
     setScoreGained(0)
     setNewLevel(1)
     setIsMultiDraw(false) // Reset Multi-Draw Flag
-
+setCardsArePreloaded(false)
     refreshUserData?.()
 
     toast({

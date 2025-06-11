@@ -289,16 +289,16 @@ export default function DrawPage() {
   const handleOpenPack = () => {
   setPackOpened(true)
 
-  // Für Multi-Draw: Überspringe Rarity-Animation
+  // Für Multi-Draw: Überspringe Rarity-Animation und verkürze Verzögerung
   if (isMultiDraw) {
     setTimeout(() => {
       setShowCards(true)
       setCardRevealed(true)
       // Pack-Animation erst NACH dem Setzen der Card-States beenden
-      setTimeout(() => {
-        setShowPackAnimation(false)
-      }, 50) // Kurze Verzögerung um sicherzustellen, dass Cards bereit sind
-    }, 2500)
+      
+      setShowPackAnimation(false)
+      
+    }, 2500) // Verkürzt von 2500ms auf 1000ms, da keine Rarity-Animation
   } else {
     // Single-Draw Ablauf mit Karten-Flip-Animation
     setTimeout(() => {
@@ -1335,4 +1335,5 @@ setTimeout(() => {
         <MobileNav />
       </div>
     </ProtectedRoute>
-  )}
+  )
+}

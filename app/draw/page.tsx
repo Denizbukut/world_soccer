@@ -291,10 +291,11 @@ export default function DrawPage() {
 
     // Für Multi-Draw: Überspringe Rarity-Animation
     if (isMultiDraw) {
+  // Multi-Draw: Zeige Karten nach kurzer Pause, beende dann Packanimation
   setTimeout(() => {
     setShowCards(true)
     setCardRevealed(true)
-    setShowPackAnimation(false)
+    setShowPackAnimation(false) // <- erst nach dem Anzeigen
   }, 2500)
 } else {
   // Single-Draw Ablauf ohne White Flash
@@ -305,14 +306,10 @@ export default function DrawPage() {
       setShowRarityText(false)
       setShowCards(true)
       setCardRevealed(true)
+      setShowPackAnimation(false) // <- erst nachdem Karte sichtbar ist
     }, 2000)
 
   }, 2500)
-
-  // 👇 Packanimation *nach der RarityText-Aktivierung* beenden
-  setTimeout(() => {
-    setShowPackAnimation(false)
-  }, 2500 + 100) // z.B. 100ms später
 }
   }
 

@@ -15,7 +15,6 @@ import Image from "next/image"
 import { incrementMission } from "@/app/actions/missions"
 import { incrementLegendaryDraw } from "../actions/weekly-contest"
 
-
 // Rarität definieren
 type CardRarity = "common" | "rare" | "epic" | "legendary"
 
@@ -84,7 +83,6 @@ export default function DrawPage() {
   const [hasPremiumPass, setHasPremiumPass] = useState(false)
   const [isUpdatingScore, setIsUpdatingScore] = useState(false)
   const [isMultiDraw, setIsMultiDraw] = useState(false) // Neu: für 5-Karten-Ziehen
-const [cardsArePreloaded, setCardsArePreloaded] = useState(false)
 
   // Animation states
   const [showPackSelection, setShowPackSelection] = useState(true)
@@ -115,21 +113,6 @@ const [cardsArePreloaded, setCardsArePreloaded] = useState(false)
   const reflectionX = useTransform(x, [-100, 100], ["30%", "70%"])
   const reflectionY = useTransform(y, [-100, 100], ["30%", "70%"])
   const reflectionOpacity = useTransform(x, [-100, 0, 100], [0.7, 0.3, 0.7])
-
-  const preloadCardImages = async (cards: any[]) => {
-  const promises = cards.map(
-    (card) =>
-      new Promise<void>((resolve) => {
-        const img = new window.Image()
-        img.src = card.image_url || "/placeholder.svg"
-        img.onload = () => resolve()
-        img.onerror = () => resolve()
-      }),
-  )
-  await Promise.all(promises)
-  setCardsArePreloaded(true)
-}
-
 
   // Set isClient to true once component mounts
   useEffect(() => {
@@ -304,41 +287,45 @@ const [cardsArePreloaded, setCardsArePreloaded] = useState(false)
   )
 
   const handleOpenPack = () => {
-  setPackOpened(true)
+    setPackOpened(true)
 
-  // Für Multi-Draw: Überspringe Rarity-Animation und verkürze Verzögerung
-  if (isMultiDraw) {
-  preloadCardImages(drawnCards).then(() => {
-    setTimeout(() => {
-      setShowCards(true)
-      setCardRevealed(true)
-      setShowPackAnimation(false)
-    }, 2500)
-  })
-  } else {
-    // Single-Draw Ablauf mit Karten-Flip-Animation
-    setTimeout(() => {
-      setShowRarityText(true)
-
+    // Für Multi-Draw: Zeige alle 5 Rarities mit Slide-Animation
+    if (isMultiDraw) {
       setTimeout(() => {
-        setShowRarityText(false)
-        setShowCards(true)
-        // Karte zunächst nicht revealed (Rückseite zeigen)
-        setCardRevealed(false)
-        
-        // Pack-Animation beenden
+        setShowRarityText(true)
+
+        // Nach der Rarity-Animation die Karten anzeigen
         setTimeout(() => {
-          setShowPackAnimation(false)
-        }, 50)
-        
-        // Dann nach kurzer Verzögerung die Flip-Animation starten
-        setTimeout(() => {
+          setShowRarityText(false)
+          setShowCards(true)
           setCardRevealed(true)
-        }, 300) // 300ms Verzögerung für die Flip-Animation
-      }, 2000)
-    }, 2500)
+          setShowPackAnimation(false)
+        }, 2500) // Rarity-Animation für 2.5 Sekunden anzeigen
+      }, 2500) // 2.5 Sekunden nach Pack-Öffnung
+    } else {
+      // Single-Draw Ablauf mit Karten-Flip-Animation (unverändert)
+      setTimeout(() => {
+        setShowRarityText(true)
+
+        setTimeout(() => {
+          setShowRarityText(false)
+          setShowCards(true)
+          // Karte zunächst nicht revealed (Rückseite zeigen)
+          setCardRevealed(false)
+
+          // Pack-Animation beenden
+          setTimeout(() => {
+            setShowPackAnimation(false)
+          }, 50)
+
+          // Dann nach kurzer Verzögerung die Flip-Animation starten
+          setTimeout(() => {
+            setCardRevealed(true)
+          }, 300) // 300ms Verzögerung für die Flip-Animation
+        }, 2000)
+      }, 2500)
+    }
   }
-}
 
   const finishCardReview = async () => {
     if (!user || drawnCards.length === 0 || isUpdatingScore) return
@@ -376,25 +363,25 @@ const [cardsArePreloaded, setCardsArePreloaded] = useState(false)
     if (isMultiDraw) {
       setShowXpAnimation(true)
 
-setTimeout(() => {
-  setShowXpAnimation(false)
+      setTimeout(() => {
+        setShowXpAnimation(false)
 
-  if (newLevel > 1) {
-    setShowLevelUpAnimation(true)
+        if (newLevel > 1) {
+          setShowLevelUpAnimation(true)
 
-    if (user) {
-      updateScoreForLevelUp(user.username)
-        .then((result) => {
-          if (result.success && updateUserScore) {
-            updateUserScore(result.addedScore || 0)
+          if (user) {
+            updateScoreForLevelUp(user.username)
+              .then((result) => {
+                if (result.success && updateUserScore) {
+                  updateUserScore(result.addedScore || 0)
+                }
+              })
+              .catch(console.error)
           }
-        })
-        .catch(console.error)
-    }
-  } else {
-    resetStates()
-  }
-}, 1000)
+        } else {
+          resetStates()
+        }
+      }, 1000)
     } else {
       // Normale Single-Card Animation
       setShowXpAnimation(true)
@@ -435,7 +422,7 @@ setTimeout(() => {
     setScoreGained(0)
     setNewLevel(1)
     setIsMultiDraw(false) // Reset Multi-Draw Flag
-setCardsArePreloaded(false)
+
     refreshUserData?.()
 
     toast({
@@ -867,9 +854,9 @@ setCardsArePreloaded(false)
             )}
           </AnimatePresence>
 
-          {/* Rarity Text Animation - nur für Single Draw */}
+          {/* Rarity Text Animation - für Single Draw und Multi Draw */}
           <AnimatePresence>
-            {showRarityText && drawnCards.length > 0 && !isMultiDraw && (
+            {showRarityText && drawnCards.length > 0 && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -879,37 +866,83 @@ setCardsArePreloaded(false)
                 {/* Dark overlay */}
                 <div className="absolute inset-0 bg-black opacity-80" />
 
-                {/* Flying Rarity Text */}
-                <motion.div
-                  className="relative z-20 pointer-events-none"
-                  initial={{
-                    scale: 0,
-                    opacity: 0,
-                  }}
-                  animate={{
-                    scale: [0, 3, 2, 1],
-                    opacity: [0, 1, 1, 0],
-                    y: [0, 0, -50, -100],
-                  }}
-                  transition={{
-                    duration: 2,
-                    times: [0, 0.3, 0.7, 1],
-                  }}
-                >
-                  <div
-                    className={`text-5xl font-bold anime-text ${
-                      drawnCards[0]?.rarity === "legendary"
-                        ? "text-yellow-400"
-                        : drawnCards[0]?.rarity === "epic"
-                          ? "text-purple-400"
-                          : drawnCards[0]?.rarity === "rare"
-                            ? "text-blue-400"
-                            : "text-gray-400"
-                    }`}
-                  >
-                    {drawnCards[0]?.rarity?.toUpperCase()}
+                {isMultiDraw ? (
+                  // Multi-Draw: Alle 5 Rarities sliden von links und rechts abwechselnd ein
+                  <div className="relative z-20 flex flex-col items-center justify-center gap-4 h-[60vh]">
+                    {drawnCards.map((card, index) => {
+                      // Bestimme die Slide-Richtung basierend auf dem Index
+                      const slideFromLeft = index % 2 === 0 // 0, 2, 4 von links, 1, 3 von rechts
+
+                      return (
+                        <motion.div
+                          key={`rarity-${index}`}
+                          className="pointer-events-none"
+                          initial={{
+                            x: slideFromLeft ? "-100vw" : "100vw",
+                            opacity: 0,
+                          }}
+                          animate={{
+                            x: 0,
+                            opacity: 1,
+                          }}
+                          transition={{
+                            type: "spring",
+                            stiffness: 260,
+                            damping: 20,
+                            mass: 0.8,
+                            delay: index * 0.15, // Leicht verzögerter Start für jede Rarity
+                          }}
+                        >
+                          <div
+                            className={`text-4xl font-bold anime-text ${
+                              card?.rarity === "legendary"
+                                ? "text-yellow-400"
+                                : card?.rarity === "epic"
+                                  ? "text-purple-400"
+                                  : card?.rarity === "rare"
+                                    ? "text-blue-400"
+                                    : "text-gray-400"
+                            }`}
+                          >
+                            {card?.rarity?.toUpperCase()}
+                          </div>
+                        </motion.div>
+                      )
+                    })}
                   </div>
-                </motion.div>
+                ) : (
+                  // Single-Draw: Nur eine Rarity anzeigen (unverändert)
+                  <motion.div
+                    className="relative z-20 pointer-events-none"
+                    initial={{
+                      scale: 0,
+                      opacity: 0,
+                    }}
+                    animate={{
+                      scale: [0, 3, 2, 1],
+                      opacity: [0, 1, 1, 0],
+                      y: [0, 0, -50, -100],
+                    }}
+                    transition={{
+                      duration: 2,
+                      times: [0, 0.3, 0.7, 1],
+                    }}
+                  >
+                    <div
+                      className={`text-5xl font-bold anime-text ${
+                        drawnCards[0]?.rarity === "legendary"
+                          ? "text-yellow-400"
+                          : drawnCards[0]?.rarity === "epic"
+                            ? "text-purple-400"
+                            : drawnCards[0]?.rarity === "rare"
+                              ? "text-blue-400"
+                              : "text-gray-400"
+                      }`}
+                    >
+                      {drawnCards[0]?.rarity?.toUpperCase()}
+                    </div>
+                  </motion.div>
+                )}
               </motion.div>
             )}
           </AnimatePresence>
@@ -1207,7 +1240,7 @@ setCardsArePreloaded(false)
 
           {/* XP Gain Animation - nur für Single Draw */}
           <AnimatePresence>
-            {showXpAnimation &&  (
+            {showXpAnimation && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}

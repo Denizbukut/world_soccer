@@ -291,27 +291,29 @@ export default function DrawPage() {
 
     // Für Multi-Draw: Überspringe Rarity-Animation
     if (isMultiDraw) {
-      setTimeout(() => {
-  setShowCards(true)               // zeigt sofort Karten
-  setCardRevealed(true)            // Option: direkt zeigen ohne delay
-  setShowPackAnimation(false)      // blendet das Pack *danach* aus
-}, 2500)
-    } else {
-      // Normale Single-Card Animation
-      setTimeout(() => {
-        setShowPackAnimation(false)
-        setShowRarityText(true)
+  setTimeout(() => {
+    setShowCards(true)
+    setCardRevealed(true)
+    setShowPackAnimation(false)
+  }, 2500)
+} else {
+  // Single-Draw Ablauf ohne White Flash
+  setTimeout(() => {
+    setShowRarityText(true)
 
-        setTimeout(() => {
-          setShowRarityText(false)
-          setShowCards(true)
+    setTimeout(() => {
+      setShowRarityText(false)
+      setShowCards(true)
+      setCardRevealed(true)
+    }, 2000)
 
-          setTimeout(() => {
-            setCardRevealed(true)
-          }, 500)
-        }, 2000)
-      }, 2500)
-    }
+  }, 2500)
+
+  // 👇 Packanimation *nach der RarityText-Aktivierung* beenden
+  setTimeout(() => {
+    setShowPackAnimation(false)
+  }, 2500 + 100) // z.B. 100ms später
+}
   }
 
   const finishCardReview = async () => {

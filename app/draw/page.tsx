@@ -292,12 +292,10 @@ export default function DrawPage() {
     // Für Multi-Draw: Überspringe Rarity-Animation
     if (isMultiDraw) {
       setTimeout(() => {
-        setShowPackAnimation(false)
-        setShowCards(true)
-        setTimeout(() => {
-          setCardRevealed(true)
-        }, 500)
-      }, 2500)
+  setShowCards(true)               // zeigt sofort Karten
+  setCardRevealed(true)            // Option: direkt zeigen ohne delay
+  setShowPackAnimation(false)      // blendet das Pack *danach* aus
+}, 2500)
     } else {
       // Normale Single-Card Animation
       setTimeout(() => {

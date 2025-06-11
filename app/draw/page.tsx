@@ -300,19 +300,25 @@ export default function DrawPage() {
       }, 50) // Kurze Verzögerung um sicherzustellen, dass Cards bereit sind
     }, 2500)
   } else {
-    // Single-Draw Ablauf ohne White Flash
+    // Single-Draw Ablauf mit Karten-Flip-Animation
     setTimeout(() => {
       setShowRarityText(true)
 
       setTimeout(() => {
         setShowRarityText(false)
         setShowCards(true)
-        setCardRevealed(true)
+        // Karte zunächst nicht revealed (Rückseite zeigen)
+        setCardRevealed(false)
         
-        // Pack-Animation erst NACH dem Setzen aller Card-States beenden
+        // Pack-Animation beenden
         setTimeout(() => {
           setShowPackAnimation(false)
-        }, 50) // Kurze Verzögerung für nahtlosen Übergang
+        }, 50)
+        
+        // Dann nach kurzer Verzögerung die Flip-Animation starten
+        setTimeout(() => {
+          setCardRevealed(true)
+        }, 300) // 300ms Verzögerung für die Flip-Animation
       }, 2000)
     }, 2500)
   }
@@ -1329,5 +1335,4 @@ setTimeout(() => {
         <MobileNav />
       </div>
     </ProtectedRoute>
-  )
-}
+  )}

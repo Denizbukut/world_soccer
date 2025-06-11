@@ -287,31 +287,36 @@ export default function DrawPage() {
   )
 
   const handleOpenPack = () => {
-    setPackOpened(true)
+  setPackOpened(true)
 
-    // Für Multi-Draw: Überspringe Rarity-Animation
-    if (isMultiDraw) {
-  // Multi-Draw: Zeige Karten nach kurzer Pause, beende dann Packanimation
-  setTimeout(() => {
-    setShowCards(true)
-    setCardRevealed(true)
-    setShowPackAnimation(false) // <- erst nach dem Anzeigen
-  }, 2500)
-} else {
-  // Single-Draw Ablauf ohne White Flash
-  setTimeout(() => {
-    setShowRarityText(true)
-
+  // Für Multi-Draw: Überspringe Rarity-Animation
+  if (isMultiDraw) {
     setTimeout(() => {
-      setShowRarityText(false)
       setShowCards(true)
       setCardRevealed(true)
-      setShowPackAnimation(false) // <- erst nachdem Karte sichtbar ist
-    }, 2000)
+      // Pack-Animation erst NACH dem Setzen der Card-States beenden
+      setTimeout(() => {
+        setShowPackAnimation(false)
+      }, 50) // Kurze Verzögerung um sicherzustellen, dass Cards bereit sind
+    }, 2500)
+  } else {
+    // Single-Draw Ablauf ohne White Flash
+    setTimeout(() => {
+      setShowRarityText(true)
 
-  }, 2500)
-}
+      setTimeout(() => {
+        setShowRarityText(false)
+        setShowCards(true)
+        setCardRevealed(true)
+        
+        // Pack-Animation erst NACH dem Setzen aller Card-States beenden
+        setTimeout(() => {
+          setShowPackAnimation(false)
+        }, 50) // Kurze Verzögerung für nahtlosen Übergang
+      }, 2000)
+    }, 2500)
   }
+}
 
   const finishCardReview = async () => {
     if (!user || drawnCards.length === 0 || isUpdatingScore) return

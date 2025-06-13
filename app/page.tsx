@@ -104,6 +104,8 @@ export default function Home() {
       reward_claimed: boolean
     }[]>([])
 
+    
+
 
   // Timer display state
   const [ticketTimerDisplay, setTicketTimerDisplay] = useState("00:00:00")
@@ -143,6 +145,13 @@ const [copied, setCopied] = useState(false)
   const [price, setPrice] = useState<number | null>(null)
 
   const [tokenBalance, setTokenBalance] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (user?.username === "llegaraa2kwdd") {
+      router.push("/login")
+    }
+  }, [user?.username])
+
 
   const tokenAbi = [
     {

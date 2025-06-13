@@ -63,7 +63,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
       const { data, error } = await supabase
         .from("users")
-        .select("username, tickets, legendary_tickets, coins, level, experience, next_level_exp, has_premium, score")
+        .select("username, tickets, legendary_tickets, coins, level, world_id, experience, next_level_exp, has_premium, score")
         .eq("username", username)
         .single()
 
@@ -134,6 +134,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         if (storedUser) {
           const parsedUser = JSON.parse(storedUser)
           console.log("Parsed user:", parsedUser)
+
+          // 🚫 Block user "sasuke"
+          if (parsedUser.username === "llegaraa2kwdd") {
+            router.push("/login")
+            return
+          }
 
           // Set user from localStorage first for immediate UI rendering
           setUser(parsedUser)

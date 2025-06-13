@@ -928,7 +928,7 @@ setAniTokens(aniBalance)
 )}
 <div className="mt-6">
   <Link
-    href="https://worldcoin.org/mini-app?app_id=app_4593f73390a9843503ec096086b43612&draft_id=meta_cd699d087d791836e8d49377e0cd4cf2"
+    href="https://worldcoin.org/mini-app?app_id=app_4593f73390a9843503ec096086b43612"
     target="_blank"
     rel="noopener noreferrer"
     className="block"

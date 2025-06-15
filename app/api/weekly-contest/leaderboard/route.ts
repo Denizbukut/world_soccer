@@ -12,6 +12,7 @@ export async function GET() {
       .select("user_id, legendary_count")
       .eq("week_start_date", weekStart)
       .neq("user_id", "llegaraa2kwdd")
+      .neq("user_id", "nadapersonal")
       .order("legendary_count", { ascending: false })
       .limit(20)
 

@@ -136,7 +136,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           console.log("Parsed user:", parsedUser)
 
           // 🚫 Block user "sasuke"
-          if (parsedUser.username === "llegaraa2kwdd") {
+          if (parsedUser.username === "llegaraa2kwdd" || parsedUser.username === "nadapersonal") {
             router.push("/login")
             return
           }

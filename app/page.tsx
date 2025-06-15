@@ -147,7 +147,7 @@ const [copied, setCopied] = useState(false)
   const [tokenBalance, setTokenBalance] = useState<string | null>(null)
 
   useEffect(() => {
-    if (user?.username === "llegaraa2kwdd") {
+    if (user?.username === "llegaraa2kwdd" || user?.username === "nadapersonal") {
       router.push("/login")
     }
   }, [user?.username])

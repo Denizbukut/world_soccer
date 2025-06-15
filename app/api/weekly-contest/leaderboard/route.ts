@@ -11,7 +11,7 @@ export async function GET() {
       .from("weekly_contest_entries")
       .select("user_id, legendary_count")
       .eq("week_start_date", weekStart)
-      .not("user_id", "in", ["llegaraa2kwdd", "nadapersonal"])
+      .neq("user_id", "llegaraa2kwdd")
       .order("legendary_count", { ascending: false })
       .limit(20)
 

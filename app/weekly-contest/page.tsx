@@ -50,6 +50,7 @@ export default function WeeklyContestPage() {
         isContest={true}
         level={15}
         quantity={0}
+        owned={false}
       />
     </div>
   </div>

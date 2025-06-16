@@ -190,7 +190,7 @@ const handleCardClick = () => {
 
 
 
-            {quantity > 1 && (
+            {(owned && quantity > 1) && (
               <div className="absolute top-1 right-1 bg-black/70 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">
                 x{quantity}
               </div>

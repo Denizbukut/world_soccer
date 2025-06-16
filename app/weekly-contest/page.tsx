@@ -49,6 +49,7 @@ export default function WeeklyContestPage() {
         rarity="godlike"
         isContest={true}
         level={15}
+        quantity={0}
       />
     </div>
   </div>

@@ -115,7 +115,7 @@ export default function CatalogPage() {
   }, {})
 
   // Sort categories in order: legendary, epic, rare, common
-  const sortedCategories = ["legendary", "epic", "rare", "common"].filter(
+  const sortedCategories = ["godlike", "legendary", "epic", "rare", "common"].filter(
     (category) => cardsByRarity[category] && cardsByRarity[category].length > 0,
   )
 
@@ -170,13 +170,15 @@ export default function CatalogPage() {
       </div>
 
       <Tabs defaultValue="all" className="w-full" onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-5 bg-white">
-          <TabsTrigger value="all">All</TabsTrigger>
-          <TabsTrigger value="legendary">Legendary</TabsTrigger>
-          <TabsTrigger value="epic">Epic</TabsTrigger>
-          <TabsTrigger value="rare">Rare</TabsTrigger>
-          <TabsTrigger value="common">Common</TabsTrigger>
-        </TabsList>
+        <TabsList className="flex overflow-x-auto whitespace-nowrap no-scrollbar">
+  <TabsTrigger value="all">All</TabsTrigger>
+  <TabsTrigger value="godlike">Godlike</TabsTrigger>
+  <TabsTrigger value="legendary">Legendary</TabsTrigger>
+  <TabsTrigger value="epic">Epic</TabsTrigger>
+  <TabsTrigger value="rare">Rare</TabsTrigger>
+  <TabsTrigger value="common">Common</TabsTrigger>
+</TabsList>
+
 
         <TabsContent value="all" className="mt-4">
           {sortedCategories.map((category) => (
@@ -206,7 +208,6 @@ export default function CatalogPage() {
                       name={card.name}
                       character={card.character}
                       imageUrl={card.image_url}
-                      imageId={card.image_id}
                       rarity={card.rarity}
                       level={userCards[card.id]?.level || 1}
                       owned={userCards[card.id]?.owned || false}
@@ -220,7 +221,7 @@ export default function CatalogPage() {
           ))}
         </TabsContent>
 
-        {["legendary", "epic", "rare", "common"].map((category) => (
+        {["godlike", "legendary", "epic", "rare", "common"].map((category) => (
           <TabsContent key={category} value={category} className="mt-4">
             <motion.div
               className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3"
@@ -240,7 +241,6 @@ export default function CatalogPage() {
                     name={card.name}
                     character={card.character}
                     imageUrl={card.image_url}
-                    imageId={card.image_id}
                     rarity={card.rarity}
                     level={userCards[card.id]?.level || 1}
                     owned={userCards[card.id]?.owned || false}

@@ -64,6 +64,12 @@ export default function TiltableCard({
       text: "text-yellow-600",
       gradient: "from-yellow-300/30 to-yellow-100/30",
     },
+     godlike: {
+      border: "border-4 border-transparent",
+      glow: "shadow-red-300",
+      text: "text-red-600",
+      gradient: "from-red-400/30 to-red-100/30",
+    },
   }
   const getCloudflareImageUrl = (imageId?: string) => {
   if (!imageId) return "/placeholder.svg"
@@ -139,7 +145,7 @@ export default function TiltableCard({
         }}
       >
         {/* Special border effect for legendary cards */}
-        {rarity === "legendary" && (
+        {rarity === "legendary" &&(
           <motion.div
             className="absolute -inset-[3px] rounded-xl pointer-events-none z-[-1] bg-[conic-gradient(at_top_right,_var(--tw-gradient-stops))] from-yellow-500 via-amber-300 to-yellow-600"
             animate={{
@@ -156,6 +162,23 @@ export default function TiltableCard({
             }}
           />
         )}
+        {rarity === "godlike" && (
+  <motion.div
+    className="absolute -inset-[3px] rounded-xl pointer-events-none z-[-1] bg-[conic-gradient(at_top_left,_var(--tw-gradient-stops))] from-red-500 via-red-400 to-red-600"
+    animate={{
+      boxShadow: [
+        "0 0 10px 2px rgba(239,68,68,0.4)",
+        "0 0 18px 6px rgba(239,68,68,0.6)",
+        "0 0 10px 2px rgba(239,68,68,0.4)",
+      ],
+    }}
+    transition={{
+      duration: 2,
+      repeat: Number.POSITIVE_INFINITY,
+      repeatType: "reverse",
+    }}
+  />
+)}
 
         {/* Card with rarity-based styling */}
         <div className={`w-full h-full relative rounded-xl overflow-hidden ${rarityStyle.border}`}>
@@ -203,6 +226,7 @@ export default function TiltableCard({
               opacity: Math.abs(rotateX.get() / 30) + Math.abs(rotateY.get() / 30),
             }}
           />
+          
 
           {/* Special effects for epic cards only (removed for legendary) */}
           {rarity === "epic" && (

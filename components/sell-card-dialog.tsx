@@ -22,7 +22,7 @@ type UserCard = {
   name: string
   character: string
   image_url?: string
-  rarity: "common" | "rare" | "epic" | "legendary"
+  rarity: "common" | "rare" | "epic" | "legendary" | "godlike"
   level: number
   quantity: number
 }
@@ -66,6 +66,7 @@ useEffect(() => {
         rare: 150,
         epic: 500,
         legendary: 2000,
+        godlike: 10000,
       }[rarity] || 50
 
     // Erhöhe den Preis basierend auf dem Level
@@ -82,6 +83,7 @@ useEffect(() => {
   : card.rarity === "legendary"
     ? 1
     : 0.3
+
 
 const isValidPrice =
   !isNaN(parsedPrice) &&
@@ -172,6 +174,11 @@ const isValidPrice =
       border: "border-yellow-500",
       text: "text-yellow-600",
       badge: "bg-amber-500",
+    },
+    godlike: {
+      border: "border-red-500",
+      text: "text-red-600",
+      badge: "bg-red-500",
     },
   }
 
@@ -279,6 +286,7 @@ const isValidPrice =
     {`Starting price is ${minWldPrice.toFixed(3)} WLD (~$${(minWldPrice * (priceUsdPerWLD || 1)).toFixed(2)})`}
   </p>
 )}
+
 
               </div>
 

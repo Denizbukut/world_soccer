@@ -74,8 +74,6 @@ function toUserCard(data: unknown): UserCard | null {
 
   const obj = data as Record<string, unknown>
 
-  // Log the received data to help diagnose issues
-  console.log("Processing user card data:", obj)
 
   // Check if required properties exist with more detailed logging
   // IMPORTANT: Allow id to be either string or number
@@ -494,6 +492,20 @@ const [cardFromParams, setCardFromParams] = useState<Card | null>(null)
   // Background patterns based on rarity
   const getBackgroundPattern = (rarity: string) => {
     switch (rarity) {
+      case "godlike":
+        return {
+          backgroundImage: `
+            radial-gradient(circle at 25% 25%, rgba(239, 68, 68, 0.15) 2%, transparent 10%),
+            radial-gradient(circle at 75% 75%, rgba(239, 68, 68, 0.15) 2%, transparent 10%),
+            radial-gradient(circle at 50% 50%, rgba(239, 68, 68, 0.1) 5%, transparent 15%),
+            linear-gradient(45deg, rgba(239, 68, 68, 0.05) 25%, transparent 25%, transparent 50%, rgba(239, 68, 68, 0.05) 50%, rgba(239, 68, 68, 0.05) 75%, transparent 75%, transparent),
+            linear-gradient(135deg, rgba(220, 38, 38, 0.05) 25%, transparent 25%, transparent 50%, rgba(220, 38, 38, 0.05) 50%, rgba(220, 38, 38, 0.05) 75%, transparent 75%, transparent)
+          `,
+          backgroundSize: "80px 80px, 80px 80px, 120px 120px, 40px 40px, 40px 40px",
+          backgroundPosition: "0 0, 0 0, 0 0, 0 0, 0 0",
+          animation: "backgroundShimmer 10s linear infinite",
+        }
+
       case "legendary":
         return {
           backgroundImage: `
@@ -586,6 +598,8 @@ const [cardFromParams, setCardFromParams] = useState<Card | null>(null)
       className="min-h-screen pb-20 relative overflow-hidden"
       style={{
         background: `linear-gradient(to bottom right, ${
+          card.rarity === "godlike"
+    ? "rgba(254, 202, 202, 0.2), rgba(239, 68, 68, 0.1)" :
           card.rarity === "legendary"
             ? "rgba(254, 240, 138, 0.2), rgba(250, 204, 21, 0.1)"
             : card.rarity === "epic"
@@ -602,6 +616,33 @@ const [cardFromParams, setCardFromParams] = useState<Card | null>(null)
       <div className="absolute inset-0 z-0 opacity-70" style={backgroundStyle} />
 
       {/* Floating elements for legendary cards */}
+      {card.rarity === "godlike" && (
+  <>
+    {[...Array(6)].map((_, i) => (
+      <motion.div
+        key={i}
+        className="absolute rounded-full bg-red-400/20 z-0"
+        style={{
+          width: `${Math.random() * 50 + 20}px`,
+          height: `${Math.random() * 50 + 20}px`,
+          left: `${Math.random() * 100}%`,
+          top: `${Math.random() * 100}%`,
+        }}
+        animate={{
+          y: [0, -20, 0],
+          opacity: [0.2, 0.6, 0.2],
+        }}
+        transition={{
+          duration: Math.random() * 3 + 2,
+          repeat: Number.POSITIVE_INFINITY,
+          repeatType: "reverse",
+          delay: Math.random() * 2,
+        }}
+      />
+    ))}
+  </>
+)}
+
       {card.rarity === "legendary" && (
         <>
           {[...Array(8)].map((_, i) => (
@@ -757,6 +798,8 @@ const [cardFromParams, setCardFromParams] = useState<Card | null>(null)
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4, duration: 0.5 }}
                 className={`bg-white/90 backdrop-blur-sm rounded-xl p-4 border ${
+                  card.rarity === "godlike"
+  ? "border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.3)]" :
                   card.rarity === "legendary"
                     ? "border-yellow-300 shadow-[0_0_15px_rgba(253,224,71,0.3)]"
                     : card.rarity === "epic"
@@ -771,7 +814,8 @@ const [cardFromParams, setCardFromParams] = useState<Card | null>(null)
                   <Badge
                     variant="outline"
                     className={`
-                      ${
+                      ${card.rarity === "godlike"
+  ? "bg-red-100 text-red-800 border-red-300" :
                         card.rarity === "legendary"
                           ? "bg-yellow-100 text-yellow-800 border-yellow-300"
                           : card.rarity === "epic"
@@ -974,6 +1018,8 @@ const [cardFromParams, setCardFromParams] = useState<Card | null>(null)
 
                       <Button
                         className={`w-full ${
+                          card.rarity === "godlike"
+  ? "bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600":
                           card.rarity === "legendary"
                             ? "bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600"
                             : card.rarity === "epic"
@@ -1046,7 +1092,7 @@ const [cardFromParams, setCardFromParams] = useState<Card | null>(null)
             name: card.name,
             character: card.character,
             image_url: card.image_url,
-            rarity: card.rarity as "common" | "rare" | "epic" | "legendary",
+            rarity: card.rarity as "common" | "rare" | "epic" | "legendary" | "godlike",
             level: selectedUserCard.level || 1,
             quantity: selectedUserCard.quantity,
           }}

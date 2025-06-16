@@ -27,6 +27,7 @@ export default function CardDetailModal({ open, onClose, card }: CardDetailModal
     rare: "bg-blue-100 text-blue-700",
     epic: "bg-purple-100 text-purple-700",
     legendary: "bg-yellow-100 text-yellow-700",
+    godlike: "bg-red-100 text-red-700",
   }[rarity] || "bg-gray-100 text-gray-700";
 
   return (

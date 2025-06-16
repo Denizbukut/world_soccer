@@ -25,6 +25,8 @@ export default function CollectionPage() {
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState("all")
   const [searchTerm, setSearchTerm] = useState("")
+  const [selectedEpoch, setSelectedEpoch] = useState<number | "all">("all")
+
 
   // Fetch user's cards
   useEffect(() => {
@@ -67,7 +69,7 @@ export default function CollectionPage() {
         // 3. Fetch the card details
         const { data: cardsData, error: cardsError } = await supabase
           .from("cards")
-          .select("id, name, character, image_url, rarity")
+          .select("id, name, character, image_url, rarity, epoch")
           .in("id", cardIds)
 
         if (cardsError) {
@@ -147,15 +149,16 @@ export default function CollectionPage() {
 
   // Calculate collection stats
   const collectionStats = userCards.reduce(
-    (acc, card) => {
-      acc.total += card.quantity || 0
-      if (card.rarity) {
-        acc[card.rarity] = (acc[card.rarity] || 0) + (card.quantity || 0)
-      }
-      return acc
-    },
-    { total: 0, common: 0, rare: 0, epic: 0, legendary: 0 },
-  )
+  (acc, card) => {
+    acc.total += card.quantity || 0
+    if (card.rarity) {
+      acc[card.rarity] = (acc[card.rarity] || 0) + (card.quantity || 0)
+    }
+    return acc
+  },
+  { total: 0, common: 0, rare: 0, epic: 0, legendary: 0, godlike: 0 }, // ← hier ergänzt
+)
+
 
   if (loading) {
     return (
@@ -254,28 +257,22 @@ export default function CollectionPage() {
                 </Button>
               </Link>
             </div>
-            <div className="grid grid-cols-5 gap-2 text-center">
-              <div className="bg-gray-50 rounded-lg p-2">
-                <div className="text-lg font-semibold">{collectionStats.total}</div>
-                <div className="text-xs text-gray-500">Total</div>
-              </div>
-              <div className="bg-gray-50 rounded-lg p-2">
-                <div className="text-lg font-semibold text-gray-600">{collectionStats.common}</div>
-                <div className="text-xs text-gray-500">Common</div>
-              </div>
-              <div className="bg-gray-50 rounded-lg p-2">
-                <div className="text-lg font-semibold text-blue-600">{collectionStats.rare}</div>
-                <div className="text-xs text-gray-500">Rare</div>
-              </div>
-              <div className="bg-gray-50 rounded-lg p-2">
-                <div className="text-lg font-semibold text-purple-600">{collectionStats.epic}</div>
-                <div className="text-xs text-gray-500">Epic</div>
-              </div>
-              <div className="bg-gray-50 rounded-lg p-2">
-                <div className="text-lg font-semibold text-amber-600">{collectionStats.legendary}</div>
-                <div className="text-xs text-gray-500">Legend</div>
-              </div>
-            </div>
+            <div className="grid grid-cols-3 gap-2 text-center">
+  {[
+    { label: "Total", value: collectionStats.total, color: "text-gray-600" },
+    { label: "Common", value: collectionStats.common, color: "text-gray-600" },
+    { label: "Rare", value: collectionStats.rare, color: "text-blue-600" },
+    { label: "Epic", value: collectionStats.epic, color: "text-purple-600" },
+    { label: "Legend", value: collectionStats.legendary, color: "text-amber-600" },
+    { label: "Godlike", value: collectionStats.godlike, color: "text-[#b91c1c]" },
+  ].map((stat) => (
+    <div key={stat.label} className="bg-gray-50 rounded-lg p-2">
+      <div className={`text-lg font-semibold ${stat.color}`}>{stat.value}</div>
+      <div className="text-xs text-gray-500">{stat.label}</div>
+    </div>
+  ))}
+</div>
+
 
             {/* Level System Info Button - Now positioned below the stats grid */}
             <div className="mt-3 flex justify-center">
@@ -302,26 +299,18 @@ export default function CollectionPage() {
           </div>
 
           <Tabs defaultValue="all" className="w-full" onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-5 bg-white h-9">
-              <TabsTrigger value="all" className="text-xs h-7">
-                All
-              </TabsTrigger>
-              <TabsTrigger value="legendary" className="text-xs h-7">
-                Legendary
-              </TabsTrigger>
-              <TabsTrigger value="epic" className="text-xs h-7">
-                Epic
-              </TabsTrigger>
-              <TabsTrigger value="rare" className="text-xs h-7">
-                Rare
-              </TabsTrigger>
-              <TabsTrigger value="common" className="text-xs h-7">
-                Common
-              </TabsTrigger>
-            </TabsList>
+            <TabsList className="grid w-full grid-cols-6 bg-white h-9">
+  <TabsTrigger value="all" className="text-xs h-7">All</TabsTrigger>
+  <TabsTrigger value="godlike" className="text-xs h-7">Godlike</TabsTrigger>
+  <TabsTrigger value="legendary" className="text-xs h-7">Legendary</TabsTrigger>
+  <TabsTrigger value="epic" className="text-xs h-7">Epic</TabsTrigger>
+  <TabsTrigger value="rare" className="text-xs h-7">Rare</TabsTrigger>
+  <TabsTrigger value="common" className="text-xs h-7">Common</TabsTrigger>
+</TabsList>
+
           </Tabs>
         </motion.div>
-
+ 
         {/* Cards by Level */}
         {sortedLevels.length > 0 ? (
           sortedLevels.map((level) => (

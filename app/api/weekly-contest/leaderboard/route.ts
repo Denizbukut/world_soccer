@@ -3,7 +3,7 @@ import { NextResponse } from "next/server"
 
 export async function GET() {
   const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
-  const weekStart = "2025-06-09"
+  const weekStart = "2025-06-16"
 
   try {
     // Nur die Top 20 abrufen

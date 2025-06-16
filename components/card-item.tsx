@@ -41,7 +41,12 @@ interface CardItemProps {
   onClick?: () => void
   selectable?: boolean
   isCollection?: boolean
+  isContest?: boolean
   hideOverlay?: boolean
+  forceEager?: boolean
+  // props
+disableEffect?: boolean
+
 }
 
 
@@ -63,36 +68,48 @@ export function CardItem({
   onClick,
   selectable = false,
   isCollection = false,
+  isContest = false,
   hideOverlay = false,
+  forceEager = false,
+  // props
+disableEffect = false
+
 }: CardItemProps) {
   if (!id) return null
 
   const rarityStyles = {
-    common: {
-      border: "border-4 border-gray-400",
-      glow: "shadow-gray-300",
-      text: "text-gray-600",
-      gradient: "from-gray-300/30 to-gray-100/30",
-    },
-    rare: {
-      border: "border-4 border-blue-500",
-      glow: "shadow-blue-300",
-      text: "text-blue-600",
-      gradient: "from-blue-300/30 to-blue-100/30",
-    },
-    epic: {
-      border: "border-4 border-purple-500",
-      glow: "shadow-purple-300",
-      text: "text-purple-600",
-      gradient: "from-purple-300/30 to-purple-100/30",
-    },
-    legendary: {
-      border: "border-4 border-yellow-500",
-      glow: "shadow-yellow-300",
-      text: "text-yellow-600",
-      gradient: "from-yellow-300/30 to-yellow-100/30",
-    },
-  }
+  common: {
+    border: "border-4 border-gray-400",
+    glow: "shadow-gray-300",
+    text: "text-gray-600",
+    gradient: "from-gray-300/30 to-gray-100/30",
+  },
+  rare: {
+    border: "border-4 border-blue-500",
+    glow: "shadow-blue-300",
+    text: "text-blue-600",
+    gradient: "from-blue-300/30 to-blue-100/30",
+  },
+  epic: {
+    border: "border-4 border-purple-500",
+    glow: "shadow-purple-300",
+    text: "text-purple-600",
+    gradient: "from-purple-300/30 to-purple-100/30",
+  },
+  legendary: {
+    border: "border-4 border-yellow-500",
+    glow: "shadow-yellow-300",
+    text: "text-yellow-600",
+    gradient: "from-yellow-300/30 to-yellow-100/30",
+  },
+  godlike: {
+    border: "border-4 border-red-600",
+    glow: "shadow-red-400",
+    text: "text-red-600",
+    gradient: "from-red-500/30 to-red-100/30",
+  },
+}
+
 
   const rarityStyle = rarityStyles[rarity as keyof typeof rarityStyles] || rarityStyles.common
   const placeholderUrl = "/placeholder.svg"
@@ -167,10 +184,11 @@ const handleCardClick = () => {
             <img
               src={cardImageUrl}
               alt="Card"
-              sizes="(max-width: 640px) 20vw, (max-width: 768px) 16vw, (max-width: 1024px) 20vw, 33vw"
               className="w-full h-full object-cover"
-              loading="lazy"
+              loading={forceEager ? "eager" : "lazy"}
             />
+
+
 
             {quantity > 1 && (
               <div className="absolute top-1 right-1 bg-black/70 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">
@@ -186,11 +204,11 @@ const handleCardClick = () => {
               </div>
             )}
 
-            {isCollection && (
+            {isCollection || isContest && (
               <div className="absolute bottom-1 left-0 right-0 flex justify-center">{renderStars(level, "xs")}</div>
             )}
 
-            {(rarity === "legendary" || rarity === "epic") && (
+            {!disableEffect && (rarity === "legendary" || rarity === "epic" || rarity === "godlike") && (
               <motion.div
                 className={`absolute inset-0 pointer-events-none mix-blend-overlay rounded-xl ${
                   rarity === "legendary" ? "bg-yellow-300" : "bg-purple-300"

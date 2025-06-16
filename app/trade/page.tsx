@@ -64,7 +64,7 @@ type Card = {
   name: string
   character: string
   image_url?: string
-  rarity: "common" | "rare" | "epic" | "legendary"
+  rarity: "common" | "rare" | "epic" | "legendary" | "godlike"
 }
 
 type MarketListing = {
@@ -639,6 +639,7 @@ useEffect(() => {
                         <SelectItem value="rare">Rare</SelectItem>
                         <SelectItem value="epic">Epic</SelectItem>
                         <SelectItem value="legendary">Legendary</SelectItem>
+                        <SelectItem value="godlike">Godlike</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -1114,6 +1115,7 @@ useEffect(() => {
                         ${selectedListing.card.rarity === "rare" ? "bg-blue-500" : ""}
                         ${selectedListing.card.rarity === "epic" ? "bg-purple-500" : ""}
                         ${selectedListing.card.rarity === "legendary" ? "bg-amber-500" : ""}
+                        ${selectedListing.card.rarity === "godlike" ? "bg-red-500" : ""}
                       `}
                       >
                         {selectedListing.card.rarity}
@@ -1237,6 +1239,11 @@ function MarketplaceCard({
       border: "border-yellow-500",
       text: "text-yellow-600",
       badge: "bg-amber-500",
+    },
+    godlike: {
+      border: "border-red-500",
+      text: "text-red-600",
+      badge: "bg-red-500",
     },
   }
 
@@ -1363,6 +1370,11 @@ function MyListingCard({
       text: "text-yellow-600",
       badge: "bg-amber-500",
     },
+    godlike: {
+      border: "border-red-500",
+      text: "text-red-600",
+      badge: "bg-red-500",
+    },
   }
 
   const rarityStyle = rarityStyles[listing.card.rarity as keyof typeof rarityStyles] || rarityStyles.common
@@ -1482,6 +1494,11 @@ function TransactionCard({ transaction }: { transaction: Transaction }) {
       text: "text-yellow-600",
       badge: "bg-amber-500",
     },
+    godlike: {
+      border: "border-red-500",
+      text: "text-red-600",
+      badge: "bg-red-500",
+    },
   }
 
   const rarityStyle = rarityStyles[transaction.card.rarity as keyof typeof rarityStyles] || rarityStyles.common
@@ -1580,6 +1597,11 @@ function RecentSaleCard({ sale }: { sale: RecentSale }) {
       border: "border-yellow-500",
       text: "text-yellow-600",
       badge: "bg-amber-500",
+    },
+    godlike: {
+      border: "border-red-500",
+      text: "text-red-600",
+      badge: "bg-red-500",
     },
   }
 

@@ -19,6 +19,7 @@ const rarityMapping: Record<string, string> = {
   rare: "R",
   epic: "E",
   legendary: "L",
+  godlike: "G"
 }
 
 // Map display categories back to database rarities
@@ -27,6 +28,7 @@ const categoryToRarities: Record<string, string[]> = {
   R: ["rare"],
   E: ["epic"],
   L: ["legendary"],
+  G: ["godlike"]
 }
 
 export default function CardCatalog({ username, searchTerm = "" }: CardCatalogProps) {
@@ -119,7 +121,7 @@ export default function CardCatalog({ username, searchTerm = "" }: CardCatalogPr
   }, {})
 
   // Sort categories in order: L, E, R, C
-  const sortedCategories = ["L", "E", "R", "C"].filter(
+  const sortedCategories = ["G", "L", "E", "R", "C"].filter(
     (category) => cardsByRarity[category] && cardsByRarity[category].length > 0,
   )
 
@@ -140,6 +142,9 @@ export default function CardCatalog({ username, searchTerm = "" }: CardCatalogPr
       <TabsList className="grid w-full grid-cols-5 bg-white text-black">
         <TabsTrigger value="all" className="text-black data-[state=active]:bg-gray-200 data-[state=active]:text-black">
           All
+        </TabsTrigger>
+        <TabsTrigger value="G" className="text-black data-[state=active]:bg-gray-200 data-[state=active]:text-black">
+          Godlike
         </TabsTrigger>
         <TabsTrigger value="L" className="text-black data-[state=active]:bg-gray-200 data-[state=active]:text-black">
           Legendary

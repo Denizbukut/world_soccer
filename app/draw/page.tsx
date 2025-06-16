@@ -96,6 +96,8 @@ export default function DrawPage() {
   const [showLevelUpAnimation, setShowLevelUpAnimation] = useState(false)
   const [newLevel, setNewLevel] = useState(1)
   const [scoreGained, setScoreGained] = useState(0)
+  const [selectedCardIndex, setSelectedCardIndex] = useState<number | null>(null)
+
 
   // Hydration safety
   const [isClient, setIsClient] = useState(false)
@@ -113,6 +115,12 @@ export default function DrawPage() {
   const reflectionX = useTransform(x, [-100, 100], ["30%", "70%"])
   const reflectionY = useTransform(y, [-100, 100], ["30%", "70%"])
   const reflectionOpacity = useTransform(x, [-100, 0, 100], [0.7, 0.3, 0.7])
+
+  const getSelectedCard = () => {
+  if (selectedCardIndex === null) return null
+  return drawnCards[selectedCardIndex]
+}
+
 
   // Set isClient to true once component mounts
   useEffect(() => {
@@ -178,7 +186,6 @@ export default function DrawPage() {
     async (cardType: string, count = 1) => {
       // Verhindere mehrfache Aufrufe wenn bereits ein Draw läuft
       if (isDrawing) {
-        console.log("Draw already in progress, ignoring request")
         return
       }
 
@@ -208,7 +215,6 @@ export default function DrawPage() {
       setCurrentCardIndex(0)
       setCardRevealed(false)
 
-      console.log(`Starting draw: ${count} ${cardType} pack(s)`)
 
       try {
         const response = await fetch("/api/draw", {
@@ -226,7 +232,6 @@ export default function DrawPage() {
         }
 
         const result = await response.json()
-        console.log("Draw result received:", result)
 
         // Mission tracking für legendary cards - zähle alle legendären Karten auf einmal
         const legendaryCards = result.drawnCards?.filter((card: any) => card.rarity === "legendary") || []
@@ -235,15 +240,23 @@ export default function DrawPage() {
           await incrementMission(user.username, "draw_legendary_card", legendaryCards.length)
 
           // Use the optimized batch update for weekly contest
-          await incrementLegendaryDraw(user.username, legendaryCards.length)
         }
 
         if (cardType === "legendary") {
           await incrementMission(user.username, "open_legendary_pack", count)
           await incrementMission(user.username, "open_3_legendary_packs", count)
+
+          
         } else {
           await incrementMission(user.username, "open_regular_pack", count)
         }
+        
+        const narutoCards = result.drawnCards?.filter((card: any) => card.character === "Naruto") || []
+        
+        if (narutoCards.length > 0 ){
+          await incrementLegendaryDraw(user.username, narutoCards.length)
+        }
+        
 
         if (result.success && result.drawnCards?.length > 0) {
           setDrawnCards(result.drawnCards)
@@ -333,11 +346,9 @@ export default function DrawPage() {
     setIsUpdatingScore(true)
 
     try {
-      console.log("Updating score for drawn cards:", drawnCards)
       const scoreResult = await updateScoreForCards(user.username, drawnCards)
 
       if (scoreResult.success) {
-        console.log("Score updated successfully:", scoreResult)
         setScoreGained(scoreResult.addedScore)
 
         if (updateUserScore) {
@@ -396,7 +407,6 @@ export default function DrawPage() {
             updateScoreForLevelUp(user.username)
               .then((result) => {
                 if (result.success && updateUserScore) {
-                  console.log("Level-up score updated successfully:", result)
                   updateUserScore(result.addedScore || 0)
                 } else {
                   console.error("Failed to update level-up score:", result.error)
@@ -877,6 +887,7 @@ export default function DrawPage() {
                         <motion.div
                           key={`rarity-${index}`}
                           className="pointer-events-none"
+                          
                           initial={{
                             x: slideFromLeft ? "-100vw" : "100vw",
                             opacity: 0,
@@ -969,6 +980,7 @@ export default function DrawPage() {
                         return (
                           <motion.div
                             key={`multi-card-${index}`}
+                            onClick={() => setSelectedCardIndex(index)}
                             className={`flex-shrink-0 w-16 h-full rounded-xl overflow-hidden border-4 relative ${rarityStyles.border}`}
                             initial={{ opacity: 0, y: -100 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -1233,6 +1245,42 @@ export default function DrawPage() {
                       `Add ${isMultiDraw ? "Cards" : "Card"} to Collection`
                     )}
                   </Button>
+          {selectedCardIndex !== null && (
+  <motion.div
+    className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 px-4"
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+  >
+    <div className="relative w-full max-w-xs aspect-[9/16]">
+      <motion.div
+        className={`relative w-full h-full rounded-xl overflow-hidden border-4 ${
+          getRarityStyles(getSelectedCard()?.rarity).border
+        }`}
+        initial={{ scale: 0.9 }}
+        animate={{ scale: 1 }}
+        transition={{ type: "spring", stiffness: 120 }}
+      >
+        <Image
+          src={getSelectedCard()?.image_url || "/placeholder.svg?height=400&width=300"}
+          alt={getSelectedCard()?.name || "Card"}
+          fill
+          className="object-cover object-center rounded-xl"
+        />
+      </motion.div>
+
+      {/* Close Button */}
+      <button
+        onClick={() => setSelectedCardIndex(null)}
+        className="absolute top-2 right-2 bg-white/90 hover:bg-white text-gray-800 px-3 py-1 rounded-full text-sm font-medium shadow"
+      >
+        Close
+      </button>
+    </div>
+  </motion.div>
+)}
+
+
                 </div>
               </motion.div>
             )}

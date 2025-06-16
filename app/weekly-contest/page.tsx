@@ -11,7 +11,7 @@ const WEEKLY_PRIZE_POOL = [
   { rank: "1st Place", reward: "100 WLD", icon: "🥇" },
   { rank: "2nd Place", reward: "80 WLD", icon: "🥈" },
   { rank: "3rd Place", reward: "50 WLD", icon: "🥉" },
-  { rank: "4th–7th Place", reward: "25 WLD each", icon: "🥉" },
+  { rank: "4th–7th Place", reward: "25 WLD each", icon: "🎖️" },
   { rank: "8th–12th Place", reward: "15 WLD each", icon: "🎖️" },
 ]
 

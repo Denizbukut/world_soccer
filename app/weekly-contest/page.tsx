@@ -48,7 +48,6 @@ export default function WeeklyContestPage() {
         imageUrl="itachi_oneofone.jpg"
         rarity="godlike"
         isContest={true}
-        owned={true}
         level={15}
       />
     </div>

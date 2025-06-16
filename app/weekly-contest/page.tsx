@@ -163,7 +163,7 @@ export default function WeeklyContestPage() {
             <div className="space-y-1">
               <p className="text-sm text-gray-700">
                 You pulled <span className="font-bold text-emerald-600">{userStats.legendary_count}</span>
-                card{userStats.legendary_count !== 1 && "s"} from the Anime <b>Naruto</b> this week.
+                 card{userStats.legendary_count !== 1 && "s"} from the Anime <b>Naruto</b> this week.
               </p>
               {userStats.rank && (
                 <p className="text-xs text-gray-600">

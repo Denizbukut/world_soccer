@@ -967,7 +967,48 @@ const [copied, setCopied] = useState(false)
               </Link>
             </div>
           </motion.div>
-        
+        <motion.div
+  initial={{ opacity: 0, y: 8 }}
+  animate={{ opacity: 1, y: 0 }}
+  transition={{ duration: 0.3 }}
+>
+  <div className="relative w-full rounded-2xl bg-white/70 backdrop-blur-xl border border-gray-200 p-4 shadow-lg hover:shadow-xl transition group flex justify-between items-center">
+  {/* Left Section */}
+    <div className="flex items-center gap-4">
+      <div className="w-11 h-11 rounded-xl flex items-center justify-center bg-orange-100 shadow-inner">
+        <Ticket className="w-5 h-5 text-orange-500" />
+      </div>
+      <div>
+        <h3 className="text-sm font-bold text-gray-900">500 Regular Tickets</h3>
+        <p className="text-xs text-gray-500 group-hover:text-gray-700 transition">
+          <span className="font-semibold text-gray-800">Only $17</span>
+          {price && (
+            <span className="ml-1 text-xs text-gray-400">
+              (~{(17 / price).toFixed(3)} WLD)
+            </span>
+          )}
+        </p>
+      </div>
+    </div>
+
+    {/* Right Section */}
+    <Button
+  size="sm"
+  className="rounded-full px-4 py-1.5 text-xs flex items-center gap-1 transition bg-orange-500 text-white hover:bg-orange-600"
+  onClick={() => {
+    sendPayment(17, 500, "regular")
+  }}
+>
+  Buy <ChevronRight className="w-3.5 h-3.5" />
+</Button>
+
+    {/* 🔖 Contest Special Badge */}
+  <div className="absolute -top-2 -left-2 bg-emerald-500 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full shadow z-10">
+    Contest Special Offer
+  </div>
+  </div>
+</motion.div>
+
 
 
 

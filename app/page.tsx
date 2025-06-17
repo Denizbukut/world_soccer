@@ -1002,12 +1002,9 @@ const [copied, setCopied] = useState(false)
           : "bg-orange-500 text-white hover:bg-orange-600"
       }`}
       onClick={async () => {
-        setBuyingBigPack(true)
-        try {
-          await sendPayment(17, 500, "regular")
-        } finally {
-          setBuyingBigPack(false)
-        }
+        
+          sendPayment(17, 500, "regular")
+        
       }}
     >
       {buyingBigPack ? (

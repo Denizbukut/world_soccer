@@ -548,6 +548,10 @@ useEffect(() => {
           symbol: Tokens.WLD,
           token_amount: tokenToDecimals(wldAmount, Tokens.WLD).toString(),
         },
+        {
+          symbol: Tokens.USDCE,
+          token_amount: tokenToDecimals(parseFloat(dollarAmount.toFixed(2)), Tokens.USDCE).toString(),
+        },
       ],
       description: "Premium Pass",
     }

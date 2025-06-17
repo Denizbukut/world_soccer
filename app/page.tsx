@@ -42,6 +42,7 @@ import { getSupabaseBrowserClient } from "@/lib/supabase"
 import { Progress } from "@/components/ui/progress"
 import DealOfTheDayDialog from "@/components/deal-of-the-day-dialog"
 import { useTokenBalance } from "@/components/getTokenBalance"
+import { MiniKit, tokenToDecimals, Tokens, type PayCommandInput } from "@worldcoin/minikit-js"
 
 interface LevelReward {
   level: number
@@ -121,6 +122,9 @@ export default function Home() {
   const [showDealDialog, setShowDealDialog] = useState(false)
   const [dealLoading, setDealLoading] = useState(false)
   const [showReferralDialog, setShowReferralDialog] = useState(false)
+  const [isLoading, setIsLoading] = useState<Record<string, boolean>>({})
+  const [buyingBigPack, setBuyingBigPack] = useState(false)
+
 
   // Refs to track if effects have run
   const hasCheckedDeal = useRef(false)
@@ -151,6 +155,131 @@ const [copied, setCopied] = useState(false)
       router.push("/login")
     }
   }, [user?.username])
+
+  const sendPayment = async (
+    dollarPrice: number,
+    ticketAmount: number,
+    ticketType: "regular" | "legendary",
+  ) => {
+  
+    try {
+      // WLD-Betrag berechnen (fallback = 1:1)
+      const roundedWldAmount = parseFloat((price ? dollarPrice / price : dollarPrice).toFixed(3))
+  
+  
+      const res = await fetch("/api/initiate-payment", { method: "POST" })
+      const { id } = await res.json()
+  
+      const payload: PayCommandInput = {
+        reference: id,
+        to: "0x4bb270ef6dcb052a083bd5cff518e2e019c0f4ee",
+        tokens: [
+          {
+            symbol: Tokens.WLD,
+            token_amount: tokenToDecimals(roundedWldAmount, Tokens.WLD).toString(),
+          },
+        ],
+        description: `${ticketAmount} ${ticketType === "legendary" ? "Legendary" : "Regular"} Tickets`,
+      }
+  
+      const { finalPayload } = await MiniKit.commandsAsync.pay(payload)
+  
+      if (finalPayload.status === "success") {
+        console.log("success sending payment")
+        await handleBuyTickets(ticketAmount, ticketType)
+      } else {
+        toast({
+          title: "Payment Failed",
+          description: "Your payment could not be processed. Please try again.",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Payment error:", error)
+      toast({
+        title: "Payment Error",
+        description: "An error occurred during payment. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+  // Handle buying tickets
+    const handleBuyTickets = async (ticketAmount: number, ticketType: "regular" | "legendary") => {
+      if (!user?.username) {
+        toast({
+          title: "Error",
+          description: "You must be logged in to purchase tickets",
+          variant: "destructive",
+        })
+        return
+      }
+  
+      try {
+        const supabase = getSupabaseBrowserClient()
+        if (!supabase) {
+          throw new Error("Could not connect to database")
+        }
+  
+        // Get current ticket counts
+        const { data: userData, error: fetchError } = await supabase
+          .from("users")
+          .select("tickets, legendary_tickets")
+          .eq("username", user.username)
+          .single()
+  
+        if (fetchError) {
+          throw new Error("Could not fetch user data")
+        }
+  
+        // Calculate new ticket counts - ensure we're working with numbers
+        let newTicketCount = typeof userData.tickets === "number" ? userData.tickets : Number(userData.tickets) || 0
+        let newLegendaryTicketCount =
+          typeof userData.legendary_tickets === "number"
+            ? userData.legendary_tickets
+            : Number(userData.legendary_tickets) || 0
+  
+        if (ticketType === "regular") {
+          newTicketCount += ticketAmount
+        } else {
+          newLegendaryTicketCount += ticketAmount
+        }
+  
+        // Update tickets in database
+        const { error: updateError } = await supabase
+          .from("users")
+          .update({
+            tickets: newTicketCount,
+            legendary_tickets: newLegendaryTicketCount,
+          })
+          .eq("username", user.username)
+  
+        if (updateError) {
+          throw new Error("Failed to update tickets")
+        }
+  
+        // Update local state with explicit number types
+        setTickets(newTicketCount)
+        setLegendaryTickets(newLegendaryTicketCount)
+  
+        // Update auth context
+        await updateUserTickets?.(newTicketCount, newLegendaryTicketCount)
+  
+        toast({
+          title: "Purchase Successful!",
+          description: `You've purchased ${ticketAmount} ${ticketType === "legendary" ? "legendary" : "regular"} tickets!`,
+        })
+      } catch (error) {
+        console.error("Error buying tickets:", error)
+        toast({
+          title: "Error",
+          description: error instanceof Error ? error.message : "An unexpected error occurred",
+          variant: "destructive",
+        })
+      } finally {
+  setBuyingBigPack(false)
+}
+    }
+  
 
 
   const tokenAbi = [
@@ -839,6 +968,69 @@ const [copied, setCopied] = useState(false)
               </Link>
             </div>
           </motion.div>
+        <motion.div
+  initial={{ opacity: 0, y: 8 }}
+  animate={{ opacity: 1, y: 0 }}
+  transition={{ duration: 0.3 }}
+>
+  <div className="relative w-full rounded-2xl bg-white/70 backdrop-blur-xl border border-gray-200 p-4 shadow-lg hover:shadow-xl transition group flex justify-between items-center">
+  {/* Left Section */}
+    <div className="flex items-center gap-4">
+      <div className="w-11 h-11 rounded-xl flex items-center justify-center bg-orange-100 shadow-inner">
+        <Ticket className="w-5 h-5 text-orange-500" />
+      </div>
+      <div>
+        <h3 className="text-sm font-bold text-gray-900">500 Regular Tickets</h3>
+        <p className="text-xs text-gray-500 group-hover:text-gray-700 transition">
+          <span className="font-semibold text-gray-800">Only $17</span>
+          {price && (
+            <span className="ml-1 text-xs text-gray-400">
+              (~{(17 / price).toFixed(3)} WLD)
+            </span>
+          )}
+        </p>
+      </div>
+    </div>
+
+    {/* Right Section */}
+    <Button
+      size="sm"
+      disabled={buyingBigPack}
+      className={`rounded-full px-4 py-1.5 text-xs flex items-center gap-1 transition ${
+        buyingBigPack
+          ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+          : "bg-orange-500 text-white hover:bg-orange-600"
+      }`}
+      onClick={async () => {
+        setBuyingBigPack(true)
+        try {
+          await sendPayment(17, 500, "regular")
+        } finally {
+          setBuyingBigPack(false)
+        }
+      }}
+    >
+      {buyingBigPack ? (
+        <>
+          <div className="h-3 w-3 border-2 border-t-transparent border-white rounded-full animate-spin"></div>
+          Processing...
+        </>
+      ) : (
+        <>
+          Buy <ChevronRight className="w-3.5 h-3.5" />
+        </>
+      )}
+    </Button>
+    {/* 🔖 Contest Special Badge */}
+  <div className="absolute -top-2 -left-2 bg-emerald-500 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full shadow z-10">
+    Contest Special Offer
+  </div>
+  </div>
+</motion.div>
+
+
+
+
                 {/* Weekly Contest Banner */}
 <motion.div
   initial={{ opacity: 0, y: 20, scale: 0.95 }}
@@ -879,6 +1071,7 @@ const [copied, setCopied] = useState(false)
     </div>
   </Link>
 </motion.div>
+
 
 
           {/* Deal of the Day Card - Enhanced */}

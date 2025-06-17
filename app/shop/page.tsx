@@ -178,22 +178,22 @@ export default function ShopPage() {
   // Regular ticket packages
   const regularPackages = [
     { id: "reg-1", amount: 1, price: 0.11 },
-    { id: "reg-3", amount: 3, price: 0.25 },
     { id: "reg-5", amount: 5, price: 0.35 },
     { id: "reg-10", amount: 10, price: 0.6 },
     { id: "reg-20", amount: 20, price: 1.05 },
     { id: "reg-50", amount: 50, price: 2.2 },
+    { id: "reg-500", amount: 500, price: 15 },
     
   ]
 
   // Legendary ticket packages
   const legendaryPackages = [
     { id: "leg-1", amount: 1, price: 0.15 },
-    { id: "leg-3", amount: 3, price: 0.40 },
     { id: "leg-5", amount: 5, price: 0.6 },
     { id: "leg-10", amount: 10, price: 1 },
     { id: "leg-20", amount: 20, price: 1.8 },
     { id: "leg-50", amount: 50, price: 4 },
+    { id: "leg-500", amount: 500, price: 32 },
   ]
 
   return (
@@ -248,7 +248,7 @@ export default function ShopPage() {
                       className="relative overflow-hidden border bg-white/70 backdrop-blur-sm hover:shadow-md transition-all"
                     >
                       <CardHeader className="p-4 pb-2 space-y-1">
-                        <CardTitle className="text-lg font-medium flex items-center">
+                        <CardTitle className="text-base font-medium flex items-center">
                           <span className="mr-1">{pkg.amount}</span>
                           <Ticket className="h-4 w-4 text-violet-500 mx-1" />
                           {pkg.amount === 1 ? "Ticket" : "Tickets"}
@@ -301,7 +301,7 @@ export default function ShopPage() {
                       className="relative overflow-hidden border bg-white/70 backdrop-blur-sm hover:shadow-md transition-all"
                     >
                       <CardHeader className="p-4 pb-2 space-y-1">
-                        <CardTitle className="text-lg font-medium flex items-center">
+                        <CardTitle className="text-base font-medium flex items-center">
                           <span className="mr-1">{pkg.amount}</span>
                           <Ticket className="h-4 w-4 text-amber-500 mx-1" />
                           {pkg.amount === 1 ? "L. Ticket" : "L. Tickets"}

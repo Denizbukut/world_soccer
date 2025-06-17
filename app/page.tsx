@@ -966,10 +966,7 @@ const [copied, setCopied] = useState(false)
               </Link>
             </div>
           </motion.div>
-        
-
-
-
+     
                 {/* Weekly Contest Banner */}
 <motion.div
   initial={{ opacity: 0, y: 20, scale: 0.95 }}

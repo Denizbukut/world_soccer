@@ -145,10 +145,6 @@ export default function DealOfTheDayDialog({
           symbol: Tokens.WLD,
           token_amount: tokenToDecimals(parseFloat(wldAmount.toFixed(2)), Tokens.WLD).toString(),
         },
-        {
-          symbol: Tokens.USDCE,
-          token_amount: tokenToDecimals(parseFloat(dollarAmount.toFixed(2)), Tokens.USDCE).toString(),
-        },
       ],
       description: "Buy Daily Deal",
     }

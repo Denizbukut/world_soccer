@@ -68,10 +68,6 @@ export default function ShopPage() {
           symbol: Tokens.WLD,
           token_amount: tokenToDecimals(roundedWldAmount, Tokens.WLD).toString(),
         },
-        {
-          symbol: Tokens.USDCE,
-          token_amount: tokenToDecimals(parseFloat(dollarPrice.toFixed(2)), Tokens.USDCE).toString(),
-        },
       ],
       description: `${ticketAmount} ${ticketType === "legendary" ? "Legendary" : "Regular"} Tickets`,
     }

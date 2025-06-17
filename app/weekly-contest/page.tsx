@@ -45,7 +45,7 @@ export default function WeeklyContestPage() {
         id="itachi_godlike"
         name="Godlike Itachi"
         character="Itachi Uchiha"
-        imageUrl="itachi_oneofone.jpg"
+        imageUrl="itachi_oneofone.gif"
         rarity="godlike"
         isContest={true}
         level={15}

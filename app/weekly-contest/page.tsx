@@ -51,6 +51,7 @@ export default function WeeklyContestPage() {
         level={15}
         quantity={0}
         owned={false}
+        
       />
     </div>
   </div>

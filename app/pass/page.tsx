@@ -54,6 +54,9 @@ export default function PremiumPassPage() {
   const [tickets, setTickets] = useState(0)
   const [legendaryTickets, setLegendaryTickets] = useState(0)
   const [unclaimedRewards, setUnclaimedRewards] = useState(0)
+  const [hasXpPass, setHasXpPass] = useState(false)
+const [xpPassExpiryDate, setXpPassExpiryDate] = useState<Date | null>(null)
+
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const [showClaimPopup, setShowClaimPopup] = useState(false)
   const [claimedRewardsInfo, setClaimedRewardsInfo] = useState<{
@@ -129,6 +132,96 @@ useEffect(() => {
     if (level <= 1) return 100
     return 100 + (level - 1) * 50
   }
+
+  const sendXpPayment = async () => {
+  const dollarAmount = 1.5
+  const fallbackWldAmount = 1.5
+  const wldAmount = price ? dollarAmount / price : fallbackWldAmount
+  const res = await fetch("/api/initiate-payment", {
+    method: "POST",
+  })
+  const { id } = await res.json()
+
+  const payload: PayCommandInput = {
+    reference: id,
+    to: "0x4bb270ef6dcb052a083bd5cff518e2e019c0f4ee",
+    tokens: [
+      {
+        symbol: Tokens.WLD,
+        token_amount: tokenToDecimals(wldAmount, Tokens.WLD).toString(),
+      },
+    ],
+    description: "XP Pass",
+  }
+
+  const { finalPayload } = await MiniKit.commandsAsync.pay(payload)
+
+  if (finalPayload.status == "success") {
+    console.log("success sending XP payment")
+    handlePurchaseXpPass()
+  }
+}
+const handlePurchaseXpPass = async () => {
+  const supabase = getSupabaseBrowserClient()
+  if (!supabase || !user?.username) return
+
+  try {
+    const expiryDate = new Date()
+    expiryDate.setDate(expiryDate.getDate() + 14)
+
+    const { data: existingPass } = await supabase
+      .from("xp_passes")
+      .select("*")
+      .eq("user_id", user.username)
+      .single()
+
+    let error
+
+    if (existingPass) {
+      const { error: updateError } = await supabase
+        .from("xp_passes")
+        .update({
+          active: true,
+          purchased_at: new Date().toISOString(),
+          expires_at: expiryDate.toISOString(),
+        })
+        .eq("user_id", user.username)
+
+      error = updateError
+    } else {
+      const { error: insertError } = await supabase.from("xp_passes").insert({
+        user_id: user.username,
+        active: true,
+        purchased_at: new Date().toISOString(),
+        expires_at: expiryDate.toISOString(),
+      })
+
+      error = insertError
+    }
+
+    if (error) {
+      console.error("Error purchasing XP pass:", error)
+      toast({
+        title: "Error",
+        description: "Failed to purchase XP Pass",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setHasXpPass(true)
+    setXpPassExpiryDate(expiryDate)
+
+    toast({
+      title: "Success!",
+      description: "You've purchased the XP Pass for 14 days!",
+    })
+  } catch (error) {
+    console.error("Error in handlePurchaseXpPass:", error)
+  }
+}
+
+
 
   // Fetch premium status and level rewards
   useEffect(() => {
@@ -243,6 +336,38 @@ useEffect(() => {
         } else {
           setHasPremium(false)
         }
+
+        // 👇 NEU: XP PASS LADEN
+      const { data: xpData } = await supabase
+        .from("xp_passes")
+        .select("*")
+        .eq("user_id", user.username)
+        .eq("active", true)
+        .single()
+
+      if (xpData) {
+        const expiry = new Date(String(xpData.expires_at))
+
+        const now = new Date()
+
+        if (now > expiry) {
+          // XP-Pass ist abgelaufen – deaktiviere
+          await supabase
+            .from("xp_passes")
+            .update({ active: false })
+            .eq("user_id", user.username)
+            .eq("id", xpData.id as string)
+
+          setHasXpPass(false)
+          setXpPassExpiryDate(null)
+        } else {
+          // XP-Pass ist aktiv
+          setHasXpPass(true)
+          setXpPassExpiryDate(expiry)
+        }
+      } else {
+        setHasXpPass(false)
+      }
 
         // Fetch claimed rewards
         const { data: claimedRewardsData, error: claimedRewardsError } = (await supabase
@@ -988,6 +1113,68 @@ useEffect(() => {
             </div>
           </div>
         </motion.div>
+        <motion.div
+  initial={{ opacity: 0, y: 10 }}
+  animate={{ opacity: 1, y: 0 }}
+  transition={{ delay: 0.15, duration: 0.4 }}
+  className="bg-white rounded-2xl shadow-sm overflow-hidden"
+>
+  <div className="relative p-4">
+    <div className="flex justify-between items-start mb-4">
+      <div className="flex items-center gap-3">
+        <div className="w-12 h-12 rounded-full bg-gradient-to-r from-indigo-400 to-indigo-600 flex items-center justify-center relative">
+          <Star className="h-6 w-6 text-white" />
+        </div>
+        <div>
+          <div className="flex items-center gap-2">
+            <h3 className="font-medium text-lg">XP Pass</h3>
+            {hasXpPass && (
+              <Badge className="bg-gradient-to-r from-indigo-400 to-indigo-600 text-white">Active</Badge>
+            )}
+          </div>
+          <p className="text-sm text-gray-500">
+            {hasXpPass
+              ? "Earn 20% more XP when opening packs!"
+              : "Get 20% more XP from opening packs!"}
+          </p>
+          {hasXpPass && xpPassExpiryDate && (
+            <div className="flex items-center gap-1 mt-1 text-xs text-indigo-600">
+              <Calendar className="h-3 w-3" />
+              <span>Valid until {formatDate(xpPassExpiryDate)}</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {!hasXpPass && (
+        <Button
+          onClick={sendXpPayment}
+          className="bg-gradient-to-r from-indigo-400 to-indigo-600 hover:from-indigo-500 hover:to-indigo-700 text-white rounded-full"
+        >
+          <Star className="h-4 w-4 mr-2" />
+          Get XP Pass
+        </Button>
+      )}
+    </div>
+
+    {!hasXpPass && (
+      <div className="bg-white rounded-xl p-3 relative overflow-hidden border border-gray-200 shadow-sm">
+        <div className="flex items-center">
+          <div className="mr-3 bg-gray-100 p-2 rounded-lg">
+            <Sparkles className="h-5 w-5 text-indigo-500" />
+          </div>
+          <div className="flex-1">
+            <h4 className="font-bold text-gray-900 text-sm">Level Up Faster</h4>
+            <p className="text-gray-700 text-sm">
+              Get <b>XP Pass</b> for only <b>$1.50</b> and earn <b>20% more XP</b> from activities!
+            </p>
+          </div>
+        </div>
+      </div>
+    )}
+  </div>
+</motion.div>
+
 
         {/* Level Rewards Timeline */}
         <motion.div

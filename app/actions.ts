@@ -29,6 +29,15 @@ type Card = {
   description?: string
 }
 
+interface XpPass {
+  id: string
+  user_id: string
+  active: boolean
+  purchased_at: string
+  expires_at: string
+}
+
+
 // Create a server-side Supabase client
 function createSupabaseServer() {
   return createClient(process.env.SUPABASE_URL || "", process.env.SUPABASE_SERVICE_ROLE_KEY || "", {
@@ -180,6 +189,7 @@ export async function drawCards(username: string, packType: string, count = 1) {
       console.error("Error fetching user data:", userError)
       return { success: false, error: "User not found" }
     }
+    
 
     // Check if user has enough tickets
     const isLegendary = packType === "legendary"
@@ -317,8 +327,6 @@ export async function drawCards(username: string, packType: string, count = 1) {
       // Punkte für diese Karte berechnen und zur Gesamtpunktzahl hinzufügen
       const cardPoints = getScoreForRarity(selectedCard.rarity)
       totalScoreToAdd += cardPoints
-      console.log(`Card ${selectedCard.name} (${selectedCard.rarity}) worth ${cardPoints} points`)
-
       // Add card to user's collection
       const today = new Date().toISOString().split("T")[0] // Format as YYYY-MM-DD
 
@@ -376,6 +384,9 @@ export async function drawCards(username: string, packType: string, count = 1) {
         }
       }
     }
+   
+
+    totalScoreToAdd = Math.round(totalScoreToAdd) // optional
 
     // Rest der Funktion bleibt unverändert...
     // DIREKT HIER den Score aktualisieren - das ist der wichtigste Teil
@@ -392,7 +403,8 @@ export async function drawCards(username: string, packType: string, count = 1) {
 
     // Berechne den neuen Score
     const currentScore = currentUserData.score || 0
-    const newScore = currentScore + totalScoreToAdd
+    const newScore = Math.floor(currentScore + totalScoreToAdd)
+
 
     console.log(`UPDATING SCORE: ${username} - Current: ${currentScore}, Adding: ${totalScoreToAdd}, New: ${newScore}`)
 

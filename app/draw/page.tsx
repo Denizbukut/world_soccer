@@ -14,6 +14,7 @@ import { motion, AnimatePresence, useAnimation, useMotionValue, useTransform } f
 import Image from "next/image"
 import { incrementMission } from "@/app/actions/missions"
 import { incrementLegendaryDraw } from "../actions/weekly-contest"
+import { getSupabaseBrowserClient } from "@/lib/supabase"
 
 // Rarität definieren
 type CardRarity = "common" | "rare" | "epic" | "legendary"
@@ -81,6 +82,8 @@ export default function DrawPage() {
   const [legendaryTickets, setLegendaryTickets] = useState(2)
   const [tickets, setTickets] = useState(0)
   const [hasPremiumPass, setHasPremiumPass] = useState(false)
+  const [hasXpPass, setHasXpPass] = useState(false)
+
   const [isUpdatingScore, setIsUpdatingScore] = useState(false)
   const [isMultiDraw, setIsMultiDraw] = useState(false) // Neu: für 5-Karten-Ziehen
 
@@ -122,13 +125,33 @@ export default function DrawPage() {
 }
 
 
+
   // Set isClient to true once component mounts
   useEffect(() => {
-    setIsClient(true)
+  setIsClient(true)
+  refreshUserData?.()
 
-    // Refresh user data from database when component mounts
-    refreshUserData?.()
-  }, [refreshUserData])
+  const fetchXpPass = async () => {
+    if (!user?.username) return
+
+    const supabase = getSupabaseBrowserClient()
+    if(!supabase) return
+    const { data, error } = await supabase
+      .from("xp_passes")
+      .select("active")
+      .eq("user_id", user.username)
+      .eq("active", true)
+      .single()
+
+    if (data?.active) {
+      setHasXpPass(true)
+    } else {
+      setHasXpPass(false)
+    }
+  }
+
+  fetchXpPass()
+}, [refreshUserData, user?.username])
 
   // Update tickets and legendary tickets when user changes
   useEffect(() => {
@@ -144,6 +167,8 @@ export default function DrawPage() {
       }
     }
   }, [user])
+
+ 
 
   // Handle card tilt effect with improved sensitivity for reflections
   const handleCardMove = (event: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
@@ -273,6 +298,16 @@ export default function DrawPage() {
           if (user?.username === "jiraiya") {
             xpAmount = 10 * count
           }
+          
+    
+          if(hasXpPass){
+            const tmpXP = xpAmount * 1.2;
+            xpAmount = Math.floor(tmpXP)
+            
+          } else{
+            
+          }
+        
           setXpGained(xpAmount)
 
           const { leveledUp, newLevel: updatedLevel } = (await updateUserExp?.(xpAmount)) || {}
@@ -586,9 +621,24 @@ export default function DrawPage() {
                         </h3>
                         <p className="text-sm text-gray-500">Contains 1 random card</p>
                         <div className="flex items-center justify-center gap-1 mt-1 text-xs text-violet-600">
-                          <Star className="h-3 w-3" />
-                          <span>+{activeTab === "legendary" ? "100" : "50"} XP</span>
-                        </div>
+  <Star className="h-3 w-3" />
+  
+  {hasXpPass ? (
+    
+    <span>
+      <span className="line-through text-gray-400">
+        +{activeTab === "legendary" ? "100" : "50"} XP
+      </span>{" "}
+      <span className="text-violet-600 font-semibold">
+        +{activeTab === "legendary" ? "120" : "60"} XP
+      </span>
+    </span>
+  ) : (
+    <span>+{activeTab === "legendary" ? "100" : "50"} XP</span>
+  )}
+</div>
+
+
                       </div>
 
                       <div className="w-full space-y-2 mb-4">

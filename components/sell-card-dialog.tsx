@@ -128,8 +128,6 @@ const isValidPrice =
         setTimeout(() => {
           onSuccess?.()
           onClose()
-          // Leite zur Trade-Seite weiter
-          router.push("/trade")
         }, 1500)
       } else {
         console.error("Error from createListing:", result.error)

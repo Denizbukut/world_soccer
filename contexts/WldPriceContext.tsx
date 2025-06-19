@@ -18,7 +18,7 @@ export const WldPriceProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
   const fetchPrice = async () => {
     const now = Date.now()
-    const FIVE_MINUTES = 5 * 60 * 1000
+    const FIVE_MINUTES = 8 * 60 * 1000
 
     if (price !== null && now - lastFetched.current < FIVE_MINUTES) return
 

@@ -15,6 +15,7 @@ import { Separator } from "@/components/ui/separator"
 import { getSupabaseBrowserClient } from "@/lib/supabase"
 import { MiniKit, tokenToDecimals, Tokens, type PayCommandInput } from "@worldcoin/minikit-js"
 import { useEffect } from "react"
+import { useWldPrice } from "@/contexts/WldPriceContext"
 
 export default function ShopPage() {
   const { user, updateUserTickets } = useAuth()
@@ -23,26 +24,8 @@ export default function ShopPage() {
   const [legendaryTickets, setLegendaryTickets] = useState<number>(
     user?.legendary_tickets ? Number(user.legendary_tickets) : 0,
   )
-  const [price, setPrice] = useState<number | null>(null)
   
-  useEffect(() => {
-  const fetchPrice = async () => {
-    try {
-      const res = await fetch("/api/wld-price")
-      const json = await res.json()
-
-      if (json.price) {
-        setPrice(json.price)
-      } else {
-        console.warn("Preis nicht gefunden in JSON:", json)
-      }
-    } catch (err) {
-      console.error("Client error:", err)
-    }
-  }
-
-  fetchPrice()
-}, [])
+  const { price } = useWldPrice()
 
   const sendPayment = async (
   dollarPrice: number,

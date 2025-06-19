@@ -44,6 +44,7 @@ import { Progress } from "@/components/ui/progress"
 import DealOfTheDayDialog from "@/components/deal-of-the-day-dialog"
 import { useTokenBalance } from "@/components/getTokenBalance"
 import { MiniKit, tokenToDecimals, Tokens, type PayCommandInput } from "@worldcoin/minikit-js"
+import { useWldPrice } from "@/contexts/WldPriceContext"
 
 interface LevelReward {
   level: number
@@ -98,6 +99,7 @@ export default function Home() {
   const [unclaimedRewards, setUnclaimedRewards] = useState(0)
   const [levelRewards, setLevelRewards] = useState<LevelReward[]>([])
   const [lastLegendaryClaim, setLastLegendaryClaim] = useState<Date | null>(null)
+  const lastFetchedRef = useRef<number>(0)
   // const [userClanInfo, setUserClanInfo] = useState<ClanInfo | null>(null)
   const [referredUsers, setReferredUsers] = useState<{
       id: number
@@ -147,27 +149,11 @@ const [copied, setCopied] = useState(false)
   const [transactionId, setTransactionId] = useState<string>("")
   const [walletAddress, setWalletAddress] = useState<string>("")
 
-  const [price, setPrice] = useState<number | null>(null)
 
   const [tokenBalance, setTokenBalance] = useState<string | null>(null)
-  useEffect(() => {
-    const fetchPrice = async () => {
-      try {
-        const res = await fetch("/api/wld-price")
-        const json = await res.json()
+  
+  const { price } = useWldPrice()
 
-        if (json.price) {
-          setPrice(json.price)
-        } else {
-          console.warn("Preis nicht gefunden in JSON:", json)
-        }
-      } catch (err) {
-        console.error("Client error:", err)
-      }
-    }
-
-    fetchPrice()
-  }, [])
 
   useEffect(() => {
     if (user?.username === "llegaraa2kwdd" || user?.username === "nadapersonal") {

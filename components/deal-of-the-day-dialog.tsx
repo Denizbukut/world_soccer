@@ -11,6 +11,7 @@ import { markDealAsDismissed, markDealAsSeen, purchaseDeal } from "@/app/actions
 import { renderStars } from "@/utils/card-stars"
 import { motion, AnimatePresence } from "framer-motion"
 import { MiniKit, tokenToDecimals, Tokens, type PayCommandInput } from "@worldcoin/minikit-js"
+import { useWldPrice } from "@/contexts/WldPriceContext"
 
 interface DailyDeal {
   id: number
@@ -57,31 +58,13 @@ export default function DealOfTheDayDialog({
   const [shouldMarkAsSeen, setShouldMarkAsSeen] = useState(false)
 
   const [isDealValid, setIsDealValid] = useState(!!deal)
-  const [price, setPrice] = useState<number | null>(null)
 
   useEffect(() => {
     setIsDealValid(!!deal)
   }, [deal])
 
   if (!isDealValid) return null
-  useEffect(() => {
-    const fetchPrice = async () => {
-      try {
-        const res = await fetch("/api/wld-price")
-        const json = await res.json()
-
-        if (json.price) {
-          setPrice(json.price)
-        } else {
-          console.warn("Preis nicht gefunden in JSON:", json)
-        }
-      } catch (err) {
-        console.error("Client error:", err)
-      }
-    }
-
-    fetchPrice()
-  }, [])
+  const { price } = useWldPrice()
 
   // Map rarity to color styles
   const rarityStyles = {

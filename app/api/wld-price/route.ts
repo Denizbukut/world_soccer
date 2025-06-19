@@ -1,12 +1,20 @@
-// app/api/wld-price/route.ts
 import { NextResponse } from "next/server"
 
+let cachedPrice: number | null = null
+let lastFetched = 0
+
 export async function GET() {
+  const now = Date.now()
+  const FIVE_MIN = 5 * 60 * 1000
+
+  if (cachedPrice && now - lastFetched < FIVE_MIN) {
+    return NextResponse.json({ price: cachedPrice })
+  }
+
   try {
     const res = await fetch(
       "https://app-backend.worldcoin.dev/public/v1/miniapps/prices?cryptoCurrencies=WLD&fiatCurrencies=USD"
     )
-
     const json = await res.json()
 
     const amountStr = json?.result?.prices?.WLD?.USD?.amount
@@ -17,7 +25,12 @@ export async function GET() {
     }
 
     const price = parseFloat(amountStr) / 10 ** decimals
-    return NextResponse.json({ price }) // <--- Nur Preis zurückgeben
+
+    // Cache it
+    cachedPrice = price
+    lastFetched = now
+
+    return NextResponse.json({ price })
   } catch (error) {
     console.error("API Proxy Error:", error)
     return NextResponse.json({ error: "Failed to fetch WLD price" }, { status: 500 })

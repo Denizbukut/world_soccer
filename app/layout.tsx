@@ -6,6 +6,7 @@ import ErudaLoader from "./eruda-loader"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Inter } from "next/font/google"
 import { AppProvider } from "@/contexts/auth-context"
+import { WldPriceProvider } from "@/contexts/WldPriceContext"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -21,8 +22,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <MiniKitProvider>
         <body className={inter.className}>
           <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
-            <AppProvider>{children}</AppProvider>
-          </ThemeProvider>
+            <AppProvider><WldPriceProvider>{children}</WldPriceProvider></AppProvider>
+          </ThemeProvider> 
         </body>
       </MiniKitProvider>
     </html>

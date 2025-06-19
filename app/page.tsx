@@ -33,6 +33,7 @@ import {
   Sparkles,
   Users,
   CheckCircle,
+  LogOut
 } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
 import Link from "next/link"
@@ -878,13 +879,33 @@ const [copied, setCopied] = useState(false)
             className="bg-white rounded-xl p-2.5 shadow-md border border-gray-100"
           >
             {/* Top row with username, level and tokens */}
-            <div className="flex items-center justify-between mb-2">
+           <div className="flex items-center justify-between mb-2">
+  {/* Left: Username + Token */}
   <div className="flex items-center gap-2">
     <h2 className="font-semibold text-sm">@{user?.username}</h2>
-    <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-xs">{tokens} $ANIME</span>
+    <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-xs">
+      {tokens} $ANIME
+    </span>
   </div>
-  <span className="bg-violet-100 text-violet-700 text-xs px-2 py-0.5 rounded-full">Lvl {user?.level}</span>
+
+  {/* Right: Level + Logout */}
+  <div className="flex items-center gap-2">
+    <span className="bg-violet-100 text-violet-700 text-xs px-2 py-0.5 rounded-full">
+      Lvl {user?.level}
+    </span>
+    <Button
+      size="sm"
+      className="text-xs w-fit bg-gradient-to-r from-red-500 to-pink-500 text-white hover:from-red-600 hover:to-pink-600 px-3 py-1 rounded-full shadow-md transition"
+      onClick={async () => {
+        router.push("/login")
+      }}
+    >
+      <LogOut className="h-3.5 w-3.5 mr-1" />
+      Logout
+    </Button>
+  </div>
 </div>
+
 
 
             {/* Progress bar */}

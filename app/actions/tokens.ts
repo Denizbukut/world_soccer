@@ -15,14 +15,14 @@ function createSupabaseServer() {
 /**
  * Claims daily token for a user
  */
-export async function claimDailyBonus(username: string) {
+export async function claimDailyToken(username: string) {
   try {
     const supabase = createSupabaseServer()
 
-    // Get current user data including clan info
+    // Get current user data
     const { data: userData, error: userError } = await supabase
       .from("users")
-      .select("username, tickets, ticket_last_claimed, clan_id")
+      .select("username, tokens, token_last_claimed")
       .eq("username", username)
       .single()
 
@@ -30,9 +30,8 @@ export async function claimDailyBonus(username: string) {
       // Create user if not found
       const { error: createError } = await supabase.from("users").insert({
         username: username,
-        tickets: 10,
-        legendary_tickets: 2,
-        ticket_last_claimed: new Date().toISOString(),
+        tokens: 1,
+        token_last_claimed: new Date().toISOString(),
       })
 
       if (createError) {
@@ -40,12 +39,12 @@ export async function claimDailyBonus(username: string) {
         return { success: false, error: "Failed to create user" }
       }
 
-      return { success: true, newTicketCount: 13 } // 10 initial + 3 bonus
+      return { success: true, newTokenCount: 1 }
     }
 
     // Check if user has already claimed within the last 24 hours
-    if (userData.ticket_last_claimed) {
-      const lastClaimed = new Date(userData.ticket_last_claimed as string)
+    if (userData.token_last_claimed) {
+      const lastClaimed = new Date(userData.token_last_claimed as string)
       const now = new Date()
       const hoursSinceLastClaim = (now.getTime() - lastClaimed.getTime()) / (1000 * 60 * 60)
 
@@ -61,47 +60,30 @@ export async function claimDailyBonus(username: string) {
       }
     }
 
-    // Base tickets (3 tickets per claim)
-    let ticketsToAward = 3
-
-    // Check if user is in a clan and if clan is level 2+
-    if (userData.clan_id) {
-      const { data: clanData, error: clanError } = await supabase
-        .from("clans")
-        .select("level")
-        .eq("id", userData.clan_id)
-        .single()
-
-      if (!clanError && clanData && clanData.level >= 2) {
-        // Level 2+ clan bonus: +1 ticket per day
-        ticketsToAward += 1
-      }
-    }
-
-    const newTicketCount = (typeof userData.tickets === "number" ? userData.tickets : 0) + ticketsToAward
+    // Award token (1 token per claim)
+    const newTokenCount = (typeof userData.tokens === "number" ? userData.tokens : 0) + 1
 
     // Update user
     const { error: updateError } = await supabase
       .from("users")
       .update({
-        tickets: newTicketCount,
-        ticket_last_claimed: new Date().toISOString(),
+        tokens: newTokenCount,
+        token_last_claimed: new Date().toISOString(),
       })
       .eq("username", userData.username)
 
     if (updateError) {
-      return { success: false, error: "Failed to update tickets" }
+      return { success: false, error: "Failed to update tokens" }
     }
 
     revalidatePath("/")
     return {
       success: true,
-      newTicketCount: newTicketCount || 0,
+      newTokenCount: newTokenCount || 0,
       nextClaimTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-      clanBonus: ticketsToAward > 3,
     }
   } catch (error) {
-    console.error("Error claiming daily bonus:", error)
+    console.error("Error claiming daily token:", error)
     return { success: false, error: "An unexpected error occurred" }
   }
 }

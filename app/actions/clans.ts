@@ -131,6 +131,7 @@ if (!countError) {
       description: `${username} hat den Clan "${name}" gegründet`,
       xp_earned: 10,
     })
+    await updateClanMemberCount(userData.clan_id)
 
     revalidatePath("/")
     revalidatePath("/clan")
@@ -359,6 +360,8 @@ export async function leaveClan(username: string) {
       xp_earned: 0,
     })
 
+    await updateClanMemberCount(userData.clan_id)
+
     revalidatePath("/")
     revalidatePath("/clan")
 
@@ -366,6 +369,32 @@ export async function leaveClan(username: string) {
   } catch (error) {
     console.error("Error in leaveClan:", error)
     return { success: false, error: "Ein unerwarteter Fehler ist aufgetreten" }
+  }
+}
+
+export async function updateClanMemberCount(clanId: number) {
+  const supabase = createSupabaseServer()
+  // 1. Mitglieder mit dieser clan_id zählen
+  const { count, error: countError } = await supabase
+    .from('users')
+    .select('*', { count: 'exact', head: true })
+    .eq('clan_id', clanId)
+
+  if (countError) {
+    console.error('Fehler beim Zählen der Mitglieder:', countError)
+    return
+  }
+
+  // 2. Clan-Tabelle mit neuem Wert updaten
+  const { error: updateError } = await supabase
+    .from('clans')
+    .update({ member_count: count })
+    .eq('id', clanId)
+
+  if (updateError) {
+    console.error('Fehler beim Updaten des Clans:', updateError)
+  } else {
+    console.log(`Clan ${clanId}: member_count erfolgreich auf ${count} gesetzt.`)
   }
 }
 
@@ -564,6 +593,7 @@ export async function updateClanMemberRole({
 export async function getClanDetails(clanId: number) {
   try {
     const supabase = createSupabaseServer()
+    
 
     // Clan-Informationen abrufen
     const { data: clan, error: clanError } = await supabase.from("clans").select("*").eq("id", clanId).single()
@@ -690,7 +720,7 @@ export async function joinClanDirectly(username: string, clanId: number) {
         return { success: false, error: "Fehler beim Einfügen in clan_members" }
       }
     }
-
+    await updateClanMemberCount(clanId)
     // Clan-Mitgliederzahl aktualisieren
     const { count: memberCount, error: countError } = await supabase
       .from("clan_members")

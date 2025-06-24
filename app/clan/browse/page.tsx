@@ -67,8 +67,18 @@ export default function ModernClanBrowsePage() {
       const to = from + 19
 
       const { data, error, count } = await supabase
-        .from("clans")
-        .select("id, name, level, xp, member_count, max_members, description, founder_id", { count: "exact" })
+  .from("clans")
+  .select("id, name, level, xp, max_members, description, founder_id", { count: "exact" })
+  .returns<{
+    id: number
+    name: string
+    level: number
+    xp: number
+    max_members: number
+    description: string | null
+    founder_id: string
+  }[]>()
+
         .order("level", { ascending: false })
         .order("xp", { ascending: false })
         .range(from, to)
@@ -89,12 +99,27 @@ export default function ModernClanBrowsePage() {
       // Create a map of founder_id to founder_name
       const founderMap = Object.fromEntries(foundersData?.map((founder) => [founder.username, founder.username]) || [])
 
+      // Get actual member counts from clan_members table
+      const clanIds = data.map((c) => c.id)
+      const memberCounts: Record<number, number> = {}
+
+      for (const clanId of clanIds) {
+        const { count: memberCount, error: memberCountError } = await supabase
+          .from("clan_members")
+          .select("*", { count: "exact", head: true })
+          .eq("clan_id", clanId)
+
+        if (!memberCountError) {
+          memberCounts[clanId] = memberCount || 0
+        }
+      }
+
       const formatted: ClanListItem[] = data.map((c) => ({
         id: Number(c.id),
         name: String(c.name),
         level: Number(c.level),
         xp: Number(c.xp || 0),
-        member_count: Number(c.member_count),
+        member_count: memberCounts[c.id] || 0,
         max_members: Number(c.max_members || 30),
         description: typeof c.description === "string" ? c.description : null,
         founder_name: founderMap[c.founder_id as string] || "Unknown",

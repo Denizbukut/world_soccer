@@ -259,6 +259,14 @@ export default function ModernClanPage() {
 
       const founderName = founderError ? "Unknown" : String(founderData?.username || "Unknown")
 
+      // Get real member count from clan_members table
+      const { data: memberCountData, error: memberCountError } = await supabase
+        .from("clan_members")
+        .select("user_id", { count: "exact" })
+        .eq("clan_id", String(id))
+
+      const realMemberCount = memberCountData?.length || 0
+
       setClan({
         ...clanData,
         id: Number(clanData.id),
@@ -270,7 +278,7 @@ export default function ModernClanPage() {
         created_at: String(clanData.created_at),
         founder_id: String(clanData.founder_id),
         founder_name: founderName,
-        member_count: typeof clanData.member_count === "number" ? clanData.member_count : 0,
+        member_count: realMemberCount, // Use real count from clan_members
         max_members: typeof clanData.max_members === "number" ? clanData.max_members : 30,
         total_donated: typeof clanData.total_donated === "number" ? clanData.total_donated : 0,
         next_expansion_cost: typeof clanData.next_expansion_cost === "number" ? clanData.next_expansion_cost : 50,
@@ -409,6 +417,7 @@ export default function ModernClanPage() {
       })
 
       setMembers(sortedMembers)
+      setClan((prev) => (prev ? { ...prev, member_count: sortedMembers.length } : prev))
     } catch (error) {
       console.error("Error in fetchClanMembers:", error)
     } finally {
@@ -578,15 +587,15 @@ export default function ModernClanPage() {
         }
       }
 
-      // Update clan member count
-      const { error: clanUpdateError } = await supabase
-        .from("clans")
-        .update({ member_count: clan.member_count + 1 })
-        .eq("id", String(clan.id))
+      // Remove this part:
+      // const { error: clanUpdateError } = await supabase
+      //   .from("clans")
+      //   .update({ member_count: clan.member_count + 1 })
+      //   .eq("id", String(clan.id))
 
-      if (clanUpdateError) {
-        console.error("Error updating clan member count:", clanUpdateError)
-      }
+      // if (clanUpdateError) {
+      //   console.error("Error updating clan member count:", clanUpdateError)
+      // }
 
       // Add activity
       await supabase.from("clan_activities").insert({
@@ -652,15 +661,15 @@ export default function ModernClanPage() {
         console.warn("Error deleting clan_mission_claims:", deleteClaimsError)
       }
 
-      // Update clan member count
-      const { error: clanUpdateError } = await supabase
-        .from("clans")
-        .update({ member_count: Math.max(1, clan.member_count - 1) })
-        .eq("id", String(clan.id))
+      // Remove this part:
+      // const { error: clanUpdateError } = await supabase
+      //   .from("clans")
+      //   .update({ member_count: Math.max(1, clan.member_count - 1) })
+      //   .eq("id", String(clan.id))
 
-      if (clanUpdateError) {
-        console.error("Error updating clan member count:", clanUpdateError)
-      }
+      // if (clanUpdateError) {
+      //   console.error("Error updating clan member count:", clanUpdateError)
+      // }
 
       // Add activity
       await supabase.from("clan_activities").insert({
@@ -730,15 +739,15 @@ export default function ModernClanPage() {
         return
       }
 
-      // Update clan member count
-      const { error: clanUpdateError } = await supabase
-        .from("clans")
-        .update({ member_count: Math.max(1, clan.member_count - 1) })
-        .eq("id", String(clan.id))
+      // Remove this part:
+      // const { error: clanUpdateError } = await supabase
+      //   .from("clans")
+      //   .update({ member_count: Math.max(1, clan.member_count - 1) })
+      //   .eq("id", String(clan.id))
 
-      if (clanUpdateError) {
-        console.error("Error updating clan member count:", clanUpdateError)
-      }
+      // if (clanUpdateError) {
+      //   console.error("Error updating clan member count:", clanUpdateError)
+      // }
 
       // Add activity
       await supabase.from("clan_activities").insert({
@@ -762,10 +771,7 @@ export default function ModernClanPage() {
 
       // Update clan details to reflect new member count
       if (clan) {
-        setClan({
-          ...clan,
-          member_count: Math.max(1, clan.member_count - 1),
-        })
+        setClan((prev) => (prev ? { ...prev, member_count: Math.max(1, prev.member_count - 1) } : prev))
       }
     } catch (error) {
       console.error("Error in kickMember:", error)
@@ -950,9 +956,7 @@ export default function ModernClanPage() {
         <div className="mb-6">
           {/* Back Button (own line) */}
           <div className="mb-2">
-            <Button variant="ghost" size="sm" onClick={() => router.push("/")} className="hover:bg-gray-100">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-            </Button>
+            
             <Button variant="ghost" size="sm" onClick={() => router.push("/")} className="hover:bg-gray-100">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back

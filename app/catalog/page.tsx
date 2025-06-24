@@ -10,10 +10,11 @@ import { Button } from "@/components/ui/button"
 import { motion } from "framer-motion"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { Search, ArrowLeft } from 'lucide-react'
+import { Search, ArrowLeft, Filter } from "lucide-react"
 import Link from "next/link"
 import MobileNav from "@/components/mobile-nav"
 import { useRouter } from "next/navigation"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 export default function CatalogPage() {
   const router = useRouter()
@@ -23,18 +24,21 @@ export default function CatalogPage() {
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState("all")
   const [searchTerm, setSearchTerm] = useState("")
+  const [selectedEpoch, setSelectedEpoch] = useState<number | "all">("all")
+  const [availableEpochs, setAvailableEpochs] = useState<number[]>([])
 
-  // Update the fetchCards function to not rely on foreign key relationships
+  // Update the fetchCards function to include epoch filtering
   async function fetchCards() {
     setLoading(true)
     const supabase = getSupabaseBrowserClient()
 
     try {
-      // Fetch all cards
-      if(!supabase) return
+      // Fetch all cards including epoch
+      if (!supabase) return
       const { data: cards, error: cardsError } = await supabase
         .from("cards")
         .select("*")
+        .order("epoch", { ascending: false }) // Order by newest epoch first
         .order("rarity", { ascending: false })
 
       if (cardsError) {
@@ -42,6 +46,10 @@ export default function CatalogPage() {
         setAllCards([])
       } else {
         setAllCards(cards || [])
+
+        // Get available epochs
+        const epochs = [...new Set(cards?.map((card) => card.epoch).filter(Boolean))] as number[]
+        setAvailableEpochs(epochs.sort((a, b) => b - a)) // Sort newest first
       }
 
       // Fetch user's cards if username is provided
@@ -57,9 +65,10 @@ export default function CatalogPage() {
         } else {
           const userCardMap: Record<string, { owned: boolean; level: number }> = {}
           userCardData?.forEach((item) => {
-            userCardMap[item.card_id] = {
+            userCardMap[item.card_id as string] = {
               owned: true,
-              level: item.level || 1,
+              level: (item.level as number) || 1,
+
             }
           })
           setUserCards(userCardMap)
@@ -76,12 +85,16 @@ export default function CatalogPage() {
     fetchCards()
   }, [user?.username])
 
-  // Filter cards based on search term
-  const filteredCards = allCards.filter(
-    (card) =>
+  // Filter cards based on search term and epoch
+  const filteredCards = allCards.filter((card) => {
+    const matchesSearch =
       card.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      card.character.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
+      card.character.toLowerCase().includes(searchTerm.toLowerCase())
+
+    const matchesEpoch = selectedEpoch === "all" || card.epoch === selectedEpoch
+
+    return matchesSearch && matchesEpoch
+  })
 
   const filterCardsByCategory = (category: string) => {
     if (category === "all") return filteredCards
@@ -114,7 +127,7 @@ export default function CatalogPage() {
     return acc
   }, {})
 
-  // Sort categories in order: legendary, epic, rare, common
+  // Sort categories in order: godlike, legendary, epic, rare, common
   const sortedCategories = ["godlike", "legendary", "epic", "rare", "common"].filter(
     (category) => cardsByRarity[category] && cardsByRarity[category].length > 0,
   )
@@ -159,26 +172,50 @@ export default function CatalogPage() {
         <h1 className="text-2xl font-bold">Card Catalog</h1>
       </div>
 
-      <div className="relative mb-6">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-        <Input
-          placeholder="Search cards by name or anime..."
-          className="pl-10"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
+      <div className="space-y-4 mb-6">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input
+            placeholder="Search cards by name or anime..."
+            className="pl-10"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+
+        {/* Epoch Filter */}
+        {availableEpochs.length > 1 && (
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-gray-500" />
+            <Select
+              value={selectedEpoch.toString()}
+              onValueChange={(value) => setSelectedEpoch(value === "all" ? "all" : Number.parseInt(value))}
+            >
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Select Epoch" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Epochs</SelectItem>
+                {availableEpochs.map((epoch) => (
+                  <SelectItem key={epoch} value={epoch.toString()}>
+                    Epoch {epoch}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
       </div>
 
       <Tabs defaultValue="all" className="w-full" onValueChange={setActiveTab}>
         <TabsList className="flex overflow-x-auto whitespace-nowrap no-scrollbar">
-  <TabsTrigger value="all">All</TabsTrigger>
-  <TabsTrigger value="godlike">Godlike</TabsTrigger>
-  <TabsTrigger value="legendary">Legendary</TabsTrigger>
-  <TabsTrigger value="epic">Epic</TabsTrigger>
-  <TabsTrigger value="rare">Rare</TabsTrigger>
-  <TabsTrigger value="common">Common</TabsTrigger>
-</TabsList>
-
+          <TabsTrigger value="all">All</TabsTrigger>
+          <TabsTrigger value="godlike">Godlike</TabsTrigger>
+          <TabsTrigger value="legendary">Legendary</TabsTrigger>
+          <TabsTrigger value="epic">Epic</TabsTrigger>
+          <TabsTrigger value="rare">Rare</TabsTrigger>
+          <TabsTrigger value="common">Common</TabsTrigger>
+        </TabsList>
 
         <TabsContent value="all" className="mt-4">
           {sortedCategories.map((category) => (
@@ -213,6 +250,7 @@ export default function CatalogPage() {
                       owned={userCards[card.id]?.owned || false}
                       hideOverlay={true}
                       onClick={() => handleCardClick(card.id)}
+                      epoch={card.epoch}
                     />
                   </motion.div>
                 ))}
@@ -246,6 +284,7 @@ export default function CatalogPage() {
                     owned={userCards[card.id]?.owned || false}
                     hideOverlay={true}
                     onClick={() => handleCardClick(card.id)}
+                    epoch={card.epoch}
                   />
                 </motion.div>
               ))}

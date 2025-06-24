@@ -54,10 +54,10 @@ export async function claimDailyBonus(username: string) {
   try {
     const supabase = createSupabaseServer()
 
-    // Get current user data
+    // Get current user data including clan info
     const { data: userData, error: userError } = await supabase
       .from("users")
-      .select("username, tickets, ticket_last_claimed")
+      .select("username, tickets, ticket_last_claimed, clan_id")
       .eq("username", username)
       .single()
 
@@ -78,7 +78,7 @@ export async function claimDailyBonus(username: string) {
       return { success: true, newTicketCount: 13 } // 10 initial + 3 bonus
     }
 
-    // Check if user has already claimed within the last 12 hours
+    // Check if user has already claimed within the last 24 hours
     if (userData.ticket_last_claimed) {
       const lastClaimed = new Date(userData.ticket_last_claimed as string)
       const now = new Date()
@@ -88,7 +88,7 @@ export async function claimDailyBonus(username: string) {
         const timeUntilNextClaim = 24 * 60 * 60 * 1000 - (now.getTime() - lastClaimed.getTime())
         return {
           success: false,
-          error: "Already claimed within the last 12 hours",
+          error: "Already claimed within the last 24 hours",
           alreadyClaimed: true,
           timeUntilNextClaim,
           nextClaimTime: new Date(lastClaimed.getTime() + 24 * 60 * 60 * 1000).toISOString(),
@@ -96,8 +96,24 @@ export async function claimDailyBonus(username: string) {
       }
     }
 
-    // Award tickets (3 tickets per claim)
-    const newTicketCount = (typeof userData.tickets === "number" ? userData.tickets : 0) + 3
+    // Base tickets (3 tickets per claim)
+    let ticketsToAward = 3
+
+    // Check if user is in a clan and if clan is level 2+
+    if (userData.clan_id) {
+      const { data: clanData, error: clanError } = await supabase
+        .from("clans")
+        .select("level")
+        .eq("id", userData.clan_id)
+        .single()
+
+      if (!clanError && clanData && clanData.level >= 2) {
+        // Level 2+ clan bonus: +1 ticket per day
+        ticketsToAward += 1
+      }
+    }
+
+    const newTicketCount = (typeof userData.tickets === "number" ? userData.tickets : 0) + ticketsToAward
 
     // Update user
     const { error: updateError } = await supabase
@@ -117,6 +133,7 @@ export async function claimDailyBonus(username: string) {
       success: true,
       newTicketCount: newTicketCount || 0,
       nextClaimTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      clanBonus: ticketsToAward > 3,
     }
   } catch (error) {
     console.error("Error claiming daily bonus:", error)
@@ -163,25 +180,25 @@ export async function drawCards(username: string, packType: string, count = 1) {
   try {
     const supabase = createSupabaseServer()
 
-    // Zuerst alle Karten mit quantity 0 entfernen
-    console.log(`Removing cards with quantity 0 for user ${username}...`);
+    // Remove cards with quantity 0
+    console.log(`Removing cards with quantity 0 for user ${username}...`)
     const { data: removedCards, error: removeError } = await supabase
       .from("user_cards")
       .delete()
       .eq("user_id", username)
       .eq("quantity", 0)
-      .select();
+      .select()
 
     if (removeError) {
-      console.error("Error removing cards with quantity 0:", removeError);
+      console.error("Error removing cards with quantity 0:", removeError)
     } else {
-      console.log(`Successfully removed ${removedCards?.length || 0} cards with quantity 0`);
+      console.log(`Successfully removed ${removedCards?.length || 0} cards with quantity 0`)
     }
 
-    // Get user data from database
+    // Get user data from database including clan info
     const { data: userData, error: userError } = await supabase
       .from("users")
-      .select("*")
+      .select("*, clan_id")
       .eq("username", username)
       .single()
 
@@ -189,13 +206,39 @@ export async function drawCards(username: string, packType: string, count = 1) {
       console.error("Error fetching user data:", userError)
       return { success: false, error: "User not found" }
     }
-    
+
+    // Get user's clan role if they're in a clan
+    let userClanRole = null
+    let clanLevel = 0
+    if (userData.clan_id) {
+      const { data: memberData, error: memberError } = await supabase
+        .from("clan_members")
+        .select("role")
+        .eq("clan_id", userData.clan_id)
+        .eq("user_id", username)
+        .single()
+
+      if (!memberError && memberData) {
+        userClanRole = memberData.role
+      }
+
+      // Get clan level
+      const { data: clanData, error: clanError } = await supabase
+        .from("clans")
+        .select("level")
+        .eq("id", userData.clan_id)
+        .single()
+
+      if (!clanError && clanData) {
+        clanLevel = clanData.level
+      }
+    }
 
     // Check if user has enough tickets
     const isLegendary = packType === "legendary"
     const ticketField = isLegendary ? "legendary_tickets" : "tickets"
     const currentTickets = userData[ticketField] || 0
-    
+
     if (currentTickets < count) {
       return {
         success: false,
@@ -206,7 +249,7 @@ export async function drawCards(username: string, packType: string, count = 1) {
     // Deduct tickets
     const newTicketCount = currentTickets - count
 
-    // Prepare update data - ONLY update the ticket fields
+    // Prepare update data
     const updateData: Record<string, any> = {}
     if (isLegendary) {
       updateData.legendary_tickets = newTicketCount
@@ -223,11 +266,7 @@ export async function drawCards(username: string, packType: string, count = 1) {
     }
 
     // Get available cards from database
-    const { data: availableCards, error: cardsError } = await supabase
-      .from("cards")
-      .select("*")
-      .eq("obtainable", true)
-
+    const { data: availableCards, error: cardsError } = await supabase.from("cards").select("*").eq("obtainable", true).eq("epoch", 1)
 
     if (cardsError || !availableCards || availableCards.length === 0) {
       console.error("Error fetching available cards:", cardsError)
@@ -242,13 +281,12 @@ export async function drawCards(username: string, packType: string, count = 1) {
 
     // Generate random cards based on rarity chances
     const drawnCards = []
-    let totalScoreToAdd = 0 // Gesamtpunktzahl für alle gezogenen Karten
+    let totalScoreToAdd = 0
 
     for (let i = 0; i < count; i++) {
       const random = Math.random() * 100
       let rarity: CardRarity
       let cardPool: any[]
-
 
       // Check if user has premium to determine drop rates
       const hasPremium = userData.has_premium || false
@@ -256,35 +294,42 @@ export async function drawCards(username: string, packType: string, count = 1) {
         await incrementMission(username, "open_regular_pack")
       }
 
-
       if (isLegendary) {
-        
-// Legendary pack rarity distribution: Common 10%, Rare 40%, Epic 40%, Legendary 10%
+        // Legendary pack rarity distribution
+        let legendaryChance = 10
+
+        // Lucky Star bonus: +2% legendary chance
+        if (userClanRole === "lucky_star" || userClanRole === "leader") {
+          legendaryChance += 2
+        }
+
         if (random < 10) {
           rarity = "common"
           cardPool = commonCards
         } else if (random < 50) {
           rarity = "rare"
           cardPool = rareCards
-        } else if (random < 92) {
+        } else if (random < 92 + (legendaryChance - 10)) {
           rarity = "epic"
           cardPool = epicCards
         } else {
           rarity = "legendary"
           cardPool = legendaryCards
         }
-        
-        
-      } 
-      else if (hasPremium) {
-        // Premium user regular pack: Common 35%, Rare 40%, Epic 20%, Legendary 5%
+      } else if (hasPremium) {
+        // Premium user regular pack with Lucky Star bonus
+        let legendaryChance = 5
+        if (userClanRole === "lucky_star" || userClanRole === "leader") {
+          legendaryChance += 2
+        }
+
         if (random < 35) {
           rarity = "common"
           cardPool = commonCards
         } else if (random < 75) {
           rarity = "rare"
           cardPool = rareCards
-        } else if (random < 95) {
+        } else if (random < 95 + (legendaryChance - 5)) {
           rarity = "epic"
           cardPool = epicCards
         } else {
@@ -292,15 +337,19 @@ export async function drawCards(username: string, packType: string, count = 1) {
           cardPool = legendaryCards
         }
       } else {
-        
-        // Regular pack rarity distribution: Common 50%, Rare 34%, Epic 14%, Legendary 2%
+        // Regular pack with Lucky Star bonus
+        let legendaryChance = 2
+        if (userClanRole === "lucky_star" || userClanRole === "leader") {
+          legendaryChance += 2
+        }
+
         if (random < 50) {
           rarity = "common"
           cardPool = commonCards
         } else if (random < 84) {
           rarity = "rare"
           cardPool = rareCards
-        } else if (random < 98) {
+        } else if (random < 98 + (legendaryChance - 2)) {
           rarity = "epic"
           cardPool = epicCards
         } else {
@@ -323,33 +372,34 @@ export async function drawCards(username: string, packType: string, count = 1) {
         await incrementMission(username, "draw_legendary_card")
       }
 
-
-      // Punkte für diese Karte berechnen und zur Gesamtpunktzahl hinzufügen
+      // Calculate score for this card
       const cardPoints = getScoreForRarity(selectedCard.rarity)
       totalScoreToAdd += cardPoints
-      // Add card to user's collection
-      const today = new Date().toISOString().split("T")[0] // Format as YYYY-MM-DD
 
-      // Check if user already has this card (excluding those with quantity 0 since we deleted them)
+      // Add card to user's collection
+      const today = new Date().toISOString().split("T")[0]
+
+      // Check if user already has this card
       const { data: existingCard, error: existingCardError } = await supabase
         .from("user_cards")
         .select("*")
         .eq("user_id", username)
         .eq("card_id", selectedCard.id)
-        .eq("level", 1)  // wichtig!
+        .eq("level", 1)
         .single()
 
       if (existingCardError && existingCardError.code !== "PGRST116") {
-        // PGRST116 means no rows returned
         console.error("Error checking existing card:", existingCardError)
       }
 
       if (existingCard) {
         // Update quantity if user already has this card
-        const newQuantity = (existingCard.quantity || 0) + 1;
-        
-        console.log(`Updating existing card: ${selectedCard.name}, ID: ${existingCard.id}, Old quantity: ${existingCard.quantity}, New quantity: ${newQuantity}`);
-        
+        const newQuantity = (existingCard.quantity || 0) + 1
+
+        console.log(
+          `Updating existing card: ${selectedCard.name}, ID: ${existingCard.id}, Old quantity: ${existingCard.quantity}, New quantity: ${newQuantity}`,
+        )
+
         const { error: updateCardError } = await supabase
           .from("user_cards")
           .update({ quantity: newQuantity })
@@ -359,12 +409,12 @@ export async function drawCards(username: string, packType: string, count = 1) {
         if (updateCardError) {
           console.error("Error updating card quantity:", updateCardError)
         } else {
-          console.log(`Successfully updated card quantity for ${selectedCard.name} to ${newQuantity}`);
+          console.log(`Successfully updated card quantity for ${selectedCard.name} to ${newQuantity}`)
         }
       } else {
         // Add new card to user's collection
-        console.log(`Adding new card to collection: ${selectedCard.name}`);
-        
+        console.log(`Adding new card to collection: ${selectedCard.name}`)
+
         const { data: insertedCard, error: insertCardError } = await supabase
           .from("user_cards")
           .insert({
@@ -380,16 +430,44 @@ export async function drawCards(username: string, packType: string, count = 1) {
         if (insertCardError) {
           console.error("Error adding card to collection:", insertCardError)
         } else {
-          console.log(`Successfully added new card to collection: ${selectedCard.name}, ID: ${insertedCard?.[0]?.id}`);
+          console.log(`Successfully added new card to collection: ${selectedCard.name}, ID: ${insertedCard?.[0]?.id}`)
         }
       }
     }
-   
 
-    totalScoreToAdd = Math.round(totalScoreToAdd) // optional
+    // Calculate XP with clan bonuses
+    let xpAmount = isLegendary ? 100 * count : 50 * count
 
-    // Rest der Funktion bleibt unverändert...
-    // DIREKT HIER den Score aktualisieren - das ist der wichtigste Teil
+    // Special case for jiraiya user
+    if (username === "jiraiya") {
+      xpAmount = 10 * count
+    }
+
+    // XP Hunter bonus: +5% XP from packs
+    if (userClanRole === "xp_hunter") {
+      xpAmount = Math.floor(xpAmount * 1.05)
+    }
+
+    // Founder bonus: +5% XP from all pack openings
+    if (userClanRole === "leader" || (userData.clan_id && userData.username === userData.founder_id)) {
+      xpAmount = Math.floor(xpAmount * 1.05)
+    }
+
+    // XP Pass bonus
+    const { data: xpPassData } = await supabase
+      .from("xp_passes")
+      .select("active")
+      .eq("user_id", username)
+      .eq("active", true)
+      .single()
+
+    if (xpPassData?.active) {
+      xpAmount = Math.floor(xpAmount * 1.2)
+    }
+
+    totalScoreToAdd = Math.round(totalScoreToAdd)
+
+    // Update score in database
     const { data: currentUserData, error: currentUserError } = await supabase
       .from("users")
       .select("score")
@@ -401,14 +479,11 @@ export async function drawCards(username: string, packType: string, count = 1) {
       return { success: false, error: "Failed to fetch current user score" }
     }
 
-    // Berechne den neuen Score
     const currentScore = currentUserData.score || 0
     const newScore = Math.floor(currentScore + totalScoreToAdd)
 
-
     console.log(`UPDATING SCORE: ${username} - Current: ${currentScore}, Adding: ${totalScoreToAdd}, New: ${newScore}`)
 
-    // Aktualisiere den Score in der Datenbank
     const { error: scoreUpdateError } = await supabase
       .from("users")
       .update({ score: newScore })
@@ -419,28 +494,47 @@ export async function drawCards(username: string, packType: string, count = 1) {
       return { success: false, error: "Failed to update score" }
     }
 
-    // Überprüfe, ob der Score tatsächlich aktualisiert wurde
-    const { data: verifyData, error: verifyError } = await supabase
-      .from("users")
-      .select("score")
-      .eq("username", username)
-      .single()
+    // Update clan experience if user belongs to a clan
+    const clanLevels = [
+  { level: 1, required_xp: 0, reward: "Clan created" },
+  { level: 2, required_xp: 5000, reward: "+1 regular ticket per day for everyone" },
+  { level: 3, required_xp: 20000, reward: "Role limits increased to 5" },
+  { level: 4, required_xp: 50000, reward: "Cheap Hustler role unlocked" },
+]
 
-    if (verifyError) {
-      console.error("Error verifying score update:", verifyError)
-    } else {
-      console.log(`SCORE VERIFICATION: Expected ${newScore}, Actual ${verifyData.score}`)
-      if (verifyData.score !== newScore) {
-        console.error(`Score verification failed! Expected: ${newScore}, Actual: ${verifyData.score}`)
-      } else {
-        console.log("Score successfully updated and verified!")
-      }
+    if (userData.clan_id) {
+      const { data: clanData, error: clanError } = await supabase
+  .from("clans")
+  .select("xp, level")
+  .eq("id", userData.clan_id)
+  .single()
+
+if (!clanError && clanData) {
+  const xpGain = (isLegendary ? 2 : 1) * count
+  let currentXp = clanData.xp || 0
+  let currentLevel = clanData.level || 1
+
+  let newXpTotal = currentXp + xpGain
+  let newLevel = currentLevel
+
+  for (let i = clanLevels.length - 1; i >= 0; i--) {
+    if (newXpTotal >= clanLevels[i].required_xp) {
+      newLevel = clanLevels[i].level
+      break
+    }
+  }
+
+  await supabase
+    .from("clans")
+    .update({ xp: newXpTotal, level: newLevel })
+    .eq("id", userData.clan_id)
+}
+
     }
 
-    // Revalidiere den Leaderboard-Pfad
     revalidatePath("/leaderboard")
 
-    // Get updated ticket counts - but don't return the entire user object
+    // Get updated ticket counts
     const { data: updatedUser, error: updatedUserError } = await supabase
       .from("users")
       .select("tickets, legendary_tickets, score")
@@ -460,6 +554,12 @@ export async function drawCards(username: string, packType: string, count = 1) {
       scoreAdded: totalScoreToAdd,
       newScore: updatedUser?.score || newScore,
       removedZeroQuantityCards: removedCards?.length || 0,
+      xpGained: xpAmount,
+      clanBonuses: {
+        xpHunter: userClanRole === "xp_hunter",
+        luckystar: userClanRole === "lucky_star",
+        founder: userClanRole === "leader",
+      },
     }
   } catch (error) {
     console.error("Error drawing cards:", error)

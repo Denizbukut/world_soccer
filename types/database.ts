@@ -53,3 +53,70 @@ export interface User {
     description?: string
   }
   
+export interface ClanQuest {
+  id: number
+  clan_id: number
+  quest_type: string
+  goal: number
+  progress: number
+  claimed_by: string[]
+  expires_at?: string
+  created_at: string
+}
+
+export interface ClanMember {
+  id: number
+  clan_id: number
+  user_id: string
+  role: 'leader' | 'officer' | 'member'
+  joined_at: string
+}
+
+export interface ClanFeedMessage {
+  id: number
+  clan_id: number
+  user_id?: string
+  message: string
+  is_system: boolean
+  created_at: string
+}
+
+export interface ClanWar {
+  id: number
+  season: number
+  start_date: string
+  end_date: string
+  is_active: boolean
+}
+
+export interface ClanWarStat {
+  id: number
+  clan_war_id: number
+  clan_id: number
+  points: number
+  updated_at: string
+}
+
+export interface ClanShopItem {
+  id: number
+  name: string
+  description?: string
+  xp_cost: number
+  icon_url?: string
+}
+
+export interface ClanShopPurchase {
+  id: number
+  clan_id: number
+  item_id: number
+  purchased_at: string
+}
+
+export interface ClanLevelReward {
+  id: number
+  clan_id: number
+  level: number
+  reward_type: string
+  claimed_by: string[]
+  created_at: string
+}

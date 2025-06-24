@@ -15,6 +15,7 @@ type User = {
   nextLevelExp: number
   has_premium?: boolean
   score?: number // Hinzufügen des score-Felds
+  clan_id?: number
 }
 
 type AuthContextType = {
@@ -63,7 +64,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
       const { data, error } = await supabase
         .from("users")
-        .select("username, tickets, legendary_tickets, coins, level, world_id, experience, next_level_exp, has_premium, score")
+        .select("username, tickets, legendary_tickets, coins, level, world_id, experience, next_level_exp, has_premium, score, clan_id")
         .eq("username", username)
         .single()
 
@@ -80,6 +81,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           legendary_tickets: Number(data.legendary_tickets || 0),
           coins: Number(data.coins || 0),
           level: Number(data.level || 1),
+          clan_id: Number(data.clan_id || null),
           experience: Number(data.experience || 0),
           nextLevelExp: Number(data.next_level_exp || 100),
           has_premium: Boolean(data.has_premium || false),

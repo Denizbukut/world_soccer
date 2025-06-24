@@ -10,13 +10,14 @@ import { Button } from "@/components/ui/button"
 import { motion, AnimatePresence } from "framer-motion"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "@/components/ui/use-toast"
-import { AlertCircle, BookOpen, Search } from "lucide-react"
+import { AlertCircle, BookOpen, Search, Filter } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import MobileNav from "@/components/mobile-nav"
 import { Input } from "@/components/ui/input"
 import { renderStars } from "@/utils/card-stars"
 import { LevelSystemInfoDialog } from "@/components/level-system-info-dialog"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 export default function CollectionPage() {
   const { user } = useAuth()
@@ -26,7 +27,7 @@ export default function CollectionPage() {
   const [activeTab, setActiveTab] = useState("all")
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedEpoch, setSelectedEpoch] = useState<number | "all">("all")
-
+  const [availableEpochs, setAvailableEpochs] = useState<number[]>([])
 
   // Fetch user's cards
   useEffect(() => {
@@ -66,7 +67,7 @@ export default function CollectionPage() {
         // 2. Get the card IDs to fetch
         const cardIds = userCardsData.map((uc) => uc.card_id)
 
-        // 3. Fetch the card details
+        // 3. Fetch the card details including epoch
         const { data: cardsData, error: cardsError } = await supabase
           .from("cards")
           .select("id, name, character, image_url, rarity, epoch")
@@ -80,7 +81,7 @@ export default function CollectionPage() {
             variant: "destructive",
           })
           setUserCards([])
-        setLoading(false)
+          setLoading(false)
           return
         }
 
@@ -89,8 +90,12 @@ export default function CollectionPage() {
           cardMap.set(c.id, c)
         })
 
-          // 5. Combine the data
-           const processedCards = userCardsData
+        // 4. Get available epochs from user's cards
+        const epochs = [...new Set(cardsData?.map((card) => card.epoch).filter(Boolean))] as number[]
+        setAvailableEpochs(epochs.sort((a, b) => b - a)) // Sort newest first
+
+        // 5. Combine the data
+        const processedCards = userCardsData
           .map((userCard) => {
             const details = cardMap.get(userCard.card_id)
             if (!details) return null
@@ -104,7 +109,6 @@ export default function CollectionPage() {
           })
           .filter(Boolean)
 
-        
         setUserCards(processedCards)
       } catch (err) {
         console.error("Unexpected error:", err)
@@ -121,15 +125,18 @@ export default function CollectionPage() {
     fetchUserCards()
   }, [user?.username])
 
-  // Filter cards based on active tab and search term
+  // Filter cards based on active tab, search term, and epoch
   const filteredCards = userCards.filter((card) => {
     const matchesSearch =
       searchTerm === "" ||
       card.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       card.character?.toLowerCase().includes(searchTerm.toLowerCase())
 
-    if (activeTab === "all") return matchesSearch
-    return matchesSearch && card.rarity === activeTab.toLowerCase()
+    const matchesRarity = activeTab === "all" || card.rarity === activeTab.toLowerCase()
+
+    const matchesEpoch = selectedEpoch === "all" || card.epoch === selectedEpoch
+
+    return matchesSearch && matchesRarity && matchesEpoch
   })
 
   // Group cards by level for better organization
@@ -149,16 +156,15 @@ export default function CollectionPage() {
 
   // Calculate collection stats
   const collectionStats = userCards.reduce(
-  (acc, card) => {
-    acc.total += card.quantity || 0
-    if (card.rarity) {
-      acc[card.rarity] = (acc[card.rarity] || 0) + (card.quantity || 0)
-    }
-    return acc
-  },
-  { total: 0, common: 0, rare: 0, epic: 0, legendary: 0, godlike: 0 }, // ← hier ergänzt
-)
-
+    (acc, card) => {
+      acc.total += card.quantity || 0
+      if (card.rarity) {
+        acc[card.rarity] = (acc[card.rarity] || 0) + (card.quantity || 0)
+      }
+      return acc
+    },
+    { total: 0, common: 0, rare: 0, epic: 0, legendary: 0, godlike: 0 },
+  )
 
   if (loading) {
     return (
@@ -258,21 +264,20 @@ export default function CollectionPage() {
               </Link>
             </div>
             <div className="grid grid-cols-3 gap-2 text-center">
-  {[
-    { label: "Total", value: collectionStats.total, color: "text-gray-600" },
-    { label: "Common", value: collectionStats.common, color: "text-gray-600" },
-    { label: "Rare", value: collectionStats.rare, color: "text-blue-600" },
-    { label: "Epic", value: collectionStats.epic, color: "text-purple-600" },
-    { label: "Legend", value: collectionStats.legendary, color: "text-amber-600" },
-    { label: "Godlike", value: collectionStats.godlike, color: "text-[#b91c1c]" },
-  ].map((stat) => (
-    <div key={stat.label} className="bg-gray-50 rounded-lg p-2">
-      <div className={`text-lg font-semibold ${stat.color}`}>{stat.value}</div>
-      <div className="text-xs text-gray-500">{stat.label}</div>
-    </div>
-  ))}
-</div>
-
+              {[
+                { label: "Total", value: collectionStats.total, color: "text-gray-600" },
+                { label: "Common", value: collectionStats.common, color: "text-gray-600" },
+                { label: "Rare", value: collectionStats.rare, color: "text-blue-600" },
+                { label: "Epic", value: collectionStats.epic, color: "text-purple-600" },
+                { label: "Legend", value: collectionStats.legendary, color: "text-amber-600" },
+                { label: "Godlike", value: collectionStats.godlike, color: "text-[#b91c1c]" },
+              ].map((stat) => (
+                <div key={stat.label} className="bg-gray-50 rounded-lg p-2">
+                  <div className={`text-lg font-semibold ${stat.color}`}>{stat.value}</div>
+                  <div className="text-xs text-gray-500">{stat.label}</div>
+                </div>
+              ))}
+            </div>
 
             {/* Level System Info Button - Now positioned below the stats grid */}
             <div className="mt-3 flex justify-center">
@@ -298,19 +303,53 @@ export default function CollectionPage() {
             />
           </div>
 
+          {/* Epoch Filter */}
+          {availableEpochs.length > 1 && (
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-gray-500" />
+              <Select
+                value={selectedEpoch.toString()}
+                onValueChange={(value) => setSelectedEpoch(value === "all" ? "all" : Number.parseInt(value))}
+              >
+                <SelectTrigger className="w-32 bg-white">
+                  <SelectValue placeholder="Epoch" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Epochs</SelectItem>
+                  {availableEpochs.map((epoch) => (
+                    <SelectItem key={epoch} value={epoch.toString()}>
+                      Epoch {epoch}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           <Tabs defaultValue="all" className="w-full" onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-6 bg-white h-9">
-  <TabsTrigger value="all" className="text-xs h-7">All</TabsTrigger>
-  <TabsTrigger value="godlike" className="text-xs h-7">Godlike</TabsTrigger>
-  <TabsTrigger value="legendary" className="text-xs h-7">Legendary</TabsTrigger>
-  <TabsTrigger value="epic" className="text-xs h-7">Epic</TabsTrigger>
-  <TabsTrigger value="rare" className="text-xs h-7">Rare</TabsTrigger>
-  <TabsTrigger value="common" className="text-xs h-7">Common</TabsTrigger>
-</TabsList>
-
+              <TabsTrigger value="all" className="text-xs h-7">
+                All
+              </TabsTrigger>
+              <TabsTrigger value="godlike" className="text-xs h-7">
+                Godlike
+              </TabsTrigger>
+              <TabsTrigger value="legendary" className="text-xs h-7">
+                Legendary
+              </TabsTrigger>
+              <TabsTrigger value="epic" className="text-xs h-7">
+                Epic
+              </TabsTrigger>
+              <TabsTrigger value="rare" className="text-xs h-7">
+                Rare
+              </TabsTrigger>
+              <TabsTrigger value="common" className="text-xs h-7">
+                Common
+              </TabsTrigger>
+            </TabsList>
           </Tabs>
         </motion.div>
- 
+
         {/* Cards by Level */}
         {sortedLevels.length > 0 ? (
           sortedLevels.map((level) => (
@@ -357,6 +396,7 @@ export default function CollectionPage() {
                         quantity={card.quantity}
                         owned={true}
                         isCollection={true}
+                        epoch={card.epoch}
                       />
                     </motion.div>
                   ))}
@@ -378,6 +418,7 @@ export default function CollectionPage() {
               onClick={() => {
                 setSearchTerm("")
                 setActiveTab("all")
+                setSelectedEpoch("all")
               }}
             >
               Clear Filters

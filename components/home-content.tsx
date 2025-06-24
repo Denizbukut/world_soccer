@@ -31,6 +31,7 @@ import {
   Trophy,
   Coins,
   Sparkles,
+  Shield,
   Users,
   CheckCircle,
   LogOut
@@ -75,14 +76,12 @@ interface DealInteraction {
 }
 
 // Define the clan info interface
-/* 
 interface ClanInfo {
   id: string
   name: string
   level: number
   member_count: number
 }
-*/
 
 export default function Home() {
   const { user, updateUserTickets, refreshUserData } = useAuth()
@@ -100,7 +99,7 @@ export default function Home() {
   const [levelRewards, setLevelRewards] = useState<LevelReward[]>([])
   const [lastLegendaryClaim, setLastLegendaryClaim] = useState<Date | null>(null)
   const lastFetchedRef = useRef<number>(0)
-  // const [userClanInfo, setUserClanInfo] = useState<ClanInfo | null>(null)
+  const [userClanInfo, setUserClanInfo] = useState<ClanInfo | null>(null)
   const [referredUsers, setReferredUsers] = useState<{
       id: number
       username: string
@@ -109,6 +108,7 @@ export default function Home() {
     }[]>([])
 
     
+const [clanBonusActive, setClanBonusActive] = useState(false)
 
 
   // Timer display state
@@ -153,6 +153,9 @@ const [copied, setCopied] = useState(false)
   const [tokenBalance, setTokenBalance] = useState<string | null>(null)
   
   const { price } = useWldPrice()
+
+  const ticketClaimAmount = user?.clan_id ? (userClanInfo?.level && userClanInfo.level >= 2 ? 4 : 3) : 3
+
 
 
   useEffect(() => {
@@ -305,7 +308,6 @@ const [copied, setCopied] = useState(false)
   }
 
   // Fetch user's clan info
-  /*
   useEffect(() => {
     if (user?.username && !hasCheckedClan.current) {
       hasCheckedClan.current = true
@@ -356,8 +358,8 @@ const [copied, setCopied] = useState(false)
       fetchClanInfo()
     }
   }, [user?.username])
-  */
- useEffect(() => {
+
+  useEffect(() => {
   if (user?.username) {
     getReferredUsers(user.username).then(setReferredUsers)
     }
@@ -879,16 +881,7 @@ const [copied, setCopied] = useState(false)
     <span className="bg-violet-100 text-violet-700 text-xs px-2 py-0.5 rounded-full">
       Lvl {user?.level}
     </span>
-    <Button
-      size="sm"
-      className="text-xs w-fit bg-gradient-to-r from-red-500 to-pink-500 text-white hover:from-red-600 hover:to-pink-600 px-3 py-1 rounded-full shadow-md transition"
-      onClick={async () => {
-        router.push("/login")
-      }}
-    >
-      <LogOut className="h-3.5 w-3.5 mr-1" />
-      Logout
-    </Button>
+    
   </div>
 </div>
 
@@ -907,36 +900,8 @@ const [copied, setCopied] = useState(false)
             />
 
             {/* Bottom row with clan and game pass */}
-            <div className="grid grid-cols-1 gap-2">
-              {/* Clan Button - Commented out
-              <div
-                onClick={() => (userClanInfo ? router.push(`/clan/${userClanInfo.id}`) : router.push("/clan"))}
-                className="block cursor-pointer"
-              >
-                <div className="flex items-center gap-2 bg-gray-50 hover:bg-gray-100 transition-colors rounded-lg p-2">
-                  <div
-                    className={`w-7 h-7 rounded-full flex items-center justify-center ${
-                      userClanInfo
-                        ? "bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white"
-                        : "bg-gray-200 text-gray-400"
-                    }`}
-                  >
-                    {userClanInfo ? <Shield className="h-3.5 w-3.5" /> : <Users className="h-3.5 w-3.5" />}
-                  </div>
-                  <div>
-                    <p className="text-xs font-medium">{userClanInfo ? userClanInfo.name : "Join a Clan"}</p>
-                    {userClanInfo && (
-                      <p className="text-[10px] text-gray-500">
-                        <span className="bg-violet-100 text-violet-600 px-1 rounded text-[9px] mr-1">
-                          Lvl {userClanInfo.level}
-                        </span>
-                        {userClanInfo.member_count} members
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-              */}
+            <div className="grid grid-cols-2 gap-2">
+              
 
               {/* Game Pass */}
               <Link href="/pass" className="block">
@@ -971,6 +936,29 @@ const [copied, setCopied] = useState(false)
                   </div>
                 </div>
               </Link>
+              {/* Clan Button */}
+              {/* Clan Button - neue Farben & Stil */}
+  <div
+    onClick={() =>
+      userClanInfo ? router.push(`/clan/${userClanInfo.id}`) : router.push("/clan")
+    }
+    className="block cursor-pointer"
+  >
+    <div className={`flex items-center gap-2 bg-gradient-to-br from-violet-100 to-fuchsia-100 hover:brightness-105 transition-colors rounded-lg p-2`}>
+      <div className="w-7 h-7 rounded-full flex items-center justify-center bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white">
+        {userClanInfo ? <Shield className="h-3.5 w-3.5" /> : <Users className="h-3.5 w-3.5" />}
+      </div>
+      <div>
+        <p className="text-[11px] font-semibold text-violet-800">{userClanInfo ? userClanInfo.name : "Join a Clan"}</p>
+        {userClanInfo && (
+          <p className="text-[10px] text-gray-600">
+            <span className="bg-violet-200 text-violet-700 px-1 rounded text-[9px] mr-1">Lvl {userClanInfo.level}</span>
+            {userClanInfo.member_count} members
+          </p>
+        )}
+      </div>
+    </div>
+  </div>
             </div>
           </motion.div>
      
@@ -1250,7 +1238,14 @@ const [copied, setCopied] = useState(false)
                     </div>
                     <div>
                       <h3 className="font-medium text-sm">Ticket Claim</h3>
-                      <p className="text-xs text-gray-500">Get 3 tickets every 24 hours</p>
+                      <p className="text-xs text-gray-500">
+  Get {ticketClaimAmount} tickets every 24 hours
+  {ticketClaimAmount === 4 && (
+    <span className="text-emerald-600 font-medium"> (+1 Clan Bonus)</span>
+  )}
+</p>
+
+
                     </div>
                   </div>
                   <Button
@@ -1468,7 +1463,8 @@ const [copied, setCopied] = useState(false)
                     times: [0, 0.3, 0.5, 1],
                   }}
                 >
-                  <div className="text-xl font-bold text-violet-600">+3 Tickets!</div>
+                  <div className="text-xl font-bold text-violet-600">+{ticketClaimAmount} Tickets!</div>
+
                   <div className="flex items-center gap-2">
                     <Ticket className="h-6 w-6 text-violet-500" />
                     <Ticket className="h-6 w-6 text-violet-500" />

@@ -30,6 +30,7 @@ interface CardItemProps {
   character: string
   imageUrl?: string
   rarity: string
+  epoch: number
   type?: string
   owned?: boolean
   compact?: boolean

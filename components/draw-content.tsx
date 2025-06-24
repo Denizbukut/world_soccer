@@ -8,13 +8,14 @@ import { updateScoreForCards, updateScoreForLevelUp } from "@/app/actions/update
 import ProtectedRoute from "@/components/protected-route"
 import MobileNav from "@/components/mobile-nav"
 import { Button } from "@/components/ui/button"
-import { Ticket, Crown, Star } from "lucide-react"
+import { Ticket, Crown, Star, Sword } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
 import { motion, AnimatePresence, useAnimation, useMotionValue, useTransform } from "framer-motion"
 import Image from "next/image"
 import { incrementMission } from "@/app/actions/missions"
 import { incrementLegendaryDraw } from "@/app/actions/weekly-contest"
 import { getSupabaseBrowserClient } from "@/lib/supabase"
+import { incrementClanMission } from "@/app/actions/clan-missions"
 
 // Rarität definieren
 type CardRarity = "common" | "rare" | "epic" | "legendary"
@@ -83,6 +84,7 @@ export default function DrawPage() {
   const [tickets, setTickets] = useState(0)
   const [hasPremiumPass, setHasPremiumPass] = useState(false)
   const [hasXpPass, setHasXpPass] = useState(false)
+  const [userClanRole, setUserClanRole] = useState<string | null>(null)
 
   const [isUpdatingScore, setIsUpdatingScore] = useState(false)
   const [isMultiDraw, setIsMultiDraw] = useState(false) // Neu: für 5-Karten-Ziehen
@@ -100,8 +102,8 @@ export default function DrawPage() {
   const [newLevel, setNewLevel] = useState(1)
   const [scoreGained, setScoreGained] = useState(0)
   const [selectedCardIndex, setSelectedCardIndex] = useState<number | null>(null)
-
-
+ const [selectedEpoch, setSelectedEpoch] = useState<number>(1) // Default to epoch 1
+  const [availableEpochs, setAvailableEpochs] = useState<number[]>([1])
   // Hydration safety
   const [isClient, setIsClient] = useState(false)
 
@@ -120,38 +122,101 @@ export default function DrawPage() {
   const reflectionOpacity = useTransform(x, [-100, 0, 100], [0.7, 0.3, 0.7])
 
   const getSelectedCard = () => {
-  if (selectedCardIndex === null) return null
-  return drawnCards[selectedCardIndex]
-}
+    if (selectedCardIndex === null) return null
+    return drawnCards[selectedCardIndex]
+  }
 
+  // Fetch available epochs
+  useEffect(() => {
+    const fetchAvailableEpochs = async () => {
+      const supabase = getSupabaseBrowserClient()
+      if (!supabase) return
 
+      try {
+        const { data: epochs, error } = await supabase
+          .from("cards")
+          .select("epoch")
+          .not("epoch", "is", null)
+
+        if (!error && epochs) {
+          const uniqueEpochs = [...new Set(epochs.map((e) => e.epoch as number))].sort((a, b) => b - a)
+
+          setAvailableEpochs(uniqueEpochs as number[])
+        }
+      } catch (error) {
+        console.error("Error fetching epochs:", error)
+      }
+    }
+
+    fetchAvailableEpochs()
+  }, [])
+
+  // Check user's clan role for XP bonuses
+  useEffect(() => {
+    const fetchUserClanRole = async () => {
+      if (!user?.username) return
+
+      const supabase = getSupabaseBrowserClient()
+      if (!supabase) return
+
+      try {
+        // Get user's clan_id
+        const { data: userData, error: userError } = await supabase
+          .from("users")
+          .select("clan_id")
+          .eq("username", user.username)
+          .single()
+
+        if (userError || !userData?.clan_id) {
+          setUserClanRole(null)
+          return
+        }
+
+        // Get user's role in the clan
+        const { data: memberData, error: memberError } = await supabase
+          .from("clan_members")
+          .select("role")
+          .eq("clan_id", userData.clan_id)
+          .eq("user_id", user.username)
+          .single()
+
+        if (!memberError && memberData) {
+          setUserClanRole(memberData.role as string)
+        }
+      } catch (error) {
+        console.error("Error fetching clan role:", error)
+      }
+    }
+
+    fetchUserClanRole()
+  }, [user?.username])
 
   // Set isClient to true once component mounts
   useEffect(() => {
-  setIsClient(true)
-  refreshUserData?.()
+    setIsClient(true)
+    refreshUserData?.()
 
-  const fetchXpPass = async () => {
-    if (!user?.username) return
+    const fetchXpPass = async () => {
+      if (!user?.username) return
 
-    const supabase = getSupabaseBrowserClient()
-    if(!supabase) return
-    const { data, error } = await supabase
-      .from("xp_passes")
-      .select("active")
-      .eq("user_id", user.username)
-      .eq("active", true)
-      .single()
+      const supabase = getSupabaseBrowserClient()
+      if (!supabase) return
+      const { data, error } = await supabase
+        .from("xp_passes")
+        .select("active")
+        .eq("user_id", user.username)
+        .eq("active", true)
+        .single()
 
-    if (data?.active) {
-      setHasXpPass(true)
-    } else {
-      setHasXpPass(false)
+      if (data?.active) {
+        setHasXpPass(true)
+      } else {
+        setHasXpPass(false)
+      }
     }
-  }
 
-  fetchXpPass()
-}, [refreshUserData, user?.username])
+    fetchXpPass()
+  }, [refreshUserData, user?.username])
 
   // Update tickets and legendary tickets when user changes
   useEffect(() => {
@@ -167,8 +232,6 @@ export default function DrawPage() {
       }
     }
   }, [user])
-
- 
 
   // Handle card tilt effect with improved sensitivity for reflections
   const handleCardMove = (event: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
@@ -240,7 +303,6 @@ export default function DrawPage() {
       setCurrentCardIndex(0)
       setCardRevealed(false)
 
-
       try {
         const response = await fetch("/api/draw", {
           method: "POST",
@@ -249,6 +311,7 @@ export default function DrawPage() {
             username: user.username,
             cardType,
             count,
+            epoch: selectedEpoch, // Include selected epoch
           }),
         })
 
@@ -271,17 +334,28 @@ export default function DrawPage() {
           await incrementMission(user.username, "open_legendary_pack", count)
           await incrementMission(user.username, "open_3_legendary_packs", count)
 
-          
+          if (user.clan_id !== undefined) {
+            await incrementClanMission(user.clan_id, "legendary_packs", count) // ✅
+          }
         } else {
           await incrementMission(user.username, "open_regular_pack", count)
+
+          if (user.clan_id !== undefined) {
+            await incrementClanMission(user.clan_id, "regular_packs", count) // ✅
+          }
         }
-        
+
+        const legendary_cards = result.drawnCards?.filter((card: any) => card.rarity === "legendary") || []
+         if (legendary_cards.length > 0) {
+          if (user.clan_id !== undefined) {
+            await incrementClanMission(user.clan_id, "legendary_cards", legendary_cards.length)
+          }
+        }
         const narutoCards = result.drawnCards?.filter((card: any) => card.character === "Naruto") || []
-        
-        if (narutoCards.length > 0 ){
+
+        if (narutoCards.length > 0) {
           await incrementLegendaryDraw(user.username, narutoCards.length)
         }
-        
 
         if (result.success && result.drawnCards?.length > 0) {
           setDrawnCards(result.drawnCards)
@@ -295,19 +369,21 @@ export default function DrawPage() {
 
           let xpAmount = cardType === "legendary" ? 100 * count : 50 * count
 
-          if (user?.username === "jiraiya") {
-            xpAmount = 10 * count
+
+          // XP Hunter bonus: +5% XP from packs
+          if (userClanRole === "xp_hunter") {
+            xpAmount = Math.floor(xpAmount * 1.05)
           }
-          
-    
-          if(hasXpPass){
-            const tmpXP = xpAmount * 1.2;
-            xpAmount = Math.floor(tmpXP)
-            
-          } else{
-            
+
+          // Founder bonus: +5% XP from all pack openings
+          if (userClanRole === "leader") {
+            xpAmount = Math.floor(xpAmount * 1.05)
           }
-        
+
+          if (hasXpPass) {
+            xpAmount = Math.floor(xpAmount * 1.2)
+          }
+
           setXpGained(xpAmount)
 
           const { leveledUp, newLevel: updatedLevel } = (await updateUserExp?.(xpAmount)) || {}
@@ -331,7 +407,7 @@ export default function DrawPage() {
         }, 100)
       }
     },
-    [isDrawing, user, legendaryTickets, tickets, updateUserTickets, updateUserExp],
+    [isDrawing, user, legendaryTickets, tickets, updateUserTickets, updateUserExp, userClanRole, hasXpPass, selectedEpoch],
   )
 
   const handleOpenPack = () => {
@@ -485,6 +561,28 @@ export default function DrawPage() {
     return RARITY_COLORS[rarity] || RARITY_COLORS.common
   }
 
+  // Calculate XP with bonuses for display
+  const calculateXpWithBonuses = (baseXp: number) => {
+    let finalXp = baseXp
+
+    // XP Hunter bonus
+    if (userClanRole === "xp_hunter") {
+      finalXp = Math.floor(finalXp * 1.05)
+    }
+
+    // Founder bonus
+    if (userClanRole === "leader") {
+      finalXp = Math.floor(finalXp * 1.05)
+    }
+
+    // XP Pass bonus
+    if (hasXpPass) {
+      finalXp = Math.floor(finalXp * 1.2)
+    }
+
+    return finalXp
+  }
+
   // Render a simple loading state until client-side hydration is complete
   if (!isClient) {
     return (
@@ -621,24 +719,22 @@ export default function DrawPage() {
                         </h3>
                         <p className="text-sm text-gray-500">Contains 1 random card</p>
                         <div className="flex items-center justify-center gap-1 mt-1 text-xs text-violet-600">
-  <Star className="h-3 w-3" />
-  
-  {hasXpPass ? (
-    
-    <span>
-      <span className="line-through text-gray-400">
-        +{activeTab === "legendary" ? "100" : "50"} XP
-      </span>{" "}
-      <span className="text-violet-600 font-semibold">
-        +{activeTab === "legendary" ? "120" : "60"} XP
-      </span>
-    </span>
-  ) : (
-    <span>+{activeTab === "legendary" ? "100" : "50"} XP</span>
-  )}
-</div>
-
-
+                          <Star className="h-3 w-3" />
+                          {/* Show XP with clan bonuses */}
+                          {userClanRole === "xp_hunter" || userClanRole === "leader" || hasXpPass ? (
+                            <span className="flex items-center gap-1">
+                              <span className="line-through text-gray-400">
+                                +{activeTab === "legendary" ? "100" : "50"} XP
+                              </span>
+                              <span className="text-violet-600 font-semibold">
+                                +{calculateXpWithBonuses(activeTab === "legendary" ? 100 : 50)} XP
+                              </span>
+                              {userClanRole === "xp_hunter" && <Sword className="h-3 w-3 text-orange-500" />}
+                            </span>
+                          ) : (
+                            <span>+{activeTab === "legendary" ? "100" : "50"} XP</span>
+                          )}
+                        </div>
                       </div>
 
                       <div className="w-full space-y-2 mb-4">
@@ -659,7 +755,12 @@ export default function DrawPage() {
                               </div>
                               <div className="flex justify-between items-center text-sm">
                                 <span>Legendary</span>
-                                <span className="text-amber-500">10%</span>
+                                <div className="flex items-center gap-1">
+                                  <span className="text-amber-500">
+                                    {userClanRole === "lucky_star" || userClanRole === "leader" ? "12%" : "10%"}
+                                  </span>
+                                  {(userClanRole === "lucky_star" || userClanRole === "leader") && <Star className="h-3 w-3 text-yellow-500" />}
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -710,9 +811,17 @@ export default function DrawPage() {
                                   <span
                                     className={`text-amber-500 ${hasPremiumPass ? "line-through text-amber-400/70" : ""}`}
                                   >
-                                    2%
+                                    {userClanRole === "lucky_star" || userClanRole === "leader" ? "4%" : "2%"}
                                   </span>
-                                  {hasPremiumPass && <span className="text-amber-500 font-medium">6%</span>}
+                                  {hasPremiumPass && (
+                                    <span className="text-amber-500 font-medium flex items-center gap-1">
+                                      {userClanRole === "lucky_star" || userClanRole === "leader" ? "8%" : "6%"}
+                                      {(userClanRole === "lucky_star" || userClanRole === "leader") && <Star className="h-3 w-3 text-yellow-500" />}
+                                    </span>
+                                  )}
+                                  {!hasPremiumPass && (userClanRole === "lucky_star" || userClanRole === "leader") && (
+                                    <Star className="h-3 w-3 text-yellow-500" />
+                                  )}
                                 </div>
                               </div>
                             </div>

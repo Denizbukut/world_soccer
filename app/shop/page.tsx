@@ -17,6 +17,7 @@ import { MiniKit, tokenToDecimals, Tokens, type PayCommandInput } from "@worldco
 import { useEffect } from "react"
 import { useWldPrice } from "@/contexts/WldPriceContext"
 
+
 export default function ShopPage() {
   const { user, updateUserTickets } = useAuth()
   const [isLoading, setIsLoading] = useState<Record<string, boolean>>({})
@@ -24,8 +25,75 @@ export default function ShopPage() {
   const [legendaryTickets, setLegendaryTickets] = useState<number>(
     user?.legendary_tickets ? Number(user.legendary_tickets) : 0,
   )
-  
+  const [userClanRole, setUserClanRole] = useState<string | null>(null)
+  const [clanMemberCount, setClanMemberCount] = useState<number>(0)
+
   const { price } = useWldPrice()
+
+   useEffect(() => {
+  const fetchUserClanRole = async () => {
+    if (!user?.username) return
+
+    const supabase = getSupabaseBrowserClient()
+    if (!supabase) return
+
+    try {
+      const { data: userData, error: userError } = await supabase
+        .from("users")
+        .select("clan_id")
+        .eq("username", user.username)
+        .single()
+
+      if (userError || !userData?.clan_id) {
+        setUserClanRole(null)
+        return
+      }
+
+      const clanId = userData.clan_id
+
+      // Fetch user role in clan
+      const { data: memberData, error: memberError } = await supabase
+        .from("clan_members")
+        .select("role")
+        .eq("clan_id", clanId)
+        .eq("user_id", user.username)
+        .single()
+
+      if (memberError || !memberData) {
+        setUserClanRole(null)
+        return
+      }
+
+      setUserClanRole(memberData.role as string)
+
+      // Fetch member count
+      const { count, error: countError } = await supabase
+        .from("clan_members")
+        .select("*", { count: "exact", head: true })
+        .eq("clan_id", clanId)
+
+      if (!countError) {
+        setClanMemberCount(count ?? 0)
+      }
+    } catch (error) {
+      console.error("Error fetching clan role or member count:", error)
+    }
+  }
+
+  fetchUserClanRole()
+}, [user?.username])
+
+
+ const getDiscountedPrice = (originalPrice: number) => {
+  // Rabatt, wenn:
+  // - cheap_hustler oder
+  // - leader + mindestens 30 Clan-Member
+  const qualifiesForDiscount =
+    userClanRole === "cheap_hustler" ||
+    (userClanRole === "leader" && clanMemberCount >= 30)
+
+  return qualifiesForDiscount ? originalPrice * 0.9 : originalPrice
+}
 
   const sendPayment = async (
   dollarPrice: number,
@@ -36,9 +104,9 @@ export default function ShopPage() {
   setIsLoading({ ...isLoading, [packageId]: true })
 
   try {
+    const discountedPrice = getDiscountedPrice(dollarPrice)
     // WLD-Betrag berechnen (fallback = 1:1)
-    const roundedWldAmount = parseFloat((price ? dollarPrice / price : dollarPrice).toFixed(3))
-
+    const roundedWldAmount = Number.parseFloat((price ? discountedPrice / price : discountedPrice).toFixed(3))
 
     const res = await fetch("/api/initiate-payment", { method: "POST" })
     const { id } = await res.json()
@@ -81,6 +149,7 @@ export default function ShopPage() {
 
 
   // Handle buying tickets
+ // Handle buying tickets
   const handleBuyTickets = async (packageId: string, ticketAmount: number, ticketType: "regular" | "legendary") => {
     if (!user?.username) {
       toast({
@@ -109,7 +178,7 @@ export default function ShopPage() {
         throw new Error("Could not fetch user data")
       }
 
-      // Calculate new ticket counts - ensure we're working with numbers
+      // Calculate new ticket counts
       let newTicketCount = typeof userData.tickets === "number" ? userData.tickets : Number(userData.tickets) || 0
       let newLegendaryTicketCount =
         typeof userData.legendary_tickets === "number"
@@ -135,16 +204,25 @@ export default function ShopPage() {
         throw new Error("Failed to update tickets")
       }
 
-      // Update local state with explicit number types
+      // Update local state
       setTickets(newTicketCount)
       setLegendaryTickets(newLegendaryTicketCount)
 
       // Update auth context
       await updateUserTickets?.(newTicketCount, newLegendaryTicketCount)
 
+      const qualifiesForCheapHustler = userClanRole === "cheap_hustler"
+      const qualifiesForLeaderDiscount = userClanRole === "leader" && clanMemberCount >= 30
+
+      const discountMessage = qualifiesForCheapHustler
+        ? " (10% Cheap Hustler discount applied!)"
+        : qualifiesForLeaderDiscount
+        ? " (10% Leader discount applied!)"
+        : ""
+
       toast({
         title: "Purchase Successful!",
-        description: `You've purchased ${ticketAmount} ${ticketType === "legendary" ? "legendary" : "regular"} tickets!`,
+        description: `You've purchased ${ticketAmount} ${ticketType === "legendary" ? "legendary" : "regular"} tickets!${discountMessage}`,
       })
     } catch (error) {
       console.error("Error buying tickets:", error)
@@ -157,6 +235,7 @@ export default function ShopPage() {
       setIsLoading({ ...isLoading, [packageId]: false })
     }
   }
+
 
   // Regular ticket packages
   const regularPackages = [
@@ -202,133 +281,178 @@ export default function ShopPage() {
         </header>
 
         <main className="p-4 space-y-6 max-w-lg mx-auto">
+          {/* Discount Banner */}
+          {(userClanRole === "cheap_hustler" || (userClanRole === "leader" && clanMemberCount >= 30)) && (
+  <motion.div
+    initial={{ opacity: 0, y: -10 }}
+    animate={{ opacity: 1, y: 0 }}
+    className="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl p-3 text-center"
+  >
+    <p className="font-semibold text-sm">🎉 Discount Active!</p>
+    <p className="text-xs opacity-90">
+      {userClanRole === "cheap_hustler"
+        ? "You get 10% off all ticket purchases as a Cheap Hustler!"
+        : "You get 10% off all ticket purchases as a Leader of a 30+ member clan!"}
+    </p>
+  </motion.div>
+)}
+
           {/* Tabs for different ticket types */}
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-            <Tabs defaultValue="regular" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 h-11 rounded-xl p-1 bg-gray-100 mb-6">
-                <TabsTrigger
-                  value="regular"
-                  className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-violet-600 data-[state=active]:shadow-sm transition-all"
-                >
-                  <Ticket className="h-4 w-4 mr-2 text-violet-500" />
-                  Regular Tickets
-                </TabsTrigger>
-                <TabsTrigger
-                  value="legendary"
-                  className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-amber-600 data-[state=active]:shadow-sm transition-all"
-                >
-                  <Ticket className="h-4 w-4 mr-2 text-amber-500" />
-                  Legendary Tickets
-                </TabsTrigger>
-              </TabsList>
+<motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
+  <Tabs defaultValue="regular" className="w-full">
+    <TabsList className="grid w-full grid-cols-2 h-11 rounded-xl p-1 bg-gray-100 mb-6">
+      <TabsTrigger
+        value="regular"
+        className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-violet-600 data-[state=active]:shadow-sm transition-all"
+      >
+        <Ticket className="h-4 w-4 mr-2 text-violet-500" />
+        Regular Tickets
+      </TabsTrigger>
+      <TabsTrigger
+        value="legendary"
+        className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-amber-600 data-[state=active]:shadow-sm transition-all"
+      >
+        <Ticket className="h-4 w-4 mr-2 text-amber-500" />
+        Legendary Tickets
+      </TabsTrigger>
+    </TabsList>
 
-              {/* Regular Tickets Content */}
-              <TabsContent value="regular" className="mt-0 space-y-6">
-                <div className="grid grid-cols-2 gap-4">
-                  {regularPackages.map((pkg) => (
-                    <Card
-                      key={pkg.id}
-                      className="relative overflow-hidden border bg-white/70 backdrop-blur-sm hover:shadow-md transition-all"
-                    >
-                      <CardHeader className="p-4 pb-2 space-y-1">
-                        <CardTitle className="text-base font-medium flex items-center">
-                          <span className="mr-1">{pkg.amount}</span>
-                          <Ticket className="h-4 w-4 text-violet-500 mx-1" />
-                          {pkg.amount === 1 ? "Ticket" : "Tickets"}
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="p-4 pt-0 pb-3">
-                        <Separator className="my-3" />
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-baseline gap-2">
-  <span className="text-sm font-semibold">
-    {price
-      ? `${(pkg.price / price).toFixed(3)} WLD`
-      : `${pkg.price.toFixed(3)} WLD`}
-  </span>
-  <span className="text-xs text-gray-500">
-    (~${pkg.price.toFixed(2)})
-  </span>
-</div>
-                        </div>
-                      </CardContent>
-                      <CardFooter className="p-4 pt-0">
-                        <Button
-                          className="w-full bg-white text-violet-600 border border-violet-200 hover:bg-violet-50 shadow-sm"
-                          variant="outline"
-                          onClick={() => sendPayment(pkg.price, pkg.id, pkg.amount, "regular")}
-                          disabled={isLoading[pkg.id]}
-                        >
-                          {isLoading[pkg.id] ? (
-                            <>
-                              <div className="h-4 w-4 border-2 border-t-transparent border-violet-600 rounded-full animate-spin mr-2"></div>
-                              Processing...
-                            </>
-                          ) : (
-                            "Purchase"
-                          )}
-                        </Button>
-                      </CardFooter>
-                    </Card>
-                  ))}
+    {/* Regular Tickets Content */}
+    <TabsContent value="regular" className="mt-0 space-y-6">
+      <div className="grid grid-cols-2 gap-3">
+        {regularPackages.map((pkg) => {
+          const originalPrice = pkg.price
+          const discountedPrice = getDiscountedPrice(originalPrice)
+          const hasDiscount = discountedPrice < originalPrice
+
+          return (
+            <Card
+              key={pkg.id}
+              className="relative overflow-hidden border bg-white/70 backdrop-blur-sm hover:shadow-md transition-all"
+            >
+              {hasDiscount && (
+                <div className="absolute top-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                  -10%
                 </div>
-
-              </TabsContent>
-
-              {/* Legendary Tickets Content */}
-              <TabsContent value="legendary" className="mt-0 space-y-6">
-                <div className="grid grid-cols-2 gap-4">
-                  {legendaryPackages.map((pkg) => (
-                    <Card
-                      key={pkg.id}
-                      className="relative overflow-hidden border bg-white/70 backdrop-blur-sm hover:shadow-md transition-all"
-                    >
-                      <CardHeader className="p-4 pb-2 space-y-1">
-                        <CardTitle className="text-base font-medium flex items-center">
-                          <span className="mr-1">{pkg.amount}</span>
-                          <Ticket className="h-4 w-4 text-amber-500 mx-1" />
-                          {pkg.amount === 1 ? "L. Ticket" : "L. Tickets"}
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="p-4 pt-0 pb-3">
-                        <Separator className="my-3" />
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-baseline gap-2">
-  <span className="text-sm font-semibold">
-    {price
-      ? `${(pkg.price / price).toFixed(3)} WLD`
-      : `${pkg.price.toFixed(3)} WLD`}
-  </span>
-  <span className="text-xs text-gray-500">
-    (~${pkg.price.toFixed(2)})
-  </span>
-</div>
-                        </div>
-                      </CardContent>
-                      <CardFooter className="p-4 pt-0">
-                        <Button
-                          className="w-full bg-white text-amber-600 border border-amber-200 hover:bg-amber-50 shadow-sm"
-                          variant="outline"
-                          onClick={() => sendPayment(pkg.price, pkg.id, pkg.amount, "legendary")}
-                          disabled={isLoading[pkg.id]}
-                        >
-                          {isLoading[pkg.id] ? (
-                            <>
-                              <div className="h-4 w-4 border-2 border-t-transparent border-amber-600 rounded-full animate-spin mr-2"></div>
-                              Processing...
-                            </>
-                          ) : (
-                            "Purchase"
-                          )}
-                        </Button>
-                      </CardFooter>
-                    </Card>
-                  ))}
+              )}
+              <CardHeader className="p-3 pb-2 space-y-1">
+                <CardTitle className="text-sm font-medium flex items-center">
+                  <span className="mr-1">{pkg.amount}</span>
+                  <Ticket className="h-3 w-3 text-violet-500 mx-1" />
+                  {pkg.amount === 1 ? "Ticket" : "Tickets"}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-3 pt-0 pb-2">
+                <Separator className="my-2" />
+                <div className="flex items-center justify-between">
+                  <div className="flex flex-col items-start">
+                    {hasDiscount && (
+                      <span className="text-xs text-gray-400 line-through">
+                        {price ? `${(originalPrice / price).toFixed(3)} WLD` : `${originalPrice.toFixed(3)} WLD`}
+                      </span>
+                    )}
+                    <span className="text-sm font-semibold">
+                      {price
+                        ? `${(discountedPrice / price).toFixed(3)} WLD`
+                        : `${discountedPrice.toFixed(3)} WLD`}
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      (~${discountedPrice.toFixed(2)})
+                    </span>
+                  </div>
                 </div>
+              </CardContent>
+              <CardFooter className="p-3 pt-0">
+                <Button
+                  className="w-full bg-white text-violet-600 border border-violet-200 hover:bg-violet-50 shadow-sm text-xs"
+                  variant="outline"
+                  onClick={() => sendPayment(originalPrice, pkg.id, pkg.amount, "regular")}
+                  disabled={isLoading[pkg.id]}
+                >
+                  {isLoading[pkg.id] ? (
+                    <>
+                      <div className="h-3 w-3 border-2 border-t-transparent border-violet-600 rounded-full animate-spin mr-2"></div>
+                      Processing...
+                    </>
+                  ) : (
+                    "Purchase"
+                  )}
+                </Button>
+              </CardFooter>
+            </Card>
+          )
+        })}
+      </div>
+    </TabsContent>
 
-              </TabsContent>
-            </Tabs>
-          </motion.div>
+    {/* Legendary Tickets Content */}
+    <TabsContent value="legendary" className="mt-0 space-y-6">
+      <div className="grid grid-cols-2 gap-4">
+        {legendaryPackages.map((pkg) => {
+          const originalPrice = pkg.price
+          const discountedPrice = getDiscountedPrice(originalPrice)
+          const hasDiscount = discountedPrice < originalPrice
+
+          return (
+            <Card
+              key={pkg.id}
+              className="relative overflow-hidden border bg-white/70 backdrop-blur-sm hover:shadow-md transition-all"
+            >
+              {hasDiscount && (
+                <div className="absolute top-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                  -10%
+                </div>
+              )}
+              <CardHeader className="p-4 pb-2 space-y-1">
+                <CardTitle className="text-base font-medium flex items-center">
+                  <span className="mr-1">{pkg.amount}</span>
+                  <Ticket className="h-4 w-4 text-amber-500 mx-1" />
+                  {pkg.amount === 1 ? "L. Ticket" : "L. Tickets"}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 pt-0 pb-3">
+                <Separator className="my-3" />
+                <div className="flex flex-col items-start">
+                  {hasDiscount && (
+                    <span className="text-xs text-gray-400 line-through">
+                      {price ? `${(originalPrice / price).toFixed(3)} WLD` : `${originalPrice.toFixed(3)} WLD`}
+                    </span>
+                  )}
+                  <span className="text-sm font-semibold">
+                    {price
+                      ? `${(discountedPrice / price).toFixed(3)} WLD`
+                      : `${discountedPrice.toFixed(3)} WLD`}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    (~${discountedPrice.toFixed(2)})
+                  </span>
+                </div>
+              </CardContent>
+              <CardFooter className="p-4 pt-0">
+                <Button
+                  className="w-full bg-white text-amber-600 border border-amber-200 hover:bg-amber-50 shadow-sm"
+                  variant="outline"
+                  onClick={() => sendPayment(originalPrice, pkg.id, pkg.amount, "legendary")}
+                  disabled={isLoading[pkg.id]}
+                >
+                  {isLoading[pkg.id] ? (
+                    <>
+                      <div className="h-4 w-4 border-2 border-t-transparent border-amber-600 rounded-full animate-spin mr-2"></div>
+                      Processing...
+                    </>
+                  ) : (
+                    "Purchase"
+                  )}
+                </Button>
+              </CardFooter>
+            </Card>
+          )
+        })}
+      </div>
+    </TabsContent>
+  </Tabs>
+</motion.div>
+
 
           {/* Payment info section */}
           <motion.div

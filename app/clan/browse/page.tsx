@@ -183,8 +183,8 @@ export default function ModernClanBrowsePage() {
           </div>
         </div>
 
-        {/* Filter Toggle */}
-        <div className="flex justify-center mb-6">
+        {/* Filter and Stats Combined */}
+        <div className="flex items-center justify-between gap-4 mb-8 max-w-4xl mx-auto">
           <Button
             variant={showOnlyAvailable ? "default" : "outline"}
             onClick={() => setShowOnlyAvailable(!showOnlyAvailable)}
@@ -192,34 +192,18 @@ export default function ModernClanBrowsePage() {
               showOnlyAvailable
                 ? "bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg"
                 : "bg-white/80 backdrop-blur-sm border-green-200 text-green-600 hover:bg-green-50"
-            } px-6 py-2 rounded-xl transition-all duration-200`}
+            } px-6 py-2 rounded-xl transition-all duration-200 flex-shrink-0`}
           >
             <Filter className="h-4 w-4 mr-2" />
-            {showOnlyAvailable ? "Showing Available Clans" : "Show Only Available Clans"}
+            {showOnlyAvailable ? "Available Only" : "Show Available"}
           </Button>
-        </div>
 
-        {/* Stats Bar */}
-        <div className="flex justify-center mb-8">
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl px-6 py-3 shadow-lg border border-white/50">
-            <div className="flex items-center gap-6 text-sm">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-gradient-to-r from-purple-500 to-pink-500"></div>
-                <span className="text-gray-700">
-                  <span className="font-bold text-purple-600">{filteredClans.length}</span> clans found
-                </span>
-              </div>
-              {showOnlyAvailable && (
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-gradient-to-r from-green-500 to-emerald-500"></div>
-                  <span className="text-gray-700">
-                    <span className="font-bold text-green-600">
-                      {filteredClans.filter((c) => c.member_count < c.max_members).length}
-                    </span>{" "}
-                    available
-                  </span>
-                </div>
-              )}
+            <div className="flex items-center gap-2 text-sm">
+              <div className="w-3 h-3 rounded-full bg-gradient-to-r from-purple-500 to-pink-500"></div>
+              <span className="text-gray-700">
+                <span className="font-bold text-purple-600">{filteredClans.length}</span> clans found
+              </span>
             </div>
           </div>
         </div>

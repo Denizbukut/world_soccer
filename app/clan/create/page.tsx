@@ -450,11 +450,11 @@ export default function CreateClanPage() {
                     value={clanDescription}
                     onChange={(e) => setClanDescription(e.target.value)}
                     placeholder="Describe your clan's goals and values..."
-                    maxLength={20}
+                    maxLength={40}
                     rows={4}
                     className="border-2 border-gray-200 focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none transition-all duration-200"
                   />
-                  <p className="text-xs text-gray-500 mt-1">{clanDescription.length}/20 characters</p>
+                  <p className="text-xs text-gray-500 mt-1">{clanDescription.length}/40 characters</p>
                 </div>
 
                 <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-4 border border-purple-200">

@@ -12,7 +12,6 @@ import { Badge } from "@/components/ui/badge"
 import { toast } from "@/components/ui/use-toast"
 import { updateClanDescription } from "@/app/actions/clans"
 import { Progress } from "@/components/ui/progress"
-import ClanExpansionButton from "@/components/ClanExpansionButton"
 
 import {
   Dialog,
@@ -386,7 +385,30 @@ export default function ModernClanPage() {
         is_founder: member.user_id === clan?.founder_id,
       }))
 
-      setMembers(formattedMembers)
+      // Sort members: Leader first, then special roles, then regular members
+      const sortedMembers = formattedMembers.sort((a, b) => {
+        // Leader (founder) always first - check against clan founder_id
+        const aIsFounder = a.username === clan?.founder_id
+        const bIsFounder = b.username === clan?.founder_id
+
+        if (aIsFounder && !bIsFounder) return -1
+        if (!aIsFounder && bIsFounder) return 1
+
+        // If both are founders or both are not founders, continue with other sorting
+        if (aIsFounder && bIsFounder) return 0
+
+        // Then special roles (non-member roles)
+        const aHasSpecialRole = a.role !== "member"
+        const bHasSpecialRole = b.role !== "member"
+
+        if (aHasSpecialRole && !bHasSpecialRole) return -1
+        if (!aHasSpecialRole && bHasSpecialRole) return 1
+
+        // Within same category, sort by username
+        return a.username.localeCompare(b.username)
+      })
+
+      setMembers(sortedMembers)
     } catch (error) {
       console.error("Error in fetchClanMembers:", error)
     } finally {
@@ -930,6 +952,9 @@ export default function ModernClanPage() {
           <div className="mb-2">
             <Button variant="ghost" size="sm" onClick={() => router.push("/")} className="hover:bg-gray-100">
               <ArrowLeft className="h-4 w-4 mr-2" />
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => router.push("/")} className="hover:bg-gray-100">
+              <ArrowLeft className="h-4 w-4 mr-2" />
               Back
             </Button>
           </div>
@@ -1208,7 +1233,6 @@ export default function ModernClanPage() {
                     </div>
 
                     {/* Add Clan Expansion Button here */}
-                    
                   </CardHeader>
                   <CardContent className="p-4">
                     {memberLoading ? (
@@ -1221,7 +1245,17 @@ export default function ModernClanPage() {
                         {members.map((member) => (
                           <div
                             key={member.id}
-                            className="flex items-center justify-between p-4 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
+                            className={`flex items-center justify-between p-4 rounded-lg transition-colors ${
+                              member.username === clan?.founder_id
+                                ? "bg-gradient-to-r from-purple-50 to-indigo-50 border-2 border-purple-200 hover:from-purple-100 hover:to-indigo-100"
+                                : member.role === "xp_hunter"
+                                  ? "bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 hover:from-orange-100 hover:to-red-100"
+                                  : member.role === "lucky_star"
+                                    ? "bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-200 hover:from-yellow-100 hover:to-amber-100"
+                                    : member.role === "cheap_hustler"
+                                      ? "bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 hover:from-green-100 hover:to-emerald-100"
+                                      : "bg-gray-50 hover:bg-gray-100"
+                            }`}
                           >
                             <div className="flex items-center gap-3">
                               <div className="flex flex-col">

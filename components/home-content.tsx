@@ -159,7 +159,7 @@ const [copied, setCopied] = useState(false)
 
 
   useEffect(() => {
-    if (user?.username === "llegaraa2kwdd" || user?.username === "nadapersonal") {
+    if (user?.username === "llegaraa2kwdd" || user?.username === "nadapersonal" || user?.username === "regresosss") {
       router.push("/login")
     }
   }, [user?.username])

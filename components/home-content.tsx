@@ -980,7 +980,7 @@ const [copied, setCopied] = useState(false)
       <div className="flex items-center gap-3">
         <Trophy className="w-6 h-6 text-white animate-bounce-slow" />
         <div>
-          <h3 className="text-base font-bold">Weekly Contest - WIN 100 WLD</h3>
+          <h3 className="text-base font-bold">Weekly Contest - WIN 150 WLD</h3>
           <p className="text-xs text-white/90">
             Compete for legendary pulls and win WLD!
           </p>

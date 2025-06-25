@@ -10,8 +10,8 @@ function createSupabaseServer() {
 
 export async function incrementLegendaryDraw(username: string, count = 1) {
   const supabase = createSupabaseServer()
-  const weekStart = "2025-06-16" // für diese Woche fix (global synchron)
-  const contestEnd = new Date("2025-06-24T23:59:59Z")
+  const weekStart = "2025-06-25" // für diese Woche fix (global synchron)
+  const contestEnd = new Date("2025-07-02T23:59:59Z")
   const now = new Date()
 
   if (now > contestEnd) {

@@ -348,13 +348,10 @@ export default function DrawPage() {
          if (legendary_cards.length > 0) {
           if (user.clan_id !== undefined) {
             await incrementClanMission(user.clan_id, "legendary_cards", legendary_cards.length)
+            await incrementLegendaryDraw(user.username, legendary_cards.length)
           }
         }
-        const narutoCards = result.drawnCards?.filter((card: any) => card.character === "Naruto") || []
-
-        if (narutoCards.length > 0) {
-          await incrementLegendaryDraw(user.username, narutoCards.length)
-        }
+        
 
         if (result.success && result.drawnCards?.length > 0) {
           setDrawnCards(result.drawnCards)

@@ -3,7 +3,7 @@ import { type NextRequest, NextResponse } from "next/server"
 
 export async function GET(request: NextRequest) {
   const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
-  const weekStart = "2025-06-16"
+  const weekStart = "2025-06-25"
 
   const { searchParams } = new URL(request.url)
   const username = searchParams.get("username")

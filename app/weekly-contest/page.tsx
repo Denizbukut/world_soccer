@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useMemo } from "react"
+import { useEffect, useState } from "react"
 import { useAuth } from "@/contexts/auth-context"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, Trophy } from "lucide-react"
@@ -8,14 +8,14 @@ import { Button } from "@/components/ui/button"
 import CardItem from "@/components/card-item"
 
 const WEEKLY_PRIZE_POOL = [
-  { rank: "1st Place", reward: "100 WLD", icon: "🥇" },
-  { rank: "2nd Place", reward: "80 WLD", icon: "🥈" },
-  { rank: "3rd Place", reward: "50 WLD", icon: "🥉" },
-  { rank: "4th–7th Place", reward: "25 WLD each", icon: "🎖️" },
-  { rank: "8th–12th Place", reward: "15 WLD each", icon: "🎖️" },
+  { rank: "1st Place", reward: "150 WLD + 5000 $ANI", icon: "🥇" },
+  { rank: "2nd Place", reward: "100 WLD + 3000 $ANI", icon: "🥈" },
+  { rank: "3rd Place", reward: "70 WLD + 1000 $ANI", icon: "🥉" },
+  { rank: "4th–6th Place", reward: "30 WLD", icon: "🎖️" },
+  { rank: "7th–10th Place", reward: "15 WLD", icon: "🎖️" },
 ]
 
-const CONTEST_END_TIMESTAMP = new Date("2025-06-24T23:59:59Z").getTime()
+const CONTEST_END_TIMESTAMP = new Date("2025-07-02T23:59:59Z").getTime()
 
 type Entry = {
   user_id: string
@@ -34,29 +34,6 @@ export default function WeeklyContestPage() {
   const [userStats, setUserStats] = useState<UserStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [countdown, setCountdown] = useState(CONTEST_END_TIMESTAMP - Date.now())
-
-  const firstPlaceRewardCard = useMemo(() => (
-  <div className="bg-yellow-50 border border-yellow-300 rounded-xl p-3">
-    <h3 className="text-sm font-semibold text-yellow-700 mb-2 flex flex-col items-center gap-1 text-center">
-      1st Place Bonus Reward <br></br> 1 of 1 - Level 15 Godlike Itachi
-    </h3>
-    <div className="max-w-[160px] mx-auto">
-      <CardItem
-        id="itachi_godlike"
-        name="Godlike Itachi"
-        character="Itachi Uchiha"
-        imageUrl="itachi_oneofone.gif"
-        rarity="godlike"
-        isContest={true}
-        level={15}
-        quantity={0}
-        owned={false}
-        
-      />
-    </div>
-  </div>
-), [])
-
 
   useEffect(() => {
     const fetchData = async () => {
@@ -110,12 +87,9 @@ export default function WeeklyContestPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-white via-emerald-50 to-white pb-24">
       <header className="sticky top-0 z-10 bg-white/90 border-b px-4 py-3 flex items-center gap-2 backdrop-blur">
-        <Button variant="ghost" size="icon" onClick={() => router.push("/")}>
-          <ArrowLeft className="h-5 w-5 text-gray-600" />
-        </Button>
+        <Button variant="ghost" size="icon" onClick={() => router.push("/")}> <ArrowLeft className="h-5 w-5 text-gray-600" /></Button>
         <h1 className="text-lg font-bold flex items-center gap-2 text-emerald-600">
-          <Trophy className="w-5 h-5" />
-          Weekly Contest
+          <Trophy className="w-5 h-5" /> Weekly Contest
         </h1>
       </header>
 
@@ -127,22 +101,10 @@ export default function WeeklyContestPage() {
             <div className="flex justify-center gap-4 text-sm sm:text-base mt-2">
               {time && (
                 <>
-                  <div className="flex flex-col items-center">
-                    <span className="text-emerald-600 text-xl font-mono">{time.days}</span>
-                    <span className="text-gray-500 text-xs">D</span>
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <span className="text-emerald-600 text-xl font-mono">{time.hours}</span>
-                    <span className="text-gray-500 text-xs">H</span>
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <span className="text-emerald-600 text-xl font-mono">{time.minutes}</span>
-                    <span className="text-gray-500 text-xs">M</span>
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <span className="text-emerald-600 text-xl font-mono">{time.seconds}</span>
-                    <span className="text-gray-500 text-xs">S</span>
-                  </div>
+                  <div className="flex flex-col items-center"><span className="text-emerald-600 text-xl font-mono">{time.days}</span><span className="text-gray-500 text-xs">D</span></div>
+                  <div className="flex flex-col items-center"><span className="text-emerald-600 text-xl font-mono">{time.hours}</span><span className="text-gray-500 text-xs">H</span></div>
+                  <div className="flex flex-col items-center"><span className="text-emerald-600 text-xl font-mono">{time.minutes}</span><span className="text-gray-500 text-xs">M</span></div>
+                  <div className="flex flex-col items-center"><span className="text-emerald-600 text-xl font-mono">{time.seconds}</span><span className="text-gray-500 text-xs">S</span></div>
                 </>
               )}
             </div>
@@ -153,7 +115,7 @@ export default function WeeklyContestPage() {
           <h2 className="text-lg sm:text-xl font-bold text-emerald-700 leading-snug">
             Your Mission:
             <br />
-            Pull as many Cards from the Anime <span className="text-amber-500">Naruto</span> as possible!
+            Pull as many <span className="text-amber-500">Legendary Cards</span> as possible!
           </h2>
         </div>
 
@@ -164,8 +126,7 @@ export default function WeeklyContestPage() {
           ) : userStats ? (
             <div className="space-y-1">
               <p className="text-sm text-gray-700">
-                You pulled <span className="font-bold text-emerald-600">{userStats.legendary_count}</span> card{userStats.legendary_count !== 1 && "s"} from the Anime <b>Naruto</b> this week.
-                 
+                You pulled <span className="font-bold text-emerald-600">{userStats.legendary_count}</span> legendary card{userStats.legendary_count !== 1 && "s"} this week.
               </p>
               {userStats.rank && (
                 <p className="text-xs text-gray-600">
@@ -191,11 +152,8 @@ export default function WeeklyContestPage() {
               ))}
             </ul>
           </div>
+        </div>
 
-          {/* 1st Place Reward Card (with next/image) */}
-          {firstPlaceRewardCard}
-
-</div>
         <div>
           <h2 className="text-sm font-semibold text-emerald-700 mb-2">Top 20 Players</h2>
           {loading ? (

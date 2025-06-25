@@ -311,7 +311,6 @@ export default function DrawPage() {
             username: user.username,
             cardType,
             count,
-            epoch: selectedEpoch, // Include selected epoch
           }),
         })
 

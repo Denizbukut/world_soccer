@@ -18,7 +18,6 @@ import {
   X,
   ArrowUpDown,
   Filter,
-  RefreshCw,
   Edit,
   AlertCircle,
   ChevronLeft,
@@ -28,9 +27,9 @@ import {
   History,
   User,
   Globe,
+  AlertTriangle,
 } from "lucide-react"
 import Link from "next/link"
-import Image from "next/image"
 import { toast } from "@/components/ui/use-toast"
 import {
   getMarketListings,
@@ -52,12 +51,10 @@ import { MiniKit, tokenToDecimals, Tokens, type PayCommandInput } from "@worldco
 import PurchaseSuccessAnimation from "@/components/purchase-success-animation"
 import { Progress } from "@/components/ui/progress"
 import { debounce } from "@/lib/utils"
-import { Card } from "@/components/ui/card"
+import { getSupabaseBrowserClient } from "@/lib/supabase"
 
 // ABI für die transfer-Funktion des ERC20-Tokens
-const ERC20_ABI = [
-  "function transfer(address to, uint256 amount) public returns (bool)",
-];
+const ERC20_ABI = ["function transfer(address to, uint256 amount) public returns (bool)"]
 // Typen für die Marketplace-Daten
 type Card = {
   id: string
@@ -118,7 +115,6 @@ const getCloudflareImageUrl = (imageId?: string) => {
   return `https://ani-labs.xyz/${cleaned}`
 }
 
-
 export default function TradePage() {
   const { user } = useAuth()
   const [activeTab, setActiveTab] = useState("marketplace")
@@ -142,7 +138,9 @@ export default function TradePage() {
   const [listingCount, setListingCount] = useState(0)
   const [maxListings, setMaxListings] = useState(7)
   const [listingLimitReached, setListingLimitReached] = useState(false)
-const [hasInitialized, setHasInitialized] = useState(false)
+  const [hasInitialized, setHasInitialized] = useState(false)
+  const [soldCount, setSoldCount] = useState<number | null>(null)
+  const [showSellLimitInfo, setShowSellLimitInfo] = useState(false)
   // Pagination states
   const [marketPage, setMarketPage] = useState(1)
   const [userListingsPage, setUserListingsPage] = useState(1)
@@ -172,8 +170,6 @@ const [hasInitialized, setHasInitialized] = useState(false)
     pageSize: 20,
     totalPages: 0,
   })
-  
-
 
   // Debounced search function for marketplace
   const debouncedSearch = debounce(() => {
@@ -187,54 +183,82 @@ const [hasInitialized, setHasInitialized] = useState(false)
     loadRecentSales(1) // Load page 1 with the new search term
   }, 500)
 
+  console.log(user)
+
   useEffect(() => {
-  if (!user?.username || hasInitialized) return
+    const fetchSoldCount = async () => {
+      const supabase = getSupabaseBrowserClient()
+      if (!supabase) {
+        throw new Error("Could not connect to database")
+      }
+      const { data, error } = await supabase
+        .from("users")
+        .select("cards_sold_since_last_purchase")
+        .eq("username", user?.username || "")
+        .single<{ cards_sold_since_last_purchase: number }>()
 
-  if (activeTab === "marketplace") {
-    setMarketPage(1)
-    loadMarketListings(1)
-  } else if (activeTab === "sell") {
-    setUserListingsPage(1)
-    loadUserListings(1)
-  } else if (activeTab === "sales-history") {
-    if (historyType === "my") {
-      setTransactionsPage(1)
-      loadTransactionHistory(1)
-    } else {
-      setRecentSalesPage(1)
-      loadRecentSales(1)
+      if (!error && data) {
+        setSoldCount(data.cards_sold_since_last_purchase)
+      }
     }
-  }
 
-  setHasInitialized(true)
-}, [user?.username])
+    fetchSoldCount()
+  }, [user?.username])
 
-useEffect(() => {
-  if (!user?.username || !hasInitialized) return
+  const percentage = Math.min(((soldCount ?? 0) / 3) * 100, 100)
 
-  if (activeTab === "marketplace") {
-    setMarketPage(1)
-    debouncedSearch()
-    loadMarketListings(1)
-  }
+  const radius = 20
+  const circumference = 2 * Math.PI * radius
+  const offset = circumference - (percentage / 100) * circumference
 
-  if (activeTab === "sales-history") {
-    if (historyType === "my") {
-      setTransactionsPage(1)
-      loadTransactionHistory(1)
-    } else {
-      setRecentSalesPage(1)
-      debouncedSalesSearch()
-      loadRecentSales(1)
+  useEffect(() => {
+    if (!user?.username || hasInitialized) return
+
+    if (activeTab === "marketplace") {
+      setMarketPage(1)
+      loadMarketListings(1)
+    } else if (activeTab === "sell") {
+      setUserListingsPage(1)
+      loadUserListings(1)
+    } else if (activeTab === "sales-history") {
+      if (historyType === "my") {
+        setTransactionsPage(1)
+        loadTransactionHistory(1)
+      } else {
+        setRecentSalesPage(1)
+        loadRecentSales(1)
+      }
     }
-  }
 
-  if (activeTab === "sell") {
-    setUserListingsPage(1)
-    loadUserListings(1)
-  }
-}, [activeTab, searchTerm, rarityFilter, sortOption, historyType, salesSearchTerm])
+    setHasInitialized(true)
+  }, [user?.username])
 
+  useEffect(() => {
+    if (!user?.username || !hasInitialized) return
+
+    if (activeTab === "marketplace") {
+      setMarketPage(1)
+      debouncedSearch()
+      loadMarketListings(1)
+    }
+
+    if (activeTab === "sales-history") {
+      if (historyType === "my") {
+        setTransactionsPage(1)
+        loadTransactionHistory(1)
+      } else {
+        setRecentSalesPage(1)
+        debouncedSalesSearch()
+        loadRecentSales(1)
+      }
+    }
+
+    if (activeTab === "sell") {
+      setUserListingsPage(1)
+      loadUserListings(1)
+    }
+  }, [activeTab, searchTerm, rarityFilter, sortOption, historyType, salesSearchTerm])
+  console.log(user)
 
   // Load market listings with pagination
   const loadMarketListings = async (pageToLoad = marketPage) => {
@@ -580,12 +604,59 @@ useEffect(() => {
           <div className="max-w-lg mx-auto px-4 py-3">
             <div className="flex justify-between items-center">
               <h1 className="text-lg font-medium">Trade Center</h1>
-              <Button variant="ghost" size="sm" onClick={handleRefresh} disabled={loading} className="text-gray-500">
-                <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-              </Button>
+              <div className="flex items-center gap-2">
+                <div className="relative w-12 h-12">
+                  <svg className="transform -rotate-90" width="48" height="48">
+                    <circle cx="24" cy="24" r="18" stroke="#E5E7EB" strokeWidth="4" fill="transparent" />
+                    <circle
+                      cx="24"
+                      cy="24"
+                      r="18"
+                      stroke={soldCount === 3 ? "#EF4444" : "#6366F1"}
+                      strokeWidth="4"
+                      strokeDasharray={2 * Math.PI * 18}
+                      strokeDashoffset={2 * Math.PI * 18 - Math.min((soldCount || 0) / 3, 1) * 2 * Math.PI * 18}
+                      strokeLinecap="round"
+                      fill="transparent"
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-gray-700">
+                    {soldCount}/3
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-6 h-6 p-0 text-gray-400 hover:text-gray-600"
+                  onClick={() => setShowSellLimitInfo(true)}
+                >
+                  <AlertCircle className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
         </header>
+
+        {/* Selling Limit Banner */}
+        {soldCount !== null && soldCount >= 2 && (
+          <div
+            className={`mx-4 mb-4 p-3 rounded-lg border ${
+              soldCount === 3 ? "bg-red-50 border-red-200" : "bg-amber-50 border-amber-200"
+            }`}
+          >
+            <div className={`flex items-center gap-2 ${soldCount === 3 ? "text-red-700" : "text-amber-700"}`}>
+              <AlertTriangle className="w-4 h-4" />
+              <span className="font-medium">
+                {soldCount === 3 ? "Selling limit reached" : "Approaching selling limit"}
+              </span>
+            </div>
+            <p className={`text-sm mt-1 ${soldCount === 3 ? "text-red-600" : "text-amber-600"}`}>
+              {soldCount === 3
+                ? "You must buy a card from the marketplace before you can sell more cards."
+                : `You can sell ${3 - soldCount} more card${3 - soldCount !== 1 ? "s" : ""} before reaching the limit.`}
+            </p>
+          </div>
+        )}
 
         <main className="p-4 max-w-lg mx-auto">
           <Tabs defaultValue="marketplace" className="w-full" onValueChange={setActiveTab}>
@@ -860,7 +931,6 @@ useEffect(() => {
                       <User className="h-4 w-4 mr-2" />
                       My History
                     </Button>
-                    
                   </div>
                 </div>
 
@@ -1095,8 +1165,7 @@ useEffect(() => {
                 <div className="flex gap-4 items-center">
                   <div className="relative w-20 h-28 overflow-hidden rounded-lg">
                     <img
-                      src={getCloudflareImageUrl(selectedListing.card.image_url)
-                      }
+                      src={getCloudflareImageUrl(selectedListing.card.image_url) || "/placeholder.svg"}
                       alt="Card"
                       loading="lazy"
                       className="w-full h-full object-cover"
@@ -1199,6 +1268,44 @@ useEffect(() => {
           />
         )}
 
+        {/* Sell Limit Info Dialog */}
+        <Dialog open={showSellLimitInfo} onOpenChange={setShowSellLimitInfo}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <AlertCircle className="h-5 w-5 text-blue-500" />
+                Selling Limit
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3">
+              <p className="text-sm text-gray-600">
+                This indicator shows how many cards you've sold since your last purchase from the marketplace.
+              </p>
+              <div className="bg-blue-50 p-3 rounded-lg">
+                <h4 className="font-medium text-blue-900 mb-2">How it works:</h4>
+                <ul className="text-sm text-blue-800 space-y-1">
+                  <li>• You can sell up to 3 cards before needing to buy one</li>
+                  <li>• After selling 3 cards, you must purchase from the marketplace</li>
+                  <li>• Purchasing a card resets your counter to 0</li>
+                  <li>• This encourages marketplace activity and trading</li>
+                </ul>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600">Current status:</span>
+                <span
+                  className={`font-medium ${soldCount === 3 ? "text-red-600" : soldCount === 2 ? "text-amber-600" : "text-green-600"}`}
+                >
+                  {soldCount === 3
+                    ? "Limit reached"
+                    : soldCount === 2
+                      ? "One more sale allowed"
+                      : `${3 - (soldCount || 0)} sales remaining`}
+                </span>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
         <MobileNav />
       </div>
     </ProtectedRoute>
@@ -1275,8 +1382,7 @@ function MarketplaceCard({
             onClick={onShowDetails}
           >
             <img
-              src={getCloudflareImageUrl(listing.card.image_url)
-              }
+              src={getCloudflareImageUrl(listing.card.image_url) || "/placeholder.svg"}
               alt="Card"
               loading="lazy"
               className="w-full h-full object-cover"
@@ -1402,7 +1508,7 @@ function MyListingCard({
           {/* Card Image */}
           <div className={`relative w-16 h-24 rounded-lg overflow-hidden border-2 ${rarityStyle.border}`}>
             <img
-              src={getCloudflareImageUrl(listing.card.image_url)}
+              src={getCloudflareImageUrl(listing.card.image_url) || "/placeholder.svg"}
               alt="Card"
               loading="lazy"
               className="w-full h-full object-cover"
@@ -1527,7 +1633,7 @@ function TransactionCard({ transaction }: { transaction: Transaction }) {
           {/* Card Image */}
           <div className={`relative w-16 h-24 rounded-lg overflow-hidden border-2 ${rarityStyle.border}`}>
             <img
-              src={getCloudflareImageUrl(transaction.card.image_url)}
+              src={getCloudflareImageUrl(transaction.card.image_url) || "/placeholder.svg"}
               alt="Card"
               loading="lazy"
               className="w-full h-full object-cover"
@@ -1653,7 +1759,7 @@ function RecentSaleCard({ sale }: { sale: RecentSale }) {
           {/* Card Image */}
           <div className={`relative w-16 h-24 rounded-lg overflow-hidden border-2 ${rarityStyle.border}`}>
             <img
-              src={getCloudflareImageUrl(sale.card.image_url)}
+              src={getCloudflareImageUrl(sale.card.image_url) || "/placeholder.svg"}
               alt="Card"
               loading="lazy"
               className="w-full h-full object-cover"

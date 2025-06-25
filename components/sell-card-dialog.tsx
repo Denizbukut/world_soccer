@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Tag, X } from "lucide-react"
+import { Tag, X, AlertCircle, AlertTriangle } from "lucide-react"
 import Image from "next/image"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "@/components/ui/use-toast"
@@ -14,6 +14,7 @@ import { renderStars } from "@/utils/card-stars"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { useEffect } from "react"
+import { getSupabaseBrowserClient } from "@/lib/supabase"
 
 // Definiere den Typ für eine Karte
 type UserCard = {
@@ -42,22 +43,59 @@ export default function SellCardDialog({ isOpen, onClose, card, username, onSucc
   const [showSuccess, setShowSuccess] = useState(false)
   const [priceUsdPerWLD, setPriceUsdPerWLD] = useState<number | null>(null)
   const router = useRouter()
-useEffect(() => {
-  const fetchPrice = async () => {
-    try {
-      const res = await fetch("/api/wld-price")
-      const json = await res.json()
+  const [activeListings, setActiveListings] = useState<number | null>(null)
+  const [cardsSoldCount, setCardsSoldCount] = useState<number | null>(null)
 
-      if (json.price) {
-        setPriceUsdPerWLD(json.price)
+  useEffect(() => {
+    const fetchSellLimits = async () => {
+      const supabase = getSupabaseBrowserClient()
+      if (!supabase) {
+        throw new Error("Could not connect to database")
       }
-    } catch (err) {
-      console.error("Failed to fetch WLD price", err)
-    }
-  }
 
-  fetchPrice()
-}, [])
+      if (!username) return
+
+      // Aktive Listings zählen
+      const { count: activeCount } = await supabase
+        .from("market_listings")
+        .select("*", { count: "exact", head: true })
+        .eq("seller_id", username)
+        .eq("status", "active")
+
+      // Verkauft-Zähler abfragen
+      const { data: userData, error } = await supabase
+        .from("users")
+        .select("cards_sold_since_last_purchase")
+        .eq("username", username)
+        .single<{ cards_sold_since_last_purchase: number }>()
+
+      if (!error && userData) {
+        setActiveListings(activeCount ?? 0)
+        setCardsSoldCount(userData.cards_sold_since_last_purchase ?? 0)
+      }
+    }
+
+    if (isOpen) {
+      fetchSellLimits()
+    }
+  }, [isOpen, username])
+
+  useEffect(() => {
+    const fetchPrice = async () => {
+      try {
+        const res = await fetch("/api/wld-price")
+        const json = await res.json()
+
+        if (json.price) {
+          setPriceUsdPerWLD(json.price)
+        }
+      } catch (err) {
+        console.error("Failed to fetch WLD price", err)
+      }
+    }
+
+    fetchPrice()
+  }, [])
   // Standardpreise basierend auf Seltenheit und Level
   function getDefaultPrice(rarity: string, level: number): number {
     const basePrice =
@@ -79,16 +117,14 @@ useEffect(() => {
   // Validiere den Preis
   const parsedPrice = Number.parseFloat(price.replace(",", "."))
   const minWldPrice = priceUsdPerWLD
-  ? (card.rarity === "legendary" ? 1 / priceUsdPerWLD : 0.15 / priceUsdPerWLD)
-  : card.rarity === "legendary"
-    ? 1
-    : 0.3
+    ? card.rarity === "legendary"
+      ? 1 / priceUsdPerWLD
+      : 0.15 / priceUsdPerWLD
+    : card.rarity === "legendary"
+      ? 1
+      : 0.3
 
-
-const isValidPrice =
-  !isNaN(parsedPrice) &&
-  parsedPrice >= minWldPrice
-
+  const isValidPrice = !isNaN(parsedPrice) && parsedPrice >= minWldPrice
 
   // Formatiere den Preis für die Anzeige
   const formatPrice = (value: string) => {
@@ -271,22 +307,62 @@ const isValidPrice =
               <div className="space-y-2">
                 <Label htmlFor="price">Set Price (WLD)</Label>
                 <div className="relative">
-                  <Input
-                    id="price"
-                    type="text"
-                    value={price}
-                    onChange={(e) => setPrice(e.target.value)}
-                    className=""
-                  />
+                  <Input id="price" type="text" value={price} onChange={(e) => setPrice(e.target.value)} className="" />
                 </div>
                 {!isValidPrice && (
-  <p className="text-red-500 text-sm">
-    {`Starting price is ${minWldPrice.toFixed(3)} WLD (~$${(minWldPrice * (priceUsdPerWLD || 1)).toFixed(2)})`}
-  </p>
-)}
-
-
+                  <p className="text-red-500 text-sm">
+                    {`Starting price is ${minWldPrice.toFixed(3)} WLD (~$${(minWldPrice * (priceUsdPerWLD || 1)).toFixed(2)})`}
+                  </p>
+                )}
               </div>
+              {/* Selling Limit Warnings */}
+              {activeListings !== null && activeListings >= 3 && (
+                <div className="bg-red-50 border border-red-200 p-3 rounded-lg">
+                  <div className="flex items-center gap-2 text-red-700">
+                    <AlertCircle className="w-4 h-4" />
+                    <span className="font-medium">Listing limit reached</span>
+                  </div>
+                  <p className="text-sm text-red-600 mt-1">
+                    You already have 3 active listings. Cancel some listings to add more.
+                  </p>
+                </div>
+              )}
+
+              {cardsSoldCount !== null && cardsSoldCount >= 3 && (
+                <div className="bg-orange-50 border border-orange-200 p-3 rounded-lg">
+                  <div className="flex items-center gap-2 text-orange-700">
+                    <AlertTriangle className="w-4 h-4" />
+                    <span className="font-medium">Selling limit reached</span>
+                  </div>
+                  <p className="text-sm text-orange-600 mt-1">
+                    You've sold 3 cards since your last purchase. Buy a card from the marketplace to continue selling.
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-2 text-orange-600 border-orange-300 hover:bg-orange-50"
+                    onClick={() => {
+                      onClose()
+                      // Navigate to marketplace
+                      window.location.href = "/trade"
+                    }}
+                  >
+                    Browse Marketplace
+                  </Button>
+                </div>
+              )}
+
+              {cardsSoldCount !== null && cardsSoldCount === 2 && (
+                <div className="bg-amber-50 border border-amber-200 p-3 rounded-lg">
+                  <div className="flex items-center gap-2 text-amber-700">
+                    <AlertTriangle className="w-4 h-4" />
+                    <span className="font-medium">Last sale before limit</span>
+                  </div>
+                  <p className="text-sm text-amber-600 mt-1">
+                    This will be your 3rd sale. You'll need to buy a card before selling more.
+                  </p>
+                </div>
+              )}
 
               {/* Error Message */}
               {error && (
@@ -315,7 +391,6 @@ const isValidPrice =
                 </div>
               )}
 
-
               {/* Action Buttons */}
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
@@ -324,13 +399,22 @@ const isValidPrice =
                 </Button>
                 <Button
                   onClick={handleSell}
-                  disabled={!isValidPrice || isSubmitting}
-                  className="bg-gradient-to-r from-violet-500 to-fuchsia-500"
+                  disabled={!isValidPrice || isSubmitting || (activeListings ?? 0) >= 3 || (cardsSoldCount ?? 0) >= 3}
+                  className={
+                    (cardsSoldCount ?? 0) >= 3
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-gradient-to-r from-violet-500 to-fuchsia-500"
+                  }
                 >
                   {isSubmitting ? (
                     <>
                       <div className="h-4 w-4 border-2 border-t-transparent border-white rounded-full animate-spin mr-2"></div>
                       Processing...
+                    </>
+                  ) : (cardsSoldCount ?? 0) >= 3 ? (
+                    <>
+                      <X className="h-4 w-4 mr-2" />
+                      Cannot Sell
                     </>
                   ) : (
                     <>

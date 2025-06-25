@@ -41,7 +41,7 @@ type MarketListingWithDetails = MarketListing & {
 }
 
 // Maximum number of cards a user can list
-const MAX_USER_LISTINGS = 7
+const MAX_USER_LISTINGS = 3
 
 // Default page size for pagination
 const DEFAULT_PAGE_SIZE = 20
@@ -499,6 +499,24 @@ export async function createListing(
       }
     }
 
+    // Prüfe auf Verkaufslimit (3 Verkäufe seit letztem Kauf)
+    const { data: userData, error: userErr } = await supabase
+      .from("users")
+      .select("cards_sold_since_last_purchase")
+      .eq("username", username)
+      .single()
+
+    if (userErr || !userData) {
+      return { success: false, error: "User not found." }
+    }
+
+    if (userData.cards_sold_since_last_purchase >= 3) {
+      return {
+        success: false,
+        error: "You must buy a card from the marketplace before listing more cards.",
+      }
+    }
+
     // Hole die Benutzerinformationen (username ist bereits die ID)
     console.log("Fetching user data for:", username)
     const { data: initialUserData, error: userError } = await supabase
@@ -718,6 +736,11 @@ export async function purchaseCard(username: string, listingId: string) {
     if (listing.seller_id === username) {
       return { success: false, error: "You cannot buy your own card" }
     }
+     // Käufer cards_sold_since_last_purchase auf 0 setzen
+    await supabase
+      .from("users")
+      .update({ cards_sold_since_last_purchase: 0 })
+      .eq("username", username)
 
     // 5. Score vorbereiten
     const { data: cardDetails, error: cardError } = await supabase
@@ -735,12 +758,41 @@ export async function purchaseCard(username: string, listingId: string) {
     // 6. Verkäuferdaten
     const { data: sellerData, error: sellerError } = await supabase
       .from("users")
-      .select("score")
+      .select("score, cards_sold_since_last_purchase")
       .eq("username", listing.seller_id)
       .single()
 
     const sellerScore = sellerData?.score ?? 0
     const buyerScore = buyerData?.score ?? 0
+    if (sellerError || !sellerData) {
+      return { success: false, error: "Failed to fetch seller data" }
+    }
+    const currentSoldCount = sellerData.cards_sold_since_last_purchase ?? 0
+const newSoldCount = currentSoldCount + 1
+
+// Zuerst prüfen:
+if (newSoldCount === 3) {
+  const { data: activeListings, error: listingsError } = await supabase
+    .from("market_listings")
+    .select("id")
+    .eq("seller_id", listing.seller_id)
+    .eq("status", "active")
+
+  if (!listingsError && activeListings?.length > 0) {
+    for (const l of activeListings) {
+      if (l.id !== listingId) {
+        await cancelListing(listing.seller_id, l.id)
+      }
+    }
+  }
+}
+
+// Dann den Zähler hochzählen
+await supabase
+  .from("users")
+  .update({ cards_sold_since_last_purchase: newSoldCount })
+  .eq("username", listing.seller_id)
+
 
     await supabase
       .from("users")

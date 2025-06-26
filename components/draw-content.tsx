@@ -202,6 +202,7 @@ export default function DrawPage() {
   // 🔥 OPTIMIZATION: Minimal initial setup
   useEffect(() => {
     setIsClient(true)
+    refreshUserData?.()
     // Don't call refreshUserData on mount - user data should already be available
 
     const fetchXpPass = async () => {
@@ -225,7 +226,7 @@ export default function DrawPage() {
     }
 
     fetchXpPass()
-  }, [user?.username]) // Removed refreshUserData dependency
+  }, [refreshUserData, user?.username]) // Removed refreshUserData dependency
 
   // Update tickets and legendary tickets when user changes
   useEffect(() => {
@@ -558,6 +559,7 @@ export default function DrawPage() {
     setScoreGained(0)
     setNewLevel(1)
     setIsMultiDraw(false)
+    refreshUserData?.()
     setIsBulkDraw(false) // 🔥 NEW: Reset bulk draw flag
     setShowBulkResults(false) // 🔥 NEW: Reset bulk results
     setShowBulkLoading(false) // 🔥 NEW: Reset bulk loading

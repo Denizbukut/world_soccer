@@ -2,11 +2,10 @@
 
 import { revalidatePath } from "next/cache"
 import { createClient } from "@supabase/supabase-js"
-import {  incrementMission } from "@/app/actions/missions"
+import { incrementMission } from "@/app/actions/missions"
 
-
-// Card rarity types
-type CardRarity = "common" | "rare" | "epic" | "legendary"
+// Card rarity types - UPDATED: Added "godlike"
+type CardRarity = "common" | "rare" | "epic" | "legendary" | "godlike"
 
 // Define types for our data
 type UserCard = {
@@ -36,7 +35,6 @@ interface XpPass {
   purchased_at: string
   expires_at: string
 }
-
 
 // Create a server-side Supabase client
 function createSupabaseServer() {
@@ -129,6 +127,7 @@ export async function claimDailyBonus(username: string) {
     }
 
     revalidatePath("/")
+
     return {
       success: true,
       newTicketCount: newTicketCount || 0,
@@ -149,9 +148,11 @@ function generateRandomCard(rarity: CardRarity): Card {
     rare: ["Rare Card 1", "Rare Card 2"],
     epic: ["Epic Card 1", "Epic Card 2"],
     legendary: ["Legendary Card 1", "Legendary Card 2"],
+    godlike: ["Godlike Card 1", "Godlike Card 2"], // NEW: Added godlike cards
   }
 
   const name = cardNames[rarity][Math.floor(Math.random() * cardNames[rarity].length)]
+
   return {
     id: Math.random().toString(36).substring(2, 15), // Generate a random ID
     name: name,
@@ -160,17 +161,19 @@ function generateRandomCard(rarity: CardRarity): Card {
   }
 }
 
-// Funktion, um Punkte für eine Kartenrarität zu erhalten
+// Funktion, um Punkte für eine Kartenrarität zu erhalten - UPDATED: Added godlike scoring
 function getScoreForRarity(rarity: CardRarity): number {
   switch (rarity) {
+    case "godlike":
+      return 500 // NEW: Godlike cards give 500 points
     case "legendary":
-      return 100 // Geändert von 500 auf 100
+      return 100
     case "epic":
-      return 40 // Geändert von 100 auf 40
+      return 40
     case "rare":
-      return 25 // Geändert von 20 auf 25
+      return 25
     case "common":
-      return 5 // Unverändert
+      return 5
     default:
       return 0
   }
@@ -234,35 +237,38 @@ export async function drawCards(username: string, packType: string, count = 1) {
       }
     }
 
-    // Check if user has enough tickets
-    const isLegendary = packType === "legendary"
-    const ticketField = isLegendary ? "legendary_tickets" : "tickets"
-    const currentTickets = userData[ticketField] || 0
+    // NEW: God pack doesn't require tickets
+    if (packType !== "god") {
+      // Check if user has enough tickets
+      const isLegendary = packType === "legendary"
+      const ticketField = isLegendary ? "legendary_tickets" : "tickets"
+      const currentTickets = userData[ticketField] || 0
 
-    if (currentTickets < count) {
-      return {
-        success: false,
-        error: `Not enough ${isLegendary ? "legendary " : ""}tickets`,
+      if (currentTickets < count) {
+        return {
+          success: false,
+          error: `Not enough ${isLegendary ? "legendary " : ""}tickets`,
+        }
       }
-    }
 
-    // Deduct tickets
-    const newTicketCount = currentTickets - count
+      // Deduct tickets
+      const newTicketCount = currentTickets - count
 
-    // Prepare update data
-    const updateData: Record<string, any> = {}
-    if (isLegendary) {
-      updateData.legendary_tickets = newTicketCount
-    } else {
-      updateData.tickets = newTicketCount
-    }
+      // Prepare update data
+      const updateData: Record<string, any> = {}
+      if (isLegendary) {
+        updateData.legendary_tickets = newTicketCount
+      } else {
+        updateData.tickets = newTicketCount
+      }
 
-    // Update user tickets in database
-    const { error: updateError } = await supabase.from("users").update(updateData).eq("username", username)
+      // Update user tickets in database
+      const { error: updateError } = await supabase.from("users").update(updateData).eq("username", username)
 
-    if (updateError) {
-      console.error("Error updating tickets:", updateError)
-      return { success: false, error: "Failed to update tickets" }
+      if (updateError) {
+        console.error("Error updating tickets:", updateError)
+        return { success: false, error: "Failed to update tickets" }
+      }
     }
 
     // Get available cards from database
@@ -282,6 +288,7 @@ export async function drawCards(username: string, packType: string, count = 1) {
     const rareCards = availableCards.filter((card) => card.rarity === "rare")
     const epicCards = availableCards.filter((card) => card.rarity === "epic")
     const legendaryCards = availableCards.filter((card) => card.rarity === "legendary")
+    const godlikeCards = availableCards.filter((card) => card.rarity === "godlike") // NEW: Godlike cards
 
     // Generate random cards based on rarity chances
     const drawnCards = []
@@ -294,11 +301,24 @@ export async function drawCards(username: string, packType: string, count = 1) {
 
       // Check if user has premium to determine drop rates
       const hasPremium = userData.has_premium || false
-      if (!isLegendary) {
+
+      if (packType !== "god" && !packType.includes("legendary")) {
         await incrementMission(username, "open_regular_pack")
       }
 
-      if (isLegendary) {
+      // NEW: God pack rarity distribution
+      if (packType === "god") {
+        if (random < 1) {
+          rarity = "godlike"
+          cardPool = godlikeCards
+        } else if (random < 50) {
+          rarity = "legendary"
+          cardPool = legendaryCards
+        } else {
+          rarity = "epic"
+          cardPool = epicCards
+        }
+      } else if (packType === "legendary") {
         // Legendary pack rarity distribution
         let legendaryChance = 10
 
@@ -376,6 +396,11 @@ export async function drawCards(username: string, packType: string, count = 1) {
         await incrementMission(username, "draw_legendary_card")
       }
 
+      // NEW: Mission tracking for godlike cards
+      if (selectedCard.rarity === "godlike") {
+        await incrementMission(username, "draw_godlike_card")
+      }
+
       // Calculate score for this card
       const cardPoints = getScoreForRarity(selectedCard.rarity)
       totalScoreToAdd += cardPoints
@@ -399,7 +424,6 @@ export async function drawCards(username: string, packType: string, count = 1) {
       if (existingCard) {
         // Update quantity if user already has this card
         const newQuantity = (existingCard.quantity || 0) + 1
-
         console.log(
           `Updating existing card: ${selectedCard.name}, ID: ${existingCard.id}, Old quantity: ${existingCard.quantity}, New quantity: ${newQuantity}`,
         )
@@ -418,7 +442,6 @@ export async function drawCards(username: string, packType: string, count = 1) {
       } else {
         // Add new card to user's collection
         console.log(`Adding new card to collection: ${selectedCard.name}`)
-
         const { data: insertedCard, error: insertCardError } = await supabase
           .from("user_cards")
           .insert({
@@ -439,8 +462,56 @@ export async function drawCards(username: string, packType: string, count = 1) {
       }
     }
 
-    // Calculate XP with clan bonuses
-    let xpAmount = isLegendary ? 100 * count : 50 * count
+    // NEW: Update God pack daily usage
+    if (packType === "god") {
+      const today = new Date().toISOString().split("T")[0]
+
+      // Check if user has usage record for today
+      const { data: existingUsage, error: usageCheckError } = await supabase
+        .from("god_pack_daily_usage")
+        .select("*")
+        .eq("user_id", username)
+        .eq("usage_date", today)
+        .single()
+
+      if (usageCheckError && usageCheckError.code !== "PGRST116") {
+        console.error("Error checking God pack usage:", usageCheckError)
+      }
+
+      if (existingUsage) {
+        // Update existing record
+        const newUsage = (existingUsage.packs_opened || 0) + count
+        const cappedUsage = Math.min(newUsage, 50) // ← Maximal 50
+
+        const { error: updateUsageError } = await supabase
+          .from("god_pack_daily_usage")
+          .update({
+            packs_opened: cappedUsage,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", existingUsage.id)
+
+        if (updateUsageError) {
+          console.error("Error updating God pack usage:", updateUsageError)
+        }
+
+
+      } else {
+        // Create new record
+        const { error: insertUsageError } = await supabase.from("god_pack_daily_usage").insert({
+          user_id: username,
+          usage_date: today,
+          packs_opened: count,
+        })
+
+        if (insertUsageError) {
+          console.error("Error inserting God pack usage:", insertUsageError)
+        }
+      }
+    }
+
+    // Calculate XP with clan bonuses - UPDATED: God pack gives more XP
+    let xpAmount = packType === "god" ? 200 * count : packType === "legendary" ? 100 * count : 50 * count
 
     // Special case for jiraiya user
     if (username === "jiraiya") {
@@ -500,45 +571,41 @@ export async function drawCards(username: string, packType: string, count = 1) {
 
     // Update clan experience if user belongs to a clan
     const clanLevels = [
-  { level: 1, required_xp: 0, reward: "Clan created" },
-  { level: 2, required_xp: 5000, reward: "+1 regular ticket per day for everyone" },
-  { level: 3, required_xp: 20000, reward: "Role limits increased to 5" },
-  { level: 4, required_xp: 50000, reward: "Cheap Hustler role unlocked" },
-]
+      { level: 1, required_xp: 0, reward: "Clan created" },
+      { level: 2, required_xp: 5000, reward: "+1 regular ticket per day for everyone" },
+      { level: 3, required_xp: 20000, reward: "Role limits increased to 5" },
+      { level: 4, required_xp: 50000, reward: "Cheap Hustler role unlocked" },
+    ]
 
     if (userData.clan_id) {
       const { data: clanData, error: clanError } = await supabase
-  .from("clans")
-  .select("xp, level")
-  .eq("id", userData.clan_id)
-  .single()
+        .from("clans")
+        .select("xp, level")
+        .eq("id", userData.clan_id)
+        .single()
 
-if (!clanError && clanData) {
-  const xpGain = (isLegendary ? 2 : 1) * count
-  let currentXp = clanData.xp || 0
-  let currentLevel = clanData.level || 1
+      if (!clanError && clanData) {
+        // NEW: God pack gives more clan XP
+        const xpGain = packType === "god" ? 5 * count : packType === "legendary" ? 2 * count : 1 * count
+        const currentXp = clanData.xp || 0
+        const currentLevel = clanData.level || 1
+        const newXpTotal = currentXp + xpGain
+        let newLevel = currentLevel
 
-  let newXpTotal = currentXp + xpGain
-  let newLevel = currentLevel
+        for (let i = clanLevels.length - 1; i >= 0; i--) {
+          if (newXpTotal >= clanLevels[i].required_xp) {
+            newLevel = clanLevels[i].level
+            break
+          }
+        }
 
-  for (let i = clanLevels.length - 1; i >= 0; i--) {
-    if (newXpTotal >= clanLevels[i].required_xp) {
-      newLevel = clanLevels[i].level
-      break
-    }
-  }
-
-  await supabase
-    .from("clans")
-    .update({ xp: newXpTotal, level: newLevel })
-    .eq("id", userData.clan_id)
-}
-
+        await supabase.from("clans").update({ xp: newXpTotal, level: newLevel }).eq("id", userData.clan_id)
+      }
     }
 
     revalidatePath("/leaderboard")
 
-    // Get updated ticket counts
+    // Get updated ticket counts - NEW: God pack doesn't affect tickets
     const { data: updatedUser, error: updatedUserError } = await supabase
       .from("users")
       .select("tickets, legendary_tickets, score")
@@ -552,9 +619,9 @@ if (!clanError && clanData) {
     return {
       success: true,
       drawnCards,
-      newTicketCount: updatedUser?.tickets || (isLegendary ? userData.tickets : newTicketCount),
+      newTicketCount: packType === "god" ? userData.tickets : updatedUser?.tickets || userData.tickets,
       newLegendaryTicketCount:
-        updatedUser?.legendary_tickets || (isLegendary ? newTicketCount : userData.legendary_tickets),
+        packType === "god" ? userData.legendary_tickets : updatedUser?.legendary_tickets || userData.legendary_tickets,
       scoreAdded: totalScoreToAdd,
       newScore: updatedUser?.score || newScore,
       removedZeroQuantityCards: removedCards?.length || 0,
@@ -649,11 +716,16 @@ export async function getUserCards(username: string) {
   }
 }
 
-// Helper function to determine card rarity based on pack type
+// Helper function to determine card rarity based on pack type - UPDATED: Added god pack logic
 function determineRarity(packType: string): CardRarity {
   const random = Math.random() * 100 // Random number between 0-100
 
-  if (packType === "legendary") {
+  if (packType === "god") {
+    // NEW: God pack with special odds
+    if (random < 1) return "godlike"
+    if (random < 50) return "legendary"
+    return "epic"
+  } else if (packType === "legendary") {
     // Legendary pack with updated odds:
     // 10% legendary, 40% epic, 40% rare, 10% common
     if (random < 10) return "legendary"
@@ -674,63 +746,60 @@ function determineRarity(packType: string): CardRarity {
  * Utility-Funktion zum Bereinigen von Karten mit Quantity 0
  * Diese Funktion kann verwendet werden, um Karten mit Quantity 0 zu entfernen oder auf 1 zu setzen
  */
-export async function cleanupZeroQuantityCards(username: string, action: 'remove' | 'fix' = 'fix') {
+export async function cleanupZeroQuantityCards(username: string, action: "remove" | "fix" = "fix") {
   try {
     const supabase = createSupabaseServer()
-    
+
     // Finde alle Karten mit Quantity 0
     const { data: zeroCards, error: fetchError } = await supabase
       .from("user_cards")
       .select("*")
       .eq("user_id", username)
       .eq("quantity", 0)
-    
+
     if (fetchError) {
       console.error("Error fetching zero quantity cards:", fetchError)
       return { success: false, error: "Failed to fetch cards with zero quantity" }
     }
-    
+
     if (!zeroCards || zeroCards.length === 0) {
       return { success: true, message: "No cards with zero quantity found", count: 0 }
     }
-    
-    let successCount = 0;
-    
-    if (action === 'remove') {
+
+    let successCount = 0
+
+    if (action === "remove") {
       // Entferne alle Karten mit Quantity 0
       const { error: deleteError } = await supabase
         .from("user_cards")
         .delete()
         .eq("user_id", username)
         .eq("quantity", 0)
-      
+
       if (deleteError) {
         console.error("Error removing zero quantity cards:", deleteError)
         return { success: false, error: "Failed to remove cards with zero quantity" }
       }
-      
-      successCount = zeroCards.length;
+
+      successCount = zeroCards.length
     } else {
       // Setze Quantity auf 1 für alle Karten mit Quantity 0
       for (const card of zeroCards) {
-        const { error: updateError } = await supabase
-          .from("user_cards")
-          .update({ quantity: 1 })
-          .eq("id", card.id)
-        
+        const { error: updateError } = await supabase.from("user_cards").update({ quantity: 1 }).eq("id", card.id)
+
         if (!updateError) {
-          successCount++;
+          successCount++
         } else {
           console.error(`Error fixing card ${card.id}:`, updateError)
         }
       }
     }
-    
-    return { 
-      success: true, 
-      message: `Successfully ${action === 'remove' ? 'removed' : 'fixed'} ${successCount} cards with zero quantity`,
+
+    return {
+      success: true,
+      message: `Successfully ${action === "remove" ? "removed" : "fixed"} ${successCount} cards with zero quantity`,
       count: successCount,
-      totalFound: zeroCards.length
+      totalFound: zeroCards.length,
     }
   } catch (error) {
     console.error(`Error in cleanupZeroQuantityCards:`, error)

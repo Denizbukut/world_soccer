@@ -1,14 +1,13 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect, useRef, useCallback } from "react"
 import { useAuth } from "@/contexts/auth-context"
 import { updateScoreForCards, updateScoreForLevelUp } from "@/app/actions/update-score"
 import ProtectedRoute from "@/components/protected-route"
 import MobileNav from "@/components/mobile-nav"
 import { Button } from "@/components/ui/button"
-import { Ticket, Crown, Star, Sword, X } from 'lucide-react'
+import { Ticket, Crown, Star, Sword, X, Zap, Globe } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
 import { motion, AnimatePresence, useAnimation, useMotionValue, useTransform } from "framer-motion"
 import Image from "next/image"
@@ -16,9 +15,15 @@ import { incrementMission } from "@/app/actions/missions"
 import { incrementLegendaryDraw } from "@/app/actions/weekly-contest"
 import { getSupabaseBrowserClient } from "@/lib/supabase"
 import { incrementClanMission } from "@/app/actions/clan-missions"
+import { MiniKit, tokenToDecimals, Tokens, type PayCommandInput } from "@worldcoin/minikit-js"
 
-// Rarität definieren
-type CardRarity = "common" | "rare" | "epic" | "legendary"
+type GodPackUsage = {
+  user_id: string
+  packs_opened: number | null
+}
+
+// Rarität definieren - UPDATED: Added "godlike"
+type CardRarity = "common" | "rare" | "epic" | "legendary" | "godlike"
 
 const FALLBACK_CARDS = [
   {
@@ -47,7 +52,7 @@ const FALLBACK_CARDS = [
   },
 ]
 
-// Rarity color mapping
+// Rarity color mapping - UPDATED: Added godlike colors
 const RARITY_COLORS = {
   common: {
     border: "card-border-common",
@@ -77,31 +82,39 @@ const RARITY_COLORS = {
     gradient: "from-yellow-300/30 to-yellow-100/30",
     bg: "bg-yellow-100",
   },
+  godlike: {
+    border: "border-4 border-gradient-to-r from-pink-500 via-red-500 to-yellow-500",
+    glow: "shadow-pink-500",
+    text: "text-pink-600",
+    gradient: "from-pink-300/30 to-red-100/30",
+    bg: "bg-gradient-to-br from-pink-100 to-red-100",
+  },
 }
 
 export default function DrawPage() {
   const { user, updateUserTickets, updateUserExp, refreshUserData, updateUserScore } = useAuth()
   const [isDrawing, setIsDrawing] = useState(false)
   const [drawnCards, setDrawnCards] = useState<any[]>([])
-  const [activeTab, setActiveTab] = useState<"regular" | "legendary">("regular")
+  const [activeTab, setActiveTab] = useState<"regular" | "legendary" | "god">("regular") // UPDATED: Added "god"
   const [legendaryTickets, setLegendaryTickets] = useState(2)
   const [tickets, setTickets] = useState(0)
   const [hasPremiumPass, setHasPremiumPass] = useState(false)
   const [hasXpPass, setHasXpPass] = useState(false)
   const [userClanRole, setUserClanRole] = useState<string | null>(null)
-
   const [isUpdatingScore, setIsUpdatingScore] = useState(false)
   const [isMultiDraw, setIsMultiDraw] = useState(false)
-  const [isBulkDraw, setIsBulkDraw] = useState(false) // 🔥 NEW: For 20+ pack bulk opening
-  const [showBulkLoading, setShowBulkLoading] = useState(false) // 🔥 NEW: For bulk loading animation
+  const [isBulkDraw, setIsBulkDraw] = useState(false)
+  const [showBulkLoading, setShowBulkLoading] = useState(false)
+  const [isGodPack, setIsGodPack] = useState(false) // NEW: God pack state
 
   // Animation states
   const [showPackSelection, setShowPackSelection] = useState(true)
   const [showPackAnimation, setShowPackAnimation] = useState(false)
+  const [showGodPackAnimation, setShowGodPackAnimation] = useState(false) // NEW: God pack animation
   const [packOpened, setPackOpened] = useState(false)
   const [showRarityText, setShowRarityText] = useState(false)
   const [showCards, setShowCards] = useState(false)
-  const [showBulkResults, setShowBulkResults] = useState(false) // 🔥 NEW: For bulk results list
+  const [showBulkResults, setShowBulkResults] = useState(false)
   const [cardRevealed, setCardRevealed] = useState(false)
   const [showXpAnimation, setShowXpAnimation] = useState(false)
   const [xpGained, setXpGained] = useState(0)
@@ -111,8 +124,9 @@ export default function DrawPage() {
   const [selectedCardIndex, setSelectedCardIndex] = useState<number | null>(null)
   const [selectedEpoch, setSelectedEpoch] = useState<number>(1)
   const [availableEpochs, setAvailableEpochs] = useState<number[]>([1])
+  const [price, setPrice] = useState<number | null>(null)
 
-  // 🔥 NEW: Bulk opening states
+  // Bulk opening states
   const [selectedBulkCard, setSelectedBulkCard] = useState<any | null>(null)
 
   // Hydration safety
@@ -121,6 +135,30 @@ export default function DrawPage() {
   // Card states
   const [currentCardIndex, setCurrentCardIndex] = useState(0)
   const controls = useAnimation()
+
+  useEffect(() => {
+    const fetchPrice = async () => {
+      try {
+        const res = await fetch("/api/wld-price")
+        const json = await res.json()
+  
+        if (json.price) {
+          setPrice(json.price)
+        } else {
+          console.warn("Preis nicht gefunden in JSON:", json)
+        }
+      } catch (err) {
+        console.error("Client error:", err)
+      }
+    }
+  
+    fetchPrice()
+  }, [])
+  useEffect(() => {
+    if (price !== null) {
+      console.log("WLD Preis:", price)
+    }
+  }, [price])
 
   // Card tilt effect
   const cardRef = useRef<HTMLDivElement>(null)
@@ -132,13 +170,21 @@ export default function DrawPage() {
   const reflectionY = useTransform(y, [-100, 100], ["30%", "70%"])
   const reflectionOpacity = useTransform(x, [-100, 0, 100], [0.7, 0.3, 0.7])
 
-  // 🔥 OPTIMIZATION: Prevent navigation/redirect after card draw
   const preventNavigation = useRef(false)
+
+  // God Pack states - UPDATED: Now global limits
+  const [godPackStats, setGodPackStats] = useState({
+    totalOpened: 0,
+    globalLimit: 50,
+    remaining: 50,
+  })
 
   const getSelectedCard = () => {
     if (selectedCardIndex === null) return null
     return drawnCards[selectedCardIndex]
   }
+  const wldPriceDisplay = price ? (0.6 / price).toFixed(3) : "0.600"
+
 
   // Fetch available epochs
   useEffect(() => {
@@ -148,7 +194,6 @@ export default function DrawPage() {
 
       try {
         const { data: epochs, error } = await supabase.from("cards").select("epoch").not("epoch", "is", null)
-
         if (!error && epochs) {
           const uniqueEpochs = [...new Set(epochs.map((e) => e.epoch as number))].sort((a, b) => b - a)
           setAvailableEpochs(uniqueEpochs as number[])
@@ -199,11 +244,9 @@ export default function DrawPage() {
     fetchUserClanRole()
   }, [user?.username])
 
-  // 🔥 OPTIMIZATION: Minimal initial setup
   useEffect(() => {
     setIsClient(true)
     refreshUserData?.()
-    // Don't call refreshUserData on mount - user data should already be available
 
     const fetchXpPass = async () => {
       if (!user?.username) return
@@ -226,7 +269,7 @@ export default function DrawPage() {
     }
 
     fetchXpPass()
-  }, [refreshUserData, user?.username]) // Removed refreshUserData dependency
+  }, [refreshUserData, user?.username])
 
   // Update tickets and legendary tickets when user changes
   useEffect(() => {
@@ -272,9 +315,75 @@ export default function DrawPage() {
     y.set(0, true)
   }
 
+  const sendPayment = async () => {
+  const dollarAmount = 0.6
+  const fallbackWldAmount = 0.6
+  const wldAmount = price ? dollarAmount / price : fallbackWldAmount
+  const wldAmountRounded = Number(wldAmount.toFixed(3))
+
+
+  const res = await fetch("/api/initiate-payment", {
+    method: "POST",
+  })
+  const { id } = await res.json()
+
+  const payload: PayCommandInput = {
+    reference: id,
+    to: "0x4bb270ef6dcb052a083bd5cff518e2e019c0f4ee",
+    tokens: [
+      {
+        symbol: Tokens.WLD,
+        token_amount: tokenToDecimals(wldAmountRounded, Tokens.WLD).toString(),
+      },
+    ],
+    description: "Premium Pass",
+  }
+
+  const { finalPayload } = await MiniKit.commandsAsync.pay(payload)
+
+  if (finalPayload.status == "success") {
+    console.log("success sending payment")
+    handleSelectPack("god")
+  }
+}
+
+
+  // Fetch God Pack global stats - UPDATED: Now fetches global data
+  const fetchGodPackData = async () => {
+    const supabase = getSupabaseBrowserClient()
+    if (!supabase) return
+
+    const today = new Date().toISOString().split("T")[0]
+
+    const { data: allUsageRaw, error: globalError } = await supabase
+      .from("god_pack_daily_usage")
+      .select("user_id, packs_opened")
+      .eq("usage_date", today)
+
+    if (globalError) {
+      console.error("Fehler beim Laden der globalen God Pack-Nutzung:", globalError)
+      return
+    }
+
+    const allUsage = (allUsageRaw as GodPackUsage[]) || []
+    const totalOpened = allUsage.reduce((sum, record) => sum + (record.packs_opened ?? 0), 0)
+    const globalLimit = 50
+    const remaining = Math.max(0, globalLimit - totalOpened)
+
+    setGodPackStats({
+      totalOpened,
+      globalLimit,
+      remaining,
+    })
+  }
+
+  // Load God Pack data when tab changes or component mounts
+  useEffect(() => {
+    fetchGodPackData()
+  }, [])
+
   const handleSelectPack = useCallback(
     async (cardType: string, count = 1) => {
-      // 🔥 OPTIMIZATION: Prevent multiple calls
       if (isDrawing) {
         return
       }
@@ -284,30 +393,46 @@ export default function DrawPage() {
         return
       }
 
-      const requiredTickets = count
-      const availableTickets = cardType === "legendary" ? legendaryTickets : tickets
+      // NEW: God pack doesn't require tickets
+      if (cardType !== "god") {
+        const requiredTickets = count
+        const availableTickets = cardType === "legendary" ? legendaryTickets : tickets
 
-      if (availableTickets < requiredTickets) {
-        toast({
-          title: "Not enough tickets",
-          description: `You need ${requiredTickets} ${cardType === "legendary" ? "legendary " : ""}tickets but only have ${availableTickets}.`,
-          variant: "destructive",
-        })
-        return
+        if (availableTickets < requiredTickets) {
+          toast({
+            title: "Not enough tickets",
+            description: `You need ${requiredTickets} ${cardType === "legendary" ? "legendary " : ""}tickets but only have ${availableTickets}.`,
+            variant: "destructive",
+          })
+          return
+        }
       }
 
-      // 🔥 OPTIMIZATION: Set flag to prevent navigation
-      preventNavigation.current = true
+      // NEW: Check God pack GLOBAL daily limit before making the API call
+      if (cardType === "god") {
+        if (godPackStats.remaining <= 0) {
+          toast({
+            title: "Global Daily Limit Reached",
+            description: `Only ${godPackStats.globalLimit} God Packs can be opened per day by all users combined. Try again tomorrow!`,
+            variant: "destructive",
+          })
+          return
+        }
+      }
 
+      preventNavigation.current = true
       setIsDrawing(true)
       setIsMultiDraw(count > 1 && count <= 5)
-      setIsBulkDraw(count > 5) // 🔥 NEW: Set bulk draw for 20+ packs
+      setIsBulkDraw(count > 5)
+      setIsGodPack(cardType === "god") // NEW: Set god pack state
       setShowPackSelection(false)
 
-      // 🔥 NEW: Skip pack animation for bulk draws, show loading instead
-      if (count > 5) {
+      // NEW: Special animation for God Pack
+      if (cardType === "god") {
+        setShowGodPackAnimation(true)
+      } else if (count > 5) {
         setShowBulkResults(false)
-        setShowBulkLoading(true) // 🔥 NEW: Show loading animation for bulk
+        setShowBulkLoading(true)
       } else {
         setShowPackAnimation(true)
       }
@@ -338,16 +463,25 @@ export default function DrawPage() {
           await incrementMission(user.username, "draw_legendary_card", legendaryCards.length)
         }
 
+        // NEW: Mission tracking for godlike cards
+        const godlikeCards = result.drawnCards?.filter((card: any) => card.rarity === "godlike") || []
+        if (godlikeCards.length > 0) {
+          await incrementMission(user.username, "draw_godlike_card", godlikeCards.length)
+        }
+
         if (cardType === "legendary") {
           await incrementMission(user.username, "open_legendary_pack", count)
           await incrementMission(user.username, "open_3_legendary_packs", count)
-
           if (user.clan_id !== undefined) {
             await incrementClanMission(user.clan_id, "legendary_packs", count)
           }
+        } else if (cardType === "god") {
+          await incrementMission(user.username, "open_god_pack", count)
+          if (user.clan_id !== undefined) {
+            await incrementClanMission(user.clan_id, "god_packs", count)
+          }
         } else {
           await incrementMission(user.username, "open_regular_pack", count)
-
           if (user.clan_id !== undefined) {
             await incrementClanMission(user.clan_id, "regular_packs", count)
           }
@@ -364,17 +498,17 @@ export default function DrawPage() {
         if (result.success && result.drawnCards?.length > 0) {
           setDrawnCards(result.drawnCards)
 
-          // 🔥 OPTIMIZATION: Update local state immediately
-          const newTicketCount = result.newTicketCount ?? tickets
-          const newLegendaryTicketCount = result.newLegendaryTicketCount ?? legendaryTickets
+          // NEW: God pack doesn't update tickets
+          if (cardType !== "god") {
+            const newTicketCount = result.newTicketCount ?? tickets
+            const newLegendaryTicketCount = result.newLegendaryTicketCount ?? legendaryTickets
+            setTickets(newTicketCount)
+            setLegendaryTickets(newLegendaryTicketCount)
+            await updateUserTickets?.(newTicketCount, newLegendaryTicketCount)
+          }
 
-          setTickets(newTicketCount)
-          setLegendaryTickets(newLegendaryTicketCount)
-
-          // Update auth context with new ticket counts
-          await updateUserTickets?.(newTicketCount, newLegendaryTicketCount)
-
-          let xpAmount = cardType === "legendary" ? 100 * count : 50 * count
+          // NEW: God pack gives more XP
+          let xpAmount = cardType === "god" ? 200 * count : cardType === "legendary" ? 100 * count : 50 * count
 
           if (userClanRole === "xp_hunter") {
             xpAmount = Math.floor(xpAmount * 1.05)
@@ -391,14 +525,19 @@ export default function DrawPage() {
           setXpGained(xpAmount)
 
           const { leveledUp, newLevel: updatedLevel } = (await updateUserExp?.(xpAmount)) || {}
+
           if (leveledUp && updatedLevel) {
             setNewLevel(updatedLevel)
           }
 
-          // 🔥 NEW: For bulk draws, hide loading and show results
           if (count > 5) {
-            setShowBulkLoading(false) // 🔥 NEW: Hide loading animation
+            setShowBulkLoading(false)
             setShowBulkResults(true)
+          }
+
+          // Refresh God pack data after successful opening
+          if (result.success && cardType === "god") {
+            fetchGodPackData()
           }
         } else {
           console.error("Draw failed:", result.error)
@@ -425,42 +564,57 @@ export default function DrawPage() {
       userClanRole,
       hasXpPass,
       selectedEpoch,
+      godPackStats,
     ],
   )
 
   const handleOpenPack = () => {
     setPackOpened(true)
-
     if (isMultiDraw) {
       setTimeout(() => {
         setShowRarityText(true)
-
         setTimeout(() => {
           setShowRarityText(false)
           setShowCards(true)
           setCardRevealed(true)
           setShowPackAnimation(false)
-        }, 2500)
-      }, 2500)
+        }, 1500)
+      }, 1500)
     } else {
       setTimeout(() => {
         setShowRarityText(true)
-
         setTimeout(() => {
           setShowRarityText(false)
           setShowCards(true)
           setCardRevealed(false)
-
           setTimeout(() => {
             setShowPackAnimation(false)
           }, 50)
-
           setTimeout(() => {
             setCardRevealed(true)
           }, 300)
-        }, 2000)
-      }, 2500)
+        }, 1200)
+      }, 1500)
     }
+  }
+
+  // NEW: God pack opening handler
+  const handleOpenGodPack = () => {
+    setPackOpened(true)
+    setTimeout(() => {
+      setShowRarityText(true)
+      setTimeout(() => {
+        setShowRarityText(false)
+        setShowCards(true)
+        setCardRevealed(false)
+        setTimeout(() => {
+          setShowGodPackAnimation(false)
+        }, 50)
+        setTimeout(() => {
+          setCardRevealed(true)
+        }, 300)
+      }, 1500) // Shorter animation for god pack
+    }, 1500)
   }
 
   const finishCardReview = async () => {
@@ -470,10 +624,8 @@ export default function DrawPage() {
 
     try {
       const scoreResult = await updateScoreForCards(user.username, drawnCards)
-
       if (scoreResult.success) {
         setScoreGained(scoreResult.addedScore)
-
         if (updateUserScore) {
           updateUserScore(scoreResult.addedScore)
         }
@@ -491,7 +643,6 @@ export default function DrawPage() {
       setIsUpdatingScore(false)
     }
 
-    // 🔥 NEW: Handle bulk results differently
     if (isBulkDraw) {
       setShowBulkResults(false)
     } else {
@@ -500,13 +651,10 @@ export default function DrawPage() {
 
     if (isMultiDraw || isBulkDraw) {
       setShowXpAnimation(true)
-
       setTimeout(() => {
         setShowXpAnimation(false)
-
         if (newLevel > 1) {
           setShowLevelUpAnimation(true)
-
           if (user) {
             updateScoreForLevelUp(user.username)
               .then((result) => {
@@ -519,16 +667,13 @@ export default function DrawPage() {
         } else {
           resetStates()
         }
-      }, 1000)
+      }, 800)
     } else {
       setShowXpAnimation(true)
-
       setTimeout(() => {
         setShowXpAnimation(false)
-
         if (newLevel > 1) {
           setShowLevelUpAnimation(true)
-
           if (user) {
             updateScoreForLevelUp(user.username)
               .then((result) => {
@@ -545,11 +690,10 @@ export default function DrawPage() {
         } else {
           resetStates()
         }
-      }, 1000)
+      }, 800)
     }
   }
 
-  // 🔥 OPTIMIZATION: Improved resetStates function
   const resetStates = () => {
     setPackOpened(false)
     setShowPackSelection(true)
@@ -559,16 +703,15 @@ export default function DrawPage() {
     setScoreGained(0)
     setNewLevel(1)
     setIsMultiDraw(false)
+    setIsBulkDraw(false)
+    setShowBulkResults(false)
+    setShowBulkLoading(false)
+    setSelectedBulkCard(null)
+    setIsGodPack(false) // NEW: Reset god pack state
+    setShowGodPackAnimation(false) // NEW: Reset god pack animation
     refreshUserData?.()
-    setIsBulkDraw(false) // 🔥 NEW: Reset bulk draw flag
-    setShowBulkResults(false) // 🔥 NEW: Reset bulk results
-    setShowBulkLoading(false) // 🔥 NEW: Reset bulk loading
-    setSelectedBulkCard(null) // 🔥 NEW: Reset selected bulk card
-
-    // 🔥 OPTIMIZATION: Reset navigation prevention flag
     preventNavigation.current = false
 
-    // 🔥 OPTIMIZATION: No automatic data refresh - let auth context handle it
     toast({
       title: "Cards Added",
       description: `${isBulkDraw ? "All cards have" : isMultiDraw ? "The cards have" : "The card has"} been added to your collection!`,
@@ -602,13 +745,13 @@ export default function DrawPage() {
     return finalXp
   }
 
-  // 🔥 NEW: Get rarity statistics for bulk results
   const getRarityStats = () => {
     const stats = {
       common: 0,
       rare: 0,
       epic: 0,
       legendary: 0,
+      godlike: 0, // NEW: Added godlike to stats
     }
 
     drawnCards.forEach((card) => {
@@ -686,7 +829,7 @@ export default function DrawPage() {
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.3 }}
               >
-                {/* Tabs */}
+                {/* Tabs - UPDATED: Added God tab */}
                 <div className="flex rounded-xl overflow-hidden mb-6 border border-gray-200 bg-white">
                   <button
                     onClick={() => setActiveTab("regular")}
@@ -710,11 +853,50 @@ export default function DrawPage() {
                     }`}
                   >
                     <div className="flex items-center justify-center gap-2">
-                      <Ticket className="h-4 w-4 " />
+                      <Ticket className="h-4 w-4" />
                       <span>Legendary</span>
                     </div>
                   </button>
+                  {/* NEW: God Pack Tab */}
+                  <button
+                    onClick={() => setActiveTab("god")}
+                    className={`flex-1 py-3 px-4 text-center font-medium transition-all ${
+                      activeTab === "god"
+                        ? "bg-gradient-to-r from-pink-500 to-red-500 text-white"
+                        : "bg-white text-gray-500"
+                    }`}
+                  >
+                    <div className="flex items-center justify-center gap-2">
+                      <Zap className="h-4 w-4" />
+                      <span>God</span>
+                    </div>
+                  </button>
                 </div>
+
+                {/* God Pack Global Stats - UPDATED: Smaller and simpler */}
+                {activeTab === "god" && (
+                  <div className="mb-4">
+                    {/* Global Limit Display - Smaller */}
+                    <div className="bg-gradient-to-r from-red-100 to-pink-100 border border-red-200 rounded-lg p-3">
+                      <div className="text-xs font-medium text-red-800 mb-2 flex items-center gap-2">
+                        <Globe className="h-3 w-3" />
+                        Global Daily Limit
+                      </div>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="text-lg font-bold text-red-700">
+                          {godPackStats.totalOpened} / {godPackStats.globalLimit}
+                        </div>
+                        <div className="text-xs text-red-600">{godPackStats.remaining} left</div>
+                      </div>
+                      <div className="w-full bg-red-200 rounded-full h-2">
+                        <div
+                          className="bg-gradient-to-r from-red-500 to-pink-500 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${(godPackStats.totalOpened / godPackStats.globalLimit) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Pack UI */}
                 <motion.div
@@ -729,29 +911,48 @@ export default function DrawPage() {
                       <motion.div
                         className="relative w-48 h-64 mb-4"
                         animate={{
-                          rotateY: [0, 5, 0, -5, 0],
+                          rotateY: [0, 2, 0, -2, 0],
+                          ...(activeTab === "god" && {
+                            scale: [1, 1.02, 1],
+                          }),
                         }}
                         transition={{
-                          duration: 5,
+                          duration: activeTab === "god" ? 4 : 6,
                           repeat: Number.POSITIVE_INFINITY,
                           repeatType: "loop",
                         }}
                       >
                         <Image
                           src={
-                            activeTab === "legendary"
-                              ? "/anime-world-legendary-pack.jpg"
-                              : "/vibrant-purple-card-pack.jpg"
+                            activeTab === "god"
+                              ? "/god_pack.png" // NEW: God pack image
+                              : activeTab === "legendary"
+                                ? "/anime-world-legendary-pack.jpg"
+                                : "/vibrant-purple-card-pack.jpg"
                           }
                           alt="Card Pack"
                           fill
                           className="object-contain"
                         />
+                        {/* NEW: Subtle god pack glow effect */}
+                        {activeTab === "god" && (
+                          <motion.div
+                            className="absolute inset-0 bg-gradient-to-r from-pink-500/10 via-red-500/10 to-yellow-500/10 rounded-lg"
+                            animate={{
+                              opacity: [0.2, 0.4, 0.2],
+                            }}
+                            transition={{
+                              duration: 3,
+                              repeat: Number.POSITIVE_INFINITY,
+                              repeatType: "reverse",
+                            }}
+                          />
+                        )}
                       </motion.div>
 
                       <div className="text-center mb-4">
                         <h3 className="text-lg font-medium">
-                          {activeTab === "legendary" ? "Legendary" : "Regular"} Card Pack
+                          {activeTab === "god" ? "God" : activeTab === "legendary" ? "Legendary" : "Regular"} Card Pack
                         </h3>
                         <p className="text-sm text-gray-500">Contains 1 random card</p>
                         <div className="flex items-center justify-center gap-1 mt-1 text-xs text-violet-600">
@@ -759,21 +960,46 @@ export default function DrawPage() {
                           {userClanRole === "xp_hunter" || userClanRole === "leader" || hasXpPass ? (
                             <span className="flex items-center gap-1">
                               <span className="line-through text-gray-400">
-                                +{activeTab === "legendary" ? "100" : "50"} XP
+                                +{activeTab === "god" ? "200" : activeTab === "legendary" ? "100" : "50"} XP
                               </span>
                               <span className="text-violet-600 font-semibold">
-                                +{calculateXpWithBonuses(activeTab === "legendary" ? 100 : 50)} XP
+                                +
+                                {calculateXpWithBonuses(
+                                  activeTab === "god" ? 200 : activeTab === "legendary" ? 100 : 50,
+                                )}{" "}
+                                XP
                               </span>
                               {userClanRole === "xp_hunter" && <Sword className="h-3 w-3 text-orange-500" />}
                             </span>
                           ) : (
-                            <span>+{activeTab === "legendary" ? "100" : "50"} XP</span>
+                            <span>+{activeTab === "god" ? "200" : activeTab === "legendary" ? "100" : "50"} XP</span>
                           )}
                         </div>
                       </div>
 
                       <div className="w-full space-y-2 mb-4">
-                        {activeTab === "legendary" ? (
+                        {/* NEW: God pack rarity display */}
+                        {activeTab === "god" ? (
+                          <div className="border border-pink-200 rounded-lg p-3 relative bg-gradient-to-r from-pink-50 to-red-50">
+                            <div className="absolute -top-3 right-3 bg-gradient-to-r from-pink-500 to-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                              LIMITED DAILY
+                            </div>
+                            <div className="space-y-2">
+                              <div className="flex justify-between items-center text-sm">
+                                <span className="font-semibold text-pink-600">Godlike</span>
+                                <span className="text-pink-600 font-bold">1%</span>
+                              </div>
+                              <div className="flex justify-between items-center text-sm">
+                                <span>Legendary</span>
+                                <span className="text-amber-500">49%</span>
+                              </div>
+                              <div className="flex justify-between items-center text-sm">
+                                <span>Epic</span>
+                                <span className="text-purple-500">50%</span>
+                              </div>
+                            </div>
+                          </div>
+                        ) : activeTab === "legendary" ? (
                           <div className="border border-gray-200 rounded-lg p-3 relative">
                             <div className="space-y-2">
                               <div className="flex justify-between items-center text-sm">
@@ -853,8 +1079,7 @@ export default function DrawPage() {
                                   {hasPremiumPass && (
                                     <span className="text-amber-500 font-medium flex items-center gap-1">
                                       {userClanRole === "lucky_star" || userClanRole === "leader" ? "8%" : "6%"}
-                                      
-{(userClanRole === "lucky_star" || userClanRole === "leader") && (
+                                      {(userClanRole === "lucky_star" || userClanRole === "leader") && (
                                         <Star className="h-3 w-3 text-yellow-500" />
                                       )}
                                     </span>
@@ -875,87 +1100,121 @@ export default function DrawPage() {
                         )}
                       </div>
 
-                      {/* Pack Buttons - Updated with 20 packs option */}
+                      {/* Pack Buttons */}
                       <div className="w-full space-y-3">
-                        {/* First row: 1 Pack and 5 Packs */}
-                        <div className="flex gap-4">
+                        {/* NEW: God pack only has single pack option */}
+                        {activeTab === "god" ? (
                           <Button
-                            onClick={() =>
-                              !isDrawing && handleSelectPack(activeTab === "legendary" ? "legendary" : "common")
-                            }
-                            disabled={isDrawing || (activeTab === "legendary" ? legendaryTickets < 1 : tickets < 1)}
-                            className={
-                              activeTab === "legendary"
-                                ? "flex-1 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-xl py-4 shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                                : "flex-1 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-xl py-4 shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                            }
+                            onClick={() => !isDrawing && sendPayment()}
+                            disabled={isDrawing || godPackStats.remaining <= 0}
+                            className={`w-full ${
+                              godPackStats.remaining <= 0
+                                ? "bg-gray-400 cursor-not-allowed opacity-60"
+                                : "bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500 hover:from-pink-600 hover:via-red-600 hover:to-yellow-600"
+                            } text-white rounded-xl py-4 shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed`}
                           >
                             {isDrawing ? (
                               <div className="flex items-center justify-center">
                                 <div className="h-4 w-4 border-2 border-t-transparent border-white rounded-full animate-spin mr-2"></div>
                                 <span className="text-sm font-medium">Opening...</span>
                               </div>
-                            ) : (
+                            ) : godPackStats.remaining <= 0 ? (
                               <div className="flex items-center gap-2">
-                                <Ticket className="h-5 w-5" />
-                                <span className="font-bold text-base">1 Pack</span>
-                              </div>
-                            )}
-                          </Button>
-
-                          <Button
-                            onClick={() =>
-                              !isDrawing && handleSelectPack(activeTab === "legendary" ? "legendary" : "common", 5)
-                            }
-                            disabled={isDrawing || (activeTab === "legendary" ? legendaryTickets < 5 : tickets < 5)}
-                            className={
-                              isDrawing || (activeTab === "legendary" ? legendaryTickets < 5 : tickets < 5)
-                                ? "flex-1 bg-gray-300 text-gray-500 rounded-xl py-4 shadow-sm cursor-not-allowed opacity-60"
-                                : activeTab === "legendary"
-                                  ? "flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl py-4 shadow-lg hover:shadow-xl transition-all duration-200 border-2 border-blue-400"
-                                  : "flex-1 bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white rounded-xl py-4 shadow-lg hover:shadow-xl transition-all duration-200 border-2 border-orange-400"
-                            }
-                          >
-                            {isDrawing ? (
-                              <div className="flex items-center justify-center">
-                                <div className="h-4 w-4 border-2 border-t-transparent border-current rounded-full animate-spin mr-2"></div>
-                                <span className="text-sm font-medium">Opening...</span>
+                                <Zap className="h-5 w-5" />
+                                <span className="font-bold text-base">All Packs Claimed Today!</span>
                               </div>
                             ) : (
                               <div className="flex items-center gap-2">
-                                <Ticket className="h-5 w-5" />
-                                <span className="font-bold text-base">5 Packs</span>
+                                <span className="font-bold text-base">
+                                  Claim God Pack – {wldPriceDisplay} WLD (~$0.60)
+                                </span>
+
                               </div>
                             )}
                           </Button>
-                        </div>
+                        ) : (
+                          <>
+                            {/* First row: 1 Pack and 5 Packs */}
+                            <div className="flex gap-4">
+                              <Button
+                                onClick={() =>
+                                  !isDrawing && handleSelectPack(activeTab === "legendary" ? "legendary" : "common")
+                                }
+                                disabled={isDrawing || (activeTab === "legendary" ? legendaryTickets < 1 : tickets < 1)}
+                                className={
+                                  activeTab === "legendary"
+                                    ? "flex-1 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-xl py-4 shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    : "flex-1 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-xl py-4 shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                }
+                              >
+                                {isDrawing ? (
+                                  <div className="flex items-center justify-center">
+                                    <div className="h-4 w-4 border-2 border-t-transparent border-white rounded-full animate-spin mr-2"></div>
+                                    <span className="text-sm font-medium">Opening...</span>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-2">
+                                    <Ticket className="h-5 w-5" />
+                                    <span className="font-bold text-base">1 Pack</span>
+                                  </div>
+                                )}
+                              </Button>
 
-                        {/* 🔥 NEW: Second row: 20 Packs Bulk Opening */}
-                        <Button
-                          onClick={() =>
-                            !isDrawing && handleSelectPack(activeTab === "legendary" ? "legendary" : "common", 20)
-                          }
-                          disabled={isDrawing || (activeTab === "legendary" ? legendaryTickets < 20 : tickets < 20)}
-                          className={
-                            isDrawing || (activeTab === "legendary" ? legendaryTickets < 20 : tickets < 20)
-                              ? "w-full bg-gray-300 text-gray-500 rounded-xl py-4 shadow-sm cursor-not-allowed opacity-60"
-                              : activeTab === "legendary"
-                                ? "w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white rounded-xl py-4 shadow-lg hover:shadow-xl transition-all duration-200 border-2 border-purple-400"
-                                : "w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-xl py-4 shadow-lg hover:shadow-xl transition-all duration-200 border-2 border-red-400"
-                          }
-                        >
-                          {isDrawing ? (
-                            <div className="flex items-center justify-center">
-                              <div className="h-4 w-4 border-2 border-t-transparent border-white rounded-full animate-spin mr-2"></div>
-                              <span className="text-sm font-medium">Opening...</span>
+                              <Button
+                                onClick={() =>
+                                  !isDrawing && handleSelectPack(activeTab === "legendary" ? "legendary" : "common", 5)
+                                }
+                                disabled={isDrawing || (activeTab === "legendary" ? legendaryTickets < 5 : tickets < 5)}
+                                className={
+                                  isDrawing || (activeTab === "legendary" ? legendaryTickets < 5 : tickets < 5)
+                                    ? "flex-1 bg-gray-300 text-gray-500 rounded-xl py-4 shadow-sm cursor-not-allowed opacity-60"
+                                    : activeTab === "legendary"
+                                      ? "flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl py-4 shadow-lg hover:shadow-xl transition-all duration-200 border-2 border-blue-400"
+                                      : "flex-1 bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white rounded-xl py-4 shadow-lg hover:shadow-xl transition-all duration-200 border-2 border-orange-400"
+                                }
+                              >
+                                {isDrawing ? (
+                                  <div className="flex items-center justify-center">
+                                    <div className="h-4 w-4 border-2 border-t-transparent border-white rounded-full animate-spin mr-2"></div>
+                                    <span className="text-sm font-medium">Opening...</span>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-2">
+                                    <Ticket className="h-5 w-5" />
+                                    <span className="font-bold text-base">5 Packs</span>
+                                  </div>
+                                )}
+                              </Button>
                             </div>
-                          ) : (
-                            <div className="flex items-center gap-2">
-                              <Ticket className="h-5 w-5" />
-                              <span className="font-bold text-base">20 Packs (Bulk)</span>
-                            </div>
-                          )}
-                        </Button>
+
+                            {/* Second row: 20 Packs Bulk Opening */}
+                            <Button
+                              onClick={() =>
+                                !isDrawing && handleSelectPack(activeTab === "legendary" ? "legendary" : "common", 20)
+                              }
+                              disabled={isDrawing || (activeTab === "legendary" ? legendaryTickets < 20 : tickets < 20)}
+                              className={
+                                isDrawing || (activeTab === "legendary" ? legendaryTickets < 20 : tickets < 20)
+                                  ? "w-full bg-gray-300 text-gray-500 rounded-xl py-4 shadow-sm cursor-not-allowed opacity-60"
+                                  : activeTab === "legendary"
+                                    ? "w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white rounded-xl py-4 shadow-lg hover:shadow-xl transition-all duration-200 border-2 border-purple-400"
+                                    : "w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-xl py-4 shadow-lg hover:shadow-xl transition-all duration-200 border-2 border-red-400"
+                              }
+                            >
+                              {isDrawing ? (
+                                <div className="flex items-center justify-center">
+                                  <div className="h-4 w-4 border-2 border-t-transparent border-white rounded-full animate-spin mr-2"></div>
+                                  <span className="text-sm font-medium">Opening...</span>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-2">
+                                  <Ticket className="h-5 w-5" />
+                                  <span className="font-bold text-base">20 Packs (Bulk)</span>
+                                </div>
+                              )}
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -971,18 +1230,138 @@ export default function DrawPage() {
               transition={{ delay: 0.2, duration: 0.4 }}
               className="mt-4 text-center"
             >
-              <Button
-                variant="outline"
-                onClick={() => (window.location.href = "/shop")}
-                className="w-full border border-gray-300 text-gray-700 hover:bg-gray-50"
-              >
-                <Ticket className="h-4 w-4 mr-2 text-orange-500" />
-                Need more tickets? Visit the Shop
-              </Button>
+              {activeTab !== "god" && (
+                <Button
+                  variant="outline"
+                  onClick={() => (window.location.href = "/shop")}
+                  className="w-full border border-gray-300 text-gray-700 hover:bg-gray-50"
+                >
+                  <Ticket className="h-4 w-4 mr-2 text-orange-500" />
+                  Need more tickets? Visit the Shop
+                </Button>
+              )}
             </motion.div>
           )}
 
-          {/* 🔥 NEW: Bulk Results Screen */}
+          {/* NEW: Simplified God Pack Animation Screen */}
+          <AnimatePresence>
+            {showGodPackAnimation && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 flex flex-col items-center justify-center z-50"
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-pink-900/60 via-red-900/60 to-yellow-900/60" />
+
+                {/* Reduced background particles */}
+                <div className="absolute inset-0">
+                  {Array.from({ length: 15 }).map((_, i) => (
+                    <motion.div
+                      key={`god-particle-${i}`}
+                      className="absolute w-1 h-1 bg-gradient-to-r from-pink-400 to-yellow-400 rounded-full"
+                      animate={{
+                        x: [Math.random() * window.innerWidth, Math.random() * window.innerWidth],
+                        y: [Math.random() * window.innerHeight, Math.random() * window.innerHeight],
+                        scale: [0, 1, 0],
+                        opacity: [0, 0.6, 0],
+                      }}
+                      transition={{
+                        duration: 3,
+                        repeat: Number.POSITIVE_INFINITY,
+                        delay: i * 0.2,
+                        ease: "easeInOut",
+                      }}
+                    />
+                  ))}
+                </div>
+
+                <div className="relative z-10 flex flex-col items-center">
+                  <motion.div
+                    className="relative w-64 h-96 mb-8"
+                    animate={{
+                      y: [0, -10, 0],
+                      rotateZ: packOpened ? [0, -5, 5, 0] : 0,
+                      scale: packOpened ? [1, 1.1, 0.9, 1] : [1, 1.05, 1],
+                    }}
+                    transition={{
+                      y: {
+                        duration: 2,
+                        repeat: Number.POSITIVE_INFINITY,
+                        repeatType: "reverse",
+                      },
+                      rotateZ: {
+                        duration: 1,
+                      },
+                      scale: {
+                        duration: 1.5,
+                      },
+                    }}
+                  >
+                    <Image src="/god_pack.png" alt="God Pack" fill className="object-contain" />
+
+                    {/* Subtle god pack glow effects */}
+                    <motion.div
+                      className="absolute inset-0 bg-gradient-to-r from-pink-500/20 via-red-500/20 to-yellow-500/20 rounded-lg"
+                      animate={{
+                        opacity: [0.2, 0.5, 0.2],
+                      }}
+                      transition={{
+                        duration: 2,
+                        repeat: Number.POSITIVE_INFINITY,
+                        repeatType: "reverse",
+                      }}
+                    />
+                  </motion.div>
+
+                  {!packOpened && (
+                    <Button
+                      onClick={handleOpenGodPack}
+                      className="bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500 hover:from-pink-600 hover:via-red-600 hover:to-yellow-600 rounded-full w-48 py-3 text-lg font-bold shadow-2xl"
+                    >
+                      <Zap className="h-5 w-5 mr-2" />
+                      Open God Pack
+                    </Button>
+                  )}
+                </div>
+
+                {packOpened && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="absolute inset-0 pointer-events-none"
+                  >
+                    {/* Reduced explosion effect */}
+                    {Array.from({ length: 30 }).map((_, i) => (
+                      <motion.div
+                        key={`divine-explosion-${i}`}
+                        className="absolute w-2 h-2 rounded-full bg-gradient-to-r from-pink-400 via-red-400 to-yellow-400"
+                        initial={{
+                          x: "50vw",
+                          y: "50vh",
+                          scale: 0,
+                        }}
+                        animate={{
+                          x: `${Math.random() * 100}vw`,
+                          y: `${Math.random() * 100}vh`,
+                          scale: [0, 1, 0],
+                          rotate: [0, 180],
+                        }}
+                        transition={{
+                          duration: 2,
+                          delay: Math.random() * 0.3,
+                        }}
+                      />
+                    ))}
+                  </motion.div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Rest of the existing animations remain the same but with reduced timing... */}
+          {/* Bulk Results Screen */}
           <AnimatePresence>
             {showBulkResults && drawnCards.length > 0 && (
               <motion.div
@@ -991,7 +1370,6 @@ export default function DrawPage() {
                 exit={{ opacity: 0 }}
                 className="fixed inset-0 flex flex-col z-50 bg-[#f8f9ff]"
               >
-                {/* Header */}
                 <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-3">
                   <div className="flex items-center justify-between">
                     <h2 className="text-lg font-semibold">Bulk Opening Results</h2>
@@ -999,9 +1377,8 @@ export default function DrawPage() {
                   </div>
                 </div>
 
-                {/* Rarity Statistics */}
                 <div className="bg-white border-b border-gray-200 px-4 py-3">
-                  <div className="grid grid-cols-4 gap-2 text-center">
+                  <div className="grid grid-cols-5 gap-2 text-center">
                     {Object.entries(getRarityStats()).map(([rarity, count]) => (
                       <div key={rarity} className={`p-2 rounded-lg ${getRarityStyles(rarity as CardRarity).bg}`}>
                         <div className={`text-xs font-medium ${getRarityStyles(rarity as CardRarity).text}`}>
@@ -1013,17 +1390,17 @@ export default function DrawPage() {
                   </div>
                 </div>
 
-                {/* Cards List */}
                 <div className="flex-1 overflow-y-auto px-4 py-2">
-                  {/* 🔥 NEW: Continue Button under the list */}
                   <div className="px-4 py-4">
                     <Button
                       onClick={() => finishCardReview()}
                       disabled={isUpdatingScore}
                       className={
-                        activeTab === "legendary"
-                          ? "w-full bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-xl py-3 font-semibold text-lg"
-                          : "w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-xl py-3 font-semibold text-lg"
+                        activeTab === "god"
+                          ? "w-full bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500 hover:from-pink-600 hover:via-red-600 hover:to-yellow-600 text-white rounded-xl py-3 font-semibold text-lg"
+                          : activeTab === "legendary"
+                            ? "w-full bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-xl py-3 font-semibold text-lg"
+                            : "w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-xl py-3 font-semibold text-lg"
                       }
                     >
                       {isUpdatingScore ? (
@@ -1036,44 +1413,42 @@ export default function DrawPage() {
                       )}
                     </Button>
                   </div>
+
                   <div className="space-y-5">
-    {drawnCards.map((card, index) => (
-      <motion.div
-        key={`bulk-card-${index}`}
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: index * 0.04, duration: 0.35 }}
-        onClick={() => setSelectedBulkCard(card)}
-        className={`group relative p-4 rounded-2xl border bg-white/10 backdrop-blur-md shadow-md hover:shadow-xl transition-all cursor-pointer flex items-center justify-between ${getRarityStyles(card.rarity).border}`}
-      >
-        {/* Leichter Glow-Hintergrund für Rahmen */}
-        <div className="absolute inset-0 rounded-2xl pointer-events-none border border-white/20 shadow-inner shadow-white/10" />
-
-        <div className="flex flex-col z-10">
-          <h3 className="text-base font-semibold  drop-shadow-sm">{card.name}</h3>
-          <p className="text-sm">{card.character}</p>
-        </div>
-
-        <span
-          className={`z-10 px-3 py-1 rounded-full text-xs font-semibold uppercase shadow-sm backdrop-blur-sm bg-white/20 ${getRarityStyles(card.rarity).text}`}
-        >
-          {card.rarity}
-        </span>
-      </motion.div>
-    ))}
-  </div>
-                  
+                    {drawnCards.map((card, index) => (
+                      <motion.div
+                        key={`bulk-card-${index}`}
+                        initial={{ opacity: 0, y: 12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.04, duration: 0.35 }}
+                        onClick={() => setSelectedBulkCard(card)}
+                        className={`group relative p-4 rounded-2xl border bg-white/10 backdrop-blur-md shadow-md hover:shadow-xl transition-all cursor-pointer flex items-center justify-between ${getRarityStyles(card.rarity).border}`}
+                      >
+                        <div className="absolute inset-0 rounded-2xl pointer-events-none border border-white/20 shadow-inner shadow-white/10" />
+                        <div className="flex flex-col z-10">
+                          <h3 className="text-base font-semibold drop-shadow-sm">{card.name}</h3>
+                          <p className="text-sm">{card.character}</p>
+                        </div>
+                        <span
+                          className={`z-10 px-3 py-1 rounded-full text-xs font-semibold uppercase shadow-sm backdrop-blur-sm bg-white/20 ${getRarityStyles(card.rarity).text}`}
+                        >
+                          {card.rarity}
+                        </span>
+                      </motion.div>
+                    ))}
+                  </div>
                 </div>
 
-                {/* Bottom Button */}
                 <div className="sticky bottom-0 bg-white border-t border-gray-200 px-4 py-3">
                   <Button
                     onClick={() => finishCardReview()}
                     disabled={isUpdatingScore}
                     className={
-                      activeTab === "legendary"
-                        ? "w-full bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-xl py-4"
-                        : "w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-xl py-4"
+                      activeTab === "god"
+                        ? "w-full bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500 hover:from-pink-600 hover:via-red-600 hover:to-yellow-600 text-white rounded-xl py-4"
+                        : activeTab === "legendary"
+                          ? "w-full bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-xl py-4"
+                          : "w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-xl py-4"
                     }
                   >
                     {isUpdatingScore ? (
@@ -1090,7 +1465,7 @@ export default function DrawPage() {
             )}
           </AnimatePresence>
 
-          {/* 🔥 NEW: Bulk Loading Animation */}
+          {/* Bulk Loading Animation - Reduced particles */}
           <AnimatePresence>
             {showBulkLoading && (
               <motion.div
@@ -1099,58 +1474,47 @@ export default function DrawPage() {
                 exit={{ opacity: 0 }}
                 className="fixed inset-0 flex flex-col items-center justify-center z-50 bg-[#f8f9ff]"
               >
-                {/* Animated Background */}
                 <div className="absolute inset-0">
-                  {Array.from({ length: 20 }).map((_, i) => (
+                  {Array.from({ length: 10 }).map((_, i) => (
                     <motion.div
                       key={`bg-particle-${i}`}
                       className={`absolute w-2 h-2 rounded-full ${
                         activeTab === "legendary" ? "bg-blue-400/30" : "bg-orange-400/30"
                       }`}
                       animate={{
-                        x: [
-                          Math.random() * window.innerWidth,
-                          Math.random() * window.innerWidth,
-                          Math.random() * window.innerWidth,
-                        ],
-                        y: [
-                          Math.random() * window.innerHeight,
-                          Math.random() * window.innerHeight,
-                          Math.random() * window.innerHeight,
-                        ],
+                        x: [Math.random() * window.innerWidth, Math.random() * window.innerWidth],
+                        y: [Math.random() * window.innerHeight, Math.random() * window.innerHeight],
                         scale: [0, 1, 0],
-                        opacity: [0, 0.6, 0],
+                        opacity: [0, 0.4, 0],
                       }}
                       transition={{
-                        duration: 3,
-                        repeat: Infinity,
-                        delay: i * 0.1,
+                        duration: 2,
+                        repeat: Number.POSITIVE_INFINITY,
+                        delay: i * 0.2,
                         ease: "easeInOut",
                       }}
                     />
                   ))}
                 </div>
 
-                {/* Main Loading Content */}
                 <div className="relative z-10 flex flex-col items-center">
-                  {/* Animated Pack Icons */}
                   <div className="relative mb-16">
-                    {Array.from({ length: 5 }).map((_, i) => (
+                    {Array.from({ length: 3 }).map((_, i) => (
                       <motion.div
                         key={`pack-${i}`}
                         className="absolute w-16 h-20"
                         style={{
-                          left: `${i * 20 - 40}px`,
-                          top: `${Math.sin(i) * 10}px`,
+                          left: `${i * 20 - 20}px`,
+                          top: `${Math.sin(i) * 5}px`,
                         }}
                         animate={{
-                          y: [0, -20, 0],
-                          rotateZ: [0, 5, -5, 0],
-                          scale: [1, 1.1, 1],
+                          y: [0, -10, 0],
+                          rotateZ: [0, 3, -3, 0],
+                          scale: [1, 1.05, 1],
                         }}
                         transition={{
-                          duration: 2,
-                          repeat: Infinity,
+                          duration: 1.5,
+                          repeat: Number.POSITIVE_INFINITY,
                           delay: i * 0.2,
                           ease: "easeInOut",
                         }}
@@ -1169,15 +1533,14 @@ export default function DrawPage() {
                     ))}
                   </div>
 
-                  {/* Loading Text */}
                   <motion.div
                     className="text-center mb-6"
                     animate={{
-                      scale: [1, 1.05, 1],
+                      scale: [1, 1.02, 1],
                     }}
                     transition={{
-                      duration: 2,
-                      repeat: Infinity,
+                      duration: 1.5,
+                      repeat: Number.POSITIVE_INFINITY,
                       ease: "easeInOut",
                     }}
                   >
@@ -1185,7 +1548,6 @@ export default function DrawPage() {
                     <p className="text-gray-600">Preparing your cards</p>
                   </motion.div>
 
-                  {/* Animated Progress Indicator */}
                   <div className="w-64 h-2 bg-gray-200 rounded-full overflow-hidden mb-4">
                     <motion.div
                       className={`h-full rounded-full ${
@@ -1197,49 +1559,22 @@ export default function DrawPage() {
                         x: ["-100%", "100%"],
                       }}
                       transition={{
-                        duration: 1.5,
-                        repeat: Infinity,
+                        duration: 1.2,
+                        repeat: Number.POSITIVE_INFINITY,
                         ease: "easeInOut",
                       }}
                     />
                   </div>
-
-                  {/* Spinning Cards Animation */}
-                  <div className="relative">
-                    {Array.from({ length: 8 }).map((_, i) => (
-                      <motion.div
-                        key={`spinning-card-${i}`}
-                        className={`absolute w-8 h-12 rounded border-2 ${
-                          getRarityStyles(["common", "rare", "epic", "legendary"][i % 4] as CardRarity).border
-                        } ${getRarityStyles(["common", "rare", "epic", "legendary"][i % 4] as CardRarity).bg}`}
-                        style={{
-                          left: `${Math.cos((i * Math.PI * 2) / 8) * 40}px`,
-                          top: `${Math.sin((i * Math.PI * 2) / 8) * 40}px`,
-                        }}
-                        animate={{
-                          rotateY: [0, 360],
-                          scale: [0.8, 1.2, 0.8],
-                        }}
-                        transition={{
-                          duration: 2,
-                          repeat: Infinity,
-                          delay: i * 0.1,
-                          ease: "linear",
-                        }}
-                      />
-                    ))}
-                  </div>
                 </div>
 
-                {/* Bottom Hint */}
                 <motion.div
                   className="absolute bottom-8 text-center text-gray-500 text-sm"
                   animate={{
                     opacity: [0.5, 1, 0.5],
                   }}
                   transition={{
-                    duration: 2,
-                    repeat: Infinity,
+                    duration: 1.5,
+                    repeat: Number.POSITIVE_INFINITY,
                     ease: "easeInOut",
                   }}
                 >
@@ -1249,7 +1584,7 @@ export default function DrawPage() {
             )}
           </AnimatePresence>
 
-          {/* 🔥 UPDATED: Bulk Card Detail Modal with Tilt Effect */}
+          {/* Bulk Card Detail Modal with Tilt Effect */}
           <AnimatePresence>
             {selectedBulkCard && (
               <motion.div
@@ -1260,7 +1595,6 @@ export default function DrawPage() {
                 onClick={() => setSelectedBulkCard(null)}
               >
                 <div className="relative">
-                  {/* Close Button */}
                   <button
                     onClick={() => setSelectedBulkCard(null)}
                     className="absolute -top-4 -right-4 z-20 bg-white/90 hover:bg-white text-gray-800 p-2 rounded-full shadow-lg transition-colors"
@@ -1268,7 +1602,6 @@ export default function DrawPage() {
                     <X className="h-5 w-5" />
                   </button>
 
-                  {/* Tiltable Card */}
                   <motion.div
                     className="w-80 h-[30rem] preserve-3d cursor-pointer touch-none"
                     initial={{ scale: 0.9, opacity: 0 }}
@@ -1312,7 +1645,6 @@ export default function DrawPage() {
                         transformStyle: "preserve-3d",
                       }}
                     >
-                      {/* Full art image takes up the entire card */}
                       <div className="absolute inset-0 w-full h-full">
                         <Image
                           src={selectedBulkCard.image_url || "/placeholder.svg?height=480&width=320"}
@@ -1325,22 +1657,18 @@ export default function DrawPage() {
                         />
                       </div>
 
-                      {/* Dynamic light reflection effect */}
                       <motion.div
                         className="absolute inset-0 mix-blend-overlay"
                         style={{
-                          background:
-                            "radial-gradient(circle at 50% 50%, rgba(255,255,255,0.8) 0%, transparent 50%)",
+                          background: "radial-gradient(circle at 50% 50%, rgba(255,255,255,0.8) 0%, transparent 50%)",
                           backgroundPosition: `${reflectionX}% ${reflectionY}%`,
                           opacity: Math.max(
                             0.1,
-                            reflectionOpacity.get() *
-                              (Math.abs(rotateX.get() / 15) + Math.abs(rotateY.get() / 15)),
+                            reflectionOpacity.get() * (Math.abs(rotateX.get() / 15) + Math.abs(rotateY.get() / 15)),
                           ),
                         }}
                       />
 
-                      {/* Holographic overlay effect based on tilt */}
                       <motion.div
                         className="absolute inset-0 pointer-events-none"
                         style={{
@@ -1352,9 +1680,7 @@ export default function DrawPage() {
                         }}
                       />
 
-                      {/* Card Content Overlays */}
                       <div className="absolute inset-0 flex flex-col justify-between">
-                        {/* Top section with name */}
                         <div className="pt-1 pl-1">
                           <div className="bg-gradient-to-r from-black/70 via-black/50 to-transparent px-2 py-1 rounded-lg max-w-[85%] backdrop-blur-sm inline-block">
                             <h3 className="font-bold text-white text-lg drop-shadow-md anime-text">
@@ -1363,7 +1689,6 @@ export default function DrawPage() {
                           </div>
                         </div>
 
-                        {/* Bottom section with rarity */}
                         <div className="pb-1 pr-1 flex justify-end">
                           <div className="bg-gradient-to-l from-black/70 via-black/50 to-transparent px-2 py-1 rounded-lg flex items-center gap-1 backdrop-blur-sm">
                             <span className="text-white text-sm font-semibold anime-text">
@@ -1373,14 +1698,19 @@ export default function DrawPage() {
                         </div>
                       </div>
 
-                      {/* Special effects für legendary und epic cards */}
-                      {(selectedBulkCard.rarity === "legendary" || selectedBulkCard.rarity === "epic") && (
+                      {(selectedBulkCard.rarity === "legendary" ||
+                        selectedBulkCard.rarity === "epic" ||
+                        selectedBulkCard.rarity === "godlike") && (
                         <motion.div
                           className={`absolute inset-0 pointer-events-none mix-blend-overlay rounded-xl ${
-                            selectedBulkCard.rarity === "legendary" ? "bg-yellow-300" : "bg-purple-300"
+                            selectedBulkCard.rarity === "godlike"
+                              ? "bg-pink-300"
+                              : selectedBulkCard.rarity === "legendary"
+                                ? "bg-yellow-300"
+                                : "bg-purple-300"
                           }`}
                           animate={{
-                            opacity: [0.1, 0.3, 0.1],
+                            opacity: [0.1, 0.2, 0.1],
                           }}
                           transition={{
                             duration: 2,
@@ -1390,8 +1720,7 @@ export default function DrawPage() {
                         />
                       )}
 
-                      {/* Shine effect - nur für legendary cards */}
-                      {selectedBulkCard.rarity === "legendary" && (
+                      {(selectedBulkCard.rarity === "legendary" || selectedBulkCard.rarity === "godlike") && (
                         <motion.div
                           className="absolute inset-0 pointer-events-none"
                           style={{
@@ -1410,7 +1739,6 @@ export default function DrawPage() {
             )}
           </AnimatePresence>
 
-          {/* Rest of the existing animations and components remain the same... */}
           {/* Pack Animation Screen */}
           <AnimatePresence>
             {showPackAnimation && (
@@ -1425,21 +1753,21 @@ export default function DrawPage() {
                   <motion.div
                     className="relative w-64 h-96 mb-8"
                     animate={{
-                      y: [0, -15, 0, -15, 0],
-                      rotateZ: packOpened ? [0, -5, 5, -3, 0] : 0,
-                      scale: packOpened ? [1, 1.1, 0.9, 1.05, 0] : 1,
+                      y: [0, -10, 0],
+                      rotateZ: packOpened ? [0, -3, 3, 0] : 0,
+                      scale: packOpened ? [1, 1.05, 0.95, 1] : 1,
                     }}
                     transition={{
                       y: {
-                        duration: 3,
+                        duration: 2,
                         repeat: Number.POSITIVE_INFINITY,
                         repeatType: "reverse",
                       },
                       rotateZ: {
-                        duration: 1.2,
+                        duration: 1,
                       },
                       scale: {
-                        duration: 2,
+                        duration: 1.5,
                       },
                     }}
                   >
@@ -1456,10 +1784,10 @@ export default function DrawPage() {
                       <motion.div
                         className="absolute inset-0 bg-white opacity-0 rounded-lg"
                         animate={{
-                          opacity: [0, 0.2, 0],
+                          opacity: [0, 0.1, 0],
                         }}
                         transition={{
-                          duration: 2,
+                          duration: 1.5,
                           repeat: Number.POSITIVE_INFINITY,
                         }}
                       />
@@ -1487,7 +1815,7 @@ export default function DrawPage() {
                     exit={{ opacity: 0 }}
                     className="absolute inset-0 pointer-events-none"
                   >
-                    {Array.from({ length: 50 }).map((_, i) => (
+                    {Array.from({ length: 25 }).map((_, i) => (
                       <motion.div
                         key={i}
                         className={`absolute w-2 h-2 rounded-full ${
@@ -1504,8 +1832,8 @@ export default function DrawPage() {
                           scale: [0, 1, 0],
                         }}
                         transition={{
-                          duration: 2.5,
-                          delay: Math.random() * 0.5,
+                          duration: 2,
+                          delay: Math.random() * 0.3,
                         }}
                       />
                     ))}
@@ -1515,7 +1843,7 @@ export default function DrawPage() {
             )}
           </AnimatePresence>
 
-          {/* Rarity Text Animation */}
+          {/* Rarity Text Animation - Simplified */}
           <AnimatePresence>
             {showRarityText && drawnCards.length > 0 && (
               <motion.div
@@ -1525,18 +1853,16 @@ export default function DrawPage() {
                 className="fixed inset-0 flex flex-col items-center justify-center z-50"
               >
                 <div className="absolute inset-0 bg-black opacity-80" />
-
                 {isMultiDraw ? (
                   <div className="relative z-20 flex flex-col items-center justify-center gap-4 h-[60vh]">
                     {drawnCards.map((card, index) => {
                       const slideFromLeft = index % 2 === 0
-
                       return (
                         <motion.div
                           key={`rarity-${index}`}
                           className="pointer-events-none"
                           initial={{
-                            x: slideFromLeft ? "-100vw" : "100vw",
+                            x: slideFromLeft ? "-50vw" : "50vw",
                             opacity: 0,
                           }}
                           animate={{
@@ -1545,21 +1871,22 @@ export default function DrawPage() {
                           }}
                           transition={{
                             type: "spring",
-                            stiffness: 260,
+                            stiffness: 200,
                             damping: 20,
-                            mass: 0.8,
-                            delay: index * 0.15,
+                            delay: index * 0.1,
                           }}
                         >
                           <div
-                            className={`text-4xl font-bold anime-text ${
-                              card?.rarity === "legendary"
-                                ? "text-yellow-400"
-                                : card?.rarity === "epic"
-                                  ? "text-purple-400"
-                                  : card?.rarity === "rare"
-                                    ? "text-blue-400"
-                                    : "text-gray-400"
+                            className={`text-3xl font-bold anime-text ${
+                              card?.rarity === "godlike"
+                                ? "text-pink-400"
+                                : card?.rarity === "legendary"
+                                  ? "text-yellow-400"
+                                  : card?.rarity === "epic"
+                                    ? "text-purple-400"
+                                    : card?.rarity === "rare"
+                                      ? "text-blue-400"
+                                      : "text-gray-400"
                             }`}
                           >
                             {card?.rarity?.toUpperCase()}
@@ -1576,24 +1903,26 @@ export default function DrawPage() {
                       opacity: 0,
                     }}
                     animate={{
-                      scale: [0, 3, 2, 1],
+                      scale: [0, 2, 1.5, 1],
                       opacity: [0, 1, 1, 0],
-                      y: [0, 0, -50, -100],
+                      y: [0, 0, -30, -60],
                     }}
                     transition={{
-                      duration: 2,
+                      duration: 1.5,
                       times: [0, 0.3, 0.7, 1],
                     }}
                   >
                     <div
-                      className={`text-5xl font-bold anime-text ${
-                        drawnCards[0]?.rarity === "legendary"
-                          ? "text-yellow-400"
-                          : drawnCards[0]?.rarity === "epic"
-                            ? "text-purple-400"
-                            : drawnCards[0]?.rarity === "rare"
-                              ? "text-blue-400"
-                              : "text-gray-400"
+                      className={`text-4xl font-bold anime-text ${
+                        drawnCards[0]?.rarity === "godlike"
+                          ? "text-pink-400"
+                          : drawnCards[0]?.rarity === "legendary"
+                            ? "text-yellow-400"
+                            : drawnCards[0]?.rarity === "epic"
+                              ? "text-purple-400"
+                              : drawnCards[0]?.rarity === "rare"
+                                ? "text-blue-400"
+                                : "text-gray-400"
                       }`}
                     >
                       {drawnCards[0]?.rarity?.toUpperCase()}
@@ -1614,7 +1943,6 @@ export default function DrawPage() {
                 className="fixed inset-0 flex flex-col items-center justify-center z-50"
               >
                 <div className="absolute inset-0 bg-black opacity-80" />
-
                 <div className="relative z-10 flex flex-col items-center">
                   {isMultiDraw ? (
                     <div className="flex gap-1 mb-8 overflow-x-auto max-w-full px-2 h-[60vh]">
@@ -1625,13 +1953,13 @@ export default function DrawPage() {
                             key={`multi-card-${index}`}
                             onClick={() => setSelectedCardIndex(index)}
                             className={`flex-shrink-0 w-16 h-full rounded-xl overflow-hidden border-4 relative ${rarityStyles.border}`}
-                            initial={{ opacity: 0, y: -100 }}
+                            initial={{ opacity: 0, y: -50 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{
-                              delay: index * 0.2,
-                              duration: 0.5,
+                              delay: index * 0.15,
+                              duration: 0.4,
                               type: "spring",
-                              stiffness: 260,
+                              stiffness: 200,
                               damping: 20,
                             }}
                           >
@@ -1646,9 +1974,7 @@ export default function DrawPage() {
                                 }}
                               />
                             </div>
-
                             <div className={`absolute inset-0 bg-gradient-to-t ${rarityStyles.gradient} opacity-60`} />
-
                             <div className="absolute inset-0 flex flex-col justify-end p-1">
                               <div className="bg-black/70 backdrop-blur-sm rounded px-1 py-0.5 flex items-center justify-center">
                                 <span className={`text-xs font-bold anime-text ${rarityStyles.text}`}>
@@ -1656,14 +1982,19 @@ export default function DrawPage() {
                                 </span>
                               </div>
                             </div>
-
-                            {(card?.rarity === "legendary" || card?.rarity === "epic") && (
+                            {(card?.rarity === "legendary" ||
+                              card?.rarity === "epic" ||
+                              card?.rarity === "godlike") && (
                               <motion.div
                                 className={`absolute inset-0 pointer-events-none mix-blend-overlay rounded-xl ${
-                                  card?.rarity === "legendary" ? "bg-yellow-300" : "bg-purple-300"
+                                  card?.rarity === "godlike"
+                                    ? "bg-pink-300"
+                                    : card?.rarity === "legendary"
+                                      ? "bg-yellow-300"
+                                      : "bg-purple-300"
                                 }`}
                                 animate={{
-                                  opacity: [0.1, 0.3, 0.1],
+                                  opacity: [0.1, 0.2, 0.1],
                                 }}
                                 transition={{
                                   duration: 2,
@@ -1672,23 +2003,22 @@ export default function DrawPage() {
                                 }}
                               />
                             )}
-
-                            {card?.rarity === "legendary" && (
+                            {(card?.rarity === "legendary" || card?.rarity === "godlike") && (
                               <motion.div
                                 className="absolute inset-0 pointer-events-none"
                                 style={{
                                   background:
-                                    "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.6) 50%, transparent 100%)",
+                                    "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%)",
                                   backgroundSize: "200% 100%",
                                 }}
                                 animate={{
                                   backgroundPosition: ["-200% 0%", "200% 0%"],
                                 }}
                                 transition={{
-                                  duration: 3,
+                                  duration: 2,
                                   repeat: Number.POSITIVE_INFINITY,
                                   repeatType: "loop",
-                                  delay: index * 0.2,
+                                  delay: index * 0.1,
                                 }}
                               />
                             )}
@@ -1708,7 +2038,7 @@ export default function DrawPage() {
                             type: "spring",
                             stiffness: 70,
                             damping: 15,
-                            duration: 1.5,
+                            duration: 1.2,
                           }}
                           onMouseMove={handleCardMove}
                           onMouseLeave={handleCardLeave}
@@ -1739,7 +2069,6 @@ export default function DrawPage() {
                                 }}
                               />
                             </div>
-
                             <motion.div
                               className="absolute inset-0 mix-blend-overlay"
                               style={{
@@ -1753,7 +2082,6 @@ export default function DrawPage() {
                                 ),
                               }}
                             />
-
                             <motion.div
                               className="absolute inset-0 pointer-events-none"
                               style={{
@@ -1764,7 +2092,6 @@ export default function DrawPage() {
                                 opacity: Math.abs(rotateX.get() / 30) + Math.abs(rotateY.get() / 30),
                               }}
                             />
-
                             <div className="absolute inset-0 flex flex-col justify-between">
                               <div className="pt-1 pl-1">
                                 <div className="bg-gradient-to-r from-black/70 via-black/50 to-transparent px-2 py-1 rounded-lg max-w-[85%] backdrop-blur-sm inline-block">
@@ -1773,7 +2100,6 @@ export default function DrawPage() {
                                   </h3>
                                 </div>
                               </div>
-
                               <div className="pb-1 pr-1 flex justify-end">
                                 <div className="bg-gradient-to-l from-black/70 via-black/50 to-transparent px-2 py-1 rounded-lg flex items-center gap-1 backdrop-blur-sm">
                                   <span className="text-white text-sm font-semibold anime-text">
@@ -1782,14 +2108,19 @@ export default function DrawPage() {
                                 </div>
                               </div>
                             </div>
-
-                            {(getCurrentCard()?.rarity === "legendary" || getCurrentCard()?.rarity === "epic") && (
+                            {(getCurrentCard()?.rarity === "legendary" ||
+                              getCurrentCard()?.rarity === "epic" ||
+                              getCurrentCard()?.rarity === "godlike") && (
                               <motion.div
                                 className={`absolute inset-0 pointer-events-none mix-blend-overlay rounded-xl ${
-                                  getCurrentCard()?.rarity === "legendary" ? "bg-yellow-300" : "bg-purple-300"
+                                  getCurrentCard()?.rarity === "godlike"
+                                    ? "bg-pink-300"
+                                    : getCurrentCard()?.rarity === "legendary"
+                                      ? "bg-yellow-300"
+                                      : "bg-purple-300"
                                 }`}
                                 animate={{
-                                  opacity: [0.1, 0.3, 0.1],
+                                  opacity: [0.1, 0.2, 0.1],
                                 }}
                                 transition={{
                                   duration: 2,
@@ -1798,8 +2129,7 @@ export default function DrawPage() {
                                 }}
                               />
                             )}
-
-                            {getCurrentCard()?.rarity === "legendary" && (
+                            {(getCurrentCard()?.rarity === "legendary" || getCurrentCard()?.rarity === "godlike") && (
                               <motion.div
                                 className="absolute inset-0 pointer-events-none"
                                 style={{
@@ -1812,7 +2142,6 @@ export default function DrawPage() {
                               />
                             )}
                           </motion.div>
-
                           <div className="absolute w-full h-full backface-hidden rotateY-180 rounded-xl bg-gradient-to-b from-blue-800 to-purple-900 border-4 border-yellow-500 flex items-center justify-center">
                             <div className="text-white text-center">
                               <h3 className="font-bold text-2xl anime-text">ANIME WORLD</h3>
@@ -1822,14 +2151,15 @@ export default function DrawPage() {
                       </div>
                     )
                   )}
-
                   <Button
                     onClick={() => finishCardReview()}
                     disabled={isUpdatingScore}
                     className={
-                      activeTab === "legendary"
-                        ? "bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 px-8 rounded-full"
-                        : "bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 px-8 rounded-full"
+                      activeTab === "god"
+                        ? "bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500 hover:from-pink-600 hover:via-red-600 hover:to-yellow-600 px-8 rounded-full"
+                        : activeTab === "legendary"
+                          ? "bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 px-8 rounded-full"
+                          : "bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 px-8 rounded-full"
                     }
                     size="lg"
                   >
@@ -1842,7 +2172,6 @@ export default function DrawPage() {
                       `Add ${isMultiDraw ? "Cards" : "Card"} to Collection`
                     )}
                   </Button>
-
                   {selectedCardIndex !== null && (
                     <motion.div
                       className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 px-4"
@@ -1866,7 +2195,6 @@ export default function DrawPage() {
                             className="object-cover object-center rounded-xl"
                           />
                         </motion.div>
-
                         <button
                           onClick={() => setSelectedCardIndex(null)}
                           className="absolute top-2 right-2 bg-white/90 hover:bg-white text-gray-800 px-3 py-1 rounded-full text-sm font-medium shadow"
@@ -1881,7 +2209,7 @@ export default function DrawPage() {
             )}
           </AnimatePresence>
 
-          {/* XP Gain Animation */}
+          {/* XP Gain Animation - Simplified */}
           <AnimatePresence>
             {showXpAnimation && (
               <motion.div
@@ -1894,11 +2222,11 @@ export default function DrawPage() {
                   className="bg-white rounded-xl p-6 shadow-lg flex flex-col items-center gap-2 border-2 border-violet-300"
                   initial={{ scale: 0, opacity: 0 }}
                   animate={{
-                    scale: [0, 1.2, 1],
+                    scale: [0, 1.1, 1],
                     opacity: [0, 1, 1, 0],
                   }}
                   transition={{
-                    duration: 1,
+                    duration: 0.8,
                     times: [0, 0.3, 0.5, 1],
                   }}
                 >
@@ -1907,14 +2235,13 @@ export default function DrawPage() {
                     <Star className="h-8 w-8 text-violet-500" />
                   </div>
                 </motion.div>
-
-                {Array.from({ length: 20 }).map((_, i) => (
+                {Array.from({ length: 10 }).map((_, i) => (
                   <motion.div
                     key={`particle-${i}`}
                     className="absolute rounded-full bg-violet-500"
                     style={{
-                      width: Math.random() * 6 + 2,
-                      height: Math.random() * 6 + 2,
+                      width: Math.random() * 4 + 2,
+                      height: Math.random() * 4 + 2,
                     }}
                     initial={{
                       x: "50%",
@@ -1924,11 +2251,11 @@ export default function DrawPage() {
                     animate={{
                       x: `${Math.random() * 100}%`,
                       y: `${Math.random() * 100}%`,
-                      opacity: [0, 0.8, 0],
+                      opacity: [0, 0.6, 0],
                     }}
                     transition={{
-                      duration: 0.8,
-                      delay: Math.random() * 0.2,
+                      duration: 0.6,
+                      delay: Math.random() * 0.1,
                     }}
                   />
                 ))}
@@ -1936,7 +2263,7 @@ export default function DrawPage() {
             )}
           </AnimatePresence>
 
-          {/* Level Up Animation */}
+          {/* Level Up Animation - Simplified */}
           <AnimatePresence>
             {showLevelUpAnimation && (
               <motion.div
@@ -1950,18 +2277,18 @@ export default function DrawPage() {
                   className="relative z-10 bg-white rounded-xl p-6 shadow-lg flex flex-col items-center gap-4 border-2 border-amber-400"
                   initial={{ scale: 0, opacity: 0 }}
                   animate={{
-                    scale: [0, 1.2, 1],
+                    scale: [0, 1.1, 1],
                     opacity: 1,
                   }}
                   transition={{
-                    duration: 0.5,
+                    duration: 0.4,
                     times: [0, 0.7, 1],
                   }}
                 >
                   <motion.div
                     initial={{ scale: 0.8, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
-                    transition={{ delay: 0.3, duration: 0.5 }}
+                    transition={{ delay: 0.2, duration: 0.3 }}
                   >
                     <div className="w-20 h-20 rounded-full bg-gradient-to-r from-amber-400 to-amber-600 flex items-center justify-center mb-2">
                       <Star className="h-10 w-10 text-white" />
@@ -1970,17 +2297,16 @@ export default function DrawPage() {
                   <motion.div
                     initial={{ y: 20, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
-                    transition={{ delay: 0.5, duration: 0.5 }}
+                    transition={{ delay: 0.3, duration: 0.3 }}
                   >
                     <h2 className="text-2xl font-bold text-center">Level Up!</h2>
                     <p className="text-lg font-medium text-center text-amber-600">You reached Level {newLevel}!</p>
                     <p className="text-sm text-center text-gray-600 mt-1">+100 Leaderboard Points</p>
                   </motion.div>
-
                   <motion.div
                     initial={{ y: 20, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
-                    transition={{ delay: 0.9, duration: 0.5 }}
+                    transition={{ delay: 0.5, duration: 0.3 }}
                     className="mt-4"
                   >
                     <Button
@@ -1994,8 +2320,7 @@ export default function DrawPage() {
                     </Button>
                   </motion.div>
                 </motion.div>
-
-                {Array.from({ length: 30 }).map((_, i) => (
+                {Array.from({ length: 15 }).map((_, i) => (
                   <motion.div
                     key={i}
                     className="absolute w-2 h-2 rounded-full bg-amber-400"
@@ -2010,8 +2335,8 @@ export default function DrawPage() {
                       opacity: [0, 1, 0],
                     }}
                     transition={{
-                      duration: 2,
-                      delay: Math.random() * 0.5,
+                      duration: 1.5,
+                      delay: Math.random() * 0.3,
                       ease: "easeOut",
                     }}
                   />
@@ -2020,7 +2345,6 @@ export default function DrawPage() {
             )}
           </AnimatePresence>
         </main>
-
         <MobileNav />
       </div>
     </ProtectedRoute>

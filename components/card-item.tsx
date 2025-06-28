@@ -182,12 +182,24 @@ const handleCardClick = () => {
       >
         <div className="relative aspect-[3/4] w-full overflow-hidden">
           <div className={`w-full h-full relative rounded-xl ${isCollection || hideOverlay ? "" : rarityStyle.border}`}>
+            {cardImageUrl?.match(/\.(mp4|webm|ogg)$/i) ? (
+            <video
+              src={cardImageUrl}
+              className="w-full h-full object-cover"
+              autoPlay
+              muted
+              loop
+              playsInline
+            />
+          ) : (
             <img
               src={cardImageUrl}
               alt="Card"
               className="w-full h-full object-cover"
               loading={forceEager ? "eager" : "lazy"}
             />
+          )}
+
 
 
 

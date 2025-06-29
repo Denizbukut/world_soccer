@@ -131,6 +131,7 @@ export default function DrawPage() {
   const [selectedEpoch, setSelectedEpoch] = useState<number>(1)
   const [availableEpochs, setAvailableEpochs] = useState<number[]>([1])
   const [godPacksLeft, setGodPacksLeft] = useState<number | null>(null)
+  const max_godpacks_daily = 100;
 
   const fetchGodPacksLeft = async () => {
   const supabase = getSupabaseBrowserClient()
@@ -807,10 +808,10 @@ export default function DrawPage() {
                   </button>
                   {/* UPDATED: Changed God Pack Tab to red gradient */}
                   <button
-  onClick={() => godPacksLeft !== null && godPacksLeft < 50 && setActiveTab("god")}
-  disabled={godPacksLeft === null || godPacksLeft >= 50}
+  onClick={() => godPacksLeft !== null && godPacksLeft < max_godpacks_daily && setActiveTab("god")}
+  disabled={godPacksLeft === null || godPacksLeft >= max_godpacks_daily}
   className={`flex-1 py-3 px-4 text-center font-medium transition-all ${
-    godPacksLeft !== null && godPacksLeft >= 50
+    godPacksLeft !== null && godPacksLeft >= max_godpacks_daily
       ? "bg-gray-100 text-gray-400 cursor-not-allowed"
       : activeTab === "god"
         ? "bg-gradient-to-r from-red-500 to-red-600 text-white"
@@ -831,7 +832,7 @@ export default function DrawPage() {
       : "bg-red-50 text-red-600 border border-red-200"
   }`}>
     ⚡ God Packs opened today:{" "}
-    <span className="font-bold">{godPacksLeft}</span> / 50
+    <span className="font-bold">{godPacksLeft}</span> / {max_godpacks_daily}
   </div>
 )}
 
@@ -1033,7 +1034,7 @@ export default function DrawPage() {
                           // UPDATED: God Pack Payment Button to red gradient
                           <Button
                             onClick={sendPayment}
-                            disabled={godPacksLeft === null || godPacksLeft >= 50}
+                            disabled={godPacksLeft === null || godPacksLeft >= max_godpacks_daily}
                             className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl py-4 shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             {isDrawing ? (

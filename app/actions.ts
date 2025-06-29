@@ -37,6 +37,8 @@ interface XpPass {
   expires_at: string
 }
 
+const max_godpacks_daily = 100;
+
 
 // Create a server-side Supabase client
 function createSupabaseServer() {
@@ -776,7 +778,7 @@ export async function drawGodPacks(username: string, count = 1) {
       .single()
 
     const alreadyOpened = usageData?.packs_opened || 0
-    const remaining = 50 - alreadyOpened
+    const remaining = max_godpacks_daily - alreadyOpened
 
     if (remaining <= 0) {
       return { success: false, error: "Daily God Pack limit reached" }
@@ -847,7 +849,7 @@ export async function drawGodPacks(username: string, count = 1) {
     if (usageData) {
       await supabase
         .from("god_pack_daily_usage")
-        .update({ packs_opened: Math.min(alreadyOpened + drawCount, 50), updated_at: new Date().toISOString() })
+        .update({ packs_opened: Math.min(alreadyOpened + drawCount, max_godpacks_daily), updated_at: new Date().toISOString() })
         .eq("id", usageData.id)
     } else {
       await supabase.from("god_pack_daily_usage").insert({
@@ -914,7 +916,7 @@ export async function drawGodPacks(username: string, count = 1) {
       scoreAdded: cardScore,
       xpGained: xpAmount,
       godPacksUsedToday: alreadyOpened + drawCount,
-      remainingToday: 50 - (alreadyOpened + drawCount),
+      remainingToday: max_godpacks_daily - (alreadyOpened + drawCount),
     }
   } catch (error) {
     console.error("Error in drawGodPacks:", error)

@@ -219,6 +219,16 @@ export default function ShopPage() {
         : qualifiesForLeaderDiscount
         ? " (10% Leader discount applied!)"
         : ""
+      
+        // Log the purchase
+await supabase.from("ticket_purchases").insert({
+  username: user.username,
+  ticket_type: ticketType,
+  amount: ticketAmount,
+  price_usd: getDiscountedPrice(packageId.startsWith("reg") ? regularPackages.find(p => p.id === packageId)?.price ?? 0 : legendaryPackages.find(p => p.id === packageId)?.price ?? 0),
+  price_wld: price ? (getDiscountedPrice(packageId.startsWith("reg") ? regularPackages.find(p => p.id === packageId)?.price ?? 0 : legendaryPackages.find(p => p.id === packageId)?.price ?? 0) / price).toFixed(3) : null,
+  discounted: getDiscountedPrice(packageId.startsWith("reg") ? regularPackages.find(p => p.id === packageId)?.price ?? 0 : legendaryPackages.find(p => p.id === packageId)?.price ?? 0) < (packageId.startsWith("reg") ? regularPackages.find(p => p.id === packageId)?.price ?? 0 : legendaryPackages.find(p => p.id === packageId)?.price ?? 0),
+})
 
       toast({
         title: "Purchase Successful!",

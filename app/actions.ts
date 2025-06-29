@@ -7,6 +7,8 @@ import { incrementMission } from "@/app/actions/missions"
 // Card rarity types - UPDATED: Added "godlike"
 type CardRarity = "common" | "rare" | "epic" | "legendary" | "godlike"
 
+
+
 // Define types for our data
 type UserCard = {
   id: string
@@ -179,7 +181,12 @@ function getScoreForRarity(rarity: CardRarity): number {
   }
 }
 
-export async function drawCards(username: string, packType: string, count = 1) {
+export async function drawCards(
+  username: string,
+  packType: string,
+  count = 1
+) {
+  console.log("packtype: ", packType)
   try {
     const supabase = createSupabaseServer()
 
@@ -236,47 +243,57 @@ export async function drawCards(username: string, packType: string, count = 1) {
         clanLevel = clanData.level
       }
     }
+    // Check if user has enough tickets
+const isLegendary = packType === "legendary"
+const ticketField = isLegendary ? "legendary_tickets" : "tickets"
+const currentTickets = userData[ticketField] || 0
 
-    // NEW: God pack doesn't require tickets
-    if (packType !== "god") {
-      // Check if user has enough tickets
-      const isLegendary = packType === "legendary"
-      const ticketField = isLegendary ? "legendary_tickets" : "tickets"
-      const currentTickets = userData[ticketField] || 0
-
-      if (currentTickets < count) {
-        return {
-          success: false,
-          error: `Not enough ${isLegendary ? "legendary " : ""}tickets`,
-        }
-      }
-
-      // Deduct tickets
-      const newTicketCount = currentTickets - count
-
-      // Prepare update data
-      const updateData: Record<string, any> = {}
-      if (isLegendary) {
-        updateData.legendary_tickets = newTicketCount
-      } else {
-        updateData.tickets = newTicketCount
-      }
-
-      // Update user tickets in database
-      const { error: updateError } = await supabase.from("users").update(updateData).eq("username", username)
-
-      if (updateError) {
-        console.error("Error updating tickets:", updateError)
-        return { success: false, error: "Failed to update tickets" }
-      }
+if (packType !== "god") {
+  if (currentTickets < count) {
+    return {
+      success: false,
+      error: `Not enough ${isLegendary ? "legendary " : ""}tickets`,
     }
+  }
+
+  // Deduct tickets
+  const newTicketCount = currentTickets - count
+
+  // Prepare update data
+  const updateData: Record<string, any> = {}
+  if (isLegendary) {
+    updateData.legendary_tickets = newTicketCount
+  } else {
+    updateData.tickets = newTicketCount
+  }
+
+  // Update user tickets in database
+  const { error: updateError } = await supabase
+    .from("users")
+    .update(updateData)
+    .eq("username", username)
+
+  if (updateError) {
+    console.error("Error updating tickets:", updateError)
+    return { success: false, error: "Failed to update tickets" }
+  }
+}
+
+
 
     // Get available cards from database
-    const { data: availableCards, error: cardsError } = await supabase
-      .from("cards")
-      .select("*")
-      .eq("obtainable", true)
-      .eq("epoch", 2)
+    let availableCardsQuery = supabase
+  .from("cards")
+  .select("*")
+  .eq("obtainable", true)
+  .eq("epoch", 2)
+
+if (packType !== "god") {
+  availableCardsQuery = availableCardsQuery.neq("rarity", "godlike")
+}
+
+const { data: availableCards, error: cardsError } = await availableCardsQuery
+
 
     if (cardsError || !availableCards || availableCards.length === 0) {
       console.error("Error fetching available cards:", cardsError)
@@ -396,10 +413,6 @@ export async function drawCards(username: string, packType: string, count = 1) {
         await incrementMission(username, "draw_legendary_card")
       }
 
-      // NEW: Mission tracking for godlike cards
-      if (selectedCard.rarity === "godlike") {
-        await incrementMission(username, "draw_godlike_card")
-      }
 
       // Calculate score for this card
       const cardPoints = getScoreForRarity(selectedCard.rarity)
@@ -513,10 +526,6 @@ export async function drawCards(username: string, packType: string, count = 1) {
     // Calculate XP with clan bonuses - UPDATED: God pack gives more XP
     let xpAmount = packType === "god" ? 200 * count : packType === "legendary" ? 100 * count : 50 * count
 
-    // Special case for jiraiya user
-    if (username === "jiraiya") {
-      xpAmount = 10 * count
-    }
 
     // XP Hunter bonus: +5% XP from packs
     if (userClanRole === "xp_hunter") {
@@ -615,6 +624,15 @@ export async function drawCards(username: string, packType: string, count = 1) {
     if (updatedUserError) {
       console.error("Error fetching updated user data:", updatedUserError)
     }
+
+    console.log("[drawCards] Return data:", {
+  drawnCards,
+  newTicketCount: packType === "god" ? userData.tickets : updatedUser?.tickets || userData.tickets,
+  newLegendaryTicketCount:
+    packType === "god" ? userData.legendary_tickets : updatedUser?.legendary_tickets || userData.legendary_tickets,
+  scoreAdded: totalScoreToAdd,
+})
+
 
     return {
       success: true,

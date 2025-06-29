@@ -278,7 +278,16 @@ export default function SellCardDialog({ isOpen, onClose, card, username, onSucc
               {/* Card Preview */}
               <div className="flex gap-4 items-center">
                 <div className={`relative w-20 h-28 overflow-hidden rounded-lg border-2 ${rarityStyle.border}`}>
-                  <Image
+                  {card.image_url?.endsWith(".mp4") ? (
+                    <video
+                            autoPlay
+                            muted
+                            loop
+                            playsInline
+                            className="absolute inset-0 w-full h-full object-cover"
+                            src={card?.image_url}
+                          />
+                  ) : ( <Image
                     src={
                       card?.image_url ||
                       `/placeholder.svg?height=400&width=300&query=${encodeURIComponent(card?.character || "anime character")}`
@@ -286,7 +295,8 @@ export default function SellCardDialog({ isOpen, onClose, card, username, onSucc
                     alt={card?.name || "Card"}
                     fill
                     className="object-cover"
-                  />
+                  />)}
+                 
                   <div className="absolute bottom-0 left-0 right-0 flex justify-center">
                     {renderStars(card?.level || 1, "xs")}
                   </div>

@@ -1164,12 +1164,22 @@ export default function TradePage() {
               <div className="space-y-4">
                 <div className="flex gap-4 items-center">
                   <div className="relative w-20 h-28 overflow-hidden rounded-lg">
-                    <img
+                    {selectedListing.card.image_url?.endsWith(".mp4") ? (
+                      <video
+                            autoPlay
+                            muted
+                            loop
+                            playsInline
+                            className="absolute inset-0 w-full h-full object-cover"
+                            src={getCloudflareImageUrl(selectedListing.card.image_url)}
+                          />
+                    ) : (<img
                       src={getCloudflareImageUrl(selectedListing.card.image_url) || "/placeholder.svg"}
                       alt="Card"
                       loading="lazy"
                       className="w-full h-full object-cover"
-                    />
+                    />)}
+                    
                     <div className="absolute bottom-0 left-0 right-0 flex justify-center">
                       {renderStars(selectedListing.card_level, "xs")}
                     </div>
@@ -1381,12 +1391,22 @@ function MarketplaceCard({
             className={`relative w-16 h-24 rounded-lg overflow-hidden border-2 ${rarityStyle.border} cursor-pointer`}
             onClick={onShowDetails}
           >
-            <img
+            {listing.card.image_url?.endsWith(".mp4") ? (
+              <video
+                            autoPlay
+                            muted
+                            loop
+                            playsInline
+                            className="absolute inset-0 w-full h-full object-cover"
+                            src={listing.card.image_url}
+                          />
+            ) : (<img
               src={getCloudflareImageUrl(listing.card.image_url) || "/placeholder.svg"}
               alt="Card"
               loading="lazy"
               className="w-full h-full object-cover"
-            />
+            />)}
+            
             <div className="absolute bottom-0 left-0 right-0 flex justify-center">
               {renderStars(listing.card_level, "xs")}
             </div>
@@ -1507,12 +1527,22 @@ function MyListingCard({
         <div className="flex gap-3">
           {/* Card Image */}
           <div className={`relative w-16 h-24 rounded-lg overflow-hidden border-2 ${rarityStyle.border}`}>
-            <img
+            {listing.card.image_url?.endsWith(".mp4")? (
+              <video
+                            autoPlay
+                            muted
+                            loop
+                            playsInline
+                            className="absolute inset-0 w-full h-full object-cover"
+                            src={listing.card.image_url}
+                          />
+            ) : (<img
               src={getCloudflareImageUrl(listing.card.image_url) || "/placeholder.svg"}
               alt="Card"
               loading="lazy"
               className="w-full h-full object-cover"
-            />
+            />)}
+            
             <div className="absolute bottom-0 left-0 right-0 flex justify-center">
               {renderStars(listing.card_level, "xs")}
             </div>
@@ -1632,12 +1662,22 @@ function TransactionCard({ transaction }: { transaction: Transaction }) {
         <div className="flex gap-3">
           {/* Card Image */}
           <div className={`relative w-16 h-24 rounded-lg overflow-hidden border-2 ${rarityStyle.border}`}>
-            <img
+            {transaction.card.image_url?.endsWith(".mp4") ? (
+              <video
+                            autoPlay
+                            muted
+                            loop
+                            playsInline
+                            className="absolute inset-0 w-full h-full object-cover"
+                            src={transaction.card.image_url}
+                          />
+            ) : (<img
               src={getCloudflareImageUrl(transaction.card.image_url) || "/placeholder.svg"}
               alt="Card"
               loading="lazy"
               className="w-full h-full object-cover"
-            />
+            />)}
+            
             <div className="absolute bottom-0 left-0 right-0 flex justify-center">
               {renderStars(transaction.card_level, "xs")}
             </div>
@@ -1758,12 +1798,22 @@ function RecentSaleCard({ sale }: { sale: RecentSale }) {
         <div className="flex gap-3">
           {/* Card Image */}
           <div className={`relative w-16 h-24 rounded-lg overflow-hidden border-2 ${rarityStyle.border}`}>
-            <img
+            { sale.card.image_url?.endsWith(".mp4") ? (
+              <video
+                            autoPlay
+                            muted
+                            loop
+                            playsInline
+                            className="absolute inset-0 w-full h-full object-cover"
+                            src={sale.card.image_url}
+                          />
+            ) : (<img
               src={getCloudflareImageUrl(sale.card.image_url) || "/placeholder.svg"}
               alt="Card"
               loading="lazy"
               className="w-full h-full object-cover"
-            />
+            />)}
+            
             <div className="absolute bottom-0 left-0 right-0 flex justify-center">
               {renderStars(sale.card_level, "xs")}
             </div>

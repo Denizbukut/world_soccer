@@ -23,7 +23,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <body className={inter.className}>
           <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
             <AppProvider><WldPriceProvider>{children}</WldPriceProvider></AppProvider>
-          </ThemeProvider> 
+          </ThemeProvider>
         </body>
       </MiniKitProvider>
     </html>

@@ -6,7 +6,7 @@ export async function GET() {
   const weekStart = "2025-06-25"
 
   try {
-    // Nur die Top 20 abrufen
+    // Top 20 Weekly
     const { data, error } = await supabase
       .from("weekly_contest_entries")
       .select("user_id, legendary_count")

@@ -1,6 +1,6 @@
 // ✅ app/api/draw/route.ts → korrekt für App Router
 import { NextResponse } from "next/server"
-import { drawCards } from "@/app/actions"
+import { drawCards, drawGodPacks } from "@/app/actions"
 
 export async function POST(req: Request) {
   try {
@@ -10,8 +10,14 @@ export async function POST(req: Request) {
     if (!username || !cardType) {
       return NextResponse.json({ error: "Missing parameters" }, { status: 400 })
     }
-
-    const result = await drawCards(username, cardType, count)
+    let result = {}
+    if(cardType !== "god") {
+      result = await drawCards(username, cardType, count) 
+    }
+    else {
+      result = await drawGodPacks(username, count)
+    }
+    
 
     return NextResponse.json(result)
   } catch (error) {

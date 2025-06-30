@@ -148,7 +148,8 @@ export default function DrawPage() {
   0,
 )
 
-    setGodPacksLeft(totalOpened) // ✅ HIER: NICHT 50 - totalOpened
+    setGodPacksLeft(Math.min(totalOpened, max_godpacks_daily))
+
   } else {
     console.error("Error fetching god pack usage:", error)
     setGodPacksLeft(null)

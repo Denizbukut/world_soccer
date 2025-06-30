@@ -302,25 +302,30 @@ export async function drawCards(username: string, packType: string, count = 1) {
 
       if (isLegendary) {
         // Legendary pack rarity distribution
-        let legendaryChance = 10
+        let legendaryChance = 15
 
         // Lucky Star bonus: +2% legendary chance
         if (userClanRole === "lucky_star" || userClanRole === "leader") {
           legendaryChance += 2
         }
 
-        if (random < 10) {
-          rarity = "common"
-          cardPool = commonCards
-        } else if (random < 50) {
-          rarity = "rare"
-          cardPool = rareCards
-        } else if (random < 92 + (legendaryChance - 10)) {
-          rarity = "epic"
-          cardPool = epicCards
+         // Calculate thresholds
+        const commonThreshold = 10;              // 0–9 → 10%
+        const rareThreshold = 50;                // 10–49 → 40%
+        const epicThreshold = 100 - legendaryChance; // 50–(85 or 83) → Remaining for epic
+
+        if (random < commonThreshold) {
+          rarity = "common";
+          cardPool = commonCards;
+        } else if (random < rareThreshold) {
+          rarity = "rare";
+          cardPool = rareCards;
+        } else if (random < epicThreshold) {
+          rarity = "epic";
+          cardPool = epicCards;
         } else {
-          rarity = "legendary"
-          cardPool = legendaryCards
+          rarity = "legendary";
+          cardPool = legendaryCards;
         }
       } else if (hasPremium) {
         // Premium user regular pack with Lucky Star bonus

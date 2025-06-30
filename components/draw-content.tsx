@@ -929,32 +929,35 @@ export default function DrawPage() {
                           </div>
                         ) : activeTab === "legendary" ? (
                           <div className="border border-gray-200 rounded-lg p-3 relative">
-                            <div className="space-y-2">
-                              <div className="flex justify-between items-center text-sm">
-                                <span>Common</span>
-                                <span className="text-gray-500">10%</span>
-                              </div>
-                              <div className="flex justify-between items-center text-sm">
-                                <span>Rare</span>
-                                <span className="text-blue-500">35%</span>
-                              </div>
-                              <div className="flex justify-between items-center text-sm">
-                                <span>Epic</span>
-                                <span className="text-purple-500">45%</span>
-                              </div>
-                              <div className="flex justify-between items-center text-sm">
-                                <span>Legendary</span>
-                                <div className="flex items-center gap-1">
-                                  <span className="text-amber-500">
-                                    {userClanRole === "lucky_star" || userClanRole === "leader" ? "12%" : "10%"}
-                                  </span>
-                                  {(userClanRole === "lucky_star" || userClanRole === "leader") && (
-                                    <Star className="h-3 w-3 text-yellow-500" />
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
+  <div className="space-y-2">
+    <div className="flex justify-between items-center text-sm">
+      <span>Common</span>
+      <span className="text-gray-500">10%</span>
+    </div>
+    <div className="flex justify-between items-center text-sm">
+      <span>Rare</span>
+      <span className="text-blue-500">40%</span>
+    </div>
+    <div className="flex justify-between items-center text-sm">
+      <span>Epic</span>
+      <span className="text-purple-500">
+        {userClanRole === "lucky_star" || userClanRole === "leader" ? "33%" : "35%"}
+      </span>
+    </div>
+    <div className="flex justify-between items-center text-sm">
+      <span>Legendary</span>
+      <div className="flex items-center gap-1">
+        <span className="text-amber-500">
+          {userClanRole === "lucky_star" || userClanRole === "leader" ? "17%" : "15%"}
+        </span>
+        {(userClanRole === "lucky_star" || userClanRole === "leader") && (
+          <Star className="h-3 w-3 text-yellow-500" />
+        )}
+      </div>
+    </div>
+  </div>
+</div>
+
                         ) : (
                           <div className="border border-gray-200 rounded-lg p-3 relative">
                             {hasPremiumPass && (

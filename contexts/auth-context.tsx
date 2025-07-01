@@ -137,10 +137,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setLoading(false)
     return
   }
-  const isHumanVerified = document.cookie
-  .split("; ")
-  .find((row) => row.startsWith("human_verified="))
-  ?.split("=")[1] === "true"
+  const isHumanVerified = localStorage.getItem("isVerifiedAsHuman") === "true"
+
 
 if (!isHumanVerified) {
   console.log("Human verification missing – skipping auto login")

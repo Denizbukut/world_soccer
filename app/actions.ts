@@ -815,13 +815,35 @@ export async function drawGodPacks(username: string, count = 1) {
     const drawnCards = []
     let totalScoreToAdd = 0
 
+    // Dynamische Wahrscheinlichkeiten je 10 Godpacks → +0.25% godlike, -0.25% epic
+    const godlikeBase = 1
+    const legendaryBase = 48
+    const epicBase = 51
+
+    const godlikeBonus = Math.floor(alreadyOpened / 10) * 0.25
+    const epicPenalty = godlikeBonus // genau gegenläufig
+
+    let godlikeChance = godlikeBase + godlikeBonus
+    let epicChance = epicBase - epicPenalty
+    let legendaryChance = 100 - godlikeChance - epicChance
+
+    // Sicherheitsgrenzen
+    if (epicChance < 0) {
+      epicChance = 0
+      legendaryChance = 100 - godlikeChance
+    }
+
     for (let i = 0; i < drawCount; i++) {
-      const random = Math.random() * 100
+      const rand = Math.random() * 100
       let pool: any[] = []
 
-      if (random < 1) pool = godlike
-      else if (random < 49) pool = legendary
-      else pool = epic
+      if (rand < godlikeChance) {
+        pool = godlike
+      } else if (rand < godlikeChance + legendaryChance) {
+        pool = legendary
+      } else {
+        pool = epic
+      }
 
       // Falls leer, fallback auf alle Karten
       if (!pool || pool.length === 0) pool = cards ?? []

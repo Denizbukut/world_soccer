@@ -7,6 +7,12 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { Inter } from "next/font/google"
 import { AppProvider } from "@/contexts/auth-context"
 import { WldPriceProvider } from "@/contexts/WldPriceContext"
+import { Poppins } from "next/font/google"
+
+const poppins = Poppins({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"], // optional je nach Bedarf
+})
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -20,10 +26,10 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en">
       <MiniKitProvider>
-        <body className={inter.className}>
+        <body className={poppins.className}>
           <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
             <AppProvider><WldPriceProvider>{children}</WldPriceProvider></AppProvider>
-          </ThemeProvider>
+          </ThemeProvider><ErudaLoader></ErudaLoader>
         </body>
       </MiniKitProvider>
     </html>

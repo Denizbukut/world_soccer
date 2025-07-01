@@ -4,17 +4,20 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
 import { motion } from "framer-motion"
-import { MiniKit } from "@worldcoin/minikit-js"
 import { createClient } from "@supabase/supabase-js"
 import Image from "next/image"
 import { Globe } from "lucide-react"
 import { Input } from "@/components/ui/input"
-import { useSearchParams } from "next/navigation"
 import { useEffect } from "react"
+import { MiniKit, type VerifyCommandInput, VerificationLevel, type ISuccessResult } from "@worldcoin/minikit-js"
+
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [referralWarning, setReferralWarning] = useState<string | null>(null)
+  const [isVerified, setIsVerified] = useState(false)
+  const [showWalletNotice, setShowWalletNotice] = useState(false)
+
 
   const [error, setError] = useState<string | null>(null)
   const [referralCode, setReferralCode] = useState("")
@@ -27,9 +30,82 @@ export default function LoginPage() {
     if (ref) setReferralCode(ref)
   }
 }, [])
+useEffect(() => {
+  if (isVerified) {
+    setShowWalletNotice(true)
+
+    signInWithWallet()
+
+  }
+}, [isVerified])
 
 
+const verifyPayload: VerifyCommandInput = {
+    action: "login", // This is your action ID from the Developer Portal
+    verification_level: VerificationLevel.Orb, // Orb | Device
+  }
 
+
+  const handleWorldIDLogin = async () => {
+    setIsLoading(true)
+
+    try {
+      if (!MiniKit.isInstalled()) {
+        console.log("Minikit not installed")
+        alert("World App is not installed. Please install it to continue.")
+        setIsLoading(false)
+        return
+      }
+
+      // World App will open a drawer prompting the user to confirm the operation
+      const { finalPayload } = await MiniKit.commandsAsync.verify(verifyPayload)
+
+      if (finalPayload.status === "error") {
+        console.log("Error payload", finalPayload)
+        setIsLoading(false)
+        return
+      }
+
+      // Verify the proof in the backend
+      const verifyResponse = await fetch("/api/verify", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          payload: finalPayload as ISuccessResult,
+          action: "login",
+        }),
+      })
+
+      const verifyResponseJson = await verifyResponse.json()
+
+      if (verifyResponseJson.status === 200) {
+        console.log("Verification success!")
+
+        // Store the user ID in localStorage for use across the app
+        localStorage.setItem("isVerifiedAsHuman", "true")
+        localStorage.setItem("worldId_userId", verifyResponseJson.userId)
+
+
+        setIsVerified(true)
+      } else {
+        console.log("Verification failed:", verifyResponseJson.error)
+        alert("Verification failed. Please try again.")
+      }
+    } catch (error) {
+      console.error("Login error:", error)
+      alert("An error occurred during login. Please try again.")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+  // Entferne evtl. alte Tokens, um neue Verifikation zu erzwingen
+  localStorage.removeItem("worldId_userId")
+  localStorage.removeItem("animeworld_user")
+}, [])
 
 
   const signInWithWallet = async () => {
@@ -148,7 +224,7 @@ export default function LoginPage() {
 
         if (loginResult.success) {
           // Navigate to home page
-          router.push("/")
+          if(isVerified) router.push("/")
           return true
         } else {
           setError(loginResult.error || "Login failed. Please try again.")
@@ -169,6 +245,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen relative flex items-end justify-center">
+      
       {/* Full screen background image using Next.js Image component for better optimization */}
       <Image
         src="/aw_login_bg.png"
@@ -189,33 +266,67 @@ export default function LoginPage() {
         className="mb-20 w-full max-w-xs px-4 z-10"
       >
         {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">{error}</div>}
-        <Input
-          placeholder="Referral code (optional)"
-          value={referralCode}
-          onChange={(e) => setReferralCode(e.target.value)}
-          className="mb-4"
-        />
+        <div className="mb-6">
+  <label htmlFor="referral" className="block text-sm font-medium text-gray-700 mb-1">
+    
+  </label>
+  <div className="relative">
+    <input
+      id="referral"
+      type="text"
+      placeholder="Enter referral code (optional)"
+      value={referralCode}
+      onChange={(e) => setReferralCode(e.target.value)}
+      className="w-full rounded-xl border border-gray-300 bg-white py-3 px-4 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition duration-200"
+    />
+    <div className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-gray-400">
+      #
+    </div>
+  </div>
+</div>
+
         {referralWarning && (
   <div className="bg-yellow-50 border border-yellow-300 text-yellow-800 px-3 py-2 rounded mb-3 text-sm">
     {referralWarning}
   </div>
 )}
 
-        <button
-          onClick={signInWithWallet}
-          style= {{ backgroundColor: "#2E5283"}}
-          className="w-full  text-white border border-black font-medium py-4 rounded-xl mb-6 hover:from-black hover:to-gray-800 transition-all duration-300 flex items-center justify-center gap-2 shadow-md"
+                {!isVerified ? (
+          <button
+  className="w-full bg-white text-black font-medium py-4 rounded-xl mb-6 hover:bg-gray-100 transition-all duration-300 flex items-center justify-center gap-2 shadow-md border border-gray-300"
+  onClick={handleWorldIDLogin}
+  disabled={isLoading}
+>
+  <Globe className="text-black" size={20} />
+  {isLoading ? (
+    <div className="flex items-center">
+      <div className="h-4 w-4 border-2 border-black border-t-transparent rounded-full animate-spin mr-2"></div>
+      Connecting...
+    </div>
+  ) : (
+    "Login with WorldID"
+  )}
+</button>
+
+
+        ) : (
+          <button
+            onClick={signInWithWallet}
+            style={{ backgroundColor: "#2E5283" }}
+            className="w-full text-white border border-black font-medium py-4 rounded-xl mb-6 hover:from-black hover:to-gray-800 transition-all duration-300 flex items-center justify-center gap-2 shadow-md"
             disabled={isLoading}
-        >
-          {isLoading ? (
-            "Connecting..."
-          ) : (
-            <>
-              <Globe className="text-white" size={20} />
-              Connect with World ID
-            </>
-          )}
-        </button>
+          >
+            {isLoading ? (
+              "Connecting..."
+            ) : (
+              <>
+                <Globe className="text-white" size={20} />
+                Connect Wallet
+              </>
+            )}
+          </button>
+        )}
+
       </motion.div>
     </div>
   )

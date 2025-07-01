@@ -2,27 +2,23 @@ import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
 export function middleware(request: NextRequest) {
-  // Get the pathname
   const path = request.nextUrl.pathname
 
-  // Define public paths that don't require authentication
+  // Nur Login-Page abfangen
   const isPublicPath = path === "/login"
 
-  // Check if user is logged in (based on localStorage in the client, but we can't access that here)
-  // Instead, we'll check for a specific cookie that would be set during login
+  // Prüfen, ob Cookies gesetzt sind
   const isLoggedIn = request.cookies.has("animeworld_auth")
+  const isHumanVerified = request.cookies.get("human_verified")?.value === "true"
 
-  // Redirect logic
-  if (isPublicPath && isLoggedIn) {
-    // If user is on a public path but is logged in, redirect to home
+  if (isPublicPath && isLoggedIn && isHumanVerified) {
+    // Wenn eingeloggt und verifiziert, Login-Page blockieren
     return NextResponse.redirect(new URL("/", request.url))
   }
 
-  // For all other cases, continue
   return NextResponse.next()
 }
 
-// Configure which paths the middleware runs on
 export const config = {
   matcher: ["/login"],
 }

@@ -116,12 +116,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const checkExistingAuth = async () => {
       // Check for World ID in localStorage
+      /*
       const worldIdUserId = localStorage.getItem("worldId_userId")
 
       if (worldIdUserId) {
         // If World ID exists, use it to log in
         await login(worldIdUserId)
-      }
+      }*/
 
       setLoading(false)
     }
@@ -129,6 +130,24 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     // Check for user in localStorage
     const checkUser = async () => {
       try {
+        const isVerifiedAsHuman = localStorage.getItem("isVerifiedAsHuman")
+
+  if (isVerifiedAsHuman !== "true") {
+    console.log("User is NOT verified as human → skipping auto-login")
+    setLoading(false)
+    return
+  }
+  const isHumanVerified = document.cookie
+  .split("; ")
+  .find((row) => row.startsWith("human_verified="))
+  ?.split("=")[1] === "true"
+
+if (!isHumanVerified) {
+  console.log("Human verification missing – skipping auto login")
+  setLoading(false)
+  return
+}
+
         console.log("Checking for user in localStorage...")
         const storedUser = localStorage.getItem("animeworld_user")
         console.log("Stored user:", storedUser)

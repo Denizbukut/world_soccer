@@ -310,6 +310,7 @@ const [copied, setCopied] = useState(false)
   // Fetch user's clan info
   useEffect(() => {
     if (user?.username && !hasCheckedClan.current) {
+      console.log(user)
       hasCheckedClan.current = true
 
       const fetchClanInfo = async () => {

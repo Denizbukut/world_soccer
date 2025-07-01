@@ -272,7 +272,7 @@ export async function drawCards(username: string, packType: string, count = 1) {
       .from("cards")
       .select("*")
       .eq("obtainable", true)
-      .eq("epoch", 2)
+      .eq("epoch", 1)
 
     if (cardsError || !availableCards || availableCards.length === 0) {
       console.error("Error fetching available cards:", cardsError)

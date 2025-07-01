@@ -773,6 +773,16 @@ export async function drawGodPacks(username: string, count = 1) {
       userClanRole = memberData?.role || null
     }
 
+    // Give 3 Legendary Tickets
+    const newLegendaryTicketCount = (Number(userData.legendary_tickets) || 0) + 3
+    //  Speichere neuen Wert in DB
+    const { error: updateError } = await supabase
+      .from("users")
+      .update({ legendary_tickets: newLegendaryTicketCount })
+      .eq("username", username)
+
+    if (updateError) throw new Error("Could not update legendary tickets")
+
     // Check daily God Pack limit
     const today = new Date().toISOString().split("T")[0]
     const { data: usageData } = await supabase

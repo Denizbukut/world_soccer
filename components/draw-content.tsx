@@ -948,7 +948,12 @@ const [showInfo, setShowInfo] = useState(false)
                                 <span className="text-red-500 font-bold">{godPackChances.godlike}%</span>
                               </div>
                             </div>
+                            <div className="mt-2 text-sm text-blue-600 font-medium flex items-center justify-center gap-1">
+    <Ticket className="h-4 w-4 text-blue-500" />
+    Get +3 free Legendary Tickets 
+  </div>
                           </div>
+                          
                         ) : activeTab === "legendary" ? (
                           <div className="border border-gray-200 rounded-lg p-3 relative">
   <div className="space-y-2">

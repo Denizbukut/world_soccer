@@ -941,7 +941,7 @@ const [godPackChances, setGodPackChances] = useState<{ godlike: number; epic: nu
                               </div>
                               <div className="flex justify-between items-center text-sm">
                                 <span className="font-bold text-red-600">Godlike</span>
-                                <span className="text-red-500 font-bold">{godPackChances.godlike}</span>
+                                <span className="text-red-500 font-bold">{godPackChances.godlike}%</span>
                               </div>
                             </div>
                           </div>

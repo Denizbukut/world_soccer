@@ -132,29 +132,31 @@ export default function DrawPage() {
   const [availableEpochs, setAvailableEpochs] = useState<number[]>([1])
   const [godPacksLeft, setGodPacksLeft] = useState<number | null>(null)
   const max_godpacks_daily = 100;
+const [godPackChances, setGodPackChances] = useState<{ godlike: number; epic: number }>({ godlike: 1, epic: 49 })
 
   const fetchGodPacksLeft = async () => {
-  const supabase = getSupabaseBrowserClient()
-  const today = new Date().toISOString().split("T")[0]
-  if (!supabase) return
-  const { data, error } = await supabase
-    .from("god_pack_daily_usage")
-    .select("packs_opened")
-    .eq("usage_date", today)
+    const supabase = getSupabaseBrowserClient()
+    const today = new Date().toISOString().split("T")[0]
+    if (!supabase) return
+    const { data, error } = await supabase
+      .from("god_pack_daily_usage")
+      .select("packs_opened")
+      .eq("usage_date", today)
 
-  if (!error && data) {
-    const totalOpened = (data as { packs_opened: number }[]).reduce(
-  (sum, row) => sum + row.packs_opened,
-  0,
-)
+    if (!error && data) {
+      const totalOpened = (data as { packs_opened: number }[]).reduce(
+        (sum, row) => sum + row.packs_opened,
+        0,
+      )
 
-    setGodPacksLeft(Math.min(totalOpened, max_godpacks_daily))
-
-  } else {
-    console.error("Error fetching god pack usage:", error)
-    setGodPacksLeft(null)
+      setGodPacksLeft(Math.min(totalOpened, max_godpacks_daily))
+      const chances = calculateDynamicGodPackChances(totalOpened)
+      setGodPackChances(chances)
+    } else {
+      console.error("Error fetching god pack usage:", error)
+      setGodPacksLeft(null)
+    }
   }
-}
 
   // Bulk opening states
   const [selectedBulkCard, setSelectedBulkCard] = useState<any | null>(null)
@@ -694,6 +696,21 @@ export default function DrawPage() {
 
     return finalXp
   }
+  const calculateDynamicGodPackChances = (opened: number) => {
+  const baseGodlike = 1
+  const baseEpic = 49
+
+  const bonusSteps = Math.floor(opened / 10)
+  const bonusGodlike = bonusSteps * 0.25
+  const newGodlike = Math.min(baseGodlike + bonusGodlike, 5) // Optional: max 5%
+  const newEpic = Math.max(baseEpic - bonusGodlike, 40)      // Optional: min 40%
+
+  return {
+    godlike: Number(newGodlike.toFixed(2)),
+    epic: Number(newEpic.toFixed(2)),
+  }
+}
+
 
   const getRarityStats = () => {
     const stats = {
@@ -909,7 +926,7 @@ export default function DrawPage() {
                             <div className="space-y-2">
                               <div className="flex justify-between items-center text-sm">
                                 <span>Epic</span>
-                                <span className="text-purple-500">49%</span>
+                                <span className="text-purple-500">{godPackChances.epic}%</span>
                               </div>
                               <div className="flex justify-between items-center text-sm">
                                 <span>Legendary</span>
@@ -924,7 +941,7 @@ export default function DrawPage() {
                               </div>
                               <div className="flex justify-between items-center text-sm">
                                 <span className="font-bold text-red-600">Godlike</span>
-                                <span className="text-red-500 font-bold">1%</span>
+                                <span className="text-red-500 font-bold">{godPackChances.godlike}</span>
                               </div>
                             </div>
                           </div>

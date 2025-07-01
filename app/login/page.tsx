@@ -247,17 +247,7 @@ const verifyPayload: VerifyCommandInput = {
     <div className="min-h-screen relative flex items-end justify-center">
       
       {/* Full screen background image using Next.js Image component for better optimization */}
-      <Image
-        src="/aw_login_bg.png"
-        alt="Anime World Background"
-        fill
-        priority
-        className="object-cover"
-        sizes="100vw"
-        style={{
-          zIndex: -1,
-        }}
-      />
+      
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}

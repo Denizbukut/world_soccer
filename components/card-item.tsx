@@ -15,10 +15,10 @@ const getCloudflareImageUrl = (imageId?: string) => {
   if (!imageId) return "/placeholder.svg"
 
   // Entfernt führenden Slash und "anime-images/" Prefix
-  const cleaned = imageId.replace(/^\/?anime-images\//, "")
+  const cleaned = imageId.replace(/^\/?world-soccer\//, "")
   console.log(cleaned)
 
-  return `https://ani-labs.xyz/${cleaned}`
+  return `https://pub-e74caca70ffd49459342dd56ea2b67c9.r2.dev/${cleaned}`
 }
 
 

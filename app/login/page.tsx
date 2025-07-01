@@ -141,8 +141,8 @@ const verifyPayload: VerifyCommandInput = {
         try {
           // Create Supabase client
           const supabase = createClient(
-            "https://facmifesfgnihtiruqxl.supabase.co",
-            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhY21pZmVzZmduaWh0aXJ1cXhsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NTg3Mjk2NywiZXhwIjoyMDYxNDQ4OTY3fQ.__CwDGKM2hcP3B7sEpKve8zIdSDyGiQrnaYRSSVQsy0",
+            "https://jrfevsjtghhnefoditrn.supabase.co",
+            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpyZmV2c2p0Z2hobmVmb2RpdHJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTEzODg2MjgsImV4cCI6MjA2Njk2NDYyOH0.O2yaqEdZ-UMwvwn326qc6M9Kc2Qb9uF_K8_PbI9Dh_g",
           )
 
           // Check if user exists

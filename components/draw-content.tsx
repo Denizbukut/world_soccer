@@ -17,6 +17,8 @@ import { getSupabaseBrowserClient } from "@/lib/supabase"
 import { incrementClanMission } from "@/app/actions/clan-missions"
 import { MiniKit, Tokens, type PayCommandInput, tokenToDecimals } from "@worldcoin/minikit-js"
 import { useWldPrice } from "@/contexts/WldPriceContext"
+import { Info } from "lucide-react"
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 
 
 // Rarität definieren - UPDATED: Added godlike
@@ -133,7 +135,7 @@ export default function DrawPage() {
   const [godPacksLeft, setGodPacksLeft] = useState<number | null>(null)
   const max_godpacks_daily = 100;
 const [godPackChances, setGodPackChances] = useState<{ godlike: number; epic: number }>({ godlike: 1, epic: 49 })
-
+const [showInfo, setShowInfo] = useState(false)
   const fetchGodPacksLeft = async () => {
     const supabase = getSupabaseBrowserClient()
     const today = new Date().toISOString().split("T")[0]
@@ -940,7 +942,9 @@ const [godPackChances, setGodPackChances] = useState<{ godlike: number; epic: nu
                                 </div>
                               </div>
                               <div className="flex justify-between items-center text-sm">
+                        
                                 <span className="font-bold text-red-600">Godlike</span>
+                         
                                 <span className="text-red-500 font-bold">{godPackChances.godlike}%</span>
                               </div>
                             </div>

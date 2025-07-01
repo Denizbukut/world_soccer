@@ -1577,6 +1577,7 @@ export default function ModernClanPage() {
             <ul className="text-sm text-gray-700 space-y-2 pl-1 pt-2">
               <li>• +1 XP per Regular Pack</li>
               <li>• +2 XP per Legendary Pack</li>
+              <li>• +5 XP per God Pack</li>
             </ul>
             <DialogFooter className="mt-4">
               <Button onClick={() => setShowXpGuide(false)}>Close</Button>

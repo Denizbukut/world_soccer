@@ -231,6 +231,7 @@ if (!isHumanVerified) {
         has_premium: newUserData.has_premium,
         score: newUserData.score, // Score in die Datenbank einfügen
       })
+      
 
       if (error) {
         console.error("Error creating new user in database:", error)

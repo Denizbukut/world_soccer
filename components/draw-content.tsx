@@ -886,7 +886,7 @@ const [showInfo, setShowInfo] = useState(false)
                               ? "/god_pack.png"
                               : activeTab === "legendary"
                                 ? "/anime-world-legendary-pack.jpg"
-                                : "/vibrant-purple-card-pack.jpg"
+                                : "/icon_pack_echt.png"
                           }
                           alt="Card Pack"
                           fill
@@ -1371,7 +1371,7 @@ const [showInfo, setShowInfo] = useState(false)
                               ? "/god_pack.png"
                               : activeTab === "legendary"
                                 ? "/anime-world-legendary-pack.jpg"
-                                : "/vibrant-purple-card-pack.jpg"
+                                : "/icon_pack_echt.png"
                           }
                           alt="Card Pack"
                           fill
@@ -1678,7 +1678,7 @@ const [showInfo, setShowInfo] = useState(false)
                           ? "/god_pack.png"
                           : activeTab === "legendary"
                             ? "/anime-world-legendary-pack.jpg"
-                            : "/vibrant-purple-card-pack.jpg"
+                            : "/icon_pack_echt.png"
                       }
                       alt="Card Pack"
                       fill

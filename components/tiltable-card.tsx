@@ -78,7 +78,7 @@ export default function TiltableCard({
   const cleaned = imageId.replace(/^\/?anime-images\//, "")
   console.log(cleaned)
 
-  return `https://ani-labs.xyz/${cleaned}`
+  return `https://pub-e74caca70ffd49459342dd56ea2b67c9.r2.dev/${cleaned}`
 }
 
   const rarityStyle = rarityStyles[rarity as keyof typeof rarityStyles] || rarityStyles.common

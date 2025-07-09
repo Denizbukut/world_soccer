@@ -132,128 +132,129 @@ export default function HomePage() {
     }
   }
 
-   return (
-    <ProtectedRoute>
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 pb-20 text-black">
-        <header className="bg-white p-4 border-b border-gray-200">
-          <div className="flex items-center justify-between">
-            <h1 className="text-xl font-bold text-black">Anime World TCG</h1>
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1 bg-gray-100 px-3 py-1.5 rounded-full">
-                <Ticket className="h-4 w-4 text-blue-500" />
-                <span className="font-bold text-black">{user?.tickets || 0}</span>
-              </div>
-              <div className="flex items-center gap-1 bg-gray-100 px-3 py-1.5 rounded-full">
-                <Crown className="h-4 w-4 text-yellow-500" />
-                <span className="font-bold text-black">{user?.legendary_tickets || 0}</span>
-              </div>
+ return (
+  <ProtectedRoute>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 pb-20 text-black">
+      <header className="bg-white p-4 border-b border-gray-200">
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-bold text-black">Anime World TCG</h1>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 bg-gray-100 px-3 py-1.5 rounded-full">
+              <Ticket className="h-4 w-4 text-blue-500" />
+              <span className="font-bold text-black">{user?.tickets || 0}</span>
+            </div>
+            <div className="flex items-center gap-1 bg-gray-100 px-3 py-1.5 rounded-full">
+              <Crown className="h-4 w-4 text-yellow-500" />
+              <span className="font-bold text-black">{user?.legendary_tickets || 0}</span>
             </div>
           </div>
-        </header>
+        </div>
+      </header>
 
-        <main className="p-4 space-y-6">
-          {/* Join + Premium/Clans */}
-          <motion.div className="grid grid-cols-2 gap-4">
-            <div className="bg-white rounded-xl p-4 shadow-sm">
-              <h3 className="font-bold text-black">Join the Community</h3>
-              <p className="text-sm text-gray-700">Connect with other players</p>
-            </div>
-            <div className="bg-white rounded-xl p-4 shadow-sm">
-              <h3 className="font-bold text-black">Premium & Clans</h3>
-              <p className="text-sm text-gray-700">Exclusive rewards & join teams</p>
-            </div>
-          </motion.div>
+      <main className="p-4 space-y-6">
+        {/* Join + Premium/Clans */}
+        <motion.div className="grid grid-cols-2 gap-4">
+          <div className="bg-white rounded-xl p-4 shadow-sm">
+            <h3 className="font-bold text-black">Join the Community</h3>
+            <p className="text-sm text-gray-700">Connect with other players</p>
+          </div>
+          <div className="bg-white rounded-xl p-4 shadow-sm">
+            <h3 className="font-bold text-black">Premium Pass & Clans</h3>
+            <p className="text-sm text-gray-700">Exclusive rewards & join teams</p>
+          </div>
+        </motion.div>
 
-          {/* Weekly Contest */}
-          <motion.div className="bg-white rounded-xl p-4 shadow-sm border-l-4 border-yellow-500">
-            <h3 className="font-bold text-yellow-600">Weekly Contest</h3>
-            <p className="text-sm text-gray-700">Compete and win</p>
-          </motion.div>
+        {/* Weekly Contest */}
+        <motion.div className="bg-white rounded-xl p-4 shadow-sm border-l-4 border-yellow-500">
+          <h3 className="font-bold text-yellow-600">Weekly Contest</h3>
+          <p className="text-sm text-gray-700">Compete and win</p>
+        </motion.div>
 
-          {/* Missions */}
+        {/* Missions */}
+        <motion.div className="bg-white rounded-xl p-4 shadow-sm">
+          <h3 className="font-bold text-black">Missions</h3>
+          <p className="text-sm text-gray-700">Complete tasks and earn</p>
+        </motion.div>
+
+        {/* Referrals + Ticket Claim */}
+        <motion.div className="grid grid-cols-2 gap-4">
+          <div className="bg-white rounded-xl p-4 shadow-sm border-l-4 border-green-500">
+            <h3 className="font-bold text-green-600">Referrals</h3>
+            <p className="text-sm text-gray-700">Invite friends for rewards</p>
+          </div>
           <motion.div className="bg-white rounded-xl p-4 shadow-sm">
-            <h3 className="font-bold text-black">Missions</h3>
-            <p className="text-sm text-gray-700">Complete tasks and earn</p>
-          </motion.div>
-
-          {/* Referrals + Ticket Claim */}
-          <motion.div className="grid grid-cols-2 gap-4">
-            <div className="bg-white rounded-xl p-4 shadow-sm border-l-4 border-green-500">
-              <h3 className="font-bold text-green-600">Referrals</h3>
-              <p className="text-sm text-gray-700">Invite friends for rewards</p>
-            </div>
-            <motion.div className="bg-white rounded-xl p-4 shadow-sm">
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                    <Gift className="h-5 w-5 text-blue-500" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-black">Bonus Tickets</h3>
-                    <p className="text-sm text-gray-700">Claim 3 tickets every 12 hours</p>
-                    {!canClaim && timeRemaining && (
-                      <div className="flex items-center mt-1 text-xs text-gray-500">
-                        <Clock className="h-3 w-3 mr-1" />
-                        <span>Next claim in: {timeRemaining}</span>
-                      </div>
-                    )}
-                  </div>
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                  <Gift className="h-5 w-5 text-blue-500" />
                 </div>
-                <Button
-                  onClick={handleClaimBonus}
-                  disabled={claimLoading || !canClaim}
-                  className={
-                    !canClaim
-                      ? "bg-gray-100 text-gray-700"
-                      : "bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white"
-                  }
-                >
-                  {claimLoading ? (
-                    <div className="flex items-center">
-                      <div className="h-4 w-4 border-2 border-t-transparent border-white rounded-full animate-spin mr-2"></div>
-                      <span>Claiming...</span>
+                <div>
+                  <h3 className="font-bold text-black">Bonus Tickets</h3>
+                  <p className="text-sm text-gray-700">Claim 3 tickets every 12 hours</p>
+                  {!canClaim && timeRemaining && (
+                    <div className="flex items-center mt-1 text-xs text-gray-500">
+                      <Clock className="h-3 w-3 mr-1" />
+                      <span>Next claim in: {timeRemaining}</span>
                     </div>
-                  ) : !canClaim ? (
-                    "Wait"
-                  ) : (
-                    "Claim"
                   )}
-                </Button>
-              </div>
-            </motion.div>
-          </motion.div>
-
-          {/* Ticket Shop */}
-          <motion.div className="bg-white rounded-xl p-4 shadow-sm">
-            <h3 className="font-bold text-black">Ticket Shop</h3>
-            <p className="text-sm text-gray-700">Buy more tickets</p>
-          </motion.div>
-
-          {/* Quick Access */}
-          <motion.div className="grid grid-cols-2 gap-4">
-            <Link href="/collection" className="block">
-              <div className="bg-white rounded-xl p-4 shadow-sm h-full">
-                <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center mb-2">
-                  <Sparkles className="h-5 w-5 text-purple-500" />
                 </div>
-                <h3 className="font-bold text-black">Collection</h3>
-                <p className="text-sm text-gray-700">View your cards</p>
               </div>
-            </Link>
-            <Link href="/trade" className="block">
-              <div className="bg-white rounded-xl p-4 shadow-sm h-full">
-                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center mb-2">
-                  <ArrowRightLeft className="h-5 w-5 text-green-500" />
-                </div>
-                <h3 className="font-bold text-black">Trade</h3>
-                <p className="text-sm text-gray-700">Exchange cards</p>
-              </div>
-            </Link>
+              <Button
+                onClick={handleClaimBonus}
+                disabled={claimLoading || !canClaim}
+                className={
+                  !canClaim
+                    ? "bg-gray-100 text-gray-700"
+                    : "bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white"
+                }
+              >
+                {claimLoading ? (
+                  <div className="flex items-center">
+                    <div className="h-4 w-4 border-2 border-t-transparent border-white rounded-full animate-spin mr-2"></div>
+                    <span>Claiming...</span>
+                  </div>
+                ) : !canClaim ? (
+                  "Wait"
+                ) : (
+                  "Claim"
+                )}
+              </Button>
+            </div>
           </motion.div>
-        </main>
+        </motion.div>
 
-        <MobileNav />
-      </div>
-    </ProtectedRoute>
-  )
+        {/* Ticket Shop */}
+        <motion.div className="bg-white rounded-xl p-4 shadow-sm">
+          <h3 className="font-bold text-black">Ticket Shop</h3>
+          <p className="text-sm text-gray-700">Buy more tickets</p>
+        </motion.div>
+
+        {/* Quick Access */}
+        <motion.div className="grid grid-cols-2 gap-4">
+          <Link href="/collection" className="block">
+            <div className="bg-white rounded-xl p-4 shadow-sm h-full">
+              <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center mb-2">
+                <Sparkles className="h-5 w-5 text-purple-500" />
+              </div>
+              <h3 className="font-bold text-black">Collection</h3>
+              <p className="text-sm text-gray-700">View your cards</p>
+            </div>
+          </Link>
+          <Link href="/trade" className="block">
+            <div className="bg-white rounded-xl p-4 shadow-sm h-full">
+              <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center mb-2">
+                <ArrowRightLeft className="h-5 w-5 text-green-500" />
+              </div>
+              <h3 className="font-bold text-black">Trade</h3>
+              <p className="text-sm text-gray-700">Exchange cards</p>
+            </div>
+          </Link>
+        </motion.div>
+      </main>
+
+      <MobileNav />
+    </div>
+  </ProtectedRoute>
+)
 }
+

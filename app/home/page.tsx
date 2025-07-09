@@ -6,14 +6,7 @@ import { claimDailyBonus } from "@/app/actions"
 import ProtectedRoute from "@/components/protected-route"
 import MobileNav from "@/components/mobile-nav"
 import { Button } from "@/components/ui/button"
-import {
-  Ticket,
-  Gift,
-  Sparkles,
-  Crown,
-  Clock,
-  ArrowRightLeft,
-} from "lucide-react"
+import { Ticket, Gift, Sparkles, Crown, Clock, ArrowRightLeft } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
 import Link from "next/link"
 import { motion } from "framer-motion"
@@ -26,11 +19,13 @@ export default function HomePage() {
   const [timeRemaining, setTimeRemaining] = useState<string>("")
   const [canClaim, setCanClaim] = useState(false)
 
+  // Check if user can claim bonus and set up countdown timer
   useEffect(() => {
     if (!user) return
 
     const checkClaimStatus = async () => {
       try {
+        // Get the last claim time from localStorage
         const lastClaimTimeStr = localStorage.getItem(`lastClaim_${user.username}`)
         const lastClaimTime = lastClaimTimeStr ? new Date(lastClaimTimeStr) : null
 
@@ -39,12 +34,15 @@ export default function HomePage() {
           return
         }
 
+        // Calculate next claim time (12 hours after last claim)
         const nextClaim = new Date(lastClaimTime.getTime() + 12 * 60 * 60 * 1000)
         setNextClaimTime(nextClaim)
 
+        // Check if current time is past the next claim time
         const now = new Date()
         setCanClaim(now >= nextClaim)
 
+        // Update the timer
         updateCountdown(nextClaim)
       } catch (error) {
         console.error("Error checking claim status:", error)
@@ -53,6 +51,7 @@ export default function HomePage() {
 
     checkClaimStatus()
 
+    // Set up interval to update countdown
     const interval = setInterval(() => {
       if (nextClaimTime) {
         updateCountdown(nextClaimTime)
@@ -62,6 +61,7 @@ export default function HomePage() {
     return () => clearInterval(interval)
   }, [user, nextClaimTime])
 
+  // Update countdown timer
   const updateCountdown = (nextClaim: Date) => {
     const now = new Date()
     const diff = nextClaim.getTime() - now.getTime()
@@ -72,12 +72,13 @@ export default function HomePage() {
       return
     }
 
+    // Calculate hours, minutes, seconds
     const hours = Math.floor(diff / (1000 * 60 * 60))
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
     const seconds = Math.floor((diff % (1000 * 60)) / 1000)
 
     setTimeRemaining(
-      `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
+      `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`,
     )
     setCanClaim(false)
   }
@@ -87,12 +88,18 @@ export default function HomePage() {
 
     setClaimLoading(true)
     try {
+      // Call the server action to claim the bonus
       const result = await claimDailyBonus(user.username)
 
       if (result.success) {
+        // Update the user's tickets in the auth context
         await updateUserTickets(result.newTicketCount)
+
+        // Store the current time as the last claim time
         const now = new Date()
         localStorage.setItem(`lastClaim_${user.username}`, now.toISOString())
+
+        // Set the next claim time to 12 hours from now
         const nextClaim = new Date(now.getTime() + 12 * 60 * 60 * 1000)
         setNextClaimTime(nextClaim)
         setCanClaim(false)
@@ -125,7 +132,7 @@ export default function HomePage() {
     }
   }
 
-  return (
+   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 pb-20 text-black">
         <header className="bg-white p-4 border-b border-gray-200">

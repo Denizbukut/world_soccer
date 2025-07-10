@@ -93,7 +93,7 @@ export default function HomePage() {
 
       if (result.success) {
         // Update the user's tickets in the auth context
-        await updateUserTickets(result.newTicketCount)
+        updateUserTickets(result.newTicketCount)
 
         // Store the current time as the last claim time
         const now = new Date()

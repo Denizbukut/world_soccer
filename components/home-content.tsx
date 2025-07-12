@@ -983,7 +983,7 @@ const [copied, setCopied] = useState(false)
         <h3 className="text-lg font-bold leading-tight">Weekly Contest</h3>
       </div>
       <p className="text-sm text-white/90 leading-snug">
-        Win up to <span className="font-semibold">150 WLD</span> – compete now!
+        Win up to <span className="font-semibold">100 WLD</span> – compete now!
       </p>
 
       {/* Animierter Kreis um Chevron */}

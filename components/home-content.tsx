@@ -963,13 +963,13 @@ const [copied, setCopied] = useState(false)
             </div>
           </motion.div>
      
-                {/* Weekly Contest Banner */}
+           {/* Weekly Contest – Viereckig */}
 <motion.div
   initial={{ opacity: 0, y: 20, scale: 0.95 }}
   animate={{ opacity: 1, y: 0, scale: 1 }}
   transition={{ duration: 0.6, ease: "easeOut", delay: 0.3 }}
   whileHover={{ scale: 1.02 }}
-  className="relative"
+  className="relative w-full max-w-sm mx-auto"
 >
   {/* Shine Effekt */}
   <div className="absolute inset-0 overflow-hidden rounded-xl pointer-events-none">
@@ -977,20 +977,18 @@ const [copied, setCopied] = useState(false)
   </div>
 
   <Link href="/weekly-contest">
-    <div className="relative w-full bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-400 text-white rounded-xl p-4 shadow-xl hover:brightness-110 transition flex items-center justify-between border-2 border-emerald-400">
+    <div className="relative bg-gradient-to-br from-yellow-400 via-yellow-300 to-yellow-500 text-white rounded-xl p-5 shadow-lg hover:brightness-110 transition flex flex-col justify-between gap-3 border-2 border-yellow-500">
       <div className="flex items-center gap-3">
         <Trophy className="w-6 h-6 text-white animate-bounce-slow" />
-        <div>
-          <h3 className="text-base font-bold">Weekly Contest - WIN 150 WLD</h3>
-          <p className="text-xs text-white/90">
-            Compete for legendary pulls and win WLD!
-          </p>
-        </div>
+        <h3 className="text-lg font-bold leading-tight">Weekly Contest</h3>
       </div>
+      <p className="text-sm text-white/90 leading-snug">
+        Win up to <span className="font-semibold">150 WLD</span> – compete now!
+      </p>
 
       {/* Animierter Kreis um Chevron */}
       <motion.div
-        className="bg-white/20 rounded-full p-2 backdrop-blur-sm"
+        className="self-end bg-white/20 rounded-full p-2 backdrop-blur-sm"
         animate={{ x: [0, 5, 0] }}
         transition={{
           duration: 1.5,
@@ -1002,8 +1000,7 @@ const [copied, setCopied] = useState(false)
       </motion.div>
     </div>
   </Link>
-</motion.div>
-
+</motion.div>     
 
 
           {/* Deal of the Day Card - Enhanced */}

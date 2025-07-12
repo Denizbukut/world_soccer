@@ -798,7 +798,7 @@ const [copied, setCopied] = useState(false)
           <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
             <div className="flex items-center">
               <h1 className="text-xl font-bold tracking-tight bg-gradient-to-r from-violet-600 to-fuchsia-600 bg-clip-text text-transparent">
-                World Soccer yunus fuck you
+                yunus nigga
               </h1>
             </div>
             <div className="flex items-center gap-2">

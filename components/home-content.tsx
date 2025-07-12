@@ -1000,8 +1000,47 @@ const [copied, setCopied] = useState(false)
       </motion.div>
     </div>
   </Link>
-</motion.div>     
+</motion.div>
+     
+{/* Weekly Contest – Kompaktes Viereck mit roten Highlights */}
+<motion.div
+  initial={{ opacity: 0, y: 20, scale: 0.95 }}
+  animate={{ opacity: 1, y: 0, scale: 1 }}
+  transition={{ duration: 0.6, ease: "easeOut", delay: 0.3 }}
+  whileHover={{ scale: 1.02 }}
+  className="relative w-full max-w-xs mx-auto"
+>
+  {/* Shine Effekt */}
+  <div className="absolute inset-0 overflow-hidden rounded-xl pointer-events-none">
+    <div className="shine animate-shine"></div>
+  </div>
 
+  <Link href="/weekly-contest">
+    <div className="relative bg-gradient-to-br from-yellow-400 via-yellow-300 to-yellow-500 text-white rounded-xl p-4 shadow-lg hover:brightness-110 transition flex flex-col justify-between gap-2 border-2 border-yellow-500">
+      <div className="flex items-center gap-2">
+        <Trophy className="w-5 h-5 text-white animate-bounce-slow" />
+        <h3 className="text-sm font-bold leading-tight">Weekly Contest</h3>
+      </div>
+      <p className="text-xs text-white/90 leading-snug">
+        Win up to <span className="text-red-600 font-bold">150 WLD</span> – compete now!
+      </p>
+      <p className="text-xs font-semibold text-red-600">Win Lvl 15 Sasuke Godlike</p>
+
+      {/* Animierter Kreis um Chevron */}
+      <motion.div
+        className="self-end bg-white/20 rounded-full p-1.5 backdrop-blur-sm"
+        animate={{ x: [0, 5, 0] }}
+        transition={{
+          duration: 1.5,
+          repeat: Infinity,
+          repeatType: "reverse",
+        }}
+      >
+        <ChevronRight className="w-4 h-4 text-white" />
+      </motion.div>
+    </div>
+  </Link>
+</motion.div>
 
           {/* Deal of the Day Card - Enhanced */}
           {dailyDeal && dealInteraction && (

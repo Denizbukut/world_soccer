@@ -1001,7 +1001,7 @@ const [copied, setCopied] = useState(false)
     </div>
   </Link>
 </motion.div>
-     
+
 {/* Weekly Contest – Kompaktes Viereck mit roten Highlights */}
 <motion.div
   initial={{ opacity: 0, y: 20, scale: 0.95 }}
@@ -1042,158 +1042,113 @@ const [copied, setCopied] = useState(false)
   </Link>
 </motion.div>
 
-          {/* Deal of the Day Card - Enhanced */}
-          {dailyDeal && dealInteraction && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1, duration: 0.4 }}
-              className="relative z-0 rounded-2xl shadow-lg overflow-hidden border border-violet-200"
-            >
-              <button onClick={() => setShowDealDialog(true)} className="w-full block relative">
-                {/* Background with animated gradient */}
-                <div className="absolute inset-0 bg-gradient-to-br from-violet-600 to-fuchsia-600 opacity-90">
-                  <motion.div
-                    className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(255,255,255,0.1),transparent_70%)]"
-                    animate={{
-                      backgroundPosition: ["0% 0%", "100% 100%"],
-                    }}
-                    transition={{
-                      duration: 10,
-                      repeat: Number.POSITIVE_INFINITY,
-                      repeatType: "reverse",
-                    }}
-                  />
-                </div>
+        {dailyDeal && dealInteraction && (
+  <motion.div
+    initial={{ opacity: 0, y: 10 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ delay: 0.1, duration: 0.4 }}
+    className="relative z-0 rounded-xl shadow-lg overflow-hidden border border-violet-200 max-w-xs w-full"
+  >
+    <button onClick={() => setShowDealDialog(true)} className="w-full block relative">
+      {/* Hintergrund mit Gradient */}
+      <div className="absolute inset-0 bg-gradient-to-br from-violet-600 to-fuchsia-600 opacity-90">
+        <motion.div
+          className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(255,255,255,0.1),transparent_70%)]"
+          animate={{ backgroundPosition: ["0% 0%", "100% 100%"] }}
+          transition={{
+            duration: 10,
+            repeat: Infinity,
+            repeatType: "reverse",
+          }}
+        />
+      </div>
 
-                {/* Floating particles */}
-                {[...Array(6)].map((_, i) => (
-                  <motion.div
-                    key={`particle-${i}`}
-                    className="absolute rounded-full bg-white/20"
-                    style={{
-                      width: Math.random() * 6 + 3,
-                      height: Math.random() * 6 + 3,
-                      left: `${Math.random() * 100}%`,
-                      top: `${Math.random() * 100}%`,
-                    }}
-                    animate={{
-                      y: [0, -15, 0],
-                      opacity: [0.4, 0.8, 0.4],
-                    }}
-                    transition={{
-                      duration: 2 + Math.random() * 3,
-                      repeat: Number.POSITIVE_INFINITY,
-                      delay: Math.random() * 2,
-                    }}
-                  />
-                ))}
+      {/* Partikel */}
+      {[...Array(5)].map((_, i) => (
+        <motion.div
+          key={`particle-${i}`}
+          className="absolute rounded-full bg-white/20"
+          style={{
+            width: Math.random() * 6 + 3,
+            height: Math.random() * 6 + 3,
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+          }}
+          animate={{
+            y: [0, -15, 0],
+            opacity: [0.4, 0.8, 0.4],
+          }}
+          transition={{
+            duration: 2 + Math.random() * 3,
+            repeat: Infinity,
+            delay: Math.random() * 2,
+          }}
+        />
+      ))}
 
-                <div className="relative p-4 flex items-center justify-between z-10">
-                  <div className="flex items-center gap-3">
-                    {/* Card preview */}
-                    <motion.div
-                      className="relative"
-                      animate={{
-                        y: [0, -4, 0],
-                      }}
-                      transition={{
-                        duration: 3,
-                        repeat: Number.POSITIVE_INFINITY,
-                        repeatType: "reverse",
-                      }}
-                    >
-                      <div className="w-12 h-16 rounded-lg border-2 border-white/30 overflow-hidden shadow-lg">
-                        {dailyDeal.card_image_url && (
-                          <Image
-                            src={dailyDeal.card_image_url || "/placeholder.svg"}
-                            alt={dailyDeal.card_name || "Card"}
-                            fill
-                            className="object-cover"
-                          />
-                        )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+      <div className="relative p-3 flex flex-col items-start gap-3 z-10">
+        <div className="flex items-center gap-3">
+          {/* Kartenbild */}
+          <div className="w-12 h-16 rounded-lg border-2 border-white/30 overflow-hidden shadow-md relative">
+            {dailyDeal.card_image_url && (
+              <Image
+                src={dailyDeal.card_image_url}
+                alt={dailyDeal.card_name || "Card"}
+                fill
+                className="object-cover"
+              />
+            )}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 bg-black/60 py-0.5 text-center">
+              <span className="text-xs font-bold text-white">★{dailyDeal.card_level}</span>
+            </div>
+          </div>
 
-                        {/* Level indicator */}
-                        <div className="absolute bottom-0 left-0 right-0 bg-black/60 py-0.5 flex items-center justify-center">
-                          <span className="text-xs font-bold text-white">★{dailyDeal.card_level}</span>
-                        </div>
-                      </div>
-                    </motion.div>
+          {/* Textbereich */}
+          <div>
+            <h3 className="text-sm font-bold text-white">⚡ Flash Deal</h3>
+            <p className="text-xs text-white/80">
+              {dailyDeal.card_name} • {dailyDeal.card_rarity}
+            </p>
+          </div>
+        </div>
 
-                    <motion.div
-                      animate={{
-                        y: [0, -3, 0],
-                      }}
-                      transition={{
-                        duration: 2.5,
-                        repeat: Number.POSITIVE_INFINITY,
-                        repeatType: "reverse",
-                        delay: 0.5,
-                      }}
-                    >
-                      <h3 className="font-bold text-base text-white">Deal of the Day</h3>
-                      <div className="flex items-center gap-1 mt-1">
-                        <p className="text-xs text-white/80">
-                          {dailyDeal.card_name} • {dailyDeal.card_rarity}
-                        </p>
-                      </div>
-                    </motion.div>
-                  </div>
+        {/* Preis + Tickets */}
+        <div className="text-xs font-medium text-white bg-black/40 px-2 py-1 rounded-md w-full flex justify-between items-center">
+          <div className="flex gap-2 items-center">
+            {dailyDeal.regular_tickets > 0 && (
+              <div className="flex items-center gap-1">
+                <Ticket className="h-3.5 w-3.5 text-amber-300" />
+                <span>+{dailyDeal.regular_tickets}</span>
+              </div>
+            )}
+            {dailyDeal.legendary_tickets > 0 && (
+              <div className="flex items-center gap-1">
+                <Ticket className="h-3.5 w-3.5 text-blue-300" />
+                <span>+{dailyDeal.legendary_tickets}</span>
+              </div>
+            )}
+          </div>
+          <span className="font-bold">
+            {price ? `${(dailyDeal.price / price).toFixed(2)} WLD` : `$${dailyDeal.price.toFixed(2)} USD`}
+          </span>
+        </div>
+      </div>
 
-                  <motion.div
-                    className="bg-white/20 rounded-full p-2 backdrop-blur-sm"
-                    animate={{
-                      x: [0, 5, 0],
-                    }}
-                    transition={{
-                      duration: 1.5,
-                      repeat: Number.POSITIVE_INFINITY,
-                      repeatType: "reverse",
-                    }}
-                  >
-                    <ChevronRight className="h-5 w-5 text-white" />
-                  </motion.div>
-                </div>
-
-                {/* Bottom info bar */}
-                <div className="relative bg-black/30 backdrop-blur-sm px-4 py-2 flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    {dailyDeal.regular_tickets > 0 && (
-                      <div className="flex items-center">
-                        <Ticket className="h-3.5 w-3.5 text-amber-300 mr-1" />
-                        <span className="text-xs font-medium text-white">+{dailyDeal.regular_tickets}</span>
-                      </div>
-                    )}
-
-                    {dailyDeal.legendary_tickets > 0 && (
-                      <div className="flex items-center ml-2">
-                        <Ticket className="h-3.5 w-3.5 text-blue-300 mr-1" />
-                        <span className="text-xs font-medium text-white">+{dailyDeal.legendary_tickets}</span>
-                      </div>
-                    )}
-                    <span className="text-xs font-medium text-white">Card Level: {dailyDeal.card_level}</span>
-                  </div>
-
-                  <div className="text-xs font-bold text-white">
-                    {price ? `${(dailyDeal.price / price).toFixed(2)} WLD` : `$${dailyDeal.price.toFixed(2)} USD`}
-                  </div>
-                </div>
-
-                {/* Shine effect */}
-                <motion.div
-                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-[-20deg]"
-                  initial={{ left: "-100%" }}
-                  animate={{ left: "100%" }}
-                  transition={{
-                    repeat: Number.POSITIVE_INFINITY,
-                    repeatDelay: 5,
-                    duration: 1.5,
-                  }}
-                />
-              </button>
-            </motion.div>
-          )}
+      {/* Shine-Effekt */}
+      <motion.div
+        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-[-20deg]"
+        initial={{ left: "-100%" }}
+        animate={{ left: "100%" }}
+        transition={{
+          repeat: Infinity,
+          repeatDelay: 5,
+          duration: 1.5,
+        }}
+      />
+    </button>
+  </motion.div>
+)}
 
           {/* Referrals */}
 <motion.div

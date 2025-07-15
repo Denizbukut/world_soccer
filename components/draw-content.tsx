@@ -826,21 +826,6 @@ const [showInfo, setShowInfo] = useState(false)
                       <span>Legendary</span>
                     </div>
                   </button>
-                  {/* ICON Tab */}
-                  <button
-                    onClick={() => setActiveTab("icon")}
-                    className={`flex-1 py-3 px-4 text-center font-medium transition-all ${
-                      activeTab === "icon"
-                        ? "bg-gradient-to-r from-indigo-500 to-indigo-600 text-white"
-                        : "bg-white text-gray-500"
-                    }`}
-                  >
-                    <div className="flex items-center justify-center gap-2">
-                      <Crown className="h-4 w-4" />
-                      <span>ICON</span>
-                    </div>
-                  </button>
-                  
                   {/* God Pack Tab */}
                   <button
                     onClick={() => godPacksLeft !== null && godPacksLeft < max_godpacks_daily && setActiveTab("god")}
@@ -856,6 +841,21 @@ const [showInfo, setShowInfo] = useState(false)
                     <div className="flex items-center justify-center gap-2">
                       <Zap className="h-4 w-4" />
                       <span>God</span>
+                    </div>
+                  </button>
+                  
+                  {/* ICON Tab */}
+                  <button
+                    onClick={() => setActiveTab("icon")}
+                    className={`flex-1 py-3 px-4 text-center font-medium transition-all ${
+                      activeTab === "icon"
+                        ? "bg-gradient-to-r from-indigo-500 to-indigo-600 text-white"
+                        : "bg-white text-gray-500"
+                    }`}
+                  >
+                    <div className="flex items-center justify-center gap-2">
+                      <Crown className="h-4 w-4" />
+                      <span>ICON</span>
                     </div>
                   </button>
 
@@ -1226,7 +1226,7 @@ const [showInfo, setShowInfo] = useState(false)
             )}
           </AnimatePresence>
 
-          {showPackSelection && activeTab !== "god" && activeTab !== "icon" && (
+          {showPackSelection && activeTab !== "god" && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}

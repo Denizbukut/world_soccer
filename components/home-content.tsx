@@ -153,7 +153,14 @@ const [copied, setCopied] = useState(false)
 
 
   const [tokenBalance, setTokenBalance] = useState<string | null>(null)
-  
+  const [activeSlide, setActiveSlide] = useState(0);
+const [showChat, setShowChat] = useState(false);
+const touchStartXRef = useRef(0);
+const handleSwipe = (direction: 'left' | 'right') => {
+  if (direction === 'left' && activeSlide < 1) setActiveSlide(activeSlide + 1);
+  if (direction === 'right' && activeSlide > 0) setActiveSlide(activeSlide - 1);
+};
+
   const { price } = useWldPrice()
 
   const ticketClaimAmount = user?.clan_id ? (userClanInfo?.level && userClanInfo.level >= 2 ? 4 : 3) : 3

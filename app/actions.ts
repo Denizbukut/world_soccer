@@ -238,6 +238,7 @@ export async function drawCards(username: string, packType: string, count = 1) {
 
     // Check if user has enough tickets
     const isLegendary = packType === "legendary"
+    const isIcon = packType === "icon"
     const ticketField = isLegendary ? "legendary_tickets" : "tickets"
     const currentTickets = userData[ticketField] || 0
 
@@ -296,7 +297,7 @@ export async function drawCards(username: string, packType: string, count = 1) {
 
       // Check if user has premium to determine drop rates
       const hasPremium = userData.has_premium || false
-      if (!isLegendary) {
+      if (!isLegendary && !isIcon) {
         await incrementMission(username, "open_regular_pack")
       }
 
@@ -313,6 +314,33 @@ export async function drawCards(username: string, packType: string, count = 1) {
         const commonThreshold = 10;              // 0–9 → 10%
         const rareThreshold = 50;                // 10–49 → 40%
         const epicThreshold = 100 - legendaryChance; // 50–(85 or 83) → Remaining for epic
+
+        if (random < commonThreshold) {
+          rarity = "common";
+          cardPool = commonCards;
+        } else if (random < rareThreshold) {
+          rarity = "rare";
+          cardPool = rareCards;
+        } else if (random < epicThreshold) {
+          rarity = "epic";
+          cardPool = epicCards;
+        } else {
+          rarity = "legendary";
+          cardPool = legendaryCards;
+        }
+      } else if (isIcon) {
+        // ICON pack rarity distribution (15% better than legendary)
+        let legendaryChance = 30
+
+        // Lucky Star bonus: +2% legendary chance
+        if (userClanRole === "lucky_star" || userClanRole === "leader") {
+          legendaryChance += 2
+        }
+
+        // Calculate thresholds
+        const commonThreshold = 2;               // 0–1 → 2%
+        const rareThreshold = 32;                // 2–31 → 30%
+        const epicThreshold = 100 - legendaryChance; // 32–(68 or 66) → Remaining for epic
 
         if (random < commonThreshold) {
           rarity = "common";
@@ -667,6 +695,13 @@ function determineRarity(packType: string): CardRarity {
     if (random < 50) return "epic" // 10 + 40 = 50
     if (random < 90) return "rare" // 50 + 40 = 90
     return "common" // Remaining 10%
+  } else if (packType === "icon") {
+    // ICON pack with 15% better odds than legendary:
+    // 30% legendary, 38% epic, 30% rare, 2% common
+    if (random < 30) return "legendary"
+    if (random < 68) return "epic" // 30 + 38 = 68
+    if (random < 98) return "rare" // 68 + 30 = 98
+    return "common" // Remaining 2%
   } else {
     // Regular pack with updated odds:
     // 1% legendary, 5% epic, 34% rare, 60% common

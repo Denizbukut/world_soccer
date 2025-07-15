@@ -104,7 +104,7 @@ export default function DrawPage() {
   const { user, updateUserTickets, updateUserExp, refreshUserData, updateUserScore } = useAuth()
   const [isDrawing, setIsDrawing] = useState(false)
   const [drawnCards, setDrawnCards] = useState<any[]>([])
-  const [activeTab, setActiveTab] = useState<"regular" | "legendary" | "god">("regular")
+  const [activeTab, setActiveTab] = useState<"regular" | "legendary" | "god" | "icon">("regular")
   const [legendaryTickets, setLegendaryTickets] = useState(2)
   const [tickets, setTickets] = useState(0)
   const [hasPremiumPass, setHasPremiumPass] = useState(false)

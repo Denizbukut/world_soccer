@@ -789,10 +789,7 @@ const [showInfo, setShowInfo] = useState(false)
         </header>
 
         <main className="p-4 max-w-lg mx-auto">
-          {/* Debug Info */}
-          <div className="mb-4 p-2 bg-yellow-100 border border-yellow-300 rounded text-sm">
-            Debug: Active Tab = {activeTab} | Available Tabs: Regular, Legendary, God, ICON
-          </div>
+
           {/* Pack Selection Screen */}
           <AnimatePresence>
             {showPackSelection && (
@@ -802,64 +799,58 @@ const [showInfo, setShowInfo] = useState(false)
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.3 }}
               >
-                {/* Debug: Current activeTab = {activeTab} */}
+
                 {/* Tabs - UPDATED: Changed God tab to red gradient */}
                 <div className="grid grid-cols-4 rounded-xl overflow-hidden mb-6 border border-gray-200 bg-white">
                   <button
                     onClick={() => setActiveTab("regular")}
-                    className={`flex-1 py-3 px-4 text-center font-medium transition-all ${
+                    className={`py-3 px-2 text-center font-medium transition-all text-xs ${
                       activeTab === "regular"
                         ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white"
                         : "bg-white text-gray-500"
                     }`}
                   >
-                    <div className="flex items-center justify-center gap-2">
-                      <Ticket className="h-4 w-4" />
+                    <div className="flex items-center justify-center gap-1">
+                      <Ticket className="h-3 w-3" />
                       <span>Regular</span>
                     </div>
                   </button>
                   <button
                     onClick={() => setActiveTab("legendary")}
-                    className={`flex-1 py-3 px-4 text-center font-medium transition-all ${
+                    className={`py-3 px-2 text-center font-medium transition-all text-xs ${
                       activeTab === "legendary"
                         ? "bg-gradient-to-r from-blue-500 to-cyan-500 text-white"
                         : "bg-white text-gray-500"
                     }`}
                   >
-                    <div className="flex items-center justify-center gap-2">
-                      <Ticket className="h-4 w-4 " />
+                    <div className="flex items-center justify-center gap-1">
+                      <Ticket className="h-3 w-3" />
                       <span>Legendary</span>
                     </div>
                   </button>
-                  {/* God Pack Tab */}
                   <button
-                    onClick={() => godPacksLeft !== null && godPacksLeft < max_godpacks_daily && setActiveTab("god")}
-                    disabled={godPacksLeft === null || godPacksLeft >= max_godpacks_daily}
-                    className={`flex-1 py-3 px-4 text-center font-medium transition-all ${
-                      godPacksLeft !== null && godPacksLeft >= max_godpacks_daily
-                        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                        : activeTab === "god"
-                          ? "bg-gradient-to-r from-red-500 to-red-600 text-white"
-                          : "bg-white text-gray-500"
+                    onClick={() => setActiveTab("god")}
+                    className={`py-3 px-2 text-center font-medium transition-all text-xs ${
+                      activeTab === "god"
+                        ? "bg-gradient-to-r from-red-500 to-red-600 text-white"
+                        : "bg-white text-gray-500"
                     }`}
                   >
-                    <div className="flex items-center justify-center gap-2">
-                      <Zap className="h-4 w-4" />
+                    <div className="flex items-center justify-center gap-1">
+                      <Zap className="h-3 w-3" />
                       <span>God</span>
                     </div>
                   </button>
-                  
-                  {/* ICON Tab */}
                   <button
                     onClick={() => setActiveTab("icon")}
-                    className={`flex-1 py-3 px-4 text-center font-medium transition-all ${
+                    className={`py-3 px-2 text-center font-medium transition-all text-xs ${
                       activeTab === "icon"
                         ? "bg-gradient-to-r from-indigo-500 to-indigo-600 text-white"
                         : "bg-white text-gray-500"
                     }`}
                   >
-                    <div className="flex items-center justify-center gap-2">
-                      <Crown className="h-4 w-4" />
+                    <div className="flex items-center justify-center gap-1">
+                      <Crown className="h-3 w-3" />
                       <span>ICON</span>
                     </div>
                   </button>

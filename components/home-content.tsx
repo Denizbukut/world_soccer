@@ -861,52 +861,72 @@ const [copied, setCopied] = useState(false)
           {/* Compact User Info Section */}
           <div className="flex gap-3 w-full max-w-lg mx-auto mt-4">
   {/* Profilkarte */}
-  <div className="flex-1 bg-white rounded-xl shadow-md border border-gray-100 p-4 flex flex-col items-center justify-between min-w-[140px] max-w-[180px]">
+  <div className="flex-1 bg-white rounded-xl shadow-md border border-gray-100 p-4 flex flex-col items-center justify-between min-w-[140px] max-w-[180px] h-[170px]">
     {/* Avatar */}
-    <div className="w-16 h-16 rounded-full border-4 border-violet-300 overflow-hidden mb-2">
-      <img src={user?.avatar_url || "/placeholder-user.jpg"} alt="Avatar" className="object-cover w-full h-full" />
+    <div className="w-12 h-12 rounded-full border-4 border-violet-300 overflow-hidden mb-1">
+      <img src="/placeholder-user.jpg" alt="Avatar" className="object-cover w-full h-full" />
     </div>
     {/* Name & Level */}
     <div className="flex flex-col items-center mb-1">
-      <span className="font-bold text-base text-violet-700">{user?.username}</span>
+      <span className="font-bold text-sm text-violet-700">{user?.username}</span>
       <span className="bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full text-xs font-semibold mt-1">Lvl {user?.level}</span>
     </div>
     {/* Clan */}
-    <div className="flex items-center gap-1 mb-2">
+    <div className="flex items-center gap-1 mb-1">
       <span className="bg-fuchsia-100 text-fuchsia-700 px-2 py-0.5 rounded-full text-xs font-medium">{userClanInfo ? userClanInfo.name : "No Clan"}</span>
     </div>
-    {/* Chat Button */}
-    <Link href="/friends">
-      <Button size="sm" className="w-full text-xs mt-2">Chat</Button>
-    </Link>
+    {/* Chat Button öffnet echtes Chat-Modal */}
+    <Button size="sm" className="w-full text-xs mt-1" onClick={() => setShowChat(true)}>Chat</Button>
   </div>
-  {/* Game Pass + Carousel */}
-  <div className="flex-1 flex flex-col items-center justify-between min-w-[140px] max-w-[220px]">
-    {/* Carousel/Slider */}
-    <div className="w-full h-full">
-      <Tabs defaultValue="gamepass" className="w-full">
-        <TabsList className="w-full flex justify-center mb-2 bg-transparent">
-          <TabsTrigger value="gamepass" className="flex-1">Game Pass</TabsTrigger>
-          <TabsTrigger value="xpbooster" className="flex-1">XP Booster</TabsTrigger>
-        </TabsList>
-        <TabsContent value="gamepass">
-          <div className="bg-yellow-50 rounded-xl p-4 flex flex-col items-center justify-center shadow border border-yellow-200">
-            <Crown className="h-8 w-8 text-yellow-500 mb-2" />
-            <span className="font-bold text-lg text-yellow-700">Game Pass</span>
-            <span className="text-xs text-gray-600">Claim rewards!</span>
-          </div>
-        </TabsContent>
-        <TabsContent value="xpbooster">
-          <div className="bg-blue-50 rounded-xl p-4 flex flex-col items-center justify-center shadow border border-blue-200">
-            <Sparkles className="h-8 w-8 text-blue-500 mb-2" />
-            <span className="font-bold text-lg text-blue-700">XP Booster</span>
-            <span className="text-xs text-gray-600">Double XP for 1h</span>
-          </div>
-        </TabsContent>
-      </Tabs>
+  {/* Carousel/Slider für Game Pass & XP Booster */}
+  <div className="flex-1 flex flex-col items-center justify-between min-w-[140px] max-w-[220px] h-[170px] relative overflow-hidden">
+    <div
+      className="w-full h-full flex transition-transform duration-300"
+      style={{ transform: `translateX(-${activeSlide * 100}%)` }}
+      onTouchStart={e => (window._touchStartX = e.touches[0].clientX)}
+      onTouchEnd={e => {
+        const dx = e.changedTouches[0].clientX - window._touchStartX
+        if (dx < -30) handleSwipe('left')
+        if (dx > 30) handleSwipe('right')
+      }}
+    >
+      {/* Game Pass Slide */}
+      <div className="w-full flex-shrink-0">
+        <div className="bg-yellow-50 rounded-xl p-4 flex flex-col items-center justify-center shadow border border-yellow-200 h-[170px]">
+          <Crown className="h-8 w-8 text-yellow-500 mb-2" />
+          <span className="font-bold text-lg text-yellow-700">Game Pass</span>
+          <span className="text-xs text-gray-600">Claim rewards!</span>
+        </div>
+      </div>
+      {/* XP Booster Slide */}
+      <div className="w-full flex-shrink-0">
+        <div className="bg-blue-50 rounded-xl p-4 flex flex-col items-center justify-center shadow border border-blue-200 h-[170px]">
+          <Sparkles className="h-8 w-8 text-blue-500 mb-2" />
+          <span className="font-bold text-lg text-blue-700">XP Booster</span>
+          <span className="text-xs text-gray-600">Double XP for 1h</span>
+        </div>
+      </div>
+    </div>
+    {/* Pagination Punkte */}
+    <div className="flex justify-center gap-2 mt-2 absolute bottom-2 left-0 right-0">
+      <div className={`w-2 h-2 rounded-full ${activeSlide === 0 ? 'bg-yellow-500' : 'bg-gray-300'}`}></div>
+      <div className={`w-2 h-2 rounded-full ${activeSlide === 1 ? 'bg-blue-500' : 'bg-gray-300'}`}></div>
     </div>
   </div>
 </div>
+{/* Chat Modal (Dummy) */}
+{showChat && (
+  <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
+    <div className="bg-white rounded-xl shadow-lg p-4 w-80 max-w-full">
+      <div className="flex justify-between items-center mb-2">
+        <span className="font-bold">Chat</span>
+        <button onClick={() => setShowChat(false)} className="text-gray-500 hover:text-gray-800">✕</button>
+      </div>
+      <div className="h-40 overflow-y-auto border rounded mb-2 p-2 text-xs text-gray-700 bg-gray-50">Hier könnte dein echter Chat stehen…</div>
+      <input className="w-full border rounded px-2 py-1 text-xs" placeholder="Nachricht schreiben…" />
+    </div>
+  </div>
+)}
 
         {/* Weekly Contest – Viereckig */}
 <motion.div

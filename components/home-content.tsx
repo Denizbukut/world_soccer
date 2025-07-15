@@ -815,7 +815,7 @@ const [copied, setCopied] = useState(false)
                 href="https://x.com/ani_labs_world"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="relative group w-8 h-8 rounded-full bg-black hover:bg-gray-800 flex items-center justify-center shadow transition ml-6 mr-4"
+                className="relative group w-10 h-10 rounded-full bg-black hover:bg-gray-800 flex items-center justify-center shadow-lg border-2 border-white ml-6 mr-4 transition-transform duration-150"
               >
                 <span className="text-white font-extrabold text-xl group-hover:scale-110 transition-transform">𝕏</span>
               </a>
@@ -823,9 +823,9 @@ const [copied, setCopied] = useState(false)
                 href="https://t.me/+Dx-fEykc-BY5ZmQy"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="relative group w-8 h-8 rounded-full bg-blue-500 hover:bg-blue-600 flex items-center justify-center shadow transition mr-6"
+                className="relative group w-10 h-10 rounded-full bg-blue-500 hover:bg-blue-600 flex items-center justify-center shadow-lg border-2 border-white mr-6 transition-transform duration-150"
               >
-                <Send className="h-5 w-5 text-white group-hover:scale-110 transition-transform font-extrabold" />
+                <Send className="h-6 w-6 text-white group-hover:scale-110 transition-transform font-extrabold" />
               </a>
             </div>
             <div className="flex items-center gap-2">
@@ -847,51 +847,6 @@ const [copied, setCopied] = useState(false)
         </header>
 
         <main className="p-3 space-y-4 max-w-lg mx-auto">
-          {/* Community Banner */}
-          <motion.div
-            className="px-2"
-            animate={{ y: [0, -3, 0, 3, 0] }}
-            transition={{
-              duration: 6,
-              repeat: Number.POSITIVE_INFINITY,
-              repeatType: "loop",
-              ease: "easeInOut",
-            }}
-          >
-            <div className="relative rounded-xl bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-2 shadow-xl border border-gray-700/60 backdrop-blur-md">
-              <div className="flex items-center justify-between">
-                <div className="text-white text-sm font-semibold tracking-wide flex items-center gap-2">
-                  <span>Join the Community</span>
-                  <span className="text-violet-400 text-xs animate-pulse">💬</span>
-                </div>
-
-                <div className="flex gap-3">
-                  <a
-                    href="https://x.com/ani_labs_world"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="relative group w-9 h-9 rounded-full bg-black hover:bg-gray-800 flex items-center justify-center shadow-[0_0_8px_rgba(255,255,255,0.2)] transition"
-                  >
-                    <span className="text-white font-bold text-[13px] group-hover:scale-110 transition-transform">
-                      𝕏
-                    </span>
-                    <span className="absolute inset-0 rounded-full animate-ping bg-white opacity-5 group-hover:opacity-10" />
-                  </a>
-
-                  <a
-                    href="https://t.me/+Dx-fEykc-BY5ZmQy"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="relative group w-9 h-9 rounded-full bg-blue-500 hover:bg-blue-600 flex items-center justify-center shadow-[0_0_10px_rgba(59,130,246,0.5)] transition"
-                  >
-                    <Send className="h-4 w-4 text-white group-hover:scale-110 transition-transform" />
-                    <span className="absolute inset-0 rounded-full animate-ping bg-white opacity-5 group-hover:opacity-10" />
-                  </a>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
           {/* Compact User Info Section */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}

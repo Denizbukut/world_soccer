@@ -941,46 +941,7 @@ const handleSwipe = (direction: 'left' | 'right') => {
   </div>
 )}
 
-        {/* Weekly Contest – Viereckig */}
-<motion.div
-  initial={{ opacity: 0, y: 20, scale: 0.95 }}
-  animate={{ opacity: 1, y: 0, scale: 1 }}
-  transition={{ duration: 0.6, ease: "easeOut", delay: 0.3 }}
-  whileHover={{ scale: 1.02 }}
-  className="relative w-full max-w-sm mx-auto"
->
-  {/* Shine Effekt */}
-  <div className="absolute inset-0 overflow-hidden rounded-xl pointer-events-none">
-    <div className="shine animate-shine"></div>
-  </div>
-
-  <Link href="/weekly-contest">
-    <div className="relative bg-gradient-to-br from-yellow-400 via-yellow-300 to-yellow-500 text-white rounded-xl p-5 shadow-lg hover:brightness-110 transition flex flex-col justify-between gap-3 border-2 border-yellow-500">
-      <div className="flex items-center gap-3">
-        <Trophy className="w-6 h-6 text-white animate-bounce-slow" />
-        <h3 className="text-lg font-bold leading-tight">Weekly Contest</h3>
-      </div>
-      <p className="text-sm text-white/90 leading-snug">
-        Win up to <span className="font-semibold">100 WLD</span> – compete now!
-      </p>
-
-      {/* Animierter Kreis um Chevron */}
-      <motion.div
-        className="self-end bg-white/20 rounded-full p-2 backdrop-blur-sm"
-        animate={{ x: [0, 5, 0] }}
-        transition={{
-          duration: 1.5,
-          repeat: Infinity,
-          repeatType: "reverse",
-        }}
-      >
-        <ChevronRight className="w-4 h-4 text-white" />
-      </motion.div>
-    </div>
-  </Link>
-</motion.div>
-
-{/* Weekly Contest – Kompakte Card mit Shine-Effekt */}
+        {/* Weekly Contest – Kompakte Card mit Shine-Effekt */}
 <motion.div
   initial={{ opacity: 0, y: 20, scale: 0.95 }}
   animate={{ opacity: 1, y: 0, scale: 1 }}

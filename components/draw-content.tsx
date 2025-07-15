@@ -488,7 +488,7 @@ const [showInfo, setShowInfo] = useState(false)
           }
 
           // God pack gives more XP
-          let xpAmount = cardType === "god" ? 200 * count : cardType === "legendary" ? 100 * count : cardType === "icon" ? 75 * count : 50 * count
+          let xpAmount = cardType === "god" ? 200 * count : cardType === "legendary" ? 100 * count : cardType === "icon" ? 150 * count : 50 * count
 
           if (userClanRole === "xp_hunter") {
             xpAmount = Math.floor(xpAmount * 1.05)
@@ -920,19 +920,19 @@ const [showInfo, setShowInfo] = useState(false)
                           {userClanRole === "xp_hunter" || userClanRole === "leader" || hasXpPass ? (
                             <span className="flex items-center gap-1">
                               <span className="line-through text-gray-400">
-                                +{activeTab === "god" ? "200" : activeTab === "legendary" ? "100" : activeTab === "icon" ? "75" : "50"} XP
+                                +{activeTab === "god" ? "200" : activeTab === "legendary" ? "100" : activeTab === "icon" ? "150" : "50"} XP
                               </span>
                               <span className="text-violet-600 font-semibold">
                                 +
                                 {calculateXpWithBonuses(
-                                  activeTab === "god" ? 200 : activeTab === "legendary" ? 100 : activeTab === "icon" ? 75 : 50,
+                                  activeTab === "god" ? 200 : activeTab === "legendary" ? 100 : activeTab === "icon" ? 150 : 50,
                                 )}{" "}
                                 XP
                               </span>
                               {userClanRole === "xp_hunter" && <Sword className="h-3 w-3 text-orange-500" />}
                             </span>
                           ) : (
-                            <span>+{activeTab === "god" ? "200" : activeTab === "legendary" ? "100" : activeTab === "icon" ? "75" : "50"} XP</span>
+                            <span>+{activeTab === "god" ? "200" : activeTab === "legendary" ? "100" : activeTab === "icon" ? "150" : "50"} XP</span>
                           )}
                         </div>
                       </div>
@@ -1006,23 +1006,23 @@ const [showInfo, setShowInfo] = useState(false)
                             <div className="space-y-2">
                               <div className="flex justify-between items-center text-sm">
                                 <span>Common</span>
-                                <span className="text-gray-500">25%</span>
+                                <span className="text-gray-500">5%</span>
                               </div>
                               <div className="flex justify-between items-center text-sm">
                                 <span>Rare</span>
-                                <span className="text-blue-500">45%</span>
+                                <span className="text-blue-500">30%</span>
                               </div>
                               <div className="flex justify-between items-center text-sm">
                                 <span>Epic</span>
                                 <span className="text-purple-500">
-                                  {userClanRole === "lucky_star" || userClanRole === "leader" ? "22%" : "20%"}
+                                  {userClanRole === "lucky_star" || userClanRole === "leader" ? "40%" : "38%"}
                                 </span>
                               </div>
                               <div className="flex justify-between items-center text-sm">
                                 <span>Legendary</span>
                                 <div className="flex items-center gap-1">
                                   <span className="text-amber-500">
-                                    {userClanRole === "lucky_star" || userClanRole === "leader" ? "12%" : "10%"}
+                                    {userClanRole === "lucky_star" || userClanRole === "leader" ? "32%" : "30%"}
                                   </span>
                                   {(userClanRole === "lucky_star" || userClanRole === "leader") && (
                                     <Star className="h-3 w-3 text-yellow-500" />
@@ -1032,7 +1032,7 @@ const [showInfo, setShowInfo] = useState(false)
                             </div>
                             <div className="mt-2 text-sm text-indigo-600 font-medium flex items-center justify-center gap-1">
                               <Crown className="h-4 w-4 text-indigo-500" />
-                              ICON Pack - Better Rarities
+                              ICON Pack - 15% Better than Legendary
                             </div>
                           </div>
 

@@ -867,10 +867,10 @@ const handleSwipe = (direction: 'left' | 'right') => {
 
         <main className="p-3 space-y-4 max-w-lg mx-auto">
           {/* Compact User Info Section */}
-          {/* Profil, Game Pass & XP Booster nebeneinander */}
-<div className="w-full max-w-lg mx-auto mt-4 flex gap-4 overflow-x-auto snap-x">
+          {/* Profil + Carousel nebeneinander */}
+<div className="w-full max-w-lg mx-auto mt-4 flex gap-4">
   {/* Profilkarte */}
-  <div className="flex-shrink-0 w-[220px] h-[170px] bg-white rounded-xl shadow-md border border-gray-100 p-4 flex flex-col items-center justify-center min-w-[140px] max-w-[220px] mx-auto snap-start">
+  <div className="flex-shrink-0 w-[220px] h-[170px] bg-white rounded-xl shadow-md border border-gray-100 p-4 flex flex-col items-center justify-center min-w-[140px] max-w-[220px] mx-auto">
     {/* Avatar */}
     <div className="w-12 h-12 rounded-full border-4 border-violet-300 overflow-hidden mb-2">
       <img src="/placeholder-user.jpg" alt="Avatar" className="object-cover w-full h-full" />
@@ -880,22 +880,51 @@ const handleSwipe = (direction: 'left' | 'right') => {
     <span className="bg-fuchsia-100 text-fuchsia-700 px-2 py-0.5 rounded-full text-xs font-medium mb-2">{userClanInfo ? userClanInfo.name : "No Clan"}</span>
     <Button size="sm" className="w-full text-xs mt-1" onClick={() => setShowChat(true)}>Chat</Button>
   </div>
-  {/* Game Pass */}
-  <Link href="/pass" className="flex-shrink-0 w-[220px] h-[170px] snap-start">
-    <div className="w-full h-full bg-yellow-50 rounded-xl shadow-md border border-yellow-200 p-4 flex flex-col items-center justify-center cursor-pointer hover:bg-yellow-100 transition">
-      <Crown className="h-8 w-8 text-yellow-500 mb-2" />
-      <span className="font-bold text-lg text-yellow-700 mb-1">Game Pass</span>
-      <span className="text-xs text-gray-600">Claim rewards!</span>
+  {/* Carousel für Game Pass & XP Booster */}
+  <div
+    className="flex-shrink-0 w-[220px] h-[170px] relative overflow-hidden min-w-[140px] max-w-[220px] flex items-center justify-center mx-auto"
+    onTouchStart={e => {
+      touchStartXRef.current = e.touches[0].clientX;
+      wasSwipeRef.current = false;
+    }}
+    onTouchMove={e => {
+      const deltaX = e.touches[0].clientX - touchStartXRef.current;
+      if (Math.abs(deltaX) > 30) {
+        wasSwipeRef.current = true;
+        if (deltaX < 0 && activeSlide < 1) setActiveSlide(1);
+        if (deltaX > 0 && activeSlide > 0) setActiveSlide(0);
+      }
+    }}
+    onTouchEnd={() => {
+      setTimeout(() => {
+        wasSwipeRef.current = false;
+      }, 100);
+    }}
+  >
+    {activeSlide === 0 && (
+      <Link href="/pass" onClick={e => { if (wasSwipeRef.current) e.preventDefault(); }}>
+        <div className="w-full h-[170px] bg-yellow-50 rounded-xl shadow-md border border-yellow-200 p-4 flex flex-col items-center justify-center cursor-pointer hover:bg-yellow-100 transition">
+          <Crown className="h-8 w-8 text-yellow-500 mb-2" />
+          <span className="font-bold text-lg text-yellow-700 mb-1">Game Pass</span>
+          <span className="text-xs text-gray-600">Claim rewards!</span>
+        </div>
+      </Link>
+    )}
+    {activeSlide === 1 && (
+      <Link href="/xp-booster" onClick={e => { if (wasSwipeRef.current) e.preventDefault(); }}>
+        <div className="w-full h-[170px] bg-blue-50 rounded-xl shadow-md border border-blue-200 p-4 flex flex-col items-center justify-center cursor-pointer hover:bg-blue-100 transition">
+          <Sparkles className="h-8 w-8 text-blue-500 mb-2" />
+          <span className="font-bold text-lg text-blue-700 mb-1">XP Booster</span>
+          <span className="text-xs text-gray-600">Double XP for 1h</span>
+        </div>
+      </Link>
+    )}
+    {/* Pagination Punkte */}
+    <div className="flex justify-center gap-2 mt-2 absolute bottom-2 left-0 right-0">
+      <div className={`w-2 h-2 rounded-full ${activeSlide === 0 ? 'bg-yellow-500' : 'bg-gray-300'}`}></div>
+      <div className={`w-2 h-2 rounded-full ${activeSlide === 1 ? 'bg-blue-500' : 'bg-gray-300'}`}></div>
     </div>
-  </Link>
-  {/* XP Booster */}
-  <Link href="/xp-booster" className="flex-shrink-0 w-[220px] h-[170px] snap-start">
-    <div className="w-full h-full bg-blue-50 rounded-xl shadow-md border border-blue-200 p-4 flex flex-col items-center justify-center cursor-pointer hover:bg-blue-100 transition">
-      <Sparkles className="h-8 w-8 text-blue-500 mb-2" />
-      <span className="font-bold text-lg text-blue-700 mb-1">XP Booster</span>
-      <span className="text-xs text-gray-600">Double XP for 1h</span>
-    </div>
-  </Link>
+  </div>
 </div>
 {/* Chat Modal (Dummy) */}
 {showChat && (

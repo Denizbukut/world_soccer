@@ -883,9 +883,9 @@ const [copied, setCopied] = useState(false)
     <div
       className="w-full h-full flex transition-transform duration-300"
       style={{ transform: `translateX(-${activeSlide * 100}%)` }}
-      onTouchStart={e => (window._touchStartX = e.touches[0].clientX)}
+      onTouchStart={e => { touchStartX = e.touches[0].clientX }}
       onTouchEnd={e => {
-        const dx = e.changedTouches[0].clientX - window._touchStartX
+        const dx = e.changedTouches[0].clientX - touchStartX
         if (dx < -30) handleSwipe('left')
         if (dx > 30) handleSwipe('right')
       }}

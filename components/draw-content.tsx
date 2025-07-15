@@ -828,6 +828,20 @@ const [showInfo, setShowInfo] = useState(false)
                   </button>
                   {/* UPDATED: Changed God Pack Tab to red gradient */}
                   <button
+                   {/* ICON Tab – NEU */}
+  <button
+    onClick={() => setActiveTab("icon")}
+    className={`flex-1 py-3 px-4 text-center font-medium transition-all ${
+      activeTab === "icon"
+        ? "bg-gradient-to-r from-indigo-500 to-indigo-600 text-white"
+        : "bg-white text-gray-500"
+    }`}
+  >
+    <div className="flex items-center justify-center gap-2">
+      <Crown className="h-4 w-4" />
+      <span>ICON</span>
+    </div>
+  </button>
   onClick={() => godPacksLeft !== null && godPacksLeft < max_godpacks_daily && setActiveTab("god")}
   disabled={godPacksLeft === null || godPacksLeft >= max_godpacks_daily}
   className={`flex-1 py-3 px-4 text-center font-medium transition-all ${

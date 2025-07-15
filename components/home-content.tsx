@@ -313,6 +313,15 @@ const [copied, setCopied] = useState(false)
     return await useTokenBalance(address)
   }
 
+  // Synchronisiere Ticket-States mit User-Objekt
+  useEffect(() => {
+    if (user) {
+      if (typeof user.tickets === "number") setTickets(user.tickets)
+      if (typeof user.legendary_tickets === "number") setLegendaryTickets(user.legendary_tickets)
+      if (typeof user.icon_tickets === "number") setIconTickets(user.icon_tickets)
+    }
+  }, [user])
+
   // Fetch user's clan info
   useEffect(() => {
     if (user?.username && !hasCheckedClan.current) {
@@ -529,16 +538,16 @@ const [copied, setCopied] = useState(false)
           setIconTickets(data.icon_tickets)
         }
 
-        // Check if user has claimed tickets in the last 12 hours
+        // Check if user has claimed tickets in the last 24 hours
         if (data?.ticket_last_claimed && typeof data.ticket_last_claimed === "string") {
           const lastClaimedDate = new Date(data.ticket_last_claimed)
           const now = new Date()
-          const twelveHoursInMs = 24 * 60 * 60 * 1000
+          const twentyFourHoursInMs = 24 * 60 * 60 * 1000
           const timeSinceClaim = now.getTime() - lastClaimedDate.getTime()
 
-          if (timeSinceClaim < twelveHoursInMs) {
+          if (timeSinceClaim < twentyFourHoursInMs) {
             setAlreadyClaimed(true)
-            const newTimeUntilNextClaim = twelveHoursInMs - timeSinceClaim
+            const newTimeUntilNextClaim = twentyFourHoursInMs - timeSinceClaim
             setTimeUntilNextClaim(newTimeUntilNextClaim)
             updateTicketTimerDisplay(newTimeUntilNextClaim)
           } else {

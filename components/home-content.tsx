@@ -812,79 +812,49 @@ const [copied, setCopied] = useState(false)
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white pb-20 text-black">
-        {/* Header with glass effect */}
-        <header className="sticky top-0 z-10 backdrop-blur-md bg-white/90 border-b border-gray-100 shadow-sm">
-          <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <h1 className="text-xl font-bold tracking-tight bg-gradient-to-r from-violet-600 to-fuchsia-600 bg-clip-text text-transparent">
-                WORLD SOCCER
-              </h1>
-              {/* Move X and Telegram here */}
-              <a
-                href="https://x.com/ani_labs_world"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="relative group w-10 h-10 rounded-full bg-black hover:bg-gray-800 flex items-center justify-center shadow-lg border-2 border-white ml-2 mr-2 transition-transform duration-150"
-              >
-                <span className="text-white font-extrabold text-xl group-hover:scale-110 transition-transform">𝕏</span>
-              </a>
-              <a
-                href="https://t.me/+Dx-fEykc-BY5ZmQy"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="relative group w-10 h-10 rounded-full bg-blue-500 hover:bg-blue-600 flex items-center justify-center shadow-lg border-2 border-white mr-2 transition-transform duration-150"
-              >
-                <Send className="h-6 w-6 text-white group-hover:scale-110 transition-transform font-extrabold" />
-              </a>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
-                <Ticket className="h-3.5 w-3.5 text-amber-500" />
-                <span className="font-medium text-sm">{tickets}</span>
-              </div>
-              <div className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
-                <Ticket className="h-3.5 w-3.5 text-blue-500" />
-                <span className="font-medium text-sm">{legendaryTickets}</span>
-              </div>
-              {/* Icon Tickets */}
-              <div className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
-                <Crown className="h-3.5 w-3.5 text-indigo-500" />
-                <span className="font-medium text-sm">{iconTickets}</span>
-              </div>
-            </div>
-          </div>
-        </header>
+        {/* Header mit Social-Icons direkt neben dem Titel und Tickets direkt danach */}
+<header className="sticky top-0 z-10 backdrop-blur-md bg-white/90 border-b border-gray-100 shadow-sm">
+  <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-start gap-2">
+    <div className="flex items-center gap-1">
+      <h1 className="text-xl font-bold tracking-tight bg-gradient-to-r from-violet-600 to-fuchsia-600 bg-clip-text text-transparent">
+        WORLD SOCCER
+      </h1>
+      <a
+        href="https://x.com/ani_labs_world"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="relative group w-9 h-9 rounded-full bg-black hover:bg-gray-800 flex items-center justify-center shadow-lg border-2 border-white ml-1 mr-1 transition-transform duration-150"
+      >
+        <span className="text-white font-extrabold text-lg group-hover:scale-110 transition-transform">𝕏</span>
+      </a>
+      <a
+        href="https://t.me/+Dx-fEykc-BY5ZmQy"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="relative group w-9 h-9 rounded-full bg-blue-500 hover:bg-blue-600 flex items-center justify-center shadow-lg border-2 border-white mr-2 transition-transform duration-150"
+      >
+        <Send className="h-5 w-5 text-white group-hover:scale-110 transition-transform font-extrabold" />
+      </a>
+      {/* Ticket-Anzeige direkt nach den Social-Icons */}
+      <div className="flex items-center gap-1 ml-2">
+        <div className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
+          <Ticket className="h-3.5 w-3.5 text-amber-500" />
+          <span className="font-medium text-sm">{tickets}</span>
+        </div>
+        <div className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
+          <Ticket className="h-3.5 w-3.5 text-blue-500" />
+          <span className="font-medium text-sm">{legendaryTickets}</span>
+        </div>
+        <div className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
+          <Crown className="h-3.5 w-3.5 text-indigo-500" />
+          <span className="font-medium text-sm">{iconTickets}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
 
         {/* Direkt unter dem Header, nach </header>: */}
-<div className="flex flex-row gap-3 justify-center my-4">
-  {/* Regular Ticket */}
-  <div className="flex flex-col items-center bg-white rounded-xl shadow-md border border-gray-100 px-4 py-3">
-    <Ticket className="h-7 w-7 text-amber-500 mb-1" />
-    <span className="font-bold text-lg">{tickets}</span>
-    <span className="text-xs text-gray-500 mb-2">Regular</span>
-    <Link href="/shop">
-      <Button size="sm" className="w-full text-xs">Shop</Button>
-    </Link>
-  </div>
-  {/* Legendary Ticket */}
-  <div className="flex flex-col items-center bg-white rounded-xl shadow-md border border-gray-100 px-4 py-3">
-    <Ticket className="h-7 w-7 text-blue-500 mb-1" />
-    <span className="font-bold text-lg">{legendaryTickets}</span>
-    <span className="text-xs text-gray-500 mb-2">Legendary</span>
-    <Link href="/shop">
-      <Button size="sm" className="w-full text-xs">Shop</Button>
-    </Link>
-  </div>
-  {/* Icon Ticket */}
-  <div className="flex flex-col items-center bg-white rounded-xl shadow-md border border-gray-100 px-4 py-3">
-    <Crown className="h-7 w-7 text-indigo-500 mb-1" />
-    <span className="font-bold text-lg">{iconTickets}</span>
-    <span className="text-xs text-gray-500 mb-2">Icon</span>
-    <Link href="/shop">
-      <Button size="sm" className="w-full text-xs">Shop</Button>
-    </Link>
-  </div>
-</div>
 
         <main className="p-3 space-y-4 max-w-lg mx-auto">
           {/* Compact User Info Section */}

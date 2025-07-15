@@ -868,25 +868,21 @@ const handleSwipe = (direction: 'left' | 'right') => {
           {/* Compact User Info Section */}
           <div className="flex gap-3 w-full max-w-lg mx-auto mt-4">
   {/* Profilkarte */}
-  <div className="flex-1 bg-white rounded-xl shadow-md border border-gray-100 p-4 flex flex-col items-center justify-between min-w-[140px] max-w-[180px] h-[170px]">
+  <div className="flex-1 w-full h-[170px] bg-white rounded-xl shadow-md border border-gray-100 p-4 flex flex-col items-center justify-center min-w-[140px] max-w-[220px]">
     {/* Avatar */}
-    <div className="w-12 h-12 rounded-full border-4 border-violet-300 overflow-hidden mb-1">
+    <div className="w-12 h-12 rounded-full border-4 border-violet-300 overflow-hidden mb-2">
       <img src="/placeholder-user.jpg" alt="Avatar" className="object-cover w-full h-full" />
     </div>
     {/* Name & Level */}
-    <div className="flex flex-col items-center mb-1">
-      <span className="font-bold text-sm text-violet-700">{user?.username}</span>
-      <span className="bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full text-xs font-semibold mt-1">Lvl {user?.level}</span>
-    </div>
+    <span className="font-bold text-sm text-violet-700 mb-1">{user?.username}</span>
+    <span className="bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full text-xs font-semibold mb-1">Lvl {user?.level}</span>
     {/* Clan */}
-    <div className="flex items-center gap-1 mb-1">
-      <span className="bg-fuchsia-100 text-fuchsia-700 px-2 py-0.5 rounded-full text-xs font-medium">{userClanInfo ? userClanInfo.name : "No Clan"}</span>
-    </div>
+    <span className="bg-fuchsia-100 text-fuchsia-700 px-2 py-0.5 rounded-full text-xs font-medium mb-2">{userClanInfo ? userClanInfo.name : "No Clan"}</span>
     {/* Chat Button öffnet echtes Chat-Modal */}
     <Button size="sm" className="w-full text-xs mt-1" onClick={() => setShowChat(true)}>Chat</Button>
   </div>
-  {/* Carousel/Slider für Game Pass & XP Booster */}
-  <div className="flex-1 flex flex-col items-center justify-between min-w-[140px] max-w-[220px] h-[170px] relative overflow-hidden">
+  {/* Carousel/Slider für Game Pass & XP Booster (rechte Karte): */}
+  <div className="flex-1 w-full h-[170px] relative overflow-hidden min-w-[140px] max-w-[220px]">
     <div
       className="w-full h-full flex transition-transform duration-300"
       style={{ transform: `translateX(-${activeSlide * 100}%)` }}
@@ -898,20 +894,16 @@ const handleSwipe = (direction: 'left' | 'right') => {
       }}
     >
       {/* Game Pass Slide */}
-      <div className="w-full flex-shrink-0">
-        <div className="bg-yellow-50 rounded-xl p-4 flex flex-col items-center justify-center shadow border border-yellow-200 h-[170px]">
-          <Crown className="h-8 w-8 text-yellow-500 mb-2" />
-          <span className="font-bold text-lg text-yellow-700">Game Pass</span>
-          <span className="text-xs text-gray-600">Claim rewards!</span>
-        </div>
+      <div className="w-full h-[170px] bg-white rounded-xl shadow-md border border-gray-100 p-4 flex flex-col items-center justify-center flex-shrink-0">
+        <Crown className="h-8 w-8 text-yellow-500 mb-2" />
+        <span className="font-bold text-lg text-yellow-700 mb-1">Game Pass</span>
+        <span className="text-xs text-gray-600">Claim rewards!</span>
       </div>
       {/* XP Booster Slide */}
-      <div className="w-full flex-shrink-0">
-        <div className="bg-blue-50 rounded-xl p-4 flex flex-col items-center justify-center shadow border border-blue-200 h-[170px]">
-          <Sparkles className="h-8 w-8 text-blue-500 mb-2" />
-          <span className="font-bold text-lg text-blue-700">XP Booster</span>
-          <span className="text-xs text-gray-600">Double XP for 1h</span>
-        </div>
+      <div className="w-full h-[170px] bg-white rounded-xl shadow-md border border-gray-100 p-4 flex flex-col items-center justify-center flex-shrink-0">
+        <Sparkles className="h-8 w-8 text-blue-500 mb-2" />
+        <span className="font-bold text-lg text-blue-700 mb-1">XP Booster</span>
+        <span className="text-xs text-gray-600">Double XP for 1h</span>
       </div>
     </div>
     {/* Pagination Punkte */}

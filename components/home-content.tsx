@@ -896,15 +896,15 @@ const handleSwipe = (direction: 'left' | 'right') => {
     >
       {/* Game Pass Slide */}
       <Link href="/pass" onClick={e => { if (wasSwipeRef.current) e.preventDefault(); }}>
-        <div className="w-full h-[170px] bg-white rounded-xl shadow-md border border-gray-100 p-4 flex flex-col items-center justify-center flex-shrink-0 cursor-pointer hover:bg-yellow-100 transition">
+        <div className="w-full h-[170px] bg-yellow-50 rounded-xl shadow-md border border-yellow-200 p-4 flex flex-col items-center justify-center flex-shrink-0 cursor-pointer hover:bg-yellow-100 transition">
           <Crown className="h-8 w-8 text-yellow-500 mb-2" />
           <span className="font-bold text-lg text-yellow-700 mb-1">Game Pass</span>
           <span className="text-xs text-gray-600">Claim rewards!</span>
         </div>
       </Link>
       {/* XP Booster Slide */}
-      <Link href="/shop" onClick={e => { if (wasSwipeRef.current) e.preventDefault(); }}>
-        <div className="w-full h-[170px] bg-white rounded-xl shadow-md border border-gray-100 p-4 flex flex-col items-center justify-center flex-shrink-0 cursor-pointer hover:bg-blue-100 transition">
+      <Link href="/xp-booster" onClick={e => { if (wasSwipeRef.current) e.preventDefault(); }}>
+        <div className="w-full h-[170px] bg-blue-50 rounded-xl shadow-md border border-blue-200 p-4 flex flex-col items-center justify-center flex-shrink-0 cursor-pointer hover:bg-blue-100 transition">
           <Sparkles className="h-8 w-8 text-blue-500 mb-2" />
           <span className="font-bold text-lg text-blue-700 mb-1">XP Booster</span>
           <span className="text-xs text-gray-600">Double XP for 1h</span>

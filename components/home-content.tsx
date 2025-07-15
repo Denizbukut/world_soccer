@@ -91,6 +91,7 @@ export default function Home() {
   const [timeUntilNextClaim, setTimeUntilNextClaim] = useState<number | null>(null)
   const [legendaryTickets, setLegendaryTickets] = useState(0)
   const [tickets, setTickets] = useState(0)
+  const [iconTickets, setIconTickets] = useState(0)
   const [tokens, setTokens] = useState<string | null>(null)
   const [showClaimAnimation, setShowClaimAnimation] = useState(false)
   const [hasPremium, setHasPremium] = useState(false)
@@ -211,7 +212,7 @@ const [copied, setCopied] = useState(false)
     }
   }
   // Handle buying tickets
-    const handleBuyTickets = async (ticketAmount: number, ticketType: "regular" | "legendary") => {
+    const handleBuyTickets = async (ticketAmount: number, ticketType: "regular" | "legendary" | "icon") => {
       if (!user?.username) {
         toast({
           title: "Error",
@@ -230,7 +231,7 @@ const [copied, setCopied] = useState(false)
         // Get current ticket counts
         const { data: userData, error: fetchError } = await supabase
           .from("users")
-          .select("tickets, legendary_tickets")
+          .select("tickets, legendary_tickets, icon_tickets")
           .eq("username", user.username)
           .single()
   
@@ -244,11 +245,14 @@ const [copied, setCopied] = useState(false)
           typeof userData.legendary_tickets === "number"
             ? userData.legendary_tickets
             : Number(userData.legendary_tickets) || 0
+        let newIconTicketCount = typeof userData.icon_tickets === "number" ? userData.icon_tickets : Number(userData.icon_tickets) || 0
   
         if (ticketType === "regular") {
           newTicketCount += ticketAmount
-        } else {
+        } else if (ticketType === "legendary") {
           newLegendaryTicketCount += ticketAmount
+        } else if (ticketType === "icon") {
+          newIconTicketCount += ticketAmount
         }
   
         // Update tickets in database
@@ -257,6 +261,7 @@ const [copied, setCopied] = useState(false)
           .update({
             tickets: newTicketCount,
             legendary_tickets: newLegendaryTicketCount,
+            icon_tickets: newIconTicketCount,
           })
           .eq("username", user.username)
   
@@ -267,6 +272,7 @@ const [copied, setCopied] = useState(false)
         // Update local state with explicit number types
         setTickets(newTicketCount)
         setLegendaryTickets(newLegendaryTicketCount)
+        setIconTickets(newIconTicketCount)
   
         // Update auth context
         await updateUserTickets?.(newTicketCount, newLegendaryTicketCount)
@@ -496,7 +502,7 @@ const [copied, setCopied] = useState(false)
         // Get user data including ticket_last_claimed, token_last_claimed, legendary_tickets, tickets, tokens, has_premium
         const { data, error } = await supabase
           .from("users")
-          .select("ticket_last_claimed, token_last_claimed, legendary_tickets, tickets, tokens, has_premium")
+          .select("ticket_last_claimed, token_last_claimed, legendary_tickets, tickets, tokens, has_premium, icon_tickets")
           .eq("username", user.username)
           .single()
 
@@ -517,6 +523,10 @@ const [copied, setCopied] = useState(false)
 
         if (data && typeof data.legendary_tickets === "number") {
           setLegendaryTickets(data.legendary_tickets)
+        }
+
+        if (data && typeof data.icon_tickets === "number") {
+          setIconTickets(data.icon_tickets)
         }
 
         // Check if user has claimed tickets in the last 12 hours
@@ -796,10 +806,27 @@ const [copied, setCopied] = useState(false)
         {/* Header with glass effect */}
         <header className="sticky top-0 z-10 backdrop-blur-md bg-white/90 border-b border-gray-100 shadow-sm">
           <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
-            <div className="flex items-center">
+            <div className="flex items-center gap-3">
               <h1 className="text-xl font-bold tracking-tight bg-gradient-to-r from-violet-600 to-fuchsia-600 bg-clip-text text-transparent">
                 WORLD SOCCER
               </h1>
+              {/* Move X and Telegram here */}
+              <a
+                href="https://x.com/ani_labs_world"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="relative group w-7 h-7 rounded-full bg-black hover:bg-gray-800 flex items-center justify-center shadow transition ml-2"
+              >
+                <span className="text-white font-bold text-xs group-hover:scale-110 transition-transform">𝕏</span>
+              </a>
+              <a
+                href="https://t.me/+Dx-fEykc-BY5ZmQy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="relative group w-7 h-7 rounded-full bg-blue-500 hover:bg-blue-600 flex items-center justify-center shadow transition ml-1"
+              >
+                <Send className="h-4 w-4 text-white group-hover:scale-110 transition-transform" />
+              </a>
             </div>
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
@@ -809,6 +836,11 @@ const [copied, setCopied] = useState(false)
               <div className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
                 <Ticket className="h-3.5 w-3.5 text-blue-500" />
                 <span className="font-medium text-sm">{legendaryTickets}</span>
+              </div>
+              {/* Icon Tickets */}
+              <div className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
+                <Crown className="h-3.5 w-3.5 text-indigo-500" />
+                <span className="font-medium text-sm">{iconTickets}</span>
               </div>
             </div>
           </div>

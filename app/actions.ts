@@ -239,23 +239,25 @@ export async function drawCards(username: string, packType: string, count = 1) {
     // Check if user has enough tickets
     const isLegendary = packType === "legendary"
     const isIcon = packType === "icon"
-    const ticketField = isLegendary ? "legendary_tickets" : "tickets"
+    const ticketField = isLegendary ? "legendary_tickets" : isIcon ? "icon_tickets" : "tickets"
     const currentTickets = userData[ticketField] || 0
 
     if (currentTickets < count) {
       return {
         success: false,
-        error: `Not enough ${isLegendary ? "legendary " : ""}tickets`,
+        error: `Not enough ${isLegendary ? "legendary " : isIcon ? "icon " : ""}tickets`,
       }
     }
 
-    // Deduct tickets
+    // Tickets abziehen
     const newTicketCount = currentTickets - count
 
-    // Prepare update data
+    // Update-Daten vorbereiten
     const updateData: Record<string, any> = {}
     if (isLegendary) {
       updateData.legendary_tickets = newTicketCount
+    } else if (isIcon) {
+      updateData.icon_tickets = newTicketCount
     } else {
       updateData.tickets = newTicketCount
     }
@@ -587,9 +589,9 @@ if (!clanError && clanData) {
     return {
       success: true,
       drawnCards,
-      newTicketCount: updatedUser?.tickets || (isLegendary ? userData.tickets : newTicketCount),
-      newLegendaryTicketCount:
-        updatedUser?.legendary_tickets || (isLegendary ? newTicketCount : userData.legendary_tickets),
+      newTicketCount: !isLegendary && !isIcon ? newTicketCount : userData.tickets,
+      newLegendaryTicketCount: isLegendary ? newTicketCount : userData.legendary_tickets,
+      newIconTicketCount: isIcon ? newTicketCount : userData.icon_tickets,
       scoreAdded: totalScoreToAdd,
       newScore: updatedUser?.score || newScore,
       removedZeroQuantityCards: removedCards?.length || 0,

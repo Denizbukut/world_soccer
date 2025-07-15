@@ -4,6 +4,7 @@ export interface User {
     username: string
     tickets: number
     legendary_tickets: number
+    icon_tickets: number // NEW: icon tickets
     coins: number
     level: number
     experience: number

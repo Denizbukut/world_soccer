@@ -9,6 +9,7 @@ type User = {
   username: string
   tickets: number
   legendary_tickets: number
+  icon_tickets: number // NEW: icon tickets
   coins: number
   level: number
   experience: number
@@ -64,28 +65,32 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
       const { data, error } = await supabase
         .from("users")
-        .select("username, tickets, legendary_tickets, coins, level, world_id, experience, next_level_exp, has_premium, score, clan_id")
+        .select("username, tickets, legendary_tickets, icon_tickets, coins, level, world_id, experience, next_level_exp, has_premium, score, clan_id")
         .eq("username", username)
         .single()
+
+      // Add a type assertion for data to include icon_tickets
+      const typedData = data as (typeof data & { icon_tickets?: number })
 
       if (error) {
         console.error("Error loading user data from database:", error)
         return null
       }
 
-      if (data) {
+      if (typedData) {
         // Transform database fields to match our User type with proper type assertions
         const userData: User = {
-          username: String(data.username || ""),
-          tickets: Number(data.tickets || 0),
-          legendary_tickets: Number(data.legendary_tickets || 0),
-          coins: Number(data.coins || 0),
-          level: Number(data.level || 1),
-          clan_id: Number(data.clan_id || null),
-          experience: Number(data.experience || 0),
-          nextLevelExp: Number(data.next_level_exp || 100),
-          has_premium: Boolean(data.has_premium || false),
-          score: Number(data.score || 0), // Score aus der Datenbank laden
+          username: String(typedData.username || ""),
+          tickets: Number(typedData.tickets || 0),
+          legendary_tickets: Number(typedData.legendary_tickets || 0),
+          icon_tickets: Number(typedData.icon_tickets || 0), // NEW
+          coins: Number(typedData.coins || 0),
+          level: Number(typedData.level || 1),
+          clan_id: Number(typedData.clan_id || null),
+          experience: Number(typedData.experience || 0),
+          nextLevelExp: Number(typedData.next_level_exp || 100),
+          has_premium: Boolean(typedData.has_premium || false),
+          score: Number(typedData.score || 0), // Score aus der Datenbank laden
         }
 
         return userData
@@ -211,6 +216,7 @@ if (!isHumanVerified) {
         username,
         tickets: 5,
         legendary_tickets: 2,
+        icon_tickets: 0, // NEW
         coins: 1000,
         level: 1,
         experience: 0,
@@ -268,7 +274,7 @@ if (!isHumanVerified) {
     }
   }
 
-  const updateUserTickets = async (newTicketCount: number, newLegendaryTicketCount?: number) => {
+  const updateUserTickets = async (newTicketCount: number, newLegendaryTicketCount?: number, newIconTicketCount?: number) => {
     if (user) {
       // Create updated user with new ticket count
       const updatedUser = { ...user }
@@ -280,6 +286,10 @@ if (!isHumanVerified) {
       // Update legendary tickets if provided
       if (typeof newLegendaryTicketCount === "number") {
         updatedUser.legendary_tickets = newLegendaryTicketCount
+      }
+
+      if (typeof newIconTicketCount === "number") {
+        updatedUser.icon_tickets = newIconTicketCount
       }
 
       console.log("Updating user tickets:", updatedUser.tickets, "legendary:", updatedUser.legendary_tickets)
@@ -299,6 +309,9 @@ if (!isHumanVerified) {
         }
         if (typeof newLegendaryTicketCount === "number") {
           updateData.legendary_tickets = newLegendaryTicketCount
+        }
+        if (typeof newIconTicketCount === "number") {
+          updateData.icon_tickets = newIconTicketCount
         }
 
         const { error } = await supabase.from("users").update(updateData).eq("username", user.username)

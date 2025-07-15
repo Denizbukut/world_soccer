@@ -136,6 +136,7 @@ export default function DrawPage() {
   const max_godpacks_daily = 100;
 const [godPackChances, setGodPackChances] = useState<{ godlike: number; epic: number }>({ godlike: 1, epic: 49 })
 const [showInfo, setShowInfo] = useState(false)
+const [iconTickets, setIconTickets] = useState(0)
   const fetchGodPacksLeft = async () => {
     const supabase = getSupabaseBrowserClient()
     const today = new Date().toISOString().split("T")[0]
@@ -343,6 +344,9 @@ const [showInfo, setShowInfo] = useState(false)
       if (typeof user.legendary_tickets === "number") {
         setLegendaryTickets(user.legendary_tickets)
       }
+      if (typeof user.icon_tickets === "number") {
+        setIconTickets(user.icon_tickets)
+      }
       if (typeof user.has_premium === "boolean") {
         setHasPremiumPass(user.has_premium)
       }
@@ -394,12 +398,12 @@ const [showInfo, setShowInfo] = useState(false)
       if (cardType !== "god") {
         console.log("not god")
         const requiredTickets = count
-        const availableTickets = cardType === "legendary" ? legendaryTickets : tickets
+        const availableTickets = cardType === "legendary" ? legendaryTickets : cardType === "icon" ? iconTickets : tickets
 
         if (availableTickets < requiredTickets) {
           toast({
             title: "Not enough tickets",
-            description: `You need ${requiredTickets} ${cardType === "legendary" ? "legendary " : ""}tickets but only have ${availableTickets}.`,
+            description: `You need ${requiredTickets} ${cardType === "legendary" ? "legendary " : cardType === "icon" ? "icon " : ""}tickets but only have ${availableTickets}.`,
             variant: "destructive",
           })
           return
@@ -479,10 +483,11 @@ const [showInfo, setShowInfo] = useState(false)
           if (cardType !== "god") {
             const newTicketCount = result.newTicketCount ?? tickets
             const newLegendaryTicketCount = result.newLegendaryTicketCount ?? legendaryTickets
-
+            const newIconTicketCount = result.newIconTicketCount ?? iconTickets
             setTickets(newTicketCount)
             setLegendaryTickets(newLegendaryTicketCount)
-            await updateUserTickets?.(newTicketCount, newLegendaryTicketCount)
+            setIconTickets(newIconTicketCount)
+            await updateUserTickets?.(newTicketCount, newLegendaryTicketCount, newIconTicketCount)
           } else{
             fetchGodPacksLeft()
           }
@@ -534,6 +539,7 @@ const [showInfo, setShowInfo] = useState(false)
       user,
       legendaryTickets,
       tickets,
+      iconTickets,
       updateUserTickets,
       updateUserExp,
       userClanRole,
@@ -782,6 +788,10 @@ const [showInfo, setShowInfo] = useState(false)
                 <div className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
                   <Ticket className="h-3.5 w-3.5 text-blue-500" />
                   <span className="font-medium text-sm">{legendaryTickets}</span>
+                </div>
+                <div className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
+                  <Crown className="h-3.5 w-3.5 text-indigo-500" />
+                  <span className="font-medium text-sm">{iconTickets}</span>
                 </div>
               </div>
             </div>
@@ -1134,7 +1144,7 @@ const [showInfo, setShowInfo] = useState(false)
                                 onClick={() =>
                                   !isDrawing && handleSelectPack(activeTab === "legendary" ? "legendary" : activeTab === "icon" ? "icon" : "regular")
                                 }
-                                disabled={isDrawing || (activeTab === "legendary" ? legendaryTickets < 1 : tickets < 1)}
+                                disabled={isDrawing || (activeTab === "legendary" ? legendaryTickets < 1 : activeTab === "icon" ? iconTickets < 1 : tickets < 1)}
                                 className={
                                   activeTab === "legendary"
                                     ? "flex-1 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-xl py-4 shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -1160,9 +1170,9 @@ const [showInfo, setShowInfo] = useState(false)
                                 onClick={() =>
                                   !isDrawing && handleSelectPack(activeTab === "legendary" ? "legendary" : activeTab === "icon" ? "icon" : "regular", 5)
                                 }
-                                disabled={isDrawing || (activeTab === "legendary" ? legendaryTickets < 5 : tickets < 5)}
+                                disabled={isDrawing || (activeTab === "legendary" ? legendaryTickets < 5 : activeTab === "icon" ? iconTickets < 5 : tickets < 5)}
                                 className={
-                                  isDrawing || (activeTab === "legendary" ? legendaryTickets < 5 : tickets < 5)
+                                  isDrawing || (activeTab === "legendary" ? legendaryTickets < 5 : activeTab === "icon" ? iconTickets < 5 : tickets < 5)
                                     ? "flex-1 bg-gray-300 text-gray-500 rounded-xl py-4 shadow-sm cursor-not-allowed opacity-60"
                                     : activeTab === "legendary"
                                       ? "flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl py-4 shadow-lg hover:shadow-xl transition-all duration-200 border-2 border-blue-400"
@@ -1189,9 +1199,9 @@ const [showInfo, setShowInfo] = useState(false)
                               onClick={() =>
                                 !isDrawing && handleSelectPack(activeTab === "legendary" ? "legendary" : activeTab === "icon" ? "icon" : "regular", 20)
                               }
-                              disabled={isDrawing || (activeTab === "legendary" ? legendaryTickets < 20 : tickets < 20)}
+                              disabled={isDrawing || (activeTab === "legendary" ? legendaryTickets < 20 : activeTab === "icon" ? iconTickets < 20 : tickets < 20)}
                               className={
-                                isDrawing || (activeTab === "legendary" ? legendaryTickets < 20 : tickets < 20)
+                                isDrawing || (activeTab === "legendary" ? legendaryTickets < 20 : activeTab === "icon" ? iconTickets < 20 : tickets < 20)
                                   ? "w-full bg-gray-300 text-gray-500 rounded-xl py-4 shadow-sm cursor-not-allowed opacity-60"
                                   : activeTab === "legendary"
                                     ? "w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white rounded-xl py-4 shadow-lg hover:shadow-xl transition-all duration-200 border-2 border-purple-400"

@@ -155,12 +155,12 @@ const [copied, setCopied] = useState(false)
   const [tokenBalance, setTokenBalance] = useState<string | null>(null)
   const [activeSlide, setActiveSlide] = useState(0);
 const [showChat, setShowChat] = useState(false);
-const touchStartXRef = useRef(0);
+const touchStartXRef = useRef(0)
+const wasSwipeRef = useRef(false)
 const handleSwipe = (direction: 'left' | 'right') => {
-  if (direction === 'left' && activeSlide < 1) setActiveSlide(activeSlide + 1);
-  if (direction === 'right' && activeSlide > 0) setActiveSlide(activeSlide - 1);
-};
-const [swiped, setSwiped] = useState(false)
+  if (direction === 'left' && activeSlide < 1) setActiveSlide(activeSlide + 1)
+  if (direction === 'right' && activeSlide > 0) setActiveSlide(activeSlide - 1)
+}
 
   const { price } = useWldPrice()
 
@@ -887,15 +887,15 @@ const [swiped, setSwiped] = useState(false)
     <div
       className="w-full h-full flex transition-transform duration-300"
       style={{ transform: `translateX(-${activeSlide * 100}%)` }}
-      onTouchStart={e => { touchStartXRef.current = e.touches[0].clientX; setSwiped(false); }}
+      onTouchStart={e => { touchStartXRef.current = e.touches[0].clientX; wasSwipeRef.current = false; }}
       onTouchEnd={e => {
         const dx = e.changedTouches[0].clientX - touchStartXRef.current
-        if (dx < -30) { handleSwipe('left'); setSwiped(true); }
-        if (dx > 30) { handleSwipe('right'); setSwiped(true); }
+        if (dx < -30) { handleSwipe('left'); wasSwipeRef.current = true; }
+        if (dx > 30) { handleSwipe('right'); wasSwipeRef.current = true; }
       }}
     >
       {/* Game Pass Slide */}
-      <Link href="/pass" onClick={e => { if (swiped) e.preventDefault(); }}>
+      <Link href="/pass" onClick={e => { if (wasSwipeRef.current) e.preventDefault(); }}>
         <div className="w-full h-[170px] bg-white rounded-xl shadow-md border border-gray-100 p-4 flex flex-col items-center justify-center flex-shrink-0 cursor-pointer hover:bg-yellow-100 transition">
           <Crown className="h-8 w-8 text-yellow-500 mb-2" />
           <span className="font-bold text-lg text-yellow-700 mb-1">Game Pass</span>
@@ -903,7 +903,7 @@ const [swiped, setSwiped] = useState(false)
         </div>
       </Link>
       {/* XP Booster Slide */}
-      <Link href="/shop" onClick={e => { if (swiped) e.preventDefault(); }}>
+      <Link href="/shop" onClick={e => { if (wasSwipeRef.current) e.preventDefault(); }}>
         <div className="w-full h-[170px] bg-white rounded-xl shadow-md border border-gray-100 p-4 flex flex-col items-center justify-center flex-shrink-0 cursor-pointer hover:bg-blue-100 transition">
           <Sparkles className="h-8 w-8 text-blue-500 mb-2" />
           <span className="font-bold text-lg text-blue-700 mb-1">XP Booster</span>

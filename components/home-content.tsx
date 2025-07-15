@@ -815,7 +815,7 @@ const [copied, setCopied] = useState(false)
                 href="https://x.com/ani_labs_world"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="relative group w-10 h-10 rounded-full bg-black hover:bg-gray-800 flex items-center justify-center shadow-lg border-2 border-white ml-6 mr-4 transition-transform duration-150"
+                className="relative group w-10 h-10 rounded-full bg-black hover:bg-gray-800 flex items-center justify-center shadow-lg border-2 border-white ml-2 mr-2 transition-transform duration-150"
               >
                 <span className="text-white font-extrabold text-xl group-hover:scale-110 transition-transform">𝕏</span>
               </a>
@@ -823,7 +823,7 @@ const [copied, setCopied] = useState(false)
                 href="https://t.me/+Dx-fEykc-BY5ZmQy"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="relative group w-10 h-10 rounded-full bg-blue-500 hover:bg-blue-600 flex items-center justify-center shadow-lg border-2 border-white mr-6 transition-transform duration-150"
+                className="relative group w-10 h-10 rounded-full bg-blue-500 hover:bg-blue-600 flex items-center justify-center shadow-lg border-2 border-white mr-2 transition-transform duration-150"
               >
                 <Send className="h-6 w-6 text-white group-hover:scale-110 transition-transform font-extrabold" />
               </a>
@@ -845,6 +845,37 @@ const [copied, setCopied] = useState(false)
             </div>
           </div>
         </header>
+
+        {/* Direkt unter dem Header, nach </header>: */}
+<div className="flex flex-row gap-3 justify-center my-4">
+  {/* Regular Ticket */}
+  <div className="flex flex-col items-center bg-white rounded-xl shadow-md border border-gray-100 px-4 py-3">
+    <Ticket className="h-7 w-7 text-amber-500 mb-1" />
+    <span className="font-bold text-lg">{tickets}</span>
+    <span className="text-xs text-gray-500 mb-2">Regular</span>
+    <Link href="/shop">
+      <Button size="sm" className="w-full text-xs">Shop</Button>
+    </Link>
+  </div>
+  {/* Legendary Ticket */}
+  <div className="flex flex-col items-center bg-white rounded-xl shadow-md border border-gray-100 px-4 py-3">
+    <Ticket className="h-7 w-7 text-blue-500 mb-1" />
+    <span className="font-bold text-lg">{legendaryTickets}</span>
+    <span className="text-xs text-gray-500 mb-2">Legendary</span>
+    <Link href="/shop">
+      <Button size="sm" className="w-full text-xs">Shop</Button>
+    </Link>
+  </div>
+  {/* Icon Ticket */}
+  <div className="flex flex-col items-center bg-white rounded-xl shadow-md border border-gray-100 px-4 py-3">
+    <Crown className="h-7 w-7 text-indigo-500 mb-1" />
+    <span className="font-bold text-lg">{iconTickets}</span>
+    <span className="text-xs text-gray-500 mb-2">Icon</span>
+    <Link href="/shop">
+      <Button size="sm" className="w-full text-xs">Shop</Button>
+    </Link>
+  </div>
+</div>
 
         <main className="p-3 space-y-4 max-w-lg mx-auto">
           {/* Compact User Info Section */}

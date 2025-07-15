@@ -789,6 +789,10 @@ const [showInfo, setShowInfo] = useState(false)
         </header>
 
         <main className="p-4 max-w-lg mx-auto">
+          {/* Debug Info */}
+          <div className="mb-4 p-2 bg-yellow-100 border border-yellow-300 rounded text-sm">
+            Debug: Active Tab = {activeTab} | Available Tabs: Regular, Legendary, God, ICON
+          </div>
           {/* Pack Selection Screen */}
           <AnimatePresence>
             {showPackSelection && (
@@ -798,8 +802,9 @@ const [showInfo, setShowInfo] = useState(false)
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.3 }}
               >
+                {/* Debug: Current activeTab = {activeTab} */}
                 {/* Tabs - UPDATED: Changed God tab to red gradient */}
-                <div className="flex rounded-xl overflow-hidden mb-6 border border-gray-200 bg-white">
+                <div className="grid grid-cols-4 rounded-xl overflow-hidden mb-6 border border-gray-200 bg-white">
                   <button
                     onClick={() => setActiveTab("regular")}
                     className={`flex-1 py-3 px-4 text-center font-medium transition-all ${

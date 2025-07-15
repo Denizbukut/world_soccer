@@ -46,6 +46,7 @@ import DealOfTheDayDialog from "@/components/deal-of-the-day-dialog"
 import { useTokenBalance } from "@/components/getTokenBalance"
 import { MiniKit, tokenToDecimals, Tokens, type PayCommandInput } from "@worldcoin/minikit-js"
 import { useWldPrice } from "@/contexts/WldPriceContext"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 interface LevelReward {
   level: number
@@ -858,109 +859,56 @@ const [copied, setCopied] = useState(false)
 
         <main className="p-3 space-y-4 max-w-lg mx-auto">
           {/* Compact User Info Section */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-            className="bg-white rounded-xl p-2.5 shadow-md border border-gray-100"
-          >
-            {/* Top row with username, level and tokens */}
-           <div className="flex items-center justify-between mb-2">
-  {/* Left: Username + Token */}
-  <div className="flex items-center gap-2">
-    <h2 className="font-semibold text-sm">@{user?.username}</h2>
-    <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-xs">
-      {tokens} $ANIME
-    </span>
+          <div className="flex gap-3 w-full max-w-lg mx-auto mt-4">
+  {/* Profilkarte */}
+  <div className="flex-1 bg-white rounded-xl shadow-md border border-gray-100 p-4 flex flex-col items-center justify-between min-w-[140px] max-w-[180px]">
+    {/* Avatar */}
+    <div className="w-16 h-16 rounded-full border-4 border-violet-300 overflow-hidden mb-2">
+      <img src={user?.avatar_url || "/placeholder-user.jpg"} alt="Avatar" className="object-cover w-full h-full" />
+    </div>
+    {/* Name & Level */}
+    <div className="flex flex-col items-center mb-1">
+      <span className="font-bold text-base text-violet-700">{user?.username}</span>
+      <span className="bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full text-xs font-semibold mt-1">Lvl {user?.level}</span>
+    </div>
+    {/* Clan */}
+    <div className="flex items-center gap-1 mb-2">
+      <span className="bg-fuchsia-100 text-fuchsia-700 px-2 py-0.5 rounded-full text-xs font-medium">{userClanInfo ? userClanInfo.name : "No Clan"}</span>
+    </div>
+    {/* Chat Button */}
+    <Link href="/friends">
+      <Button size="sm" className="w-full text-xs mt-2">Chat</Button>
+    </Link>
   </div>
-
-  {/* Right: Level + Logout */}
-  <div className="flex items-center gap-2">
-    <span className="bg-violet-100 text-violet-700 text-xs px-2 py-0.5 rounded-full">
-      Lvl {user?.level}
-    </span>
-    
+  {/* Game Pass + Carousel */}
+  <div className="flex-1 flex flex-col items-center justify-between min-w-[140px] max-w-[220px]">
+    {/* Carousel/Slider */}
+    <div className="w-full h-full">
+      <Tabs defaultValue="gamepass" className="w-full">
+        <TabsList className="w-full flex justify-center mb-2 bg-transparent">
+          <TabsTrigger value="gamepass" className="flex-1">Game Pass</TabsTrigger>
+          <TabsTrigger value="xpbooster" className="flex-1">XP Booster</TabsTrigger>
+        </TabsList>
+        <TabsContent value="gamepass">
+          <div className="bg-yellow-50 rounded-xl p-4 flex flex-col items-center justify-center shadow border border-yellow-200">
+            <Crown className="h-8 w-8 text-yellow-500 mb-2" />
+            <span className="font-bold text-lg text-yellow-700">Game Pass</span>
+            <span className="text-xs text-gray-600">Claim rewards!</span>
+          </div>
+        </TabsContent>
+        <TabsContent value="xpbooster">
+          <div className="bg-blue-50 rounded-xl p-4 flex flex-col items-center justify-center shadow border border-blue-200">
+            <Sparkles className="h-8 w-8 text-blue-500 mb-2" />
+            <span className="font-bold text-lg text-blue-700">XP Booster</span>
+            <span className="text-xs text-gray-600">Double XP for 1h</span>
+          </div>
+        </TabsContent>
+      </Tabs>
+    </div>
   </div>
 </div>
 
-
-
-            {/* Progress bar */}
-            <div className="flex justify-between items-center mb-1">
-              <span className="text-[10px] text-gray-500">
-                {user?.experience || 0} / {user?.nextLevelExp || 100} XP
-              </span>
-            </div>
-            <Progress
-              value={user?.experience ? (user.experience / user.nextLevelExp) * 100 : 0}
-              className="h-1.5 bg-gray-100 mb-2"
-              indicatorClassName="bg-gradient-to-r from-violet-500 to-fuchsia-500"
-            />
-
-            {/* Bottom row with clan and game pass */}
-            <div className="grid grid-cols-2 gap-2">
-              
-
-              {/* Game Pass */}
-              <Link href="/pass" className="block">
-                <div
-                  className={`flex items-center gap-2 rounded-lg p-2 ${
-                    canClaimLegendary || unclaimedRewards > 0
-                      ? "bg-amber-50 hover:bg-amber-100"
-                      : "bg-gray-50 hover:bg-gray-100"
-                  } transition-colors`}
-                >
-                  <div
-                    className={`w-7 h-7 rounded-full flex items-center justify-center relative ${
-                      canClaimLegendary || unclaimedRewards > 0
-                        ? "bg-gradient-to-r from-amber-400 to-amber-600 text-white"
-                        : "bg-gray-200 text-gray-400"
-                    }`}
-                  >
-                    <Crown className="h-3.5 w-3.5" />
-                    {(canClaimLegendary || unclaimedRewards > 0) && (
-                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
-                        <span className="text-[8px] font-bold text-white">
-                          {unclaimedRewards > 9 ? "9+" : unclaimedRewards || "!"}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                  <div>
-                    <p className="text-xs font-medium">Game Pass</p>
-                    <p className="text-[10px] text-gray-500">
-                      {canClaimLegendary || unclaimedRewards > 0 ? "Claim rewards!" : "Level up rewards"}
-                    </p>
-                  </div>
-                </div>
-              </Link>
-              {/* Clan Button */}
-              {/* Clan Button - neue Farben & Stil */}
-  <div
-    onClick={() =>
-      userClanInfo ? router.push(`/clan/${userClanInfo.id}`) : router.push("/clan")
-    }
-    className="block cursor-pointer"
-  >
-    <div className={`flex items-center gap-2 bg-gradient-to-br from-violet-100 to-fuchsia-100 hover:brightness-105 transition-colors rounded-lg p-2`}>
-      <div className="w-7 h-7 rounded-full flex items-center justify-center bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white">
-        {userClanInfo ? <Shield className="h-3.5 w-3.5" /> : <Users className="h-3.5 w-3.5" />}
-      </div>
-      <div>
-        <p className="text-[11px] font-semibold text-violet-800">{userClanInfo ? userClanInfo.name : "Join a Clan"}</p>
-        {userClanInfo && (
-          <p className="text-[10px] text-gray-600">
-            <span className="bg-violet-200 text-violet-700 px-1 rounded text-[9px] mr-1">Lvl {userClanInfo.level}</span>
-            {userClanInfo.member_count} members
-          </p>
-        )}
-      </div>
-    </div>
-  </div>
-            </div>
-          </motion.div>
-     
-           {/* Weekly Contest – Viereckig */}
+        {/* Weekly Contest – Viereckig */}
 <motion.div
   initial={{ opacity: 0, y: 20, scale: 0.95 }}
   animate={{ opacity: 1, y: 0, scale: 1 }}

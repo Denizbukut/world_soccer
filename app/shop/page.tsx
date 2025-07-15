@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/auth-context"
 import ProtectedRoute from "@/components/protected-route"
 import MobileNav from "@/components/mobile-nav"
 import { Button } from "@/components/ui/button"
-import { Ticket, Info, Check } from "lucide-react"
+import { Ticket, Info, Check, Crown } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
 import { motion } from "framer-motion"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -25,6 +25,7 @@ export default function ShopPage() {
   const [legendaryTickets, setLegendaryTickets] = useState<number>(
     user?.legendary_tickets ? Number(user.legendary_tickets) : 0,
   )
+  const [iconTickets, setIconTickets] = useState<number>(user?.icon_tickets ? Number(user.icon_tickets) : 0)
   const [userClanRole, setUserClanRole] = useState<string | null>(null)
   const [clanMemberCount, setClanMemberCount] = useState<number>(0)
 
@@ -82,6 +83,15 @@ export default function ShopPage() {
 
   fetchUserClanRole()
 }, [user?.username])
+
+  // Synchronisiere Ticket-States mit User-Objekt
+  useEffect(() => {
+    if (user) {
+      if (typeof user.tickets === "number") setTickets(user.tickets)
+      if (typeof user.legendary_tickets === "number") setLegendaryTickets(user.legendary_tickets)
+      if (typeof user.icon_tickets === "number") setIconTickets(user.icon_tickets)
+    }
+  }, [user])
 
 
  const getDiscountedPrice = (originalPrice: number) => {
@@ -214,6 +224,7 @@ export default function ShopPage() {
       // Update local state
       setTickets(newTicketCount)
       setLegendaryTickets(newLegendaryTicketCount)
+      setIconTickets(newIconTicketCount)
 
       // Update auth context
       await updateUserTickets?.(newTicketCount, newLegendaryTicketCount)
@@ -284,25 +295,27 @@ await supabase.from("ticket_purchases").insert({
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-[#f8f9ff] pb-20 text-black">
-        {/* Header with glass effect */}
-        <header className="sticky top-0 z-10 backdrop-blur-md bg-white/80 border-b border-gray-100">
-          <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
-            <div className="flex items-center">
-              <h1 className="text-lg font-medium">Shop</h1>
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white pb-20 text-black">
+        {/* Shop Header mit Ticket-Anzeige oben rechts */}
+        <div className="flex items-center justify-between max-w-lg mx-auto px-4 py-3">
+          <h1 className="text-xl font-bold tracking-tight bg-gradient-to-r from-violet-600 to-fuchsia-600 bg-clip-text text-transparent">
+            Ticket Shop
+          </h1>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
+              <Ticket className="h-3.5 w-3.5 text-amber-500" />
+              <span className="font-medium text-sm">{tickets}</span>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
-                <Ticket className="h-3.5 w-3.5 text-violet-500" />
-                <span className="font-medium text-sm">{tickets}</span>
-              </div>
-              <div className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
-                <Ticket className="h-3.5 w-3.5 text-amber-500" />
-                <span className="font-medium text-sm">{legendaryTickets}</span>
-              </div>
+            <div className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
+              <Ticket className="h-3.5 w-3.5 text-blue-500" />
+              <span className="font-medium text-sm">{legendaryTickets}</span>
+            </div>
+            <div className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
+              <Crown className="h-3.5 w-3.5 text-indigo-500" />
+              <span className="font-medium text-sm">{iconTickets}</span>
             </div>
           </div>
-        </header>
+        </div>
 
         <main className="p-4 space-y-6 max-w-lg mx-auto">
           {/* Discount Banner */}

@@ -1001,6 +1001,41 @@ const [showInfo, setShowInfo] = useState(false)
   </div>
 </div>
 
+                        ) : activeTab === "icon" ? (
+                          <div className="border border-gray-200 rounded-lg p-3 relative">
+                            <div className="space-y-2">
+                              <div className="flex justify-between items-center text-sm">
+                                <span>Common</span>
+                                <span className="text-gray-500">25%</span>
+                              </div>
+                              <div className="flex justify-between items-center text-sm">
+                                <span>Rare</span>
+                                <span className="text-blue-500">45%</span>
+                              </div>
+                              <div className="flex justify-between items-center text-sm">
+                                <span>Epic</span>
+                                <span className="text-purple-500">
+                                  {userClanRole === "lucky_star" || userClanRole === "leader" ? "22%" : "20%"}
+                                </span>
+                              </div>
+                              <div className="flex justify-between items-center text-sm">
+                                <span>Legendary</span>
+                                <div className="flex items-center gap-1">
+                                  <span className="text-amber-500">
+                                    {userClanRole === "lucky_star" || userClanRole === "leader" ? "12%" : "10%"}
+                                  </span>
+                                  {(userClanRole === "lucky_star" || userClanRole === "leader") && (
+                                    <Star className="h-3 w-3 text-yellow-500" />
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="mt-2 text-sm text-indigo-600 font-medium flex items-center justify-center gap-1">
+                              <Crown className="h-4 w-4 text-indigo-500" />
+                              ICON Pack - Better Rarities
+                            </div>
+                          </div>
+
                         ) : (
                           <div className="border border-gray-200 rounded-lg p-3 relative">
                             {hasPremiumPass && (
@@ -1191,7 +1226,7 @@ const [showInfo, setShowInfo] = useState(false)
             )}
           </AnimatePresence>
 
-          {showPackSelection && activeTab !== "god" && (
+          {showPackSelection && activeTab !== "god" && activeTab !== "icon" && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -1251,7 +1286,9 @@ const [showInfo, setShowInfo] = useState(false)
                           ? "w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl py-3 font-semibold text-lg"
                           : activeTab === "legendary"
                             ? "w-full bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-xl py-3 font-semibold text-lg"
-                            : "w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-xl py-3 font-semibold text-lg"
+                            : activeTab === "icon"
+                              ? "w-full bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white rounded-xl py-3 font-semibold text-lg"
+                              : "w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-xl py-3 font-semibold text-lg"
                       }
                     >
                       {isUpdatingScore ? (
@@ -1301,7 +1338,9 @@ const [showInfo, setShowInfo] = useState(false)
                         ? "w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl py-4"
                         : activeTab === "legendary"
                           ? "w-full bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-xl py-4"
-                          : "w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-xl py-4"
+                          : activeTab === "icon"
+                            ? "w-full bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white rounded-xl py-4"
+                            : "w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-xl py-4"
                     }
                   >
                     {isUpdatingScore ? (
@@ -1332,13 +1371,15 @@ const [showInfo, setShowInfo] = useState(false)
                   {Array.from({ length: 20 }).map((_, i) => (
                     <motion.div
                       key={`bg-particle-${i}`}
-                      className={`absolute w-2 h-2 rounded-full ${
-                        activeTab === "god"
-                          ? "bg-red-400/30"
-                          : activeTab === "legendary"
-                            ? "bg-blue-400/30"
-                            : "bg-orange-400/30"
-                      }`}
+                                              className={`absolute w-2 h-2 rounded-full ${
+                          activeTab === "god"
+                            ? "bg-red-400/30"
+                            : activeTab === "legendary"
+                              ? "bg-blue-400/30"
+                              : activeTab === "icon"
+                                ? "bg-indigo-400/30"
+                                : "bg-orange-400/30"
+                        }`}
                       animate={{
                         x: [
                           Math.random() * window.innerWidth,
@@ -1427,7 +1468,9 @@ const [showInfo, setShowInfo] = useState(false)
                           ? "bg-gradient-to-r from-red-500 to-red-600"
                           : activeTab === "legendary"
                             ? "bg-gradient-to-r from-blue-500 to-cyan-500"
-                            : "bg-gradient-to-r from-orange-500 to-amber-500"
+                            : activeTab === "icon"
+                              ? "bg-gradient-to-r from-indigo-500 to-indigo-600"
+                              : "bg-gradient-to-r from-orange-500 to-amber-500"
                       }`}
                       animate={{
                         x: ["-100%", "100%"],
@@ -1729,7 +1772,9 @@ const [showInfo, setShowInfo] = useState(false)
                           ? "bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 rounded-full w-40"
                           : activeTab === "legendary"
                             ? "bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 rounded-full w-40"
-                            : "bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 rounded-full w-40"
+                            : activeTab === "icon"
+                              ? "bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 rounded-full w-40"
+                              : "bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 rounded-full w-40"
                       }
                     >
                       Open
@@ -1752,7 +1797,9 @@ const [showInfo, setShowInfo] = useState(false)
                             ? "bg-red-400"
                             : activeTab === "legendary"
                               ? "bg-blue-400"
-                              : "bg-orange-400"
+                              : activeTab === "icon"
+                                ? "bg-indigo-400"
+                                : "bg-orange-400"
                         }`}
                         initial={{
                           x: "50vw",
@@ -2127,7 +2174,9 @@ const [showInfo, setShowInfo] = useState(false)
                         ? "bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 px-8 rounded-full"
                         : activeTab === "legendary"
                           ? "bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 px-8 rounded-full"
-                          : "bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 px-8 rounded-full"
+                          : activeTab === "icon"
+                            ? "bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 px-8 rounded-full"
+                            : "bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 px-8 rounded-full"
                     }
                     size="lg"
                   >

@@ -488,7 +488,7 @@ const [showInfo, setShowInfo] = useState(false)
           }
 
           // God pack gives more XP
-          let xpAmount = cardType === "god" ? 200 * count : cardType === "legendary" ? 100 * count : 50 * count
+          let xpAmount = cardType === "god" ? 200 * count : cardType === "legendary" ? 100 * count : cardType === "icon" ? 75 * count : 50 * count
 
           if (userClanRole === "xp_hunter") {
             xpAmount = Math.floor(xpAmount * 1.05)
@@ -826,49 +826,51 @@ const [showInfo, setShowInfo] = useState(false)
                       <span>Legendary</span>
                     </div>
                   </button>
-                  {/* UPDATED: Changed God Pack Tab to red gradient */}
+                  {/* ICON Tab */}
                   <button
-                   {/* ICON Tab – NEU */}
-  <button
-    onClick={() => setActiveTab("icon")}
-    className={`flex-1 py-3 px-4 text-center font-medium transition-all ${
-      activeTab === "icon"
-        ? "bg-gradient-to-r from-indigo-500 to-indigo-600 text-white"
-        : "bg-white text-gray-500"
-    }`}
-  >
-    <div className="flex items-center justify-center gap-2">
-      <Crown className="h-4 w-4" />
-      <span>ICON</span>
-    </div>
-  </button>
-  onClick={() => godPacksLeft !== null && godPacksLeft < max_godpacks_daily && setActiveTab("god")}
-  disabled={godPacksLeft === null || godPacksLeft >= max_godpacks_daily}
-  className={`flex-1 py-3 px-4 text-center font-medium transition-all ${
-    godPacksLeft !== null && godPacksLeft >= max_godpacks_daily
-      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-      : activeTab === "god"
-        ? "bg-gradient-to-r from-red-500 to-red-600 text-white"
-        : "bg-white text-gray-500"
-  }`}
->
-  <div className="flex items-center justify-center gap-2">
-    <Zap className="h-4 w-4" />
-    <span>God</span>
-  </div>
-</button>
+                    onClick={() => setActiveTab("icon")}
+                    className={`flex-1 py-3 px-4 text-center font-medium transition-all ${
+                      activeTab === "icon"
+                        ? "bg-gradient-to-r from-indigo-500 to-indigo-600 text-white"
+                        : "bg-white text-gray-500"
+                    }`}
+                  >
+                    <div className="flex items-center justify-center gap-2">
+                      <Crown className="h-4 w-4" />
+                      <span>ICON</span>
+                    </div>
+                  </button>
+                  
+                  {/* God Pack Tab */}
+                  <button
+                    onClick={() => godPacksLeft !== null && godPacksLeft < max_godpacks_daily && setActiveTab("god")}
+                    disabled={godPacksLeft === null || godPacksLeft >= max_godpacks_daily}
+                    className={`flex-1 py-3 px-4 text-center font-medium transition-all ${
+                      godPacksLeft !== null && godPacksLeft >= max_godpacks_daily
+                        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        : activeTab === "god"
+                          ? "bg-gradient-to-r from-red-500 to-red-600 text-white"
+                          : "bg-white text-gray-500"
+                    }`}
+                  >
+                    <div className="flex items-center justify-center gap-2">
+                      <Zap className="h-4 w-4" />
+                      <span>God</span>
+                    </div>
+                  </button>
 
                 </div>
+                
                 {godPacksLeft !== null && (
-  <div className={`mb-4 text-center text-sm font-medium px-4 py-2 rounded-xl ${
-    godPacksLeft === 0
-      ? "bg-gray-100 text-gray-600 border border-gray-300"
-      : "bg-red-50 text-red-600 border border-red-200"
-  }`}>
-    ⚡ God Packs opened today:{" "}
-    <span className="font-bold">{godPacksLeft}</span> / {max_godpacks_daily}
-  </div>
-)}
+                  <div className={`mb-4 text-center text-sm font-medium px-4 py-2 rounded-xl ${
+                    godPacksLeft === 0
+                      ? "bg-gray-100 text-gray-600 border border-gray-300"
+                      : "bg-red-50 text-red-600 border border-red-200"
+                  }`}>
+                    ⚡ God Packs opened today:{" "}
+                    <span className="font-bold">{godPacksLeft}</span> / {max_godpacks_daily}
+                  </div>
+                )}
 
 
 
@@ -910,7 +912,7 @@ const [showInfo, setShowInfo] = useState(false)
 
                       <div className="text-center mb-4">
                         <h3 className="text-lg font-medium">
-                          {activeTab === "god" ? "God" : activeTab === "legendary" ? "Legendary" : "Regular"} Card Pack
+                          {activeTab === "god" ? "God" : activeTab === "legendary" ? "Legendary" : activeTab === "icon" ? "ICON" : "Regular"} Card Pack
                         </h3>
                         <p className="text-sm text-gray-500">Contains 1 random card</p>
                         <div className="flex items-center justify-center gap-1 mt-1 text-xs text-violet-600">
@@ -918,19 +920,19 @@ const [showInfo, setShowInfo] = useState(false)
                           {userClanRole === "xp_hunter" || userClanRole === "leader" || hasXpPass ? (
                             <span className="flex items-center gap-1">
                               <span className="line-through text-gray-400">
-                                +{activeTab === "god" ? "200" : activeTab === "legendary" ? "100" : "50"} XP
+                                +{activeTab === "god" ? "200" : activeTab === "legendary" ? "100" : activeTab === "icon" ? "75" : "50"} XP
                               </span>
                               <span className="text-violet-600 font-semibold">
                                 +
                                 {calculateXpWithBonuses(
-                                  activeTab === "god" ? 200 : activeTab === "legendary" ? 100 : 50,
+                                  activeTab === "god" ? 200 : activeTab === "legendary" ? 100 : activeTab === "icon" ? 75 : 50,
                                 )}{" "}
                                 XP
                               </span>
                               {userClanRole === "xp_hunter" && <Sword className="h-3 w-3 text-orange-500" />}
                             </span>
                           ) : (
-                            <span>+{activeTab === "god" ? "200" : activeTab === "legendary" ? "100" : "50"} XP</span>
+                            <span>+{activeTab === "god" ? "200" : activeTab === "legendary" ? "100" : activeTab === "icon" ? "75" : "50"} XP</span>
                           )}
                         </div>
                       </div>
@@ -1099,13 +1101,15 @@ const [showInfo, setShowInfo] = useState(false)
                             <div className="flex gap-4">
                               <Button
                                 onClick={() =>
-                                  !isDrawing && handleSelectPack(activeTab === "legendary" ? "legendary" : "regular")
+                                  !isDrawing && handleSelectPack(activeTab === "legendary" ? "legendary" : activeTab === "icon" ? "icon" : "regular")
                                 }
                                 disabled={isDrawing || (activeTab === "legendary" ? legendaryTickets < 1 : tickets < 1)}
                                 className={
                                   activeTab === "legendary"
                                     ? "flex-1 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-xl py-4 shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                                    : "flex-1 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-xl py-4 shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    : activeTab === "icon"
+                                      ? "flex-1 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white rounded-xl py-4 shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                      : "flex-1 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-xl py-4 shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                 }
                               >
                                 {isDrawing ? (
@@ -1123,7 +1127,7 @@ const [showInfo, setShowInfo] = useState(false)
 
                               <Button
                                 onClick={() =>
-                                  !isDrawing && handleSelectPack(activeTab === "legendary" ? "legendary" : "regular", 5)
+                                  !isDrawing && handleSelectPack(activeTab === "legendary" ? "legendary" : activeTab === "icon" ? "icon" : "regular", 5)
                                 }
                                 disabled={isDrawing || (activeTab === "legendary" ? legendaryTickets < 5 : tickets < 5)}
                                 className={
@@ -1131,7 +1135,9 @@ const [showInfo, setShowInfo] = useState(false)
                                     ? "flex-1 bg-gray-300 text-gray-500 rounded-xl py-4 shadow-sm cursor-not-allowed opacity-60"
                                     : activeTab === "legendary"
                                       ? "flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl py-4 shadow-lg hover:shadow-xl transition-all duration-200 border-2 border-blue-400"
-                                      : "flex-1 bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white rounded-xl py-4 shadow-lg hover:shadow-xl transition-all duration-200 border-2 border-orange-400"
+                                      : activeTab === "icon"
+                                        ? "flex-1 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white rounded-xl py-4 shadow-lg hover:shadow-xl transition-all duration-200 border-2 border-indigo-400"
+                                        : "flex-1 bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white rounded-xl py-4 shadow-lg hover:shadow-xl transition-all duration-200 border-2 border-orange-400"
                                 }
                               >
                                 {isDrawing ? (
@@ -1150,7 +1156,7 @@ const [showInfo, setShowInfo] = useState(false)
 
                             <Button
                               onClick={() =>
-                                !isDrawing && handleSelectPack(activeTab === "legendary" ? "legendary" : "regular", 20)
+                                !isDrawing && handleSelectPack(activeTab === "legendary" ? "legendary" : activeTab === "icon" ? "icon" : "regular", 20)
                               }
                               disabled={isDrawing || (activeTab === "legendary" ? legendaryTickets < 20 : tickets < 20)}
                               className={
@@ -1158,7 +1164,9 @@ const [showInfo, setShowInfo] = useState(false)
                                   ? "w-full bg-gray-300 text-gray-500 rounded-xl py-4 shadow-sm cursor-not-allowed opacity-60"
                                   : activeTab === "legendary"
                                     ? "w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white rounded-xl py-4 shadow-lg hover:shadow-xl transition-all duration-200 border-2 border-purple-400"
-                                    : "w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-xl py-4 shadow-lg hover:shadow-xl transition-all duration-200 border-2 border-red-400"
+                                    : activeTab === "icon"
+                                      ? "w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white rounded-xl py-4 shadow-lg hover:shadow-xl transition-all duration-200 border-2 border-indigo-400"
+                                      : "w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-xl py-4 shadow-lg hover:shadow-xl transition-all duration-200 border-2 border-red-400"
                               }
                             >
                               {isDrawing ? (

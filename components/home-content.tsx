@@ -869,21 +869,21 @@ const handleSwipe = (direction: 'left' | 'right') => {
           {/* Compact User Info Section */}
           {/* Profil, Game Pass & XP Booster nebeneinander, alle gleich groß */}
 {/* Profilkarte (immer sichtbar, statisch) + Slider für Game Pass / XP Booster */}
-<div className="w-full max-w-lg mx-auto mt-4 flex gap-4">
+<div className="w-full max-w-lg mx-auto mt-4 flex gap-4 items-start">
   {/* Profilkarte */}
-  <div className="flex-shrink-0 w-[120px] h-[170px] bg-white rounded-xl shadow-md border border-gray-100 p-4 flex flex-col items-center justify-center">
+  <div className="flex-shrink-0 w-[150px] h-[200px] bg-white rounded-xl shadow-md border border-gray-100 p-4 flex flex-col items-center justify-center">
     {/* Avatar */}
-    <div className="w-12 h-12 rounded-full border-4 border-violet-300 overflow-hidden mb-2">
+    <div className="w-16 h-16 rounded-full border-4 border-violet-300 overflow-hidden mb-2">
       <img src="/placeholder-user.jpg" alt="Avatar" className="object-cover w-full h-full" />
     </div>
-    <span className="font-bold text-sm text-violet-700 mb-1">{user?.username}</span>
-    <span className="bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full text-xs font-semibold mb-1">Lvl {user?.level}</span>
+    <span className="font-bold text-base text-violet-700 mb-1">{user?.username}</span>
+    <span className="bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full text-sm font-semibold mb-1">Lvl {user?.level}</span>
     <span className="bg-fuchsia-100 text-fuchsia-700 px-2 py-0.5 rounded-full text-xs font-medium mb-2">{userClanInfo ? userClanInfo.name : "No Clan"}</span>
     <Button size="sm" className="w-full text-xs mt-1" onClick={() => setShowChat(true)}>Chat</Button>
   </div>
   {/* Slider-Bereich für Game Pass / XP Booster */}
   <div
-    className="flex-1 h-[170px] relative flex items-center justify-center"
+    className="flex-1 min-w-0 h-[200px] relative flex items-center justify-center"
     onTouchStart={e => {
       touchStartXRef.current = e.touches[0].clientX;
       wasSwipeRef.current = false;
@@ -904,19 +904,19 @@ const handleSwipe = (direction: 'left' | 'right') => {
   >
     {activeSlide === 0 && (
       <Link href="/pass">
-        <div className="w-full h-[170px] bg-yellow-50 rounded-xl shadow-md border border-yellow-200 p-4 flex flex-col items-center justify-center cursor-pointer hover:bg-yellow-100 transition">
-          <Crown className="h-8 w-8 text-yellow-500 mb-2" />
-          <span className="font-bold text-lg text-yellow-700 mb-1">Game Pass</span>
-          <span className="text-xs text-gray-600">Claim rewards!</span>
+        <div className="w-full h-[200px] bg-yellow-50 rounded-xl shadow-md border border-yellow-200 p-6 flex flex-col items-center justify-center cursor-pointer hover:bg-yellow-100 transition">
+          <Crown className="h-10 w-10 text-yellow-500 mb-2" />
+          <span className="font-bold text-xl text-yellow-700 mb-1">Game Pass</span>
+          <span className="text-sm text-gray-600">Claim rewards!</span>
         </div>
       </Link>
     )}
     {activeSlide === 1 && (
       <Link href="/xp-booster">
-        <div className="w-full h-[170px] bg-blue-50 rounded-xl shadow-md border border-blue-200 p-4 flex flex-col items-center justify-center cursor-pointer hover:bg-blue-100 transition">
-          <Sparkles className="h-8 w-8 text-blue-500 mb-2" />
-          <span className="font-bold text-lg text-blue-700 mb-1">XP Booster</span>
-          <span className="text-xs text-gray-600">Double XP for 1h</span>
+        <div className="w-full h-[200px] bg-blue-50 rounded-xl shadow-md border border-blue-200 p-6 flex flex-col items-center justify-center cursor-pointer hover:bg-blue-100 transition">
+          <Sparkles className="h-10 w-10 text-blue-500 mb-2" />
+          <span className="font-bold text-xl text-blue-700 mb-1">XP Booster</span>
+          <span className="text-sm text-gray-600">Double XP for 1h</span>
         </div>
       </Link>
     )}

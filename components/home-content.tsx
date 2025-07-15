@@ -1163,15 +1163,7 @@ const handleSwipe = (direction: 'left' | 'right') => {
     ))}
   </div>
 
-  {/* Full-width Leaderboard Card */}
-  <Link href="/leaderboard" className="block">
-    <div className="w-full rounded-lg bg-white border border-gray-100 p-3 flex items-center gap-3 hover:bg-gray-50 transition">
-      <div className="w-9 h-9 rounded-full bg-purple-100 flex items-center justify-center">
-        <Crown className="h-5 w-5 text-purple-600" />
-      </div>
-      <span className="text-sm font-medium text-gray-800">View Leaderboard</span>
-    </div>
-  </Link>
+  
 </section>
 
     

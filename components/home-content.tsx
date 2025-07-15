@@ -941,26 +941,25 @@ const handleSwipe = (direction: 'left' | 'right') => {
   </div>
 )}
 
-        {/* Weekly Contest – Kompakte Card mit Shine-Effekt */}
+        {/* Weekly Contest – Kompakte Card mit Shine-Effekt, jetzt volle Breite */}
 <motion.div
   initial={{ opacity: 0, y: 20, scale: 0.95 }}
   animate={{ opacity: 1, y: 0, scale: 1 }}
   transition={{ duration: 0.6, ease: "easeOut", delay: 0.3 }}
   whileHover={{ scale: 1.03 }}
-  className="relative w-full max-w-xs mx-auto my-4"
+  className="relative w-full max-w-lg mx-auto my-4"
 >
   {/* Shine Effekt */}
   <div className="absolute inset-0 overflow-hidden rounded-xl pointer-events-none">
     <div className="shine animate-shine"></div>
   </div>
   <Link href="/weekly-contest">
-    <div className="relative bg-gradient-to-br from-yellow-400 via-yellow-300 to-yellow-500 text-white rounded-xl p-4 h-[110px] shadow-lg hover:brightness-110 transition flex flex-row items-center gap-4 border-2 border-yellow-500">
+    <div className="relative bg-gradient-to-br from-yellow-400 via-yellow-300 to-yellow-500 text-white rounded-xl p-4 h-[110px] shadow-lg hover:brightness-110 transition flex flex-row items-center gap-4 border-2 border-yellow-500 w-full">
       <Trophy className="w-12 h-12 text-white drop-shadow-lg flex-shrink-0" />
       <div className="flex flex-col justify-center flex-1">
         <h3 className="text-lg font-extrabold leading-tight font-sans tracking-tight" style={{fontFamily: 'Inter, Arial, sans-serif'}}>Weekly Contest</h3>
         <span className="text-sm font-semibold text-white/90 mt-1" style={{fontFamily: 'Inter, Arial, sans-serif'}}>Win up to <span className="text-yellow-900 font-bold">50 WLD</span> – compete now!</span>
       </div>
-      {/* Chevron oder animiertes Icon optional */}
     </div>
   </Link>
 </motion.div>

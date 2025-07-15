@@ -160,6 +160,7 @@ const handleSwipe = (direction: 'left' | 'right') => {
   if (direction === 'left' && activeSlide < 1) setActiveSlide(activeSlide + 1);
   if (direction === 'right' && activeSlide > 0) setActiveSlide(activeSlide - 1);
 };
+const [swiped, setSwiped] = useState(false)
 
   const { price } = useWldPrice()
 
@@ -886,25 +887,29 @@ const handleSwipe = (direction: 'left' | 'right') => {
     <div
       className="w-full h-full flex transition-transform duration-300"
       style={{ transform: `translateX(-${activeSlide * 100}%)` }}
-      onTouchStart={e => { touchStartXRef.current = e.touches[0].clientX }}
+      onTouchStart={e => { touchStartXRef.current = e.touches[0].clientX; setSwiped(false); }}
       onTouchEnd={e => {
         const dx = e.changedTouches[0].clientX - touchStartXRef.current
-        if (dx < -30) handleSwipe('left')
-        if (dx > 30) handleSwipe('right')
+        if (dx < -30) { handleSwipe('left'); setSwiped(true); }
+        if (dx > 30) { handleSwipe('right'); setSwiped(true); }
       }}
     >
       {/* Game Pass Slide */}
-      <div className="w-full h-[170px] bg-white rounded-xl shadow-md border border-gray-100 p-4 flex flex-col items-center justify-center flex-shrink-0">
-        <Crown className="h-8 w-8 text-yellow-500 mb-2" />
-        <span className="font-bold text-lg text-yellow-700 mb-1">Game Pass</span>
-        <span className="text-xs text-gray-600">Claim rewards!</span>
-      </div>
+      <Link href="/pass" onClick={e => { if (swiped) e.preventDefault(); }}>
+        <div className="w-full h-[170px] bg-white rounded-xl shadow-md border border-gray-100 p-4 flex flex-col items-center justify-center flex-shrink-0 cursor-pointer hover:bg-yellow-100 transition">
+          <Crown className="h-8 w-8 text-yellow-500 mb-2" />
+          <span className="font-bold text-lg text-yellow-700 mb-1">Game Pass</span>
+          <span className="text-xs text-gray-600">Claim rewards!</span>
+        </div>
+      </Link>
       {/* XP Booster Slide */}
-      <div className="w-full h-[170px] bg-white rounded-xl shadow-md border border-gray-100 p-4 flex flex-col items-center justify-center flex-shrink-0">
-        <Sparkles className="h-8 w-8 text-blue-500 mb-2" />
-        <span className="font-bold text-lg text-blue-700 mb-1">XP Booster</span>
-        <span className="text-xs text-gray-600">Double XP for 1h</span>
-      </div>
+      <Link href="/shop" onClick={e => { if (swiped) e.preventDefault(); }}>
+        <div className="w-full h-[170px] bg-white rounded-xl shadow-md border border-gray-100 p-4 flex flex-col items-center justify-center flex-shrink-0 cursor-pointer hover:bg-blue-100 transition">
+          <Sparkles className="h-8 w-8 text-blue-500 mb-2" />
+          <span className="font-bold text-lg text-blue-700 mb-1">XP Booster</span>
+          <span className="text-xs text-gray-600">Double XP for 1h</span>
+        </div>
+      </Link>
     </div>
     {/* Pagination Punkte */}
     <div className="flex justify-center gap-2 mt-2 absolute bottom-2 left-0 right-0">

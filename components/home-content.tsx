@@ -882,40 +882,30 @@ const handleSwipe = (direction: 'left' | 'right') => {
     {/* Chat Button öffnet echtes Chat-Modal */}
     <Button size="sm" className="w-full text-xs mt-1" onClick={() => setShowChat(true)}>Chat</Button>
   </div>
-  {/* Carousel/Slider für Game Pass & XP Booster (rechte Karte): */}
-  <div className="flex-1 w-full h-[170px] relative overflow-hidden min-w-[140px] max-w-[220px]">
-    <div
-      className="w-full h-full flex transition-transform duration-300"
-      style={{ transform: `translateX(-${activeSlide * 100}%)` }}
-      onTouchStart={e => { touchStartXRef.current = e.touches[0].clientX; wasSwipeRef.current = false; }}
-      onTouchEnd={e => {
-        const dx = e.changedTouches[0].clientX - touchStartXRef.current
-        if (dx < -30) { handleSwipe('left'); wasSwipeRef.current = true; }
-        if (dx > 30) { handleSwipe('right'); wasSwipeRef.current = true; }
-      }}
-    >
-      {/* Game Pass Slide */}
-      <Link href="/pass" onClick={e => { if (wasSwipeRef.current) e.preventDefault(); }}>
-        <div className="w-full h-[170px] bg-yellow-50 rounded-xl shadow-md border border-yellow-200 p-4 flex flex-col items-center justify-center flex-shrink-0 cursor-pointer hover:bg-yellow-100 transition">
-          <Crown className="h-8 w-8 text-yellow-500 mb-2" />
-          <span className="font-bold text-lg text-yellow-700 mb-1">Game Pass</span>
-          <span className="text-xs text-gray-600">Claim rewards!</span>
-        </div>
-      </Link>
-      {/* XP Booster Slide */}
-      <Link href="/xp-booster" onClick={e => { if (wasSwipeRef.current) e.preventDefault(); }}>
-        <div className="w-full h-[170px] bg-blue-50 rounded-xl shadow-md border border-blue-200 p-4 flex flex-col items-center justify-center flex-shrink-0 cursor-pointer hover:bg-blue-100 transition">
-          <Sparkles className="h-8 w-8 text-blue-500 mb-2" />
-          <span className="font-bold text-lg text-blue-700 mb-1">XP Booster</span>
-          <span className="text-xs text-gray-600">Double XP for 1h</span>
-        </div>
-      </Link>
-    </div>
-    {/* Pagination Punkte */}
-    <div className="flex justify-center gap-2 mt-2 absolute bottom-2 left-0 right-0">
-      <div className={`w-2 h-2 rounded-full ${activeSlide === 0 ? 'bg-yellow-500' : 'bg-gray-300'}`}></div>
-      <div className={`w-2 h-2 rounded-full ${activeSlide === 1 ? 'bg-blue-500' : 'bg-gray-300'}`}></div>
-    </div>
+  {/* Carousel/Slider für Game Pass & XP Booster (nur ein Slide sichtbar): */}
+<div className="flex-1 w-full h-[170px] relative overflow-hidden min-w-[140px] max-w-[220px] flex items-center justify-center">
+  {activeSlide === 0 && (
+    <Link href="/pass" onClick={e => { if (wasSwipeRef.current) e.preventDefault(); }}>
+      <div className="w-full h-[170px] bg-yellow-50 rounded-xl shadow-md border border-yellow-200 p-4 flex flex-col items-center justify-center cursor-pointer hover:bg-yellow-100 transition">
+        <Crown className="h-8 w-8 text-yellow-500 mb-2" />
+        <span className="font-bold text-lg text-yellow-700 mb-1">Game Pass</span>
+        <span className="text-xs text-gray-600">Claim rewards!</span>
+      </div>
+    </Link>
+  )}
+  {activeSlide === 1 && (
+    <Link href="/xp-booster" onClick={e => { if (wasSwipeRef.current) e.preventDefault(); }}>
+      <div className="w-full h-[170px] bg-blue-50 rounded-xl shadow-md border border-blue-200 p-4 flex flex-col items-center justify-center cursor-pointer hover:bg-blue-100 transition">
+        <Sparkles className="h-8 w-8 text-blue-500 mb-2" />
+        <span className="font-bold text-lg text-blue-700 mb-1">XP Booster</span>
+        <span className="text-xs text-gray-600">Double XP for 1h</span>
+      </div>
+    </Link>
+  )}
+  {/* Pagination Punkte */}
+  <div className="flex justify-center gap-2 mt-2 absolute bottom-2 left-0 right-0">
+    <div className={`w-2 h-2 rounded-full ${activeSlide === 0 ? 'bg-yellow-500' : 'bg-gray-300'}`}></div>
+    <div className={`w-2 h-2 rounded-full ${activeSlide === 1 ? 'bg-blue-500' : 'bg-gray-300'}`}></div>
   </div>
 </div>
 {/* Chat Modal (Dummy) */}

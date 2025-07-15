@@ -815,17 +815,17 @@ const [copied, setCopied] = useState(false)
                 href="https://x.com/ani_labs_world"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="relative group w-7 h-7 rounded-full bg-black hover:bg-gray-800 flex items-center justify-center shadow transition ml-2"
+                className="relative group w-8 h-8 rounded-full bg-black hover:bg-gray-800 flex items-center justify-center shadow transition ml-6 mr-4"
               >
-                <span className="text-white font-bold text-xs group-hover:scale-110 transition-transform">𝕏</span>
+                <span className="text-white font-extrabold text-xl group-hover:scale-110 transition-transform">𝕏</span>
               </a>
               <a
                 href="https://t.me/+Dx-fEykc-BY5ZmQy"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="relative group w-7 h-7 rounded-full bg-blue-500 hover:bg-blue-600 flex items-center justify-center shadow transition ml-1"
+                className="relative group w-8 h-8 rounded-full bg-blue-500 hover:bg-blue-600 flex items-center justify-center shadow transition mr-6"
               >
-                <Send className="h-4 w-4 text-white group-hover:scale-110 transition-transform" />
+                <Send className="h-5 w-5 text-white group-hover:scale-110 transition-transform font-extrabold" />
               </a>
             </div>
             <div className="flex items-center gap-2">

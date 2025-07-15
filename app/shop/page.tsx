@@ -99,7 +99,7 @@ export default function ShopPage() {
   dollarPrice: number,
   packageId: string,
   ticketAmount: number,
-  ticketType: "regular" | "legendary",
+  ticketType: "regular" | "legendary" | "icon",
 ) => {
   setIsLoading({ ...isLoading, [packageId]: true })
 
@@ -150,7 +150,7 @@ export default function ShopPage() {
 
   // Handle buying tickets
  // Handle buying tickets
-  const handleBuyTickets = async (packageId: string, ticketAmount: number, ticketType: "regular" | "legendary") => {
+  const handleBuyTickets = async (packageId: string, ticketAmount: number, ticketType: "regular" | "legendary" | "icon") => {
     if (!user?.username) {
       toast({
         title: "Error",
@@ -170,7 +170,7 @@ export default function ShopPage() {
       // Get current ticket counts
       const { data: userData, error: fetchError } = await supabase
         .from("users")
-        .select("tickets, legendary_tickets")
+        .select("tickets, legendary_tickets, icon_tickets")
         .eq("username", user.username)
         .single()
 
@@ -184,11 +184,17 @@ export default function ShopPage() {
         typeof userData.legendary_tickets === "number"
           ? userData.legendary_tickets
           : Number(userData.legendary_tickets) || 0
+      let newIconTicketCount =
+        typeof userData.icon_tickets === "number"
+          ? userData.icon_tickets
+          : Number(userData.icon_tickets) || 0
 
       if (ticketType === "regular") {
         newTicketCount += ticketAmount
-      } else {
+      } else if (ticketType === "legendary") {
         newLegendaryTicketCount += ticketAmount
+      } else if (ticketType === "icon") {
+        newIconTicketCount += ticketAmount
       }
 
       // Update tickets in database
@@ -197,6 +203,7 @@ export default function ShopPage() {
         .update({
           tickets: newTicketCount,
           legendary_tickets: newLegendaryTicketCount,
+          icon_tickets: newIconTicketCount,
         })
         .eq("username", user.username)
 
@@ -268,6 +275,13 @@ await supabase.from("ticket_purchases").insert({
     { id: "leg-500", amount: 500, price: 32 },
   ]
 
+  // Icon Ticket Packages (20% teurer als Legendary)
+  const iconPackages = legendaryPackages.map(pkg => ({
+    id: `icon-${pkg.amount}`,
+    amount: pkg.amount,
+    price: +(pkg.price * 1.2).toFixed(2),
+  }))
+
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-[#f8f9ff] pb-20 text-black">
@@ -310,7 +324,7 @@ await supabase.from("ticket_purchases").insert({
           {/* Tabs for different ticket types */}
 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
   <Tabs defaultValue="regular" className="w-full">
-    <TabsList className="grid w-full grid-cols-2 h-11 rounded-xl p-1 bg-gray-100 mb-6">
+    <TabsList className="grid w-full grid-cols-3 h-11 rounded-xl p-1 bg-gray-100 mb-6">
       <TabsTrigger
         value="regular"
         className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-violet-600 data-[state=active]:shadow-sm transition-all"
@@ -324,6 +338,13 @@ await supabase.from("ticket_purchases").insert({
       >
         <Ticket className="h-4 w-4 mr-2 text-amber-500" />
         Legendary Tickets
+      </TabsTrigger>
+      <TabsTrigger
+        value="icon"
+        className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm transition-all"
+      >
+        <span className="font-extrabold text-indigo-600 mr-2">★</span>
+        Icon Tickets
       </TabsTrigger>
     </TabsList>
 
@@ -376,7 +397,7 @@ await supabase.from("ticket_purchases").insert({
                 <Button
                   className="w-full bg-white text-violet-600 border border-violet-200 hover:bg-violet-50 shadow-sm text-xs"
                   variant="outline"
-                  onClick={() => sendPayment(originalPrice, pkg.id, pkg.amount, "regular")}
+                  onClick={() => sendPayment(originalPrice, pkg.id, "regular")}
                   disabled={isLoading[pkg.id]}
                 >
                   {isLoading[pkg.id] ? (
@@ -442,12 +463,68 @@ await supabase.from("ticket_purchases").insert({
                 <Button
                   className="w-full bg-white text-amber-600 border border-amber-200 hover:bg-amber-50 shadow-sm"
                   variant="outline"
-                  onClick={() => sendPayment(originalPrice, pkg.id, pkg.amount, "legendary")}
+                  onClick={() => sendPayment(originalPrice, pkg.id, "legendary")}
                   disabled={isLoading[pkg.id]}
                 >
                   {isLoading[pkg.id] ? (
                     <>
                       <div className="h-4 w-4 border-2 border-t-transparent border-amber-600 rounded-full animate-spin mr-2"></div>
+                      Processing...
+                    </>
+                  ) : (
+                    "Purchase"
+                  )}
+                </Button>
+              </CardFooter>
+            </Card>
+          )
+        })}
+      </div>
+    </TabsContent>
+
+    {/* Icon Tickets Content */}
+    <TabsContent value="icon" className="mt-0 space-y-6">
+      <div className="grid grid-cols-2 gap-4">
+        {iconPackages.map((pkg) => {
+          const originalPrice = pkg.price
+          const discountedPrice = getDiscountedPrice(originalPrice)
+          const hasDiscount = discountedPrice < originalPrice
+          return (
+            <Card key={pkg.id} className="relative overflow-hidden border bg-white/70 backdrop-blur-sm hover:shadow-md transition-all">
+              {hasDiscount && (
+                <div className="absolute top-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">-10%</div>
+              )}
+              <CardHeader className="p-4 pb-2 space-y-1">
+                <CardTitle className="text-base font-medium flex items-center">
+                  <span className="mr-1">{pkg.amount}</span>
+                  <span className="font-extrabold text-indigo-600 mx-1">★</span>
+                  {pkg.amount === 1 ? "Icon Ticket" : "Icon Tickets"}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 pt-0 pb-3">
+                <Separator className="my-3" />
+                <div className="flex flex-col items-start">
+                  {hasDiscount && (
+                    <span className="text-xs text-gray-400 line-through">
+                      {price ? `${(originalPrice / price).toFixed(3)} WLD` : `${originalPrice.toFixed(3)} WLD`}
+                    </span>
+                  )}
+                  <span className="text-sm font-semibold">
+                    {price ? `${(discountedPrice / price).toFixed(3)} WLD` : `${discountedPrice.toFixed(3)} WLD`}
+                  </span>
+                  <span className="text-xs text-gray-500">(~${discountedPrice.toFixed(2)})</span>
+                </div>
+              </CardContent>
+              <CardFooter className="p-4 pt-0">
+                <Button
+                  className="w-full bg-white text-indigo-600 border border-indigo-200 hover:bg-indigo-50 shadow-sm"
+                  variant="outline"
+                  onClick={() => sendPayment(originalPrice, pkg.id, "icon")}
+                  disabled={isLoading[pkg.id]}
+                >
+                  {isLoading[pkg.id] ? (
+                    <>
+                      <div className="h-4 w-4 border-2 border-t-transparent border-indigo-600 rounded-full animate-spin mr-2"></div>
                       Processing...
                     </>
                   ) : (

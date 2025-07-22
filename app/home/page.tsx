@@ -11,6 +11,7 @@ import { toast } from "@/components/ui/use-toast"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import Image from "next/image"
+import { XLogo } from "@/components/x-logo"
 
 export default function HomePage() {
   const { user, updateUserTickets } = useAuth()
@@ -93,7 +94,7 @@ export default function HomePage() {
 
       if (result.success) {
         // Update the user's tickets in the auth context
-        updateUserTickets(result.newTicketCount)
+        updateUserTickets(typeof result.newTicketCount === "number" ? result.newTicketCount : 0)
 
         // Store the current time as the last claim time
         const now = new Date()
@@ -137,15 +138,26 @@ export default function HomePage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 pb-20 text-black">
       <header className="bg-white p-4 border-b border-gray-200">
         <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="rounded-full bg-gray-100 p-2 flex items-center justify-center">
+              <XLogo className="h-6 w-6 text-black" />
+            </div>
+            <div className="rounded-full bg-gray-100 p-2 flex items-center justify-center">
+              {/* Telegram SVG Icon */}
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="h-6 w-6 text-[#229ED9]" fill="currentColor">
+                <path d="M21.954 4.569c-.197-.149-.453-.188-.68-.099L2.3 11.293c-.237.092-.398.316-.398.57 0 .255.161.479.398.57l4.89 1.957 2.07 6.518c.07.221.26.38.488.38.08 0 .16-.02.234-.06.13-.07.22-.2.24-.35l1.13-7.13 6.13 4.52c.09.07.2.1.31.1.09 0 .18-.02.26-.07.17-.1.27-.3.22-.5l-2.13-8.52 4.89-1.957c.237-.092.398-.316.398-.57 0-.255-.161-.479-.398-.57z" />
+              </svg>
+            </div>
+          </div>
           <h1 className="text-xl font-bold text-black">Anime World TCG</h1>
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1 bg-gray-100 px-3 py-1.5 rounded-full">
               <Ticket className="h-4 w-4 text-blue-500" />
-              <span className="font-bold text-black">{user?.tickets || 0}</span>
+              <span className="font-bold text-black">{typeof user?.tickets === "number" ? user.tickets : 0}</span>
             </div>
             <div className="flex items-center gap-1 bg-gray-100 px-3 py-1.5 rounded-full">
               <Crown className="h-4 w-4 text-yellow-500" />
-              <span className="font-bold text-black">{user?.legendary_tickets || 0}</span>
+              <span className="font-bold text-black">{typeof user?.legendary_tickets === "number" ? user.legendary_tickets : 0}</span>
             </div>
           </div>
         </div>

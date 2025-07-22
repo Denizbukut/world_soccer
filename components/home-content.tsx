@@ -166,6 +166,23 @@ const handleSwipe = (direction: 'left' | 'right') => {
 
   const ticketClaimAmount = user?.clan_id ? (userClanInfo?.level && userClanInfo.level >= 2 ? 4 : 3) : 3
 
+  // Dummy-Daten für Special Deal
+  const specialDeal = {
+    id: 2,
+    card_id: "rodri_ultimate",
+    card_level: 91,
+    regular_tickets: 0,
+    legendary_tickets: 0,
+    price: 8.0,
+    description: "",
+    discount_percentage: 0,
+    card_name: "Rodri",
+    card_image_url: "https://fda1523f9dc7558ddc4fcf148e01a03a.r2.cloudflarestorage.com/world-soccer/Rodri-removebg-preview.png",
+    card_rarity: "ultimate",
+    card_character: "CDM",
+    bonus1: 25,
+    bonus2: 25,
+  };
 
 
   useEffect(() => {
@@ -966,151 +983,36 @@ const handleSwipe = (direction: 'left' | 'right') => {
 
         {/* Flash Deal & Special Offer Cards nebeneinander, hochkant, kompakt */}
 <div className="flex gap-4 justify-center my-4">
-  {/* Flash Deal Card */}
-  {dailyDeal && dealInteraction && (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.1, duration: 0.4 }}
-      className="relative z-0 rounded-xl shadow-lg overflow-hidden border border-violet-200 w-36 h-44"
-    >
-      <button onClick={() => setShowDealDialog(true)} className="w-full h-full block relative">
-        {/* Shine Effekt */}
-        <div className="absolute inset-0 overflow-hidden rounded-xl pointer-events-none">
-          <div className="shine animate-shine"></div>
-        </div>
-        {/* Hintergrund mit Gradient */}
-        <div className="absolute inset-0 bg-gradient-to-br from-violet-600 to-fuchsia-600 opacity-90" />
-        {/* Partikel */}
-        {[...Array(5)].map((_, i) => (
-          <motion.div
-            key={`particle-${i}`}
-            className="absolute rounded-full bg-white/20"
-            style={{
-              width: Math.random() * 6 + 3,
-              height: Math.random() * 6 + 3,
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-            }}
-            animate={{
-              y: [0, -15, 0],
-              opacity: [0.4, 0.8, 0.4],
-            }}
-            transition={{
-              duration: 2 + Math.random() * 3,
-              repeat: Infinity,
-              delay: Math.random() * 2,
-            }}
-          />
-        ))}
-        <div className="relative p-3 flex flex-col items-start gap-3 z-10">
-          <div className="flex items-center gap-3">
-            {/* Kartenbild */}
-            <div className="w-12 h-16 rounded-lg border-2 border-white/30 overflow-hidden shadow-md relative">
-              {dailyDeal.card_image_url && (
-                <Image
-                  src={dailyDeal.card_image_url}
-                  alt={dailyDeal.card_name || "Card"}
-                  fill
-                  className="object-cover"
-                />
-              )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-              <div className="absolute bottom-0 left-0 right-0 bg-black/60 py-0.5 text-center">
-                <span className="text-xs font-bold text-white">★{dailyDeal.card_level}</span>
-              </div>
-            </div>
-            {/* Textbereich */}
-            <div>
-              <h3 className="text-sm font-bold text-white">⚡ Flash Deal</h3>
-              <p className="text-xs text-white/80">
-                {dailyDeal.card_name} • {dailyDeal.card_rarity}
-              </p>
-            </div>
-          </div>
-          {/* Preis + Tickets */}
-          <div className="text-xs font-medium text-white bg-black/40 px-2 py-1 rounded-md w-full flex justify-between items-center">
-            <div className="flex gap-2 items-center">
-              {dailyDeal.regular_tickets > 0 && (
-                <div className="flex items-center gap-1">
-                  <Ticket className="h-3.5 w-3.5 text-amber-300" />
-                  <span>+{dailyDeal.regular_tickets}</span>
-                </div>
-              )}
-              {dailyDeal.legendary_tickets > 0 && (
-                <div className="flex items-center gap-1">
-                  <Ticket className="h-3.5 w-3.5 text-blue-300" />
-                  <span>+{dailyDeal.legendary_tickets}</span>
-                </div>
-              )}
-            </div>
-            <span className="font-bold">
-              {price ? `${(dailyDeal.price / price).toFixed(2)} WLD` : `$${dailyDeal.price.toFixed(2)} USD`}
-            </span>
-          </div>
-        </div>
-      </button>
-    </motion.div>
+  {/* Deal of the Day Card */}
+  {dailyDeal && (
+    <div className="flex-1 max-w-xs bg-gradient-to-b from-purple-100 to-white rounded-2xl shadow-lg border border-purple-200 p-4 flex flex-col items-center">
+      <div className="w-24 h-32 rounded-xl overflow-hidden bg-white mb-3 flex items-center justify-center border-2 border-purple-200">
+        {dailyDeal.card_image_url && (
+          <Image src={dailyDeal.card_image_url} alt={dailyDeal.card_name || "Card"} width={96} height={128} className="object-cover w-full h-full" />
+        )}
+      </div>
+      <h3 className="font-bold text-base text-purple-800 mb-1">Deal of the Day</h3>
+      <div className="text-sm font-semibold text-gray-700 mb-1">{dailyDeal.card_name} <span className="lowercase text-gray-400">• {dailyDeal.card_rarity}</span></div>
+      <div className="flex gap-1 mb-2">
+        {dailyDeal.regular_tickets > 0 && <span className="bg-yellow-100 text-yellow-700 rounded-full px-2 py-0.5 text-xs font-bold flex items-center gap-1">★ <span>+{dailyDeal.regular_tickets}</span></span>}
+        {dailyDeal.legendary_tickets > 0 && <span className="bg-blue-100 text-blue-700 rounded-full px-2 py-0.5 text-xs font-bold flex items-center gap-1">★ <span>+{dailyDeal.legendary_tickets}</span></span>}
+      </div>
+      <div className="text-lg font-bold text-purple-700 mb-1">{price ? `${(dailyDeal.price / price).toFixed(2)} WLD` : `${dailyDeal.price.toFixed(2)} WLD`}</div>
+    </div>
   )}
-  {/* Special Offer Card (grün, shine, hochkant, kompakt) */}
-  <motion.div
-    initial={{ opacity: 0, y: 10 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ delay: 0.1, duration: 0.4 }}
-    className="relative z-0 rounded-xl shadow-lg overflow-hidden border border-green-300 w-36 h-44"
-  >
-    <button className="w-full h-full block relative">
-      {/* Shine Effekt */}
-      <div className="absolute inset-0 overflow-hidden rounded-xl pointer-events-none">
-        <div className="shine animate-shine"></div>
-      </div>
-      {/* Hintergrund mit grünem Gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-green-600 to-emerald-500 opacity-90" />
-      {/* Partikel */}
-      {[...Array(5)].map((_, i) => (
-        <motion.div
-          key={`special-particle-${i}`}
-          className="absolute rounded-full bg-white/20"
-          style={{
-            width: Math.random() * 6 + 3,
-            height: Math.random() * 6 + 3,
-            left: `${Math.random() * 100}%`,
-            top: `${Math.random() * 100}%`,
-          }}
-          animate={{
-            y: [0, -15, 0],
-            opacity: [0.4, 0.8, 0.4],
-          }}
-          transition={{
-            duration: 2 + Math.random() * 3,
-            repeat: Infinity,
-            delay: Math.random() * 2,
-          }}
-        />
-      ))}
-      <div className="relative p-3 flex flex-col items-start gap-3 z-10">
-        <div className="flex items-center gap-3">
-          {/* Dummy-Kartenbild */}
-          <div className="w-12 h-16 rounded-lg border-2 border-white/30 overflow-hidden shadow-md relative bg-white/10" />
-          {/* Textbereich */}
-          <div>
-            <h3 className="text-sm font-bold text-white">🌟 Special Offer</h3>
-            <p className="text-xs text-white/80">Special Card • Rare</p>
-          </div>
-        </div>
-        {/* Preis + Tickets */}
-        <div className="text-xs font-medium text-white bg-black/40 px-2 py-1 rounded-md w-full flex justify-between items-center">
-          <div className="flex gap-2 items-center">
-            <div className="flex items-center gap-1">
-              <Ticket className="h-3.5 w-3.5 text-green-200" />
-              <span>+2</span>
-            </div>
-          </div>
-          <span className="font-bold">5 WLD</span>
-        </div>
-      </div>
-    </button>
-  </motion.div>
+  {/* Special Deal Card */}
+  <div className="flex-1 max-w-xs bg-gradient-to-b from-sky-100 to-white rounded-2xl shadow-lg border border-sky-200 p-4 flex flex-col items-center">
+    <div className="w-24 h-32 rounded-xl overflow-hidden bg-white mb-3 flex items-center justify-center border-2 border-sky-200">
+      <Image src={specialDeal.card_image_url} alt={specialDeal.card_name} width={96} height={128} className="object-cover w-full h-full" />
+    </div>
+    <h3 className="font-bold text-base text-sky-800 mb-1">Special Deal!</h3>
+    <div className="text-sm font-semibold text-gray-700 mb-1">{specialDeal.card_name} <span className="lowercase text-gray-400">• {specialDeal.card_rarity}</span></div>
+    <div className="flex gap-1 mb-2">
+      <span className="bg-blue-100 text-blue-700 rounded-full px-2 py-0.5 text-xs font-bold flex items-center gap-1">★ <span>+{specialDeal.bonus1}</span></span>
+      <span className="bg-purple-100 text-purple-700 rounded-full px-2 py-0.5 text-xs font-bold flex items-center gap-1">★ <span>+{specialDeal.bonus2}</span></span>
+    </div>
+    <div className="text-lg font-bold text-sky-700 mb-1">{price ? `${(specialDeal.price / price).toFixed(2)} WLD` : `${specialDeal.price.toFixed(2)} WLD`}</div>
+  </div>
 </div>
 
           {/* Referrals */}

@@ -1167,7 +1167,7 @@ const [copied, setCopied] = useState(false)
   </div>
 </header>
 
-        <main className="p-3 w-full mx-auto pb-20">
+        <main className="w-full">
          
           <div className="grid grid-cols-6 gap-3">
             {/* Profile */}
@@ -1413,15 +1413,15 @@ const [copied, setCopied] = useState(false)
               >
                 <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center mb-2">
                   <img src={getCloudflareImageUrl("/anime-images/ani-labs-logo-white.png")} alt="$ANI Logo" className="w-10 h-10" />
-      </div>
+                </div>
                 <div className="text-base font-bold text-gray-900">$ANI</div>
-    </div>
-    </div>
+              </div>
+            </div>
             <div className="col-span-2">
               <Link href="/shop" className="block w-full h-full">
-<motion.div
+                <motion.div
                   initial={{ opacity: 0, y: 10 }}
-  animate={{ opacity: 1, y: 0 }}
+                  animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2, duration: 0.4 }}
                   className="bg-white rounded-xl p-4 shadow-lg flex flex-col items-center justify-center min-h-[90px] h-full text-center hover:bg-gray-50 transition"
                 >
@@ -1433,7 +1433,7 @@ const [copied, setCopied] = useState(false)
               </Link>
             </div>
             <div className="col-span-2">
-  <button
+              <button
                 onClick={() => {
                   // Referral Dialog Open
                   setShowReferralDialog(true);
@@ -1446,81 +1446,89 @@ const [copied, setCopied] = useState(false)
                 </div>
                 <div className="text-base font-bold text-gray-900">Referrals</div>
                 {referredUsers.some((u) => u.level >= 5 && !u.reward_claimed) && (
-      <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow">
-        NEW
-      </span>
-    )}
-  </button>
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow">
+                    NEW
+                  </span>
+                )}
+              </button>
             </div>
-            {/* Daily Deal & Special Deal nebeneinander */}
-            <div className="w-full max-w-3xl mx-auto">
-              <div className="grid grid-cols-2 gap-4 w-full mt-4">
-                {/* Deal of the Day Block */}
-                <div className="col-span-1 flex flex-col items-center rounded-xl shadow-lg px-6 py-3 text-white bg-gradient-to-br from-violet-500 to-fuchsia-500 h-full min-h-[220px] min-w-[180px]">
-                  {dailyDeal && dailyDealInteraction ? (
-                    <>
-                      <div className="w-32 h-28 rounded-xl border-4 border-white shadow mb-2 overflow-hidden flex items-center justify-center relative">
-                        {dailyDeal.card_image_url ? (
-                          <img src={getCloudflareImageUrl(dailyDeal.card_image_url)} alt={dailyDeal.card_name || 'Card'} className="w-full h-full object-cover" />
-                        ) : (
-                          <span className="text-2xl font-bold text-white">⭐️⭐️⭐️⭐️</span>
-                        )}
-                        <div className="absolute top-1 left-1 bg-black/70 text-xs px-2 py-0.5 rounded-full font-bold">x{dailyDeal.card_level}</div>
+            {/* Deals nebeneinander im Grid */}
+            <div className="col-span-6 flex gap-10 w-full">
+              <div className="w-1/2 rounded-xl shadow-lg p-6 text-white bg-gradient-to-br from-purple-500 to-fuchsia-500 h-full flex flex-col items-center justify-between text-center overflow-hidden">
+                {dailyDeal && dailyDealInteraction ? (
+                  <>
+                    <div className="w-28 h-24 rounded-xl border-4 border-white shadow mb-2 overflow-hidden flex items-center justify-center relative">
+                      {dailyDeal.card_image_url ? (
+                        <img src={getCloudflareImageUrl(dailyDeal.card_image_url)} alt={dailyDeal.card_name || 'Card'} className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-xl font-bold text-white">⭐️⭐️⭐️⭐️</span>
+                      )}
+                      <div className="absolute top-1 left-1 bg-black/80 text-xs px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
+                        <span>⭐</span>x{dailyDeal.card_level}
                       </div>
-                      <div className="font-bold text-base mb-1">Deal of the Day</div>
-                      <div className="text-sm mb-1">{dailyDeal.card_name} • <span className="inline-block px-2 py-1 rounded-full bg-yellow-100 text-yellow-800 text-xs font-bold align-middle ml-1">{dailyDeal.card_rarity}</span></div>
-                      <div className="flex gap-2 mb-2 justify-center">
-                        {dailyDeal.regular_tickets > 0 && (
-                          <span className="inline-block px-2 py-1 rounded-full bg-amber-100 text-amber-700 text-xs font-bold flex items-center gap-1">
-                            <Ticket className="h-3 w-3 text-amber-500" />+{dailyDeal.regular_tickets}
-                          </span>
-                        )}
-                        {dailyDeal.legendary_tickets > 0 && (
-                          <span className="inline-block px-2 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-bold flex items-center gap-1">
-                            <Ticket className="h-3 w-3 text-blue-500" />+{dailyDeal.legendary_tickets}
-                          </span>
-                        )}
+                    </div>
+                    <div className="text-base font-bold mb-1">Deal of the Day</div>
+                    <div className="text-sm text-white/80 mb-2">
+                      {dailyDeal.card_name} <span className="text-white/70">·</span>
+                      <span className="inline-block px-2 py-1 rounded-full bg-yellow-100 text-yellow-800 text-xs font-bold align-middle ml-1">{dailyDeal.card_rarity}</span>
+                    </div>
+                    <div className="flex gap-2 mb-2 justify-center">
+                      {dailyDeal.regular_tickets > 0 && (
+                        <span className="inline-block px-2 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-bold flex items-center gap-1">
+                          <Ticket className="h-3 w-3 text-blue-500" />+{dailyDeal.regular_tickets}
+                        </span>
+                      )}
+                      {dailyDeal.legendary_tickets > 0 && (
+                        <span className="inline-block px-2 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-bold flex items-center gap-1">
+                          <Crown className="h-3 w-3 text-purple-500" />+{dailyDeal.legendary_tickets}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-lg font-bold mb-2">
+                      {price ? `${(dailyDeal.price / price).toFixed(2)} WLD` : `$${dailyDeal.price.toFixed(2)} USD`}
+                    </div>
+                    <Button className="bg-white/90 text-cyan-700 font-bold w-full mt-2">Buy Now</Button>
+                  </>
+                ) : (
+                  <div className="flex flex-1 items-center justify-center h-full text-white/70">No Deal of the Day</div>
+                )}
+              </div>
+              <div className="w-1/2 rounded-xl shadow-lg p-6 text-white bg-gradient-to-br from-cyan-500 to-blue-500 h-full flex flex-col items-center justify-between text-center overflow-hidden">
+                {specialDeal ? (
+                  <>
+                    <div className="w-28 h-24 rounded-xl border-4 border-white shadow mb-2 overflow-hidden flex items-center justify-center relative">
+                      {specialDeal.card_image_url ? (
+                        <img src={getCloudflareImageUrl(specialDeal.card_image_url)} alt={specialDeal.card_name || 'Card'} className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-xl font-bold text-white">⭐️⭐️⭐️⭐️</span>
+                      )}
+                      <div className="absolute top-1 left-1 bg-black/80 text-xs px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
+                        <span>⭐</span>x{specialDeal.card_level}
                       </div>
-                      <div className="font-bold text-lg mb-2">{price ? `${(dailyDeal.price / price).toFixed(2)} WLD` : `$${dailyDeal.price.toFixed(2)} USD`}</div>
-                      <Button className="bg-white/90 text-violet-700 font-bold w-full mt-2">Buy Now</Button>
-                    </>
-                  ) : (
-                    <div className="flex flex-1 items-center justify-center h-full text-white/70">No Deal of the Day</div>
-                  )}
-                </div>
-                {/* Special Deal Block */}
-                <div className="col-span-1 flex flex-col items-center rounded-xl shadow-lg px-6 py-3 text-white bg-gradient-to-br from-red-500 to-orange-500 h-full min-h-[220px] min-w-[180px]">
-                  {specialDeal ? (
-                    <>
-                      <div className="w-32 h-28 rounded-xl border-4 border-white shadow mb-2 overflow-hidden flex items-center justify-center relative">
-                        {specialDeal.card_image_url ? (
-                          <img src={getCloudflareImageUrl(specialDeal.card_image_url)} alt={specialDeal.card_name || 'Card'} className="w-full h-full object-cover" />
-                        ) : (
-                          <span className="text-2xl font-bold text-white">⭐️⭐️⭐️⭐️</span>
-                        )}
-                        <div className="absolute top-1 left-1 bg-black/70 text-xs px-2 py-0.5 rounded-full font-bold">x{specialDeal.card_level}</div>
-                      </div>
-                      <div className="font-bold text-base mb-1">Special Deal!</div>
-                      <div className="text-sm mb-1">{specialDeal.card_name} • <span className="inline-block px-2 py-1 rounded-full bg-yellow-100 text-yellow-800 text-xs font-bold align-middle ml-1">{specialDeal.card_rarity}</span></div>
-                      <div className="flex gap-2 mb-2 justify-center">
-                        {specialDeal.elite_tickets > 0 && (
-                          <span className="inline-block px-2 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-bold flex items-center gap-1">
-                            <Ticket className="h-3 w-3 text-blue-500" />+{specialDeal.elite_tickets}
-                          </span>
-                        )}
-                        {specialDeal.icon_tickets > 0 && (
-                          <span className="inline-block px-2 py-1 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold flex items-center gap-1">
-                            <Crown className="h-3 w-3 text-indigo-500" />+{specialDeal.icon_tickets}
-                          </span>
-                        )}
-                      </div>
-                      <div className="font-bold text-lg mb-2">{specialDeal.price} WLD</div>
-                      <Button className="bg-white/90 text-red-600 font-bold w-full mt-2">Buy Now</Button>
-                    </>
-                  ) : (
-                    <div className="flex flex-1 items-center justify-center h-full text-white/70">Kein Special Deal heute</div>
-                  )}
-                </div>
+                    </div>
+                    <div className="text-base font-bold mb-1">Special Deal!</div>
+                    <div className="text-sm text-white/80 mb-2">
+                      {specialDeal.card_name} <span className="text-white/70">·</span>
+                      <span className="inline-block px-2 py-1 rounded-full bg-yellow-100 text-yellow-800 text-xs font-bold align-middle ml-1">{specialDeal.card_rarity}</span>
+                    </div>
+                    <div className="flex gap-2 mb-2 justify-center">
+                      {specialDeal.elite_tickets > 0 && (
+                        <span className="inline-block px-2 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-bold flex items-center gap-1">
+                          <Ticket className="h-3 w-3 text-blue-500" />+{specialDeal.elite_tickets}
+                        </span>
+                      )}
+                      {specialDeal.icon_tickets > 0 && (
+                        <span className="inline-block px-2 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-bold flex items-center gap-1">
+                          <Crown className="h-3 w-3 text-purple-500" />+{specialDeal.icon_tickets}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-lg font-bold mb-2">{specialDeal.price} WLD</div>
+                    <Button className="bg-white/90 text-cyan-700 font-bold w-full mt-2">Buy Now</Button>
+                  </>
+                ) : (
+                  <div className="flex flex-1 items-center justify-center h-full text-white/70">Kein Special Deal heute</div>
+                )}
               </div>
             </div>
           </div>

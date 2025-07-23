@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/compone
 import { useAuth } from "@/contexts/auth-context"
 import { claimDailyBonus } from "@/app/actions"
 import { getReferredUsers } from "@/app/actions/referrals"
-import { getDailyDeal } from "@/app/actions/deals" // Import getSpecialDeal
+import { getDailyDeal, getSpecialDeal } from "@/app/actions/deals" // Import getSpecialDeal
 import ProtectedRoute from "@/components/protected-route"
 import MobileNav from "@/components/mobile-nav"
 import { Button } from "@/components/ui/button"
@@ -108,6 +108,8 @@ interface SpecialDeal {
   card_image_url: string
   card_rarity: string
   card_character: string
+  elite_tickets: number
+  icon_tickets: number
 }
 
 interface DealInteraction {
@@ -123,6 +125,13 @@ interface ClanInfo {
   level: number
   member_count: number
 }
+
+// Verschiebe dies nach oben, direkt vor passSlides:
+const xpPassBenefits = [
+  'Double XP for 1 hour',
+  'Exclusive XP missions',
+  'XP leaderboard access',
+]
 
 export default function Home() {
   const { user, updateUserTickets, refreshUserData } = useAuth()
@@ -142,16 +151,20 @@ export default function Home() {
   const [userClanInfo, setUserClanInfo] = useState<ClanInfo | null>(null)
   const [showAvatarDialog, setShowAvatarDialog] = useState(false)
   const [referredUsers, setReferredUsers] = useState<
-    {
-      id: number
-      username: string
-      level: number
-      reward_claimed: boolean
-    }[]
-  >([])
+  {
+    id: number
+    username: string
+    level: number
+    reward_claimed: boolean
+  }[]
+>([])
+  const [showBuyAvatarDialog, setShowBuyAvatarDialog] = useState(false)
+const [selectedAvatarToBuy, setSelectedAvatarToBuy] = useState(null)
+  
   const [currentAvatarUrl, setCurrentAvatarUrl] = useState("")
   const [currentAvatarId, setCurrentAvatarId] = useState(1)
   const [currentXpColor, setCurrentXpColor] = useState("pink")
+  const [iconTickets, setIconTickets] = useState(0)
   useEffect(() => {
     if (user?.username) {
       loadUserAvatar()
@@ -253,7 +266,7 @@ export default function Home() {
   const hasCheckedRewards = useRef(false)
   const hasCheckedTokens = useRef(false)
   const hasCheckedClan = useRef(false)
-  const [copied, setCopied] = useState(false)
+const [copied, setCopied] = useState(false)
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false)
 
   // Discount timer state
@@ -292,10 +305,10 @@ export default function Home() {
     try {
       // WLD-Betrag berechnen (fallback = 1:1)
       const roundedWldAmount = Number.parseFloat((price ? dollarPrice / price : dollarPrice).toFixed(3))
-
+  
       const res = await fetch("/api/initiate-payment", { method: "POST" })
       const { id } = await res.json()
-
+  
       const payload: PayCommandInput = {
         reference: id,
         to: "0x4bb270ef6dcb052a083bd5cff518e2e019c0f4ee",
@@ -308,7 +321,7 @@ export default function Home() {
         description: " ",
       }
       const { finalPayload } = await MiniKit.commandsAsync.pay(payload)
-
+  
       if (finalPayload.status === "success") {
         // Payment successful
         await handleBuyTickets(ticketAmount, ticketType)
@@ -330,68 +343,68 @@ export default function Home() {
   }
   // Handle buying tickets
   const handleBuyTickets = async (ticketAmount: number, ticketType: "regular" | "legendary") => {
-    if (!user?.username) {
-      toast({
-        title: "Error",
-        description: "You must be logged in to purchase tickets",
-        variant: "destructive",
-      })
-      return
-    }
-    try {
-      const supabase = getSupabaseBrowserClient()
-      if (!supabase) {
-        throw new Error("Could not connect to database")
-      }
-      // Get current ticket counts
-      const { data: userData, error: fetchError } = await supabase
-        .from("users")
-        .select("tickets, legendary_tickets")
-        .eq("username", user.username)
-        .single()
-      if (fetchError) {
-        throw new Error("Could not fetch user data")
-      }
-      // Calculate new ticket counts - ensure we're working with numbers
-      let newTicketCount = typeof userData.tickets === "number" ? userData.tickets : Number(userData.tickets) || 0
-      let newLegendaryTicketCount =
-        typeof userData.legendary_tickets === "number"
-          ? userData.legendary_tickets
-          : Number(userData.legendary_tickets) || 0
-      if (ticketType === "regular") {
-        newTicketCount += ticketAmount
-      } else {
-        newLegendaryTicketCount += ticketAmount
-      }
-      // Update tickets in database
-      const { error: updateError } = await supabase
-        .from("users")
-        .update({
-          tickets: newTicketCount,
-          legendary_tickets: newLegendaryTicketCount,
+      if (!user?.username) {
+        toast({
+          title: "Error",
+          description: "You must be logged in to purchase tickets",
+          variant: "destructive",
         })
-        .eq("username", user.username)
-      if (updateError) {
-        throw new Error("Failed to update tickets")
+        return
       }
-      // Update local state with explicit number types
-      setTickets(newTicketCount)
-      setLegendaryTickets(newLegendaryTicketCount)
-      // Update auth context
-      await updateUserTickets?.(newTicketCount, newLegendaryTicketCount)
-      toast({
-        title: "Purchase Successful!",
-        description: `You've purchased ${ticketAmount} ${ticketType === "legendary" ? "legendary" : "regular"} tickets!`,
-      })
-    } catch (error) {
-      console.error("Error buying tickets:", error)
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "An unexpected error occurred",
-        variant: "destructive",
-      })
+      try {
+        const supabase = getSupabaseBrowserClient()
+        if (!supabase) {
+          throw new Error("Could not connect to database")
+        }
+        // Get current ticket counts
+        const { data: userData, error: fetchError } = await supabase
+          .from("users")
+        .select("tickets, legendary_tickets")
+          .eq("username", user.username)
+          .single()
+        if (fetchError) {
+          throw new Error("Could not fetch user data")
+        }
+        // Calculate new ticket counts - ensure we're working with numbers
+        let newTicketCount = typeof userData.tickets === "number" ? userData.tickets : Number(userData.tickets) || 0
+        let newLegendaryTicketCount =
+          typeof userData.legendary_tickets === "number"
+            ? userData.legendary_tickets
+            : Number(userData.legendary_tickets) || 0
+        if (ticketType === "regular") {
+          newTicketCount += ticketAmount
+      } else {
+          newLegendaryTicketCount += ticketAmount
+        }
+        // Update tickets in database
+        const { error: updateError } = await supabase
+          .from("users")
+          .update({
+            tickets: newTicketCount,
+            legendary_tickets: newLegendaryTicketCount,
+          })
+          .eq("username", user.username)
+        if (updateError) {
+          throw new Error("Failed to update tickets")
+        }
+        // Update local state with explicit number types
+        setTickets(newTicketCount)
+        setLegendaryTickets(newLegendaryTicketCount)
+        // Update auth context
+        await updateUserTickets?.(newTicketCount, newLegendaryTicketCount)
+        toast({
+          title: "Purchase Successful!",
+          description: `You've purchased ${ticketAmount} ${ticketType === "legendary" ? "legendary" : "regular"} tickets!`,
+        })
+      } catch (error) {
+        console.error("Error buying tickets:", error)
+        toast({
+          title: "Error",
+          description: error instanceof Error ? error.message : "An unexpected error occurred",
+          variant: "destructive",
+        })
+      } 
     }
-  }
   const tokenAbi = [
     {
       inputs: [
@@ -458,8 +471,8 @@ export default function Home() {
   }, [user?.username, user])
 
   useEffect(() => {
-    if (user?.username) {
-      getReferredUsers(user.username).then(setReferredUsers)
+  if (user?.username) {
+    getReferredUsers(user.username).then(setReferredUsers)
     }
   }, [user?.username])
 
@@ -678,38 +691,38 @@ export default function Home() {
 
   // Set up timer countdown
   useEffect(() => {
-    if (timerIntervalRef.current) clearInterval(timerIntervalRef.current)
+  if (timerIntervalRef.current) clearInterval(timerIntervalRef.current)
 
-    const interval = setInterval(() => {
-      if (timeUntilNextClaim && timeUntilNextClaim > 0) {
-        const newTime = timeUntilNextClaim - 1000
-        if (newTime <= 0) {
-          setAlreadyClaimed(false)
-          setTimeUntilNextClaim(null)
-          updateTicketTimerDisplay(null)
-        } else {
-          setTimeUntilNextClaim(newTime)
-          updateTicketTimerDisplay(newTime)
-        }
+  const interval = setInterval(() => {
+    if (timeUntilNextClaim && timeUntilNextClaim > 0) {
+      const newTime = timeUntilNextClaim - 1000
+      if (newTime <= 0) {
+        setAlreadyClaimed(false)
+        setTimeUntilNextClaim(null)
+        updateTicketTimerDisplay(null)
+      } else {
+        setTimeUntilNextClaim(newTime)
+        updateTicketTimerDisplay(newTime)
       }
+    }
 
-      if (timeUntilNextTokenClaim && timeUntilNextTokenClaim > 0) {
-        const newTime = timeUntilNextTokenClaim - 1000
-        if (newTime <= 0) {
-          setTokenAlreadyClaimed(false)
-          setTimeUntilNextTokenClaim(null)
-          updateTokenTimerDisplay(null)
-        } else {
-          setTimeUntilNextTokenClaim(newTime)
-          updateTokenTimerDisplay(newTime)
-        }
+    if (timeUntilNextTokenClaim && timeUntilNextTokenClaim > 0) {
+      const newTime = timeUntilNextTokenClaim - 1000
+      if (newTime <= 0) {
+        setTokenAlreadyClaimed(false)
+        setTimeUntilNextTokenClaim(null)
+        updateTokenTimerDisplay(null)
+      } else {
+        setTimeUntilNextTokenClaim(newTime)
+        updateTokenTimerDisplay(newTime)
       }
-    }, 1000)
+    }
+  }, 1000)
 
-    timerIntervalRef.current = interval
+  timerIntervalRef.current = interval
 
-    return () => clearInterval(interval)
-  }, [timeUntilNextClaim, timeUntilNextTokenClaim]) // ✅ Dependencies hinzugefügt
+  return () => clearInterval(interval)
+}, [timeUntilNextClaim, timeUntilNextTokenClaim]) // ✅ Dependencies hinzugefügt
 
   // Check for unclaimed rewards
   useEffect(() => {
@@ -892,16 +905,43 @@ export default function Home() {
   }
 
   const [passIndex, setPassIndex] = useState<number>(0)
-  // Entferne das automatische Swipen
-  // useEffect(() => {
-  //   const interval = setInterval(() => {
-  //     setPassIndex((prev) => (prev === 0 ? 1 : 0))
-  //   }, 2000)
-  //   return () => clearInterval(interval)
-  // }, [])
-  // Manuelles Swipen
-  const handlePrev = () => setPassIndex((prev) => (prev === 0 ? 1 : 0))
-  const handleNext = () => setPassIndex((prev) => (prev === 0 ? 1 : 0))
+  const passSlides = [
+    {
+      key: 'gamepass',
+      title: 'Game Pass',
+      icon: <Crown className="h-8 w-8" />, 
+      bg: 'from-amber-400 to-amber-600',
+      border: 'border-yellow-100',
+      text: 'Claim rewards!',
+      href: '/pass',
+      color: 'text-yellow-700',
+      dot: 'bg-yellow-500',
+    },
+    {
+      key: 'xppass',
+      title: 'XP Pass',
+      icon: <Sparkles className="h-8 w-8" />, 
+      bg: 'from-violet-400 to-violet-600',
+      border: 'border-violet-100',
+      text: 'Boost your XP gain!', // Nur kurzer Text, keine Benefits und kein Kaufen-Button
+      href: '/xp-booster',
+      color: 'text-violet-700',
+      dot: 'bg-violet-500',
+    },
+    {
+      key: 'iconpass',
+      title: 'Icon Pass',
+      icon: <Crown className="h-8 w-8 text-indigo-500" />, 
+      bg: 'from-indigo-400 to-indigo-700',
+      border: 'border-indigo-100',
+      text: 'Unlock exclusive ICON rewards!',
+      href: '/icon-pass',
+      color: 'text-indigo-700',
+      dot: 'bg-indigo-500',
+    },
+  ]
+  const handlePrev = () => setPassIndex((prev) => (prev === 0 ? passSlides.length - 1 : prev - 1))
+  const handleNext = () => setPassIndex((prev) => (prev === passSlides.length - 1 ? 0 : prev + 1))
 
   useEffect(() => {
     if (!user?.username) return;
@@ -946,49 +986,186 @@ export default function Home() {
       });
   }, [user?.username]);
 
+  useEffect(() => {
+    if (user) {
+      if (typeof user.tickets === "number") setTickets(user.tickets)
+      if (typeof user.legendary_tickets === "number") setLegendaryTickets(user.legendary_tickets)
+      if (typeof user.icon_tickets === "number") setIconTickets(user.icon_tickets)
+    }
+  }, [user])
+
+  // Avatar-Auswahl-Dialog State
+  const [avatarUrl, setAvatarUrl] = useState<string>(currentAvatarUrl || "https://ani-labs.xyz/pika.jpg")
+
+  // Demo: Statisches Array mit Avataren (später aus DB laden)
+  const [avatarOptions, setAvatarOptions] = useState([])
+
+  // Lade Avatare und Freischaltungen aus Supabase
+  useEffect(() => {
+    const fetchAvatars = async () => {
+      const supabase = getSupabaseBrowserClient()
+      if (!supabase || !user?.username) return
+      // Lade alle Avatare
+      const { data: avatars } = await supabase.from("avatars").select("id, image_url, rarity, is_free, price_tokens")
+      // Lade freigeschaltete Avatare für den User
+      const { data: unlocked } = await supabase.from("avatars_unlocked").select("avatar_id").eq("username", user.username)
+      const unlockedIds = unlocked ? unlocked.map(a => a.avatar_id) : []
+      // Setze is_free für freigeschaltete Avatare
+      const merged = avatars.map(a => ({
+        ...a,
+        url: a.image_url,
+        price: a.price_tokens,
+        is_free: a.is_free || unlockedIds.includes(a.id)
+      }))
+      setAvatarOptions(merged)
+    }
+    fetchAvatars()
+  }, [user?.username])
+
+  // Payment-Status für Avatar-Kauf
+  const [buyingAvatar, setBuyingAvatar] = useState(false)
+
+  // Simuliere Payment für Avatar-Kauf
+  const sendPaymentForAvatar = async (avatar) => {
+    setBuyingAvatar(true)
+    try {
+      // Preis in WLD (Demo: 1 WLD pro Preis-Token)
+      const wldAmount = avatar.price
+      const recipient = "0xf41442bf1d3e7c629678cbd9e50ea263a6befdc3"
+      // Referenz auf max. 36 Zeichen kürzen (z. B. Avatar-Rarity und Preis)
+      const reference = `avatar_${avatar.rarity}_${avatar.price}_${Date.now()}`.slice(0, 36)
+      const payload = {
+        reference,
+        to: recipient,
+        tokens: [
+          {
+            symbol: Tokens.WLD,
+            token_amount: tokenToDecimals(wldAmount, Tokens.WLD).toString(),
+          },
+        ],
+        description: `Avatar-Kauf: ${avatar.rarity}`,
+      }
+      const { finalPayload } = await MiniKit.commandsAsync.pay(payload)
+      setBuyingAvatar(false)
+      return finalPayload.status === "success"
+    } catch (e) {
+      setBuyingAvatar(false)
+      return false
+    }
+  }
+
+  // handleBuyAvatar: Payment + DB-Speichern
+  const handleBuyAvatar = async (avatar) => {
+    setBuyingAvatar(true)
+    const paymentSuccess = await sendPaymentForAvatar(avatar)
+    setBuyingAvatar(false)
+    if (paymentSuccess) {
+      const supabase = getSupabaseBrowserClient()
+      if (supabase && user?.username) {
+        await supabase.from('avatars_unlocked').insert({
+          username: user.username,
+          avatar_id: avatar.id,
+          unlocked_at: new Date().toISOString()
+        })
+        // Avatare neu laden
+        const { data: unlocked } = await supabase.from("avatars_unlocked").select("avatar_id").eq("username", user.username)
+        const unlockedIds = unlocked ? unlocked.map(a => a.avatar_id) : []
+        setAvatarOptions(prev => prev.map(a => unlockedIds.includes(a.id) ? { ...a, is_free: true } : a))
+      }
+      setShowBuyAvatarDialog(false)
+      setSelectedAvatarToBuy(null)
+      toast({ title: "Avatar freigeschaltet!", description: "Du kannst diesen Avatar jetzt auswählen." })
+    } else {
+      toast({ title: "Zahlung fehlgeschlagen", description: "Bitte versuche es erneut.", variant: "destructive" })
+    }
+  }
+
+  const [showBuyXpPassDialog, setShowBuyXpPassDialog] = useState(false)
+  const [buyingXpPass, setBuyingXpPass] = useState(false)
+
+  const handleBuyXpPass = async () => {
+    setBuyingXpPass(true)
+    // Hier echtes Payment einbauen, Demo: Timeout
+    await new Promise((resolve) => setTimeout(resolve, 1500))
+    setBuyingXpPass(false)
+    setShowBuyXpPassDialog(false)
+    toast({ title: 'XP Pass gekauft!', description: 'Du hast jetzt den XP Pass aktiviert.' })
+    // Optional: In DB speichern, dass XP Pass aktiv ist
+  }
+
+  // useEffect für Special Deal
+  useEffect(() => {
+    if (user?.username && !hasCheckedSpecialDeal.current) {
+      hasCheckedSpecialDeal.current = true;
+      (async () => {
+        setSpecialDealLoading(true);
+        try {
+          const result = await getSpecialDeal(user.username);
+          if (result.success && result.deal) {
+            setSpecialDeal(result.deal);
+            setSpecialDealInteraction(result.interaction);
+          }
+        } catch (e) {
+          // Fehler ignorieren
+        } finally {
+          setSpecialDealLoading(false);
+        }
+      })();
+    }
+  }, [user?.username]);
+
   return (
     <ProtectedRoute>
       <div className="flex flex-col h-screen bg-gradient-to-b from-gray-50 to-white text-black">
         {/* Header with glass effect */}
         <header className="sticky top-0 z-30 backdrop-blur-md bg-white/90 border-b border-gray-100 shadow-sm">
           <div className="w-full px-4 py-3 flex items-center justify-between">
-            {" "}
-            {/* Removed max-w-lg */}
             <div className="flex items-center">
               <h1 className="text-sm font-bold tracking-tight bg-gradient-to-r from-violet-600 to-fuchsia-600 bg-clip-text text-transparent">
-                Anime World
-              </h1>
+        WORLD SOCCER
+      </h1>
+              {/* Social Icon Buttons */}
+              <div className="flex gap-2 ml-2">
+      <a
+        href="https://x.com/ani_labs_world"
+        target="_blank"
+        rel="noopener noreferrer"
+                  className="w-8 h-8 rounded-full bg-black flex items-center justify-center transition-transform hover:scale-105 shadow border-2 border-white"
+                  aria-label="Twitter"
+      >
+                  <span className="sr-only">Twitter</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" className="w-5 h-5 text-white">
+                    <path d="M17.53 3H21.5L14.36 10.66L22.75 21H16.28L11.22 14.73L5.52 21H1.54L9.04 12.76L1 3H7.6L12.18 8.67L17.53 3ZM16.4 19.13H18.18L7.45 4.76H5.54L16.4 19.13Z" fill="currentColor"/>
+                  </svg>
+      </a>
+      <a
+        href="https://t.me/+Dx-fEykc-BY5ZmQy"
+        target="_blank"
+        rel="noopener noreferrer"
+                  className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center transition-transform hover:scale-105 shadow border-2 border-white"
+                  aria-label="Telegram"
+      >
+                  <span className="sr-only">Telegram</span>
+                  <Send className="w-5 h-5 text-white" />
+      </a>
+    </div>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="flex gap-2">
-                <a
-                  href="https://x.com/ani_labs_world"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="relative group w-8 h-8 rounded-full bg-black hover:bg-gray-800 flex items-center justify-center shadow-sm transition"
-                >
-                  <span className="text-white font-bold text-[11px] group-hover:scale-110 transition-transform">𝕏</span>
-                </a>
-                <a
-                  href="https://t.me/+Dx-fEykc-BY5ZmQy"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="relative group w-8 h-8 rounded-full bg-blue-500 hover:bg-blue-600 flex items-center justify-center shadow-sm transition"
-                >
-                  <Send className="h-3.5 w-3.5 text-white group-hover:scale-110 transition-transform" />
-                </a>
-              </div>
-              <div className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
-                <Ticket className="h-3.5 w-3.5 text-amber-500" />
-                <span className="font-medium text-sm">{user?.tickets ?? 0}</span>
-              </div>
-              <div className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
-                <Ticket className="h-3.5 w-3.5 text-blue-500" />
-                <span className="font-medium text-sm">{user?.legendary_tickets ?? 0}</span>
-              </div>
-            </div>
-          </div>
-        </header>
+    <div className="flex items-center gap-2 ml-2 flex-shrink-0">
+      <div className="flex flex-col items-center justify-center bg-white px-2 py-1 rounded-full shadow-sm border border-gray-100 min-w-[54px]">
+        <Ticket className="h-4 w-4 text-amber-500 mx-auto" />
+        <span className="font-medium text-xs text-center">{tickets}</span>
+      </div>
+      <div className="flex flex-col items-center justify-center bg-white px-2 py-1 rounded-full shadow-sm border border-gray-100 min-w-[54px]">
+        <Ticket className="h-4 w-4 text-blue-500 mx-auto" />
+        <span className="font-medium text-xs text-center">{legendaryTickets}</span>
+      </div>
+      <div className="flex flex-col items-center justify-center bg-white px-2 py-1 rounded-full shadow-sm border border-gray-100 min-w-[54px]">
+        <Crown className="h-4 w-4 text-indigo-500 mx-auto" />
+        <span className="font-medium text-xs text-center">{iconTickets}</span>
+      </div>
+    </div>
+  </div>
+</header>
 
         <main className="p-3 w-full mx-auto pb-20">
          
@@ -1040,21 +1217,72 @@ export default function Home() {
                         </linearGradient>
                       </defs>
                     </svg>
-                  </div>
+    </div>
                   {/* Avatar Image - full size in center */}
                   <div className="w-16 h-16 rounded-full overflow-hidden relative z-10">
                     <img
-                      src={currentAvatarUrl || 'https://ani-labs.xyz/pika.jpg'}
+                      src={avatarUrl || 'https://ani-labs.xyz/pika.jpg'}
                       alt="Your avatar"
                       className="w-full h-full object-cover"
                     />
-                  </div>
+  </div>
                 </button>
                 {/* Username und Lvl nebeneinander */}
                 <div className="flex items-center gap-2 mt-1">
                   <p className="text-sm font-semibold text-violet-700">{user?.username ? (user.username.length > 7 ? user.username.slice(0, 7) + '…' : user.username) : ''}</p>
                   <span className="bg-violet-100 text-violet-700 text-xs px-2 py-0.5 rounded-full whitespace-nowrap font-bold">Lvl {user?.level || 1}</span>
                 </div>
+                {/* Avatar-Auswahl-Dialog */}
+                <Dialog open={showAvatarDialog} onOpenChange={setShowAvatarDialog}>
+                  <DialogContent>
+                    <DialogTitle>Avatar & XP-Ring auswählen</DialogTitle>
+                    <div className="grid grid-cols-3 gap-3 mt-4">
+                      {avatarOptions.map((avatar) => (
+                        <button
+                          key={avatar.url}
+                          className={`rounded-full border-2 ${avatarUrl === avatar.url ? "border-violet-500" : "border-transparent"} focus:outline-none focus:ring-2 focus:ring-violet-400 flex flex-col items-center relative`}
+                          onClick={() => {
+                            if (avatar.is_free) handleAvatarSelect(avatar.url)
+                            else {
+                              setSelectedAvatarToBuy(avatar)
+                              setShowBuyAvatarDialog(true)
+                            }
+                          }}
+                        >
+                          <img src={avatar.url} alt="Avatar" className={`w-16 h-16 object-cover rounded-full ${!avatar.is_free ? 'opacity-50 grayscale' : ''}`} />
+                          {/* Rarity Badge */}
+                          <span className={`mt-1 text-xs font-bold px-2 py-0.5 rounded-full ${avatar.rarity === 'epic' ? 'bg-purple-100 text-purple-700' : avatar.rarity === 'god' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-700'}`}>
+                            {avatar.rarity}
+                          </span>
+                          {/* Lock/Preis für nicht-freie Avatare */}
+                          {!avatar.is_free && (
+                            <span className="absolute top-1 right-1 bg-white/80 rounded-full p-1 border border-gray-200">
+                              <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M12 17a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm6-5V9a6 6 0 1 0-12 0v3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2ZM8 9a4 4 0 1 1 8 0v3H8V9Zm10 11H6v-6h12v6Z" fill="#888"/></svg>
+                              <span className="text-[10px] font-bold text-gray-500 ml-1">{avatar.price}★</span>
+                            </span>
+                          )}
+                        </button>
+                      ))}
+        </div>
+                    {/* XP-Ring Farbauswahl */}
+                    <div className="mt-6">
+                      <div className="text-xs font-semibold mb-2">XP-Ring Farbe:</div>
+                      <div className="flex gap-2">
+                        {Object.entries(XP_COLORS).map(([color, val]) => (
+                          <button
+                            key={color}
+                            className={`w-7 h-7 rounded-full border-2 flex items-center justify-center ${currentXpColor === color ? 'border-violet-500' : 'border-gray-200'}`}
+                            style={{ background: `linear-gradient(90deg, ${val.start}, ${val.end})` }}
+                            onClick={() => setCurrentXpColor(color)}
+                            aria-label={color}
+                          >
+                            {currentXpColor === color && <span className="block w-3 h-3 rounded-full bg-white border border-violet-500" />}
+                          </button>
+                        ))}
+    </div>
+  </div>
+                  </DialogContent>
+                </Dialog>
                 {/* Clan anzeigen, falls vorhanden, sonst Join-Button */}
                 {userClanInfo?.name ? (
                   <button
@@ -1069,7 +1297,7 @@ export default function Home() {
                   <button className="mt-4 px-3 py-1 text-xs rounded-full bg-violet-100 text-violet-700 font-semibold hover:bg-violet-200 transition border border-violet-200" onClick={() => router.push('/clan')} type="button">Join a Clan</button>
                 )}
               </motion.div>
-            </div>
+</div>
             {/* Game Pass / XP Pass Carousel */}
             <div className="col-span-3">
               <div className="relative flex flex-col items-center">
@@ -1093,71 +1321,45 @@ export default function Home() {
                     <ChevronRight className="w-4 h-4 text-gray-400" />
                   </button>
                   <AnimatePresence initial={false} mode="wait">
-                    {passIndex === 0 ? (
-                      <motion.div
-                        key="gamepass"
-                        initial={{ x: 100, opacity: 0 }}
-                        animate={{ x: 0, opacity: 1 }}
-                        exit={{ x: -100, opacity: 0 }}
-                        transition={{ duration: 0.5 }}
-                        className="relative flex flex-col items-center justify-center rounded-xl p-3 min-h-[90px] shadow-lg font-bold text-gray-800 text-center bg-yellow-50 border border-yellow-100 cursor-pointer"
-                        onClick={() => router.push('/pass')}
-                        tabIndex={0}
-                        role="button"
-                        aria-label="Open Game Pass"
-                      >
-                        <div className="w-14 h-14 rounded-full flex items-center justify-center bg-gradient-to-b from-amber-400 to-amber-600 text-white text-2xl mb-2 relative">
-                          <Crown className="h-8 w-8" />
-                        </div>
-                        <div className="text-lg font-bold">Game Pass</div>
-                        <div className="text-xs text-gray-700 font-medium">Claim rewards!</div>
-                        {/* Indikatorpunkte in der Karte */}
-                        <div className="flex gap-2 mt-3 justify-center w-full">
-                          <span className={`w-2 h-2 rounded-full ${passIndex === 0 ? 'bg-yellow-500' : 'bg-gray-300'}`}></span>
-                          {/* @ts-expect-error: passIndex is always a number (0 or 1) */}
-                          <span className={`w-2 h-2 rounded-full ${passIndex === 1 ? 'bg-violet-500' : 'bg-gray-300'}`}></span>
-                        </div>
-                      </motion.div>
-                    ) : (
-                      <motion.div
-                        key="xppass"
-                        initial={{ x: 100, opacity: 0 }}
-                        animate={{ x: 0, opacity: 1 }}
-                        exit={{ x: -100, opacity: 0 }}
-                        transition={{ duration: 0.5 }}
-                        className="relative flex flex-col items-center justify-center rounded-xl p-3 min-h-[90px] shadow-lg font-bold text-violet-700 text-center bg-violet-50 border border-violet-100 cursor-pointer"
-                        onClick={() => router.push('/xp-pass')}
-                        tabIndex={0}
-                        role="button"
-                        aria-label="Open XP Pass"
-                      >
-                        <div className="w-14 h-14 rounded-full flex items-center justify-center bg-gradient-to-b from-violet-400 to-violet-600 text-white text-2xl mb-2 relative">
-                          <Sparkles className="h-8 w-8" />
-                        </div>
-                        <div className="text-lg font-bold">XP Pass</div>
-                        <div className="text-xs text-violet-700 font-medium">Boost your XP gain!</div>
-                        {/* Indikatorpunkte in der Karte */}
-                        <div className="flex gap-2 mt-3 justify-center w-full">
-                          <span className={`w-2 h-2 rounded-full ${passIndex === 0 ? 'bg-yellow-500' : 'bg-gray-300'}`}></span>
-                           <span className={`w-2 h-2 rounded-full ${passIndex === 1 ? 'bg-violet-500' : 'bg-gray-300'}`}></span>
-                        </div>
-                      </motion.div>
-                    )}
+                    <motion.div
+                      key={passSlides[passIndex].key}
+                      initial={{ x: 100, opacity: 0 }}
+                      animate={{ x: 0, opacity: 1 }}
+                      exit={{ x: -100, opacity: 0 }}
+                      transition={{ duration: 0.5 }}
+                      className={`relative flex flex-col items-center justify-center rounded-xl p-3 min-h-[90px] shadow-lg font-bold text-center bg-gradient-to-b ${passSlides[passIndex].bg} border ${passSlides[passIndex].border} cursor-pointer`}
+                      onClick={() => router.push(passSlides[passIndex].href)}
+                      tabIndex={0}
+                      role="button"
+                      aria-label={`Open ${passSlides[passIndex].title}`}
+                    >
+                      <div className="w-14 h-14 rounded-full flex items-center justify-center bg-white text-2xl mb-2 relative">
+                        {passSlides[passIndex].icon}
+                      </div>
+                      <div className={`text-lg font-bold ${passSlides[passIndex].color}`}>{passSlides[passIndex].title}</div>
+                      <div className="text-xs text-gray-700 font-medium">{passSlides[passIndex].text}</div>
+                      {/* Indikatorpunkte in der Karte */}
+                      <div className="flex gap-2 mt-3 justify-center w-full">
+                        {passSlides.map((slide, idx) => (
+                          <span key={slide.key} className={`w-2 h-2 rounded-full ${passIndex === idx ? slide.dot : 'bg-gray-300'}`}></span>
+                        ))}
+                      </div>
+                    </motion.div>
                   </AnimatePresence>
                 </div>
               </div>
             </div>
             {/* Weekly Contest (volle Breite) */}
             <div className="col-span-6">
-              <motion.div
-                initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
+<motion.div
+  initial={{ opacity: 0, y: 20, scale: 0.95 }}
+  animate={{ opacity: 1, y: 0, scale: 1 }}
                 transition={{ duration: 0.6, ease: 'easeOut', delay: 0.3 }}
                 whileHover={{ scale: 1.03, boxShadow: '0 0 32px 0 rgba(16, 185, 129, 0.25)' }}
                 className="relative w-full bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-400 text-white rounded-xl p-4 shadow-lg flex items-center justify-between border-2 border-emerald-400 min-h-[70px] mt-3 overflow-hidden cursor-pointer"
                 onClick={() => router.push('/weekly-contest')}
-              >
-                {/* Shine Effekt */}
+>
+  {/* Shine Effekt */}
                 <motion.div
                   className="absolute inset-0 pointer-events-none"
                   initial={{ opacity: 0 }}
@@ -1179,15 +1381,15 @@ export default function Home() {
                   <div>
                     <h3 className="text-base font-bold">Weekly Contest</h3>
                     <p className="text-xs text-white/90 font-medium">Win $200 in WLD!</p>
-                  </div>
-                </div>
+  </div>
+      </div>
                 <motion.div
                   className="bg-white/20 rounded-full p-2 backdrop-blur-sm z-10"
                   animate={{ x: [0, 5, 0] }}
                   transition={{ duration: 1.5, repeat: Infinity, repeatType: 'reverse' }}
                 >
                   <ChevronRight className="w-5 h-5 text-white" />
-                </motion.div>
+</motion.div>
                 {/* Animierter Schatten */}
                 <motion.div
                   className="absolute inset-0 rounded-xl pointer-events-none"
@@ -1199,7 +1401,7 @@ export default function Home() {
                   transition={{ duration: 2.5, repeat: Infinity, repeatType: 'reverse', ease: 'easeInOut' }}
                 />
               </motion.div>
-            </div>
+      </div>
             {/* $ANI Card (replaces Chat) */}
             <div className="col-span-2">
               <div
@@ -1211,15 +1413,15 @@ export default function Home() {
               >
                 <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center mb-2">
                   <img src={getCloudflareImageUrl("/anime-images/ani-labs-logo-white.png")} alt="$ANI Logo" className="w-10 h-10" />
-                </div>
+      </div>
                 <div className="text-base font-bold text-gray-900">$ANI</div>
-              </div>
-            </div>
+    </div>
+    </div>
             <div className="col-span-2">
               <Link href="/shop" className="block w-full h-full">
-                <motion.div
+<motion.div
                   initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
+  animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2, duration: 0.4 }}
                   className="bg-white rounded-xl p-4 shadow-lg flex flex-col items-center justify-center min-h-[90px] h-full text-center hover:bg-gray-50 transition"
                 >
@@ -1231,7 +1433,7 @@ export default function Home() {
               </Link>
             </div>
             <div className="col-span-2">
-              <button
+  <button
                 onClick={() => {
                   // Referral Dialog Open
                   setShowReferralDialog(true);
@@ -1244,147 +1446,83 @@ export default function Home() {
                 </div>
                 <div className="text-base font-bold text-gray-900">Referrals</div>
                 {referredUsers.some((u) => u.level >= 5 && !u.reward_claimed) && (
-                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow">
-                    NEW
-                  </span>
-                )}
-              </button>
+      <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow">
+        NEW
+      </span>
+    )}
+  </button>
             </div>
             {/* Daily Deal & Special Deal nebeneinander */}
-            <div className={specialDeal && specialDealInteraction ? "col-span-3" : "col-span-6"}>
-              {dailyDeal && dailyDealInteraction && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1, duration: 0.4 }}
-                  className="rounded-xl shadow-lg overflow-hidden border border-violet-200 bg-gradient-to-br from-violet-500 to-fuchsia-500 flex flex-col items-center justify-center p-0 min-h-[160px] h-full text-center"
-                >
-                  <button onClick={() => setShowDailyDealDialog(true)} className="w-full h-full flex flex-col items-center justify-center p-4">
-                    {/* Card Image mit Overlay */}
-                    <motion.div
-                      className="w-20 h-28 rounded-lg border-2 border-violet-200 overflow-hidden shadow mb-2 bg-gray-100 flex items-center justify-center relative"
-                      animate={{ y: [0, -8, 0] }}
-                      transition={{ duration: 2.5, repeat: Infinity, repeatType: 'loop', ease: 'easeInOut' }}
-                    >
-                      {dailyDeal.card_image_url ? (
-                        dailyDeal.card_image_url.toLowerCase().endsWith('.mp4') ? (
-                          <div className="w-full h-full relative">
-                            <video
-                              src={getCloudflareImageUrl(dailyDeal.card_image_url)}
-                              className="w-full h-full object-cover"
-                              autoPlay
-                              muted
-                              loop
-                              playsInline
-                              onError={(e) => console.error('Daily Deal video failed to load:', e)}
-                              onLoadStart={() => {}}
-                              onLoadedData={() => {}}
-                            />
-                          </div>
+            <div className="w-full max-w-3xl mx-auto">
+              <div className="grid grid-cols-2 gap-4 w-full mt-4">
+                {/* Deal of the Day Block */}
+                <div className="col-span-1 flex flex-col items-center rounded-xl shadow-lg px-6 py-3 text-white bg-gradient-to-br from-violet-500 to-fuchsia-500 h-full min-h-[220px] min-w-[180px]">
+                  {dailyDeal && dailyDealInteraction ? (
+                    <>
+                      <div className="w-32 h-28 rounded-xl border-4 border-white shadow mb-2 overflow-hidden flex items-center justify-center relative">
+                        {dailyDeal.card_image_url ? (
+                          <img src={getCloudflareImageUrl(dailyDeal.card_image_url)} alt={dailyDeal.card_name || 'Card'} className="w-full h-full object-cover" />
                         ) : (
-                          <img
-                            src={getCloudflareImageUrl(dailyDeal.card_image_url)}
-                            alt={dailyDeal.card_name || 'Card'}
-                            className="w-full h-full object-cover"
-                          />
-                        )
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gray-400">No Image</div>
-                      )}
-                      {/* Level & Sterne Overlay */}
-                      <div className="absolute bottom-0 left-0 right-0 bg-black/60 py-1 flex items-center justify-center gap-1">
-                        <span className="text-xs font-bold text-white">★{dailyDeal.card_level}</span>
+                          <span className="text-2xl font-bold text-white">⭐️⭐️⭐️⭐️</span>
+                        )}
+                        <div className="absolute top-1 left-1 bg-black/70 text-xs px-2 py-0.5 rounded-full font-bold">x{dailyDeal.card_level}</div>
                       </div>
-                    </motion.div>
-                    <div className="font-bold text-base mb-1 text-white">Deal of the Day</div>
-                    <div className="text-sm mb-1 text-white/90">{dailyDeal.card_name} • {dailyDeal.card_rarity}</div>
-                    <div className="flex gap-2 mb-2 justify-center">
-                      {dailyDeal.regular_tickets > 0 && (
-                        <span className="bg-amber-100 text-amber-700 rounded px-2 py-1 text-xs font-bold flex items-center gap-1">
-                          <Ticket className="h-3 w-3 text-amber-500" />+{dailyDeal.regular_tickets}
-                        </span>
-                      )}
-                      {dailyDeal.legendary_tickets > 0 && (
-                        <span className="bg-blue-100 text-blue-700 rounded px-2 py-1 text-xs font-bold flex items-center gap-1">
-                          <Ticket className="h-3 w-3 text-blue-500" />+{dailyDeal.legendary_tickets}
-                        </span>
-                      )}
-                    </div>
-                   <div className="font-bold text-base mb-1 text-white">{price ? `${(dailyDeal.price / price).toFixed(2)} WLD` : `$${dailyDeal.price.toFixed(2)} USD`}</div>
-                  </button>
-                </motion.div>
-              )}
-            </div>
-            {specialDeal && specialDealInteraction && (
-              <div className="col-span-3">
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2, duration: 0.4 }}
-                  className={`rounded-xl shadow-lg overflow-hidden border ${
-                    specialDeal.card_rarity === 'godlike' 
-                      ? 'border-red-300 bg-gradient-to-br from-red-400 to-red-600' 
-                      : 'border-cyan-300 bg-gradient-to-br from-cyan-400 to-cyan-600'
-                  } flex flex-col items-center justify-center p-0 min-h-[160px] h-full text-center`}
-                >
-                  <button onClick={() => setShowSpecialDealDialog(true)} className="w-full h-full flex flex-col items-center justify-center p-4">
-                    {/* Card Image mit Overlay */}
-                    <motion.div
-                      className={`w-20 h-28 rounded-lg border-2 overflow-hidden shadow mb-2 bg-gray-100 flex items-center justify-center relative ${
-                        specialDeal.card_rarity === 'godlike' ? 'border-red-200' : 'border-emerald-200'
-                      }`}
-                      animate={{ y: [0, -8, 0] }}
-                      transition={{ duration: 2.5, repeat: Infinity, repeatType: 'loop', ease: 'easeInOut' }}
-                    >
-                      {specialDeal.card_image_url ? (
-                        specialDeal.card_image_url.toLowerCase().endsWith('.mp4') ? (
-                          <div className="w-full h-full relative">
-                            <video
-                              src={getCloudflareImageUrl(specialDeal.card_image_url)}
-                              className="w-full h-full object-cover"
-                              autoPlay
-                              muted
-                              loop
-                              playsInline
-                              onError={(e) => console.error('Special Deal video failed to load:', e)}
-                              onLoadStart={() => {}}
-                              onLoadedData={() => {}}
-                            />
-                          </div>
+                      <div className="font-bold text-base mb-1">Deal of the Day</div>
+                      <div className="text-sm mb-1">{dailyDeal.card_name} • <span className="inline-block px-2 py-1 rounded-full bg-yellow-100 text-yellow-800 text-xs font-bold align-middle ml-1">{dailyDeal.card_rarity}</span></div>
+                      <div className="flex gap-2 mb-2 justify-center">
+                        {dailyDeal.regular_tickets > 0 && (
+                          <span className="inline-block px-2 py-1 rounded-full bg-amber-100 text-amber-700 text-xs font-bold flex items-center gap-1">
+                            <Ticket className="h-3 w-3 text-amber-500" />+{dailyDeal.regular_tickets}
+                          </span>
+                        )}
+                        {dailyDeal.legendary_tickets > 0 && (
+                          <span className="inline-block px-2 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-bold flex items-center gap-1">
+                            <Ticket className="h-3 w-3 text-blue-500" />+{dailyDeal.legendary_tickets}
+                          </span>
+                        )}
+                      </div>
+                      <div className="font-bold text-lg mb-2">{price ? `${(dailyDeal.price / price).toFixed(2)} WLD` : `$${dailyDeal.price.toFixed(2)} USD`}</div>
+                      <Button className="bg-white/90 text-violet-700 font-bold w-full mt-2">Buy Now</Button>
+                    </>
+                  ) : (
+                    <div className="flex flex-1 items-center justify-center h-full text-white/70">No Deal of the Day</div>
+                  )}
+                </div>
+                {/* Special Deal Block */}
+                <div className="col-span-1 flex flex-col items-center rounded-xl shadow-lg px-6 py-3 text-white bg-gradient-to-br from-red-500 to-orange-500 h-full min-h-[220px] min-w-[180px]">
+                  {specialDeal ? (
+                    <>
+                      <div className="w-32 h-28 rounded-xl border-4 border-white shadow mb-2 overflow-hidden flex items-center justify-center relative">
+                        {specialDeal.card_image_url ? (
+                          <img src={getCloudflareImageUrl(specialDeal.card_image_url)} alt={specialDeal.card_name || 'Card'} className="w-full h-full object-cover" />
                         ) : (
-                          <img
-                            src={getCloudflareImageUrl(specialDeal.card_image_url)}
-                            alt={specialDeal.card_name || 'Card'}
-                            className="w-full h-full object-cover"
-                          />
-                        )
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gray-400">No Image</div>
-                      )}
-                      {/* Level & Sterne Overlay */}
-                      <div className="absolute bottom-0 left-0 right-0 bg-black/60 py-1 flex items-center justify-center gap-1">
-                        <span className="text-xs font-bold text-white">★{specialDeal.card_level}</span>
+                          <span className="text-2xl font-bold text-white">⭐️⭐️⭐️⭐️</span>
+                        )}
+                        <div className="absolute top-1 left-1 bg-black/70 text-xs px-2 py-0.5 rounded-full font-bold">x{specialDeal.card_level}</div>
                       </div>
-                    </motion.div>
-                    <div className="font-bold text-base mb-1 text-white">Special Deal!</div>
-                    <div className="text-sm mb-1 text-white/90">{specialDeal.card_name} • {specialDeal.card_rarity}</div>
-                    <div className="flex gap-2 mb-2 justify-center">
-                      {specialDeal.regular_tickets > 0 && (
-                        <span className="bg-amber-100 text-amber-700 rounded px-2 py-1 text-xs font-bold flex items-center gap-1">
-                          <Ticket className="h-3 w-3 text-amber-500" />+{specialDeal.regular_tickets}
-                        </span>
-                      )}
-                      {specialDeal.legendary_tickets > 0 && (
-                        <span className="bg-blue-100 text-blue-700 rounded px-2 py-1 text-xs font-bold flex items-center gap-1">
-                          <Ticket className="h-3 w-3 text-blue-500" />+{specialDeal.legendary_tickets}
-                        </span>
-                      )}
-                    </div>
-                    <div className="font-bold text-base mb-1 text-white">{price ? `${(specialDeal.price / price).toFixed(2)} WLD` : `$${specialDeal.price.toFixed(2)} USD`}</div>
-                  </button>
-                </motion.div>
+                      <div className="font-bold text-base mb-1">Special Deal!</div>
+                      <div className="text-sm mb-1">{specialDeal.card_name} • <span className="inline-block px-2 py-1 rounded-full bg-yellow-100 text-yellow-800 text-xs font-bold align-middle ml-1">{specialDeal.card_rarity}</span></div>
+                      <div className="flex gap-2 mb-2 justify-center">
+                        {specialDeal.elite_tickets > 0 && (
+                          <span className="inline-block px-2 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-bold flex items-center gap-1">
+                            <Ticket className="h-3 w-3 text-blue-500" />+{specialDeal.elite_tickets}
+                          </span>
+                        )}
+                        {specialDeal.icon_tickets > 0 && (
+                          <span className="inline-block px-2 py-1 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold flex items-center gap-1">
+                            <Crown className="h-3 w-3 text-indigo-500" />+{specialDeal.icon_tickets}
+                          </span>
+                        )}
+                      </div>
+                      <div className="font-bold text-lg mb-2">{specialDeal.price} WLD</div>
+                      <Button className="bg-white/90 text-red-600 font-bold w-full mt-2">Buy Now</Button>
+                    </>
+                  ) : (
+                    <div className="flex flex-1 items-center justify-center h-full text-white/70">Kein Special Deal heute</div>
+                  )}
+                </div>
               </div>
-            )}
+            </div>
           </div>
           {/* Daily bonus (keep below the grid) */}
           <motion.div
@@ -1403,11 +1541,11 @@ export default function Home() {
                     <div>
                       <h3 className="font-medium text-sm">Ticket Claim</h3>
                       <p className="text-xs text-gray-500">
-                        Get {ticketClaimAmount} tickets every 24 hours
-                        {ticketClaimAmount === 4 && (
-                          <span className="text-emerald-600 font-medium"> (+1 Clan Bonus)</span>
-                        )}
-                      </p>
+  Get {ticketClaimAmount} tickets every 24 hours
+  {ticketClaimAmount === 4 && (
+    <span className="text-emerald-600 font-medium"> (+1 Clan Bonus)</span>
+  )}
+</p>
                     </div>
                   </div>
                   <Button
@@ -1460,36 +1598,36 @@ export default function Home() {
           </div>
         </main>
 
-        {showClaimAnimation && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center"
-          >
-            <div className="relative">
-              {[...Array(3)].map((_, i) => (
-                <motion.div
-                  key={i}
-                  className="absolute"
-                  initial={{ x: 0, y: 0, scale: 0 }}
-                  animate={{
-                    x: [0, (i - 1) * 30],
-                    y: [0, -60],
-                    scale: [0, 1.2, 1],
-                    opacity: [1, 0],
-                  }}
-                  transition={{ duration: 1.5, delay: i * 0.2 }}
-                >
-                  <div className="bg-white rounded-lg p-2 shadow-lg flex items-center gap-2 border-2 border-blue-300">
-                    <Ticket className="h-5 w-5 text-blue-500" />
-                    <span className="font-bold text-blue-600">+1</span>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-        )}
+       {showClaimAnimation && (
+  <motion.div
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+    className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center"
+  >
+    <div className="relative">
+      {[...Array(3)].map((_, i) => (
+        <motion.div
+          key={i}
+          className="absolute"
+          initial={{ x: 0, y: 0, scale: 0 }}
+          animate={{
+            x: [0, (i - 1) * 30],
+            y: [0, -60],
+            scale: [0, 1.2, 1],
+            opacity: [1, 0],
+          }}
+          transition={{ duration: 1.5, delay: i * 0.2 }}
+        >
+          <div className="bg-white rounded-lg p-2 shadow-lg flex items-center gap-2 border-2 border-blue-300">
+            <Ticket className="h-5 w-5 text-blue-500" />
+            <span className="font-bold text-blue-600">+1</span>
+          </div>
+        </motion.div>
+      ))}
+    </div>
+  </motion.div>
+)}
 
         {/* Deal of the Day Dialog */}
         {dailyDeal && dailyDeal.card_name && (
@@ -1504,34 +1642,34 @@ export default function Home() {
 
 
         {/* Referrals Dialog */}
-        <Dialog open={showReferralDialog} onOpenChange={setShowReferralDialog}>
-          <DialogContent>
-            <DialogTitle className="text-lg font-bold">🎁 Invite Friends & Earn Rewards</DialogTitle>
-            <DialogDescription className="text-sm text-gray-600">
-              Share your referral link and earn bonus tickets when they reach level 5!
-            </DialogDescription>
-            {/* Your referral link */}
-            <div className="mt-4">
-              <div className="text-sm font-semibold text-gray-800 mb-1">Your Code:</div>
-              <div className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded px-3 py-2">
+<Dialog open={showReferralDialog} onOpenChange={setShowReferralDialog}>
+  <DialogContent>
+    <DialogTitle className="text-lg font-bold">🎁 Invite Friends & Earn Rewards</DialogTitle>
+    <DialogDescription className="text-sm text-gray-600">
+      Share your referral link and earn bonus tickets when they reach level 5!
+    </DialogDescription>
+    {/* Your referral link */}
+    <div className="mt-4">
+      <div className="text-sm font-semibold text-gray-800 mb-1">Your Code:</div>
+      <div className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded px-3 py-2">
                 <span className="truncate text-sm font-mono text-gray-700">{user?.username}</span>
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    const link = `https://worldcoin.org/mini-app?app_id=app_976ccdfba5aa4d5b3b31d628d74ea936&ref=${user?.username}`
-                    navigator.clipboard.writeText(link)
+        <Button
+      size="sm"
+      onClick={() => {
+                    const link = `https://worldcoin.org/mini-app?app_id=app_ee60c6a9a47604ff83f1af2dce203e7a&ref=${user?.username}`
+        navigator.clipboard.writeText(link)
                     setCopied(true)
                     setTimeout(() => setCopied(false), 2000)
-                  }}
-                >
-                  {copied ? "Copied!" : "Copy link"}
-                </Button>
-              </div>
-            </div>
-            {/* Rewards overview */}
-            <div className="mt-6 bg-amber-50 border border-amber-200 rounded-lg p-3">
-              <h4 className="text-sm font-semibold text-amber-700 mb-1">What you get:</h4>
-              <ul className="text-sm text-amber-800 list-disc list-inside space-y-1">
+      }}
+    >
+      {copied ? "Copied!" : "Copy link"}
+    </Button>
+      </div>
+    </div>
+    {/* Rewards overview */}
+    <div className="mt-6 bg-amber-50 border border-amber-200 rounded-lg p-3">
+      <h4 className="text-sm font-semibold text-amber-700 mb-1">What you get:</h4>
+      <ul className="text-sm text-amber-800 list-disc list-inside space-y-1">
                 <li>
                   <strong>+5</strong> Regular Tickets
                 </li>
@@ -1541,266 +1679,82 @@ export default function Home() {
                 <li>
                   Once your friend reaches <strong>Level 5</strong>
                 </li>
-              </ul>
-            </div>
-            {/* Referred users list */}
-            <div className="mt-6">
-              <h4 className="text-sm font-semibold text-gray-800 mb-2">Your Referrals</h4>
-              {referredUsers.length === 0 ? (
-                <p className="text-xs text-gray-500">No referrals yet.</p>
-              ) : (
-                <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {referredUsers.map((ref) => (
-                    <div key={ref.username} className="flex justify-between items-center border-b pb-1">
-                      <span className="text-sm">
+      </ul>
+    </div>
+    {/* Referred users list */}
+    <div className="mt-6">
+      <h4 className="text-sm font-semibold text-gray-800 mb-2">Your Referrals</h4>
+      {referredUsers.length === 0 ? (
+        <p className="text-xs text-gray-500">No referrals yet.</p>
+      ) : (
+        <div className="space-y-2 max-h-48 overflow-y-auto">
+          {referredUsers.map((ref) => (
+            <div key={ref.username} className="flex justify-between items-center border-b pb-1">
+              <span className="text-sm">
                         @{ref.username.length > 10 ? ref.username.slice(0, 10) + "…" : ref.username} <span className="text-gray-500 text-xs">(Lvl {ref.level})</span>
-                      </span>
-                      {ref.reward_claimed ? (
-                        <CheckCircle className="h-4 w-4 text-green-500" />
-                      ) : ref.level >= 5 ? (
-                        <Button
-                          size="sm"
-                          className="text-xs"
-                          onClick={async () => {
-                            if (!user?.username) return
-                            const res = await claimReferralRewardForUser(user.username, ref.username)
-                            if (res.success) {
-                              setShowClaimAnimation(true)
+              </span>
+              {ref.reward_claimed ? (
+                <CheckCircle className="h-4 w-4 text-green-500" />
+              ) : ref.level >= 5 ? (
+                <Button
+  size="sm"
+  className="text-xs"
+  onClick={async () => {
+  if (!user?.username) return
+  const res = await claimReferralRewardForUser(user.username, ref.username)
+  if (res.success) {
+    setShowClaimAnimation(true)
                               if (
                                 typeof res.newTicketCount === "number" ||
                                 typeof res.newLegendaryTicketCount === "number"
                               ) {
-                                await updateUserTickets(res.newTicketCount, res.newLegendaryTicketCount)
-                                setTickets(res.newTicketCount)
-                                setLegendaryTickets(res.newLegendaryTicketCount)
-                              }
-                              setReferredUsers((prev) =>
+      await updateUserTickets(res.newTicketCount, res.newLegendaryTicketCount)
+      setTickets(res.newTicketCount)
+      setLegendaryTickets(res.newLegendaryTicketCount)
+    }
+    setReferredUsers((prev) =>
                                 prev.map((r) => (r.username === ref.username ? { ...r, reward_claimed: true } : r)),
-                              )
-                              setTimeout(() => setShowClaimAnimation(false), 1500)
-                            } else {
-                              toast({ title: "Error", description: res.error, variant: "destructive" })
-                            }
-                          }}
-                        >
-                          Claim
-                        </Button>
-                      ) : (
-                        <span className="text-xs text-gray-400">Waiting...</span>
-                      )}
-                    </div>
-                  ))}
-                </div>
+      )
+    setTimeout(() => setShowClaimAnimation(false), 1500)
+  } else {
+    toast({ title: "Error", description: res.error, variant: "destructive" })
+  }
+}}
+>
+  Claim
+</Button>
+              ) : (
+                <span className="text-xs text-gray-400">Waiting...</span>
               )}
             </div>
-          </DialogContent>
-        </Dialog>
+          ))}
+        </div>
+      )}
+    </div>
+  </DialogContent>
+</Dialog>
       </div>
+      
+// Avatar-Kauf-Dialog
+<Dialog open={showBuyAvatarDialog} onOpenChange={setShowBuyAvatarDialog}>
+  <DialogContent>
+    <DialogTitle>Avatar kaufen</DialogTitle>
+    {selectedAvatarToBuy && (
+      <div className="flex flex-col items-center">
+        <img src={selectedAvatarToBuy.url} alt="Avatar" className="w-20 h-20 rounded-full mb-2" />
+        <span className={`text-xs font-bold px-2 py-0.5 rounded-full mb-2 ${selectedAvatarToBuy.rarity === 'epic' ? 'bg-purple-100 text-purple-700' : selectedAvatarToBuy.rarity === 'god' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-700'}`}>{selectedAvatarToBuy.rarity}</span>
+        <div className="mb-2 text-gray-700 text-sm">Preis: <span className="font-bold">{selectedAvatarToBuy.price}★</span></div>
+        <Button onClick={() => handleBuyAvatar(selectedAvatarToBuy)} disabled={buyingAvatar}>
+          {buyingAvatar ? "Zahlung läuft..." : "Jetzt kaufen"}
+        </Button>
+      </div>
+    )}
+  </DialogContent>
+</Dialog>
+
       
       <MobileNav />
     </ProtectedRoute>
   )
 }
 
-
-function ChatOverlay({ onClose }: { onClose: () => void }) {
-  const [messages, setMessages] = useState<any[]>([])
-  const [newMessage, setNewMessage] = useState("")
-  const [loading, setLoading] = useState(false)
-  const [cooldown, setCooldown] = useState<number>(0)
-  const [room, setRoom] = useState<"english" | "spanish">("english")
-  const { user } = useAuth()
-  const username = user?.username
-  const bottomRef = useRef<HTMLDivElement>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
-  const [lastSentAt, setLastSentAt] = useState<number>(0)
-  const supabase = getSupabaseBrowserClient()
-
-  useEffect(() => {
-    loadMessages()
-    // Set up real-time subscription
-    const channel = supabase
-      ?.channel(`chat_${room}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "global_chat_messages",
-          filter: `room=eq.${room}`,
-        },
-        (payload) => {
-          loadMessages()
-        }
-      )
-      .subscribe()
-    return () => {
-      channel?.unsubscribe()
-    }
-  }, [username, room])
-
-  useEffect(() => {
-    if (cooldown > 0) {
-      const interval = setInterval(() => {
-        setCooldown((prev) => Math.max(prev - 1, 0))
-      }, 1000)
-      return () => clearInterval(interval)
-    }
-  }, [cooldown])
-
-  useEffect(() => {
-    if (inputRef.current) {
-      setTimeout(() => {
-        inputRef.current?.focus()
-      }, 200)
-    }
-  }, [])
-
-  async function loadMessages() {
-    if (!supabase) return
-    const { data, error } = await supabase
-      .from("global_chat_messages")
-      .select(`user_id, message, created_at, room, users!inner(avatar_id, avatars!inner(image_url))`)
-      .eq("room", room)
-      .order("created_at", { ascending: false })
-      .limit(75)
-    if (!error && data) {
-      const typedData = data.map((msg: any) => ({
-        user_id: String(msg.user_id),
-        message: String(msg.message),
-        created_at: String(msg.created_at),
-        avatar_url: msg.users?.avatars?.image_url || "",
-      })).reverse()
-      setMessages(typedData)
-      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50)
-    }
-  }
-
-  async function sendMessage() {
-    if (!newMessage.trim() || !username || !supabase || loading || cooldown > 0) return
-    const now = Date.now()
-    if (now - lastSentAt < 10000) {
-      const remaining = 10 - Math.floor((now - lastSentAt) / 1000)
-      setCooldown(remaining)
-      return
-    }
-    setLoading(true)
-    await supabase.from("global_chat_messages").insert({
-      user_id: username,
-      message: newMessage.trim(),
-      room: room,
-    })
-    setNewMessage("")
-    setLastSentAt(now)
-    setCooldown(10)
-    setLoading(false)
-  }
-
-  function truncateUsername(name: string): string {
-    return name.length > 10 ? name.slice(0, 10) + "…" : name
-  }
-
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: "rgba(0, 0, 0, 0.4)", backdropFilter: "blur(8px)" }}
-      onClick={onClose}
-    >
-      <motion.div
-        initial={{ scale: 0.8, opacity: 0, y: 50 }}
-        animate={{ scale: 1, opacity: 1, y: 0 }}
-        exit={{ scale: 0.8, opacity: 0, y: 50 }}
-        transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] h-full flex flex-col relative"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="relative flex items-center justify-between text-white bg-gradient-to-r from-emerald-500 to-teal-500 rounded-t-2xl p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-              <MessageCircle className="w-4 h-4" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-lg">Global Chat</h3>
-            </div>
-            <div className="flex gap-2 ml-2 bg-white/20 p-1 rounded-full">
-              <button
-                className={`px-3 py-1 text-xs font-semibold rounded-full transition ${room === "english" ? "bg-white text-emerald-700 shadow" : "text-white hover:bg-white/10"}`}
-                onClick={() => setRoom("english")}
-              >
-                🇬🇧 English
-              </button>
-              <button
-                className={`px-3 py-1 text-xs font-semibold rounded-full transition ${room === "spanish" ? "bg-white text-emerald-700 shadow" : "text-white hover:bg-white/10"}`}
-                onClick={() => setRoom("spanish")}
-              >
-                🇪🇸 Español
-              </button>
-            </div>
-          </div>
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            onClick={onClose}
-            className="p-2 hover:bg-white/20 rounded-full transition-colors"
-          >
-            <X className="w-4 h-4" />
-          </motion.button>
-        </div>
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto space-y-3 p-2 bg-gradient-to-b from-gray-50/50 to-white/50">
-          <AnimatePresence initial={false}>
-            {messages.map((msg, idx) => {
-              const isOwn = msg.user_id === username
-              return (
-                <motion.div
-                  key={`${msg.user_id}-${msg.created_at}-${idx}`}
-                  initial={{ opacity: 0, y: 20, scale: 0.8 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                  className={`flex gap-3 ${isOwn ? "flex-row-reverse" : "flex-row"}`}
-                >
-                  {/* Avatar */}
-                  <div className="flex-shrink-0">
-                    <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200">
-                      <Image
-                        src={msg.avatar_url || ""}
-                        alt={`${msg.user_id} avatar`}
-                        width={32}
-                        height={32}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  </div>
-                  {/* Message */}
-                  <div className="flex-1">
-                    <div className={`flex items-center gap-2 mb-1 ${isOwn ? "justify-end" : "justify-start"}`}>
-                      <span className="text-xs font-semibold text-gray-700 bg-gray-100 px-2 py-0.5 rounded-full">
-                        {truncateUsername(msg.user_id)}
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        {formatDistanceToNow(new Date(msg.created_at), { addSuffix: true })}
-                      </span>
-                    </div>
-                    <div
-                      className={`p-3 rounded-2xl backdrop-blur-sm border shadow-sm ${isOwn ? "bg-gradient-to-r from-emerald-500/90 to-teal-600/90 text-white border-white/20" : "bg-white/90 text-gray-800 border-gray-200/50"}`}
-                    >
-                      <div className="text-sm leading-relaxed whitespace-pre-wrap break-words">{msg.message}</div>
-                    </div>
-                  </div>
-                </motion.div>
-              )
-            })}
-          </AnimatePresence>
-          <div ref={bottomRef} />
-        </div>
-      </motion.div>
-    
-    </motion.div>
-    
-  )
-}

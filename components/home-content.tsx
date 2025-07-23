@@ -1361,53 +1361,62 @@ const [copied, setCopied] = useState(false)
 <motion.div
   initial={{ opacity: 0, y: 20, scale: 0.95 }}
   animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ duration: 0.6, ease: 'easeOut', delay: 0.3 }}
-                whileHover={{ scale: 1.03, boxShadow: '0 0 32px 0 rgba(16, 185, 129, 0.25)' }}
-                className="relative w-full bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-400 text-white rounded-xl p-4 shadow-lg flex items-center justify-between border-2 border-emerald-400 min-h-[70px] mt-3 overflow-hidden cursor-pointer"
-                onClick={() => router.push('/weekly-contest')}
+  transition={{ duration: 0.6, ease: 'easeOut', delay: 0.3 }}
+  whileHover={{ scale: 1.03, boxShadow: '0 0 32px 0 rgba(255, 215, 0, 0.25)' }}
+  className="relative w-full bg-gradient-to-br from-[#232526] to-[#414345] text-white rounded-2xl p-6 shadow-2xl flex items-center justify-between border-4 border-yellow-400 min-h-[90px] mt-3 overflow-hidden cursor-pointer"
+  onClick={() => router.push('/weekly-contest')}
 >
   {/* Shine Effekt */}
-                <motion.div
-                  className="absolute inset-0 pointer-events-none"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                >
-                  <motion.div
-                    className="absolute left-[-40%] top-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/40 to-transparent skew-x-[-20deg]"
-                    animate={{ left: ['-40%', '120%'] }}
-                    transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
-                  />
-                </motion.div>
-                <div className="flex items-center gap-3 z-10">
-                  <motion.div
-                    animate={{ y: [0, -8, 0] }}
-                    transition={{ duration: 2, repeat: Infinity, repeatType: 'loop', ease: 'easeInOut' }}
-                  >
-                    <Trophy className="w-7 h-7 text-white" />
-                  </motion.div>
-                  <div>
-                    <h3 className="text-base font-bold">Weekly Contest</h3>
-                    <p className="text-xs text-white/90 font-medium">Win $200 in WLD!</p>
+  <motion.div
+    className="absolute inset-0 pointer-events-none"
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+  >
+    <motion.div
+      className="absolute left-[-40%] top-0 w-1/2 h-full bg-gradient-to-r from-transparent via-yellow-200/40 to-transparent skew-x-[-20deg]"
+      animate={{ left: ['-40%', '120%'] }}
+      transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+    />
+  </motion.div>
+  <div className="flex items-center gap-4 z-10">
+    <motion.div
+      animate={{ y: [0, -12, 0] }}
+      transition={{ duration: 2, repeat: Infinity, repeatType: 'loop', ease: 'easeInOut' }}
+      className="flex flex-col items-center"
+    >
+      <Trophy className="w-10 h-10 text-yellow-400 drop-shadow-lg" />
+      <motion.div
+        animate={{ y: [0, -12, 0] }}
+        transition={{ duration: 2, repeat: Infinity, repeatType: 'loop', ease: 'easeInOut' }}
+        className="mt-2 text-lg font-bold text-yellow-300 drop-shadow-lg"
+        style={{ letterSpacing: 1 }}
+      >
+        Win $200 in WLD!
+      </motion.div>
+    </motion.div>
+    <div>
+      <h3 className="text-xl font-bold text-yellow-100 mb-1">Weekly Contest</h3>
+      <p className="text-sm text-white/80 font-medium">Compete for the top spot!</p>
+    </div>
   </div>
-      </div>
-                <motion.div
-                  className="bg-white/20 rounded-full p-2 backdrop-blur-sm z-10"
-                  animate={{ x: [0, 5, 0] }}
-                  transition={{ duration: 1.5, repeat: Infinity, repeatType: 'reverse' }}
-                >
-                  <ChevronRight className="w-5 h-5 text-white" />
+  <motion.div
+    className="bg-yellow-400/20 rounded-full p-3 backdrop-blur-sm z-10 border-2 border-yellow-300 shadow-lg"
+    animate={{ x: [0, 5, 0] }}
+    transition={{ duration: 1.5, repeat: Infinity, repeatType: 'reverse' }}
+  >
+    <ChevronRight className="w-6 h-6 text-yellow-300" />
+  </motion.div>
+  {/* Animierter Schatten */}
+  <motion.div
+    className="absolute inset-0 rounded-2xl pointer-events-none"
+    animate={{ boxShadow: [
+      '0 4px 24px 0 rgba(255, 215, 0, 0.10)',
+      '0 8px 32px 0 rgba(255, 215, 0, 0.18)',
+      '0 4px 24px 0 rgba(255, 215, 0, 0.10)'
+    ] }}
+    transition={{ duration: 2.5, repeat: Infinity, repeatType: 'reverse', ease: 'easeInOut' }}
+  />
 </motion.div>
-                {/* Animierter Schatten */}
-                <motion.div
-                  className="absolute inset-0 rounded-xl pointer-events-none"
-                  animate={{ boxShadow: [
-                    '0 4px 24px 0 rgba(16, 185, 129, 0.10)',
-                    '0 8px 32px 0 rgba(16, 185, 129, 0.18)',
-                    '0 4px 24px 0 rgba(16, 185, 129, 0.10)'
-                  ] }}
-                  transition={{ duration: 2.5, repeat: Infinity, repeatType: 'reverse', ease: 'easeInOut' }}
-                />
-              </motion.div>
       </div>
             {/* $ANI Card (replaces Chat) */}
             <div className="col-span-2">

@@ -85,105 +85,134 @@ export default function WeeklyContestPage() {
   const contestEnded = countdown <= 0
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white via-emerald-50 to-white pb-24">
-      <header className="sticky top-0 z-10 bg-white/90 border-b px-4 py-3 flex items-center gap-2 backdrop-blur">
-        <Button variant="ghost" size="icon" onClick={() => router.push("/")}> <ArrowLeft className="h-5 w-5 text-gray-600" /></Button>
-        <h1 className="text-lg font-bold flex items-center gap-2 text-emerald-600">
-          <Trophy className="w-5 h-5" /> Weekly Contest
+    <div className="min-h-screen bg-gradient-to-br from-[#18181b] to-[#232526] pb-24">
+      <header className="sticky top-0 z-10 bg-black/80 border-b border-yellow-400 px-4 py-3 flex items-center gap-2 backdrop-blur shadow-lg">
+        <Button variant="ghost" size="icon" onClick={() => router.push("/")}> <ArrowLeft className="h-5 w-5 text-yellow-400" /></Button>
+        <h1 className="text-xl font-extrabold flex items-center gap-2 bg-gradient-to-r from-yellow-200 via-yellow-400 to-yellow-600 bg-clip-text text-transparent animate-gradient-move drop-shadow-lg">
+          <span className="relative">
+            <Trophy className="w-7 h-7 text-yellow-400 animate-trophy-float" style={{ filter: 'drop-shadow(0 0 8px #FFD700)' }} />
+          </span>
+          Weekly Contest
         </h1>
       </header>
 
       <main className="max-w-md mx-auto p-4 space-y-6">
-        <div className="text-center text-lg font-bold text-emerald-700">
+        <div className="text-center text-lg font-bold">
           {contestEnded ? (
-            <div className="text-red-600 text-xl font-semibold">The contest has ended</div>
+            <div className="text-red-500 text-2xl font-extrabold">The contest has ended</div>
           ) : (
-            <div className="flex justify-center gap-4 text-sm sm:text-base mt-2">
+            <div className="flex justify-center gap-4 text-base mt-2">
               {time && (
                 <>
-                  <div className="flex flex-col items-center"><span className="text-emerald-600 text-xl font-mono">{time.days}</span><span className="text-gray-500 text-xs">D</span></div>
-                  <div className="flex flex-col items-center"><span className="text-emerald-600 text-xl font-mono">{time.hours}</span><span className="text-gray-500 text-xs">H</span></div>
-                  <div className="flex flex-col items-center"><span className="text-emerald-600 text-xl font-mono">{time.minutes}</span><span className="text-gray-500 text-xs">M</span></div>
-                  <div className="flex flex-col items-center"><span className="text-emerald-600 text-xl font-mono">{time.seconds}</span><span className="text-gray-500 text-xs">S</span></div>
+                  <div className="flex flex-col items-center"><span className="text-yellow-300 text-2xl font-mono">{time.days}</span><span className="text-yellow-100 text-xs">D</span></div>
+                  <div className="flex flex-col items-center"><span className="text-yellow-300 text-2xl font-mono">{time.hours}</span><span className="text-yellow-100 text-xs">H</span></div>
+                  <div className="flex flex-col items-center"><span className="text-yellow-300 text-2xl font-mono">{time.minutes}</span><span className="text-yellow-100 text-xs">M</span></div>
+                  <div className="flex flex-col items-center"><span className="text-yellow-300 text-2xl font-mono">{time.seconds}</span><span className="text-yellow-100 text-xs">S</span></div>
                 </>
               )}
             </div>
           )}
         </div>
 
-        <div className="bg-white border border-emerald-200 rounded-xl shadow-sm p-4 text-center">
-          <h2 className="text-lg sm:text-xl font-bold text-emerald-700 leading-snug">
-            Your Mission:
-            <br />
-            Pull as many <span className="text-amber-500">Legendary Cards</span> as possible!
-          </h2>
+        <div className="bg-gradient-to-br from-[#232526] to-[#18181b] border-2 border-yellow-400 rounded-2xl shadow-xl p-6 text-center mb-4">
+          <h2 className="text-xl font-bold text-yellow-300 mb-2">Your Mission:</h2>
+          <div className="text-2xl font-extrabold bg-gradient-to-r from-yellow-200 via-yellow-400 to-yellow-600 bg-clip-text text-transparent animate-gradient-move">
+            Pull as many <span className="text-yellow-400">Legendary Cards</span> as possible!
+          </div>
         </div>
 
-        <div className="bg-white border border-emerald-200 rounded-xl shadow-sm p-4">
-          <h2 className="text-sm font-semibold text-emerald-700 mb-1">Your Progress</h2>
+        <div className="bg-gradient-to-br from-[#232526] to-[#18181b] border-2 border-yellow-400 rounded-2xl shadow-xl p-6">
+          <h2 className="text-lg font-bold text-yellow-300 mb-2">Your Progress</h2>
           {loading ? (
-            <p className="text-sm text-gray-500">Loading your stats...</p>
+            <p className="text-base text-gray-300">Loading your stats...</p>
           ) : userStats ? (
             <div className="space-y-1">
-              <p className="text-sm text-gray-700">
-                You pulled <span className="font-bold text-emerald-600">{userStats.legendary_count}</span> legendary card{userStats.legendary_count !== 1 && "s"} this week.
+              <p className="text-lg text-yellow-100">
+                You pulled <span className="font-extrabold text-yellow-400 text-2xl">{userStats.legendary_count}</span> legendary card{userStats.legendary_count !== 1 && "s"} this week.
               </p>
               {userStats.rank && (
-                <p className="text-xs text-gray-600">
-                  Current rank: <span className="font-semibold">#{userStats.rank}</span>
+                <p className="text-base text-yellow-200">
+                  Current rank: <span className="font-bold text-yellow-400">#{userStats.rank}</span>
                 </p>
               )}
             </div>
           ) : (
-            <p className="text-sm text-gray-500">No legendary cards pulled yet this week.</p>
+            <p className="text-base text-gray-300">No legendary cards pulled yet this week.</p>
           )}
         </div>
 
-        <div className="bg-white border border-emerald-200 rounded-xl shadow-sm p-4 space-y-4">
+        <div className="bg-gradient-to-br from-[#232526] to-[#18181b] border-2 border-yellow-400 rounded-2xl shadow-xl p-6 space-y-4">
           <div>
-            <h2 className="text-sm font-semibold text-emerald-700 mb-2">🏆 Prize Pool</h2>
-            <ul className="text-sm text-gray-800 space-y-1">
-              {WEEKLY_PRIZE_POOL.map((prize) => (
-                <li key={prize.rank} className="flex items-center gap-2">
-                  <span className="text-xl">{prize.icon}</span>
-                  <span className="flex-1">{prize.rank}</span>
-                  <span className="font-semibold">{prize.reward}</span>
+            <h2 className="text-lg font-bold text-yellow-300 mb-2">🏆 Prize Pool</h2>
+            <ul className="text-lg text-yellow-100 space-y-2">
+              {WEEKLY_PRIZE_POOL.map((prize, idx) => (
+                <li key={prize.rank} className={`flex items-center gap-3 px-2 py-2 rounded-xl ${
+                  idx === 0 ? 'bg-gradient-to-r from-yellow-400/40 to-yellow-200/10 shadow-gold' :
+                  idx === 1 ? 'bg-gradient-to-r from-gray-300/30 to-yellow-100/10 shadow-lg' :
+                  idx === 2 ? 'bg-gradient-to-r from-amber-700/30 to-yellow-100/10 shadow-lg' :
+                  'bg-black/20'
+                }`}>
+                  <span className="text-2xl drop-shadow-lg">{prize.icon}</span>
+                  <span className="flex-1 font-bold text-yellow-200">{prize.rank}</span>
+                  <span className="font-extrabold bg-gradient-to-r from-yellow-200 via-yellow-400 to-yellow-600 bg-clip-text text-transparent animate-gradient-move">{prize.reward}</span>
                 </li>
               ))}
             </ul>
           </div>
         </div>
 
-        <div>
-          <h2 className="text-sm font-semibold text-emerald-700 mb-2">Top 20 Players</h2>
+        <div className="bg-gradient-to-br from-[#232526] to-[#18181b] border-2 border-yellow-400 rounded-2xl shadow-xl p-6">
+          <h2 className="text-lg font-bold text-yellow-300 mb-2">Top 20 Players</h2>
           {loading ? (
-            <p className="text-center text-gray-500">Loading leaderboard...</p>
+            <p className="text-center text-gray-300">Loading leaderboard...</p>
           ) : leaderboard.length === 0 ? (
-            <p className="text-center text-gray-500">No entries yet this week.</p>
+            <p className="text-center text-gray-300">No entries yet this week.</p>
           ) : (
             <div className="space-y-2">
               {leaderboard.map((entry, index) => (
                 <div
                   key={entry.user_id}
-                  className={`flex justify-between items-center px-4 py-2 rounded-lg ${
-                    user?.username === entry.user_id
-                      ? "bg-emerald-100 border border-emerald-400"
-                      : "bg-white border border-gray-200"
-                  }`}
+                  className={`flex justify-between items-center px-4 py-3 rounded-xl text-lg font-semibold transition-all
+                    ${index === 0 ? 'bg-gradient-to-r from-yellow-400/60 to-yellow-200/20 text-yellow-900 shadow-gold' :
+                      index === 1 ? 'bg-gradient-to-r from-gray-300/40 to-yellow-100/10 text-gray-900' :
+                      index === 2 ? 'bg-gradient-to-r from-amber-700/40 to-yellow-100/10 text-amber-100' :
+                      'bg-black/30 text-yellow-100'}
+                    ${user?.username === entry.user_id ? 'border-2 border-yellow-400 shadow-gold' : 'border border-yellow-900/30'}
+                  `}
                 >
                   <div className="flex items-center gap-3">
-                    <span className="text-sm font-bold w-6 text-gray-600">{index + 1}</span>
-                    <span className="text-sm text-gray-800 truncate max-w-[120px]">
-                      {entry.user_id.length > 14 ? `${entry.user_id.slice(0, 14)}…` : entry.user_id}
-                    </span>
+                    <span className="text-xl font-extrabold w-8 text-yellow-200">{index + 1}</span>
+                    <span className="truncate max-w-[120px]">{entry.user_id.length > 14 ? `${entry.user_id.slice(0, 14)}…` : entry.user_id}</span>
                   </div>
-                  <span className="text-sm font-semibold text-emerald-600">{entry.legendary_count}</span>
+                  <span className="font-extrabold text-yellow-300">{entry.legendary_count}</span>
                 </div>
               ))}
             </div>
           )}
         </div>
       </main>
+      <style jsx>{`
+        .animate-gradient-move {
+          background-size: 200% 200%;
+          animation: gradientMove 3s linear infinite;
+        }
+        @keyframes gradientMove {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+        .animate-trophy-float {
+          animation: trophyFloat 2.5s ease-in-out infinite;
+        }
+        @keyframes trophyFloat {
+          0% { transform: translateY(0); }
+          50% { transform: translateY(-10px); }
+          100% { transform: translateY(0); }
+        }
+        .shadow-gold {
+          box-shadow: 0 0 24px 4px #FFD70044, 0 0 8px 2px #FFD70099;
+        }
+      `}</style>
     </div>
   )
 }

@@ -7,6 +7,10 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
+    domains: [
+      'fda1523f9dc7558ddc4fcf148e01a03a.r2.cloudflarestorage.com',
+      'upload.wikimedia.org',
+    ],
     remotePatterns: [
       {
         protocol: 'https',

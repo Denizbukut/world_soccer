@@ -46,13 +46,14 @@ import { claimReferralRewardForUser } from "@/app/actions/referrals"
 import { Progress } from "@/components/ui/progress" // Import Progress component
 
 // Add the Cloudflare URL function
-const getCloudflareImageUrl = (imageId?: string) => {
-  if (!imageId) return "/placeholder.svg"
-
-  // Remove leading slash and "anime-images/" prefix
-  const cleaned = imageId.replace(/^\/?anime-images\//, "")
-
-  return `https://fda1523f9dc7558ddc4fcf148e01a03a.r2.cloudflarestorage.com/world-soccer/${cleaned}`
+const getCloudflareImageUrl = (imagePath?: string) => {
+  if (!imagePath) return "/placeholder.svg"
+  // Remove leading slash and any world_soccer/world-soccer prefix
+  let cleaned = imagePath.replace(/^\/?(world[-_])?soccer\//i, "")
+  // Wenn schon http, dann direkt zurückgeben
+  if (cleaned.startsWith("http")) return cleaned
+  // Pub-URL verwenden, KEIN world-soccer/ mehr anhängen!
+  return `https://pub-e74caca70ffd49459342dd56ea2b67c9.r2.dev/${encodeURIComponent(cleaned)}`
 }
 
 // XP Color definitions
@@ -83,8 +84,10 @@ interface DailyDeal {
   id: number
   card_id: string
   card_level: number
-  regular_tickets: number
-  legendary_tickets: number
+  classic_tickets: number
+  elite_tickets: number
+  regular_tickets?: number
+  legendary_tickets?: number
   price: number
   description: string
   discount_percentage: number
@@ -99,8 +102,8 @@ interface SpecialDeal {
   id: number
   card_id: string
   card_level: number
-  regular_tickets: number
-  legendary_tickets: number
+  classic_tickets: number
+  elite_tickets: number
   price: number
   description: string
   discount_percentage: number
@@ -108,7 +111,6 @@ interface SpecialDeal {
   card_image_url: string
   card_rarity: string
   card_character: string
-  elite_tickets: number
   icon_tickets: number
 }
 
@@ -1114,6 +1116,11 @@ const [copied, setCopied] = useState(false)
     }
   }, [user?.username]);
 
+  // Test-URL (Cloudflare)
+  const testUrl = 'https://fda1523f9dc7558ddc4fcf148e01a03a.r2.cloudflarestorage.com/world-soccer/Za%C3%AFre-Emery-removebg-preview.png';
+  // Test-URL (Wikipedia)
+  const wikiUrl = 'https://upload.wikimedia.org/wikipedia/commons/4/47/PNG_transparency_demonstration_1.png';
+
   return (
     <ProtectedRoute>
       <div className="flex flex-col h-screen bg-gradient-to-b from-gray-50 to-white text-black">
@@ -1453,77 +1460,87 @@ const [copied, setCopied] = useState(false)
               </button>
             </div>
             {/* Deals nebeneinander im Grid */}
-            <div className="col-span-6 flex gap-10 w-full">
-              <div className="w-1/2 rounded-xl shadow-lg p-6 text-white bg-gradient-to-br from-purple-500 to-fuchsia-500 h-full flex flex-col items-center justify-between text-center overflow-hidden">
-                {dailyDeal && dailyDealInteraction ? (
+            <div className="col-span-6 flex gap-0 w-full">
+              {/* Deal of the Day */}
+              <div className="w-1/2 flex flex-col items-center bg-gradient-to-br from-purple-500 to-fuchsia-500 rounded-xl shadow-lg p-6 h-full text-white">
+                {dailyDeal ? (
                   <>
-                    <div className="w-28 h-24 rounded-xl border-4 border-white shadow mb-2 overflow-hidden flex items-center justify-center relative">
-                      {dailyDeal.card_image_url ? (
-                        <img src={getCloudflareImageUrl(dailyDeal.card_image_url)} alt={dailyDeal.card_name || 'Card'} className="w-full h-full object-cover" />
-                      ) : (
-                        <span className="text-xl font-bold text-white">⭐️⭐️⭐️⭐️</span>
-                      )}
-                      <div className="absolute top-1 left-1 bg-black/80 text-xs px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
+                    <div className="w-full aspect-[3/4] rounded-xl overflow-hidden flex items-center justify-center bg-white mb-2 relative">
+                      <img
+                        src={getCloudflareImageUrl(dailyDeal.card_image_url)}
+                        alt={dailyDeal.card_name}
+                        className="w-full h-full object-contain"
+                      />
+                      <div className="absolute top-2 left-2 bg-black/80 text-xs px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
                         <span>⭐</span>x{dailyDeal.card_level}
                       </div>
                     </div>
-                    <div className="text-base font-bold mb-1">Deal of the Day</div>
-                    <div className="text-sm text-white/80 mb-2">
+                    <div className="text-lg font-bold text-center mb-1">Deal of the Day</div>
+                    <div className="text-sm text-white/80 text-center mb-2">
                       {dailyDeal.card_name} <span className="text-white/70">·</span>
                       <span className="inline-block px-2 py-1 rounded-full bg-yellow-100 text-yellow-800 text-xs font-bold align-middle ml-1">{dailyDeal.card_rarity}</span>
                     </div>
                     <div className="flex gap-2 mb-2 justify-center">
-                      {dailyDeal.regular_tickets > 0 && (
-                        <span className="inline-block px-2 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-bold flex items-center gap-1">
-                          <Ticket className="h-3 w-3 text-blue-500" />+{dailyDeal.regular_tickets}
+                      {dailyDeal.classic_tickets > 0 && (
+                        <span className="inline-block px-2 py-1 rounded-full bg-blue-100 text-blue-700 text-base font-bold flex items-center gap-1 border border-white">
+                          <Ticket className="h-4 w-4 text-blue-500" />+{dailyDeal.classic_tickets}
                         </span>
                       )}
-                      {dailyDeal.legendary_tickets > 0 && (
-                        <span className="inline-block px-2 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-bold flex items-center gap-1">
-                          <Crown className="h-3 w-3 text-purple-500" />+{dailyDeal.legendary_tickets}
+                      {dailyDeal.elite_tickets > 0 && (
+                        <span className="inline-block px-2 py-1 rounded-full bg-purple-100 text-purple-700 text-base font-bold flex items-center gap-1 border border-white">
+                          <Crown className="h-4 w-4 text-purple-500" />+{dailyDeal.elite_tickets}
+                        </span>
+                      )}
+                      {dailyDeal.icon_tickets > 0 && (
+                        <span className="inline-block px-2 py-1 rounded-full bg-indigo-100 text-indigo-700 text-base font-bold flex items-center gap-1 border border-white">
+                          <Crown className="h-4 w-4 text-indigo-500" />+{dailyDeal.icon_tickets}
                         </span>
                       )}
                     </div>
-                    <div className="text-lg font-bold mb-2">
-                      {price ? `${(dailyDeal.price / price).toFixed(2)} WLD` : `$${dailyDeal.price.toFixed(2)} USD`}
-                    </div>
+                    <div className="text-xl font-bold text-center mb-2">{dailyDeal.price} WLD</div>
                     <Button className="bg-white/90 text-cyan-700 font-bold w-full mt-2">Buy Now</Button>
                   </>
                 ) : (
                   <div className="flex flex-1 items-center justify-center h-full text-white/70">No Deal of the Day</div>
                 )}
               </div>
-              <div className="w-1/2 rounded-xl shadow-lg p-6 text-white bg-gradient-to-br from-cyan-500 to-blue-500 h-full flex flex-col items-center justify-between text-center overflow-hidden">
+              {/* Special Deal */}
+              <div className="w-1/2 flex flex-col items-center bg-gradient-to-br from-cyan-500 to-blue-500 rounded-xl shadow-lg p-6 h-full text-white">
                 {specialDeal ? (
                   <>
-                    <div className="w-28 h-24 rounded-xl border-4 border-white shadow mb-2 overflow-hidden flex items-center justify-center relative">
-                      {specialDeal.card_image_url ? (
-                        <img src={getCloudflareImageUrl(specialDeal.card_image_url)} alt={specialDeal.card_name || 'Card'} className="w-full h-full object-cover" />
-                      ) : (
-                        <span className="text-xl font-bold text-white">⭐️⭐️⭐️⭐️</span>
-                      )}
-                      <div className="absolute top-1 left-1 bg-black/80 text-xs px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
+                    <div className="w-full aspect-[3/4] rounded-xl overflow-hidden flex items-center justify-center bg-white mb-2 relative">
+                      <img
+                        src={getCloudflareImageUrl(specialDeal.card_image_url)}
+                        alt={specialDeal.card_name}
+                        className="w-full h-full object-contain"
+                      />
+                      <div className="absolute top-2 left-2 bg-black/80 text-xs px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
                         <span>⭐</span>x{specialDeal.card_level}
                       </div>
                     </div>
-                    <div className="text-base font-bold mb-1">Special Deal!</div>
-                    <div className="text-sm text-white/80 mb-2">
+                    <div className="text-lg font-bold text-center mb-1">Special Deal!</div>
+                    <div className="text-sm text-white/80 text-center mb-2">
                       {specialDeal.card_name} <span className="text-white/70">·</span>
                       <span className="inline-block px-2 py-1 rounded-full bg-yellow-100 text-yellow-800 text-xs font-bold align-middle ml-1">{specialDeal.card_rarity}</span>
                     </div>
                     <div className="flex gap-2 mb-2 justify-center">
+                      {specialDeal.classic_tickets > 0 && (
+                        <span className="inline-block px-2 py-1 rounded-full bg-blue-100 text-blue-700 text-base font-bold flex items-center gap-1 border border-white">
+                          <Ticket className="h-4 w-4 text-blue-500" />+{specialDeal.classic_tickets}
+                        </span>
+                      )}
                       {specialDeal.elite_tickets > 0 && (
-                        <span className="inline-block px-2 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-bold flex items-center gap-1">
-                          <Ticket className="h-3 w-3 text-blue-500" />+{specialDeal.elite_tickets}
+                        <span className="inline-block px-2 py-1 rounded-full bg-purple-100 text-purple-700 text-base font-bold flex items-center gap-1 border border-white">
+                          <Crown className="h-4 w-4 text-purple-500" />+{specialDeal.elite_tickets}
                         </span>
                       )}
                       {specialDeal.icon_tickets > 0 && (
-                        <span className="inline-block px-2 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-bold flex items-center gap-1">
-                          <Crown className="h-3 w-3 text-purple-500" />+{specialDeal.icon_tickets}
+                        <span className="inline-block px-2 py-1 rounded-full bg-indigo-100 text-indigo-700 text-base font-bold flex items-center gap-1 border border-white">
+                          <Crown className="h-4 w-4 text-indigo-500" />+{specialDeal.icon_tickets}
                         </span>
                       )}
                     </div>
-                    <div className="text-lg font-bold mb-2">{specialDeal.price} WLD</div>
+                    <div className="text-xl font-bold text-center mb-2">{specialDeal.price} WLD</div>
                     <Button className="bg-white/90 text-cyan-700 font-bold w-full mt-2">Buy Now</Button>
                   </>
                 ) : (

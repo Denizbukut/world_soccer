@@ -6,7 +6,7 @@ import { claimDailyBonus } from "@/app/actions"
 import ProtectedRoute from "@/components/protected-route"
 import MobileNav from "@/components/mobile-nav"
 import { Button } from "@/components/ui/button"
-import { Ticket, Gift, Sparkles, Crown, Clock, ArrowRightLeft } from "lucide-react"
+import { Ticket, Gift, Sparkles, Crown, Clock, ArrowRightLeft, X as LucideX, Send as LucideSend } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
 import Link from "next/link"
 import { motion } from "framer-motion"
@@ -19,6 +19,8 @@ export default function HomePage() {
   const [nextClaimTime, setNextClaimTime] = useState<Date | null>(null)
   const [timeRemaining, setTimeRemaining] = useState<string>("")
   const [canClaim, setCanClaim] = useState(false)
+  const [showBuyAvatarDialog, setShowBuyAvatarDialog] = useState(false)
+  const [selectedAvatarToBuy, setSelectedAvatarToBuy] = useState(null)
 
   // Check if user can claim bonus and set up countdown timer
   useEffect(() => {
@@ -139,15 +141,12 @@ export default function HomePage() {
       <header className="bg-white p-4 border-b border-gray-200">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="rounded-full bg-gray-100 p-2 flex items-center justify-center">
-              <XLogo className="h-6 w-6 text-black" />
-            </div>
-            <div className="rounded-full bg-gray-100 p-2 flex items-center justify-center">
-              {/* Telegram SVG Icon */}
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="h-6 w-6 text-[#229ED9]" fill="currentColor">
-                <path d="M21.954 4.569c-.197-.149-.453-.188-.68-.099L2.3 11.293c-.237.092-.398.316-.398.57 0 .255.161.479.398.57l4.89 1.957 2.07 6.518c.07.221.26.38.488.38.08 0 .16-.02.234-.06.13-.07.22-.2.24-.35l1.13-7.13 6.13 4.52c.09.07.2.1.31.1.09 0 .18-.02.26-.07.17-.1.27-.3.22-.5l-2.13-8.52 4.89-1.957c.237-.092.398-.316.398-.57 0-.255-.161-.479-.398-.57z" />
-              </svg>
-            </div>
+            <button className="w-10 h-10 rounded-full bg-black flex items-center justify-center transition-transform hover:scale-105">
+              <LucideX className="h-6 w-6 text-white" />
+            </button>
+            <button className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center transition-transform hover:scale-105">
+              <LucideSend className="h-6 w-6 text-white" />
+            </button>
           </div>
           <h1 className="text-xl font-bold text-black">Anime World TCG</h1>
           <div className="flex items-center gap-2">

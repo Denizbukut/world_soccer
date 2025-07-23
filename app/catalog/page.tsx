@@ -127,8 +127,8 @@ export default function CatalogPage() {
     return acc
   }, {})
 
-  // Sort categories in order: godlike, legendary, epic, rare, common
-  const sortedCategories = ["godlike", "legendary", "epic", "rare", "common"].filter(
+  // Sort categories in order: goat, ultimate, elite, rare, basic
+  const sortedCategories = ["goat", "ultimate", "elite", "rare", "basic"].filter(
     (category) => cardsByRarity[category] && cardsByRarity[category].length > 0,
   )
 
@@ -210,11 +210,11 @@ export default function CatalogPage() {
       <Tabs defaultValue="all" className="w-full" onValueChange={setActiveTab}>
         <TabsList className="flex overflow-x-auto whitespace-nowrap no-scrollbar">
           <TabsTrigger value="all">All</TabsTrigger>
-          <TabsTrigger value="godlike">Godlike</TabsTrigger>
-          <TabsTrigger value="legendary">Legendary</TabsTrigger>
-          <TabsTrigger value="epic">Epic</TabsTrigger>
+          <TabsTrigger value="goat">Goat</TabsTrigger>
+          <TabsTrigger value="ultimate">Ultimate</TabsTrigger>
+          <TabsTrigger value="elite">Elite</TabsTrigger>
           <TabsTrigger value="rare">Rare</TabsTrigger>
-          <TabsTrigger value="common">Common</TabsTrigger>
+          <TabsTrigger value="basic">Basic</TabsTrigger>
         </TabsList>
 
         <TabsContent value="all" className="mt-4">
@@ -259,7 +259,7 @@ export default function CatalogPage() {
           ))}
         </TabsContent>
 
-        {["godlike", "legendary", "epic", "rare", "common"].map((category) => (
+        {["goat", "ultimate", "elite", "rare", "basic"].map((category) => (
           <TabsContent key={category} value={category} className="mt-4">
             <motion.div
               className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3"

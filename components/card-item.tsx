@@ -79,7 +79,7 @@ disableEffect = false
   if (!id) return null
 
   const rarityStyles = {
-  common: {
+  basic: {
     border: "border-4 border-gray-400",
     glow: "shadow-gray-300",
     text: "text-gray-600",
@@ -91,19 +91,19 @@ disableEffect = false
     text: "text-blue-600",
     gradient: "from-blue-300/30 to-blue-100/30",
   },
-  epic: {
+  elite: {
     border: "border-4 border-purple-500",
     glow: "shadow-purple-300",
     text: "text-purple-600",
     gradient: "from-purple-300/30 to-purple-100/30",
   },
-  legendary: {
+  ultimate: {
     border: "border-4 border-yellow-500",
     glow: "shadow-yellow-300",
     text: "text-yellow-600",
     gradient: "from-yellow-300/30 to-yellow-100/30",
   },
-  godlike: {
+  goat: {
     border: "border-4 border-red-600",
     glow: "shadow-red-400",
     text: "text-red-600",
@@ -112,7 +112,7 @@ disableEffect = false
 }
 
 
-  const rarityStyle = rarityStyles[rarity as keyof typeof rarityStyles] || rarityStyles.common
+  const rarityStyle = rarityStyles[rarity as keyof typeof rarityStyles] || rarityStyles.basic
   const placeholderUrl = "/placeholder.svg"
   const cardImageUrl = getCloudflareImageUrl(imageUrl)
 

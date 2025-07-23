@@ -258,3 +258,22 @@ export async function purchaseDeal(username: string, dealId: number) {
     return { success: false, error: "An unexpected error occurred" }
   }
 }
+
+export const getSpecialDeal = cache(async (username: string) => {
+  try {
+    const supabase = createSupabaseServer();
+    const today = new Date().toISOString().split("T")[0];
+    // Get today's special deal
+    const { data: deal, error: dealError } = await supabase.from("special_offer").select("*").eq("date", today).single();
+    if (dealError || !deal) return { success: false };
+    // Get card information
+    const { data: card } = await supabase.from("cards").select("*").eq("id", deal.card_id).single();
+    return {
+      success: true,
+      deal: { ...deal, card_name: card?.name, card_image_url: card?.image_url, card_rarity: card?.rarity, card_character: card?.character },
+      interaction: { seen: false, dismissed: false, purchased: false }
+    };
+  } catch (error) {
+    return { success: false };
+  }
+});

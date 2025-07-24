@@ -1534,85 +1534,79 @@ const [copied, setCopied] = useState(false)
             {/* Deals nebeneinander im Grid */}
             <div className="col-span-6 flex gap-0 w-full">
               {/* Deal of the Day */}
-              <div className="w-1/2 flex flex-col items-center bg-[#a259ff] rounded-xl p-6 h-full text-white">
+              <div className="w-1/2 flex flex-col items-center bg-[#a259ff] rounded-xl p-3 h-full text-white">
                 {dailyDeal ? (
                   <>
-                    <div className="w-full aspect-[3/4] rounded-xl flex items-center justify-center mb-2 relative">
+                    <div className="w-full aspect-[3/4] max-h-[160px] rounded-xl flex items-center justify-center mb-1 relative">
                       <img
                         src={getCloudflareImageUrl(dailyDeal.card_image_url)}
                         alt={dailyDeal.card_name}
                         className="w-full h-full object-contain"
                       />
-                      <div className="absolute top-2 left-2 bg-black/80 text-xs px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
+                      <div className="absolute top-1 left-1 bg-black/80 text-[10px] px-1.5 py-0.5 rounded-full font-bold flex items-center gap-1">
                         <span>⭐</span>x{dailyDeal.card_level}
                       </div>
                     </div>
-                    <div className="text-lg font-bold text-center mb-1">Deal of the Day</div>
-                    <div className="text-sm text-white/80 text-center mb-2">
+                    <div className="text-lg font-bold text-center mb-0.5">Deal of the Day</div>
+                    <div className="text-sm text-white/80 text-center mb-1">
                       {dailyDeal.card_name} <span className="text-white/70">·</span>
                       <span className="inline-block px-2 py-1 rounded-full bg-yellow-100 text-yellow-800 text-xs font-bold align-middle ml-1">{dailyDeal.card_rarity}</span>
                     </div>
-                    <div className="flex gap-2 mb-2 justify-center">
+                    <div className="flex gap-2 mb-1 justify-center">
                       {dailyDeal.classic_tickets > 0 && (
-                        <span className="inline-block px-2 py-1 rounded-full bg-blue-100 text-blue-700 text-base font-bold flex items-center gap-1 border border-white">
-                          <Ticket className="h-4 w-4 text-blue-500" />+{dailyDeal.classic_tickets}
+                        <span className="inline-block px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 text-sm font-bold flex items-center gap-1 border border-white">
+                          <Ticket className="h-3 w-3 text-blue-500" />+{dailyDeal.classic_tickets}
                         </span>
                       )}
                       {dailyDeal.elite_tickets > 0 && (
-                        <span className="inline-block px-2 py-1 rounded-full bg-purple-100 text-purple-700 text-base font-bold flex items-center gap-1 border border-white">
-                          <Crown className="h-4 w-4 text-purple-500" />+{dailyDeal.elite_tickets}
+                        <span className="inline-block px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700 text-sm font-bold flex items-center gap-1 border border-white">
+                          <Crown className="h-3 w-3 text-purple-500" />+{dailyDeal.elite_tickets}
                         </span>
                       )}
                     </div>
-                    <div className="text-xl font-bold text-center mb-2">{dailyDeal.price} WLD</div>
-                    <Button className="bg-white/90 text-cyan-700 font-bold w-full mt-2" onClick={handleBuyDailyDeal} disabled={buyingDailyDeal}>
-                      {buyingDailyDeal ? 'Processing...' : 'Buy Now'}
-                    </Button>
+                    <div className="text-lg font-bold text-center mb-1">{dailyDeal.price} WLD</div>
                   </>
                 ) : (
                   <div className="flex flex-1 items-center justify-center h-full text-white/70">No Deal of the Day</div>
                 )}
               </div>
               {/* Special Deal */}
-              <div className="w-1/2 flex flex-col items-center bg-[#2ec4f1] rounded-xl p-6 h-full text-white">
+              <div className="w-1/2 flex flex-col items-center bg-[#2ec4f1] rounded-xl p-3 h-full text-white">
                 {specialDeal ? (
                   <>
-                    <div className="w-full aspect-[3/4] rounded-xl flex items-center justify-center mb-2 relative">
+                    <div className="w-full aspect-[3/4] max-h-[160px] rounded-xl flex items-center justify-center mb-1 relative">
                       <img
                         src={getCloudflareImageUrl(specialDeal.card_image_url)}
                         alt={specialDeal.card_name}
                         className="w-full h-full object-contain"
                       />
-                      <div className="absolute top-2 left-2 bg-black/80 text-xs px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
+                      <div className="absolute top-1 left-1 bg-black/80 text-[10px] px-1.5 py-0.5 rounded-full font-bold flex items-center gap-1">
                         <span>⭐</span>x{specialDeal.card_level}
                       </div>
                     </div>
-                    <div className="text-lg font-bold text-center mb-1">Special Deal!</div>
-                    <div className="text-sm text-white/80 text-center mb-2">
+                    <div className="text-lg font-bold text-center mb-0.5">Special Deal!</div>
+                    <div className="text-sm text-white/80 text-center mb-1">
                       {specialDeal.card_name} <span className="text-white/70">·</span>
                       <span className="inline-block px-2 py-1 rounded-full bg-yellow-100 text-yellow-800 text-xs font-bold align-middle ml-1">{specialDeal.card_rarity}</span>
                     </div>
-                    <div className="flex gap-2 mb-2 justify-center">
+                    <div className="flex gap-2 mb-1 justify-center">
                       {specialDeal.classic_tickets > 0 && (
-                        <span className="inline-block px-2 py-1 rounded-full bg-blue-100 text-blue-700 text-base font-bold flex items-center gap-1 border border-white">
-                          <Ticket className="h-4 w-4 text-blue-500" />+{specialDeal.classic_tickets}
+                        <span className="inline-block px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 text-sm font-bold flex items-center gap-1 border border-white">
+                          <Ticket className="h-3 w-3 text-blue-500" />+{specialDeal.classic_tickets}
                         </span>
                       )}
                       {specialDeal.elite_tickets > 0 && (
-                        <span className="inline-block px-2 py-1 rounded-full bg-purple-100 text-purple-700 text-base font-bold flex items-center gap-1 border border-white">
-                          <Crown className="h-4 w-4 text-purple-500" />+{specialDeal.elite_tickets}
+                        <span className="inline-block px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700 text-sm font-bold flex items-center gap-1 border border-white">
+                          <Crown className="h-3 w-3 text-purple-500" />+{specialDeal.elite_tickets}
                         </span>
                       )}
                       {specialDeal.icon_tickets > 0 && (
-                        <span className="inline-block px-2 py-1 rounded-full bg-indigo-100 text-indigo-700 text-base font-bold flex items-center gap-1 border border-white">
-                          <Crown className="h-4 w-4 text-indigo-500" />+{specialDeal.icon_tickets}
+                        <span className="inline-block px-1.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700 text-sm font-bold flex items-center gap-1 border border-white">
+                          <Crown className="h-3 w-3 text-indigo-500" />+{specialDeal.icon_tickets}
                         </span>
                       )}
                     </div>
-                    <div className="text-xl font-bold text-center mb-2">{specialDeal.price} WLD</div>
-                    <Button className="bg-white/90 text-cyan-700 font-bold w-full mt-2" onClick={handleBuySpecialDeal} disabled={buyingSpecialDeal}>
-                      {buyingSpecialDeal ? 'Processing...' : 'Buy Now'}
-                    </Button>
+                    <div className="text-lg font-bold text-center mb-1">{specialDeal.price} WLD</div>
                   </>
                 ) : (
                   <div className="flex flex-1 items-center justify-center h-full text-white/70">Kein Special Deal heute</div>

@@ -17,8 +17,8 @@ interface DailyDeal {
   id: number
   card_id: string
   card_level: number
-  regular_tickets: number
-  legendary_tickets: number
+  regular_tickets?: number
+  legendary_tickets?: number
   price: number
   description: string
   discount_percentage: number

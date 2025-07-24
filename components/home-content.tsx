@@ -86,7 +86,7 @@ interface DailyDeal {
   card_level: number
   classic_tickets: number
   elite_tickets: number
-  regular_tickets?: number
+  regular_tickets?: number // <- number | undefined
   legendary_tickets?: number
   price: number
   description: string
@@ -135,6 +135,16 @@ const xpPassBenefits = [
   'XP leaderboard access',
 ]
 
+// AvatarOption Interface für Avatare
+interface AvatarOption {
+  id: number;
+  image_url: string;
+  rarity: string;
+  is_free: boolean;
+  price: number;
+  url: string;
+}
+
 export default function Home() {
   const { user, updateUserTickets, refreshUserData } = useAuth()
   const [claimLoading, setClaimLoading] = useState(false)
@@ -161,7 +171,7 @@ export default function Home() {
   }[]
 >([])
   const [showBuyAvatarDialog, setShowBuyAvatarDialog] = useState(false)
-const [selectedAvatarToBuy, setSelectedAvatarToBuy] = useState(null)
+  const [selectedAvatarToBuy, setSelectedAvatarToBuy] = useState<AvatarOption | null>(null)
   
   const [currentAvatarUrl, setCurrentAvatarUrl] = useState("")
   const [currentAvatarId, setCurrentAvatarId] = useState(1)
@@ -561,7 +571,7 @@ const [copied, setCopied] = useState(false)
 
       if (result.success && result.deal) {
         setDailyDeal(result.deal)
-        setDailyDealInteraction(result.interaction)
+        setDailyDealInteraction(result.interaction ?? null)
 
         // Show the deal dialog automatically if it hasn't been seen or dismissed
         if (!result.interaction.seen && !result.interaction.dismissed && !result.interaction.purchased) {
@@ -1000,7 +1010,7 @@ const [copied, setCopied] = useState(false)
   const [avatarUrl, setAvatarUrl] = useState<string>(currentAvatarUrl || "https://ani-labs.xyz/pika.jpg")
 
   // Demo: Statisches Array mit Avataren (später aus DB laden)
-  const [avatarOptions, setAvatarOptions] = useState([])
+  const [avatarOptions, setAvatarOptions] = useState<AvatarOption[]>([])
 
   // Lade Avatare und Freischaltungen aus Supabase
   useEffect(() => {
@@ -1013,11 +1023,13 @@ const [copied, setCopied] = useState(false)
       const { data: unlocked } = await supabase.from("avatars_unlocked").select("avatar_id").eq("username", user.username)
       const unlockedIds = unlocked ? unlocked.map(a => a.avatar_id) : []
       // Setze is_free für freigeschaltete Avatare
-      const merged = avatars.map(a => ({
-        ...a,
-        url: a.image_url,
-        price: a.price_tokens,
-        is_free: a.is_free || unlockedIds.includes(a.id)
+      const merged: AvatarOption[] = (avatars ?? []).map(a => ({
+        id: Number(a.id),
+        image_url: String(a.image_url),
+        rarity: String(a.rarity),
+        is_free: Boolean(a.is_free) || unlockedIds.includes(a.id),
+        price: Number(a.price_tokens),
+        url: String(a.image_url)
       }))
       setAvatarOptions(merged)
     }
@@ -1028,7 +1040,7 @@ const [copied, setCopied] = useState(false)
   const [buyingAvatar, setBuyingAvatar] = useState(false)
 
   // Simuliere Payment für Avatar-Kauf
-  const sendPaymentForAvatar = async (avatar) => {
+  const sendPaymentForAvatar = async (avatar: AvatarOption) => {
     setBuyingAvatar(true)
     try {
       // Preis in WLD (Demo: 1 WLD pro Preis-Token)
@@ -1057,7 +1069,7 @@ const [copied, setCopied] = useState(false)
   }
 
   // handleBuyAvatar: Payment + DB-Speichern
-  const handleBuyAvatar = async (avatar) => {
+  const handleBuyAvatar = async (avatar: AvatarOption) => {
     setBuyingAvatar(true)
     const paymentSuccess = await sendPaymentForAvatar(avatar)
     setBuyingAvatar(false)
@@ -1105,7 +1117,7 @@ const [copied, setCopied] = useState(false)
           const result = await getSpecialDeal(user.username);
           if (result.success && result.deal) {
             setSpecialDeal(result.deal);
-            setSpecialDealInteraction(result.interaction);
+            setSpecialDealInteraction(result.interaction ?? null);
           }
         } catch (e) {
           // Fehler ignorieren
@@ -1120,6 +1132,50 @@ const [copied, setCopied] = useState(false)
   const testUrl = 'https://fda1523f9dc7558ddc4fcf148e01a03a.r2.cloudflarestorage.com/world-soccer/Za%C3%AFre-Emery-removebg-preview.png';
   // Test-URL (Wikipedia)
   const wikiUrl = 'https://upload.wikimedia.org/wikipedia/commons/4/47/PNG_transparency_demonstration_1.png';
+
+  // Avatar-Auswahl Callback
+  const handleAvatarSelect = (url: string) => {
+    setAvatarUrl(url)
+    // Optional: Avatar-ID setzen, falls benötigt
+    const found = avatarOptions.find(a => a.url === url)
+    if (found) setCurrentAvatarId(found.id)
+    setShowAvatarDialog(false)
+  }
+
+  // State für Kauf-Ladezustand
+  const [buyingDailyDeal, setBuyingDailyDeal] = useState(false);
+  const [buyingSpecialDeal, setBuyingSpecialDeal] = useState(false);
+
+  // Direktkauf-Handler für Daily Deal
+  const handleBuyDailyDeal = async () => {
+    if (!user?.username || !dailyDeal) return;
+    setBuyingDailyDeal(true);
+    try {
+      // Hier die Kauf-Logik für dailyDeal aufrufen (z.B. purchaseDeal API)
+      // await purchaseDeal(dailyDeal.id, user.username);
+      toast({ title: 'Deal gekauft!', description: 'Dein Deal wurde erfolgreich gekauft.' });
+      // Optional: Tickets updaten, Dialog schließen etc.
+    } catch (e) {
+      toast({ title: 'Fehler', description: 'Kauf fehlgeschlagen', variant: 'destructive' });
+    } finally {
+      setBuyingDailyDeal(false);
+    }
+  };
+  // Direktkauf-Handler für Special Deal
+  const handleBuySpecialDeal = async () => {
+    if (!user?.username || !specialDeal) return;
+    setBuyingSpecialDeal(true);
+    try {
+      // Hier die Kauf-Logik für specialDeal aufrufen (z.B. purchaseDeal API)
+      // await purchaseDeal(specialDeal.id, user.username);
+      toast({ title: 'Deal gekauft!', description: 'Dein Special Deal wurde erfolgreich gekauft.' });
+      // Optional: Tickets updaten, Dialog schließen etc.
+    } catch (e) {
+      toast({ title: 'Fehler', description: 'Kauf fehlgeschlagen', variant: 'destructive' });
+    } finally {
+      setBuyingSpecialDeal(false);
+    }
+  };
 
   return (
     <ProtectedRoute>
@@ -1421,16 +1477,16 @@ const [copied, setCopied] = useState(false)
             {/* $ANI Card (replaces Chat) */}
             <div className="col-span-2">
               <div
-                className="bg-white rounded-xl p-4 shadow-lg flex flex-col items-center justify-center min-h-[90px] h-full text-center cursor-pointer hover:bg-gray-50 transition"
+                className="bg-white rounded-xl p-2 shadow-lg flex flex-col items-center justify-center min-h-[70px] h-full text-center cursor-pointer hover:bg-gray-50 transition"
                 onClick={() => router.push('/ani')}
                 role="button"
                 tabIndex={0}
                 aria-label="Go to $ANI page"
               >
-                <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center mb-2">
-                  <img src={getCloudflareImageUrl("/anime-images/ani-labs-logo-white.png")} alt="$ANI Logo" className="w-10 h-10" />
+                <div className="w-8 h-8 rounded-full bg-black flex items-center justify-center mb-1">
+                  <img src={getCloudflareImageUrl("/anime-images/ani-labs-logo-white.png")} alt="$ANI Logo" className="w-8 h-8" />
                 </div>
-                <div className="text-base font-bold text-gray-900">$ANI</div>
+                <div className="text-sm font-bold text-gray-900">$ANI</div>
               </div>
             </div>
             <div className="col-span-2">
@@ -1439,12 +1495,19 @@ const [copied, setCopied] = useState(false)
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2, duration: 0.4 }}
-                  className="bg-white rounded-xl p-4 shadow-lg flex flex-col items-center justify-center min-h-[90px] h-full text-center hover:bg-gray-50 transition"
+                  whileHover={{ scale: 1.04, boxShadow: '0 0 32px 0 rgba(255, 215, 0, 0.25)' }}
+                  className="relative bg-gradient-to-br from-yellow-200 via-pink-200 to-blue-200 rounded-2xl p-3 shadow-2xl flex flex-col items-center justify-center min-h-[70px] h-full text-center border-2 border-yellow-300 hover:from-yellow-100 hover:to-pink-100 transition overflow-hidden"
                 >
-                  <div className="w-10 h-10 rounded-full bg-pink-100 flex items-center justify-center mb-2">
-                    <ShoppingCart className="h-5 w-5 text-pink-600" />
+                  <motion.div
+                    className="absolute left-[-40%] top-0 w-1/2 h-full bg-gradient-to-r from-transparent via-yellow-100/60 to-transparent skew-x-[-20deg] pointer-events-none"
+                    animate={{ left: ['-40%', '120%'] }}
+                    transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+                  />
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-yellow-300 via-pink-200 to-blue-200 flex items-center justify-center mb-1 shadow-[0_0_8px_2px_rgba(251,191,36,0.18)] border border-yellow-400">
+                    <ShoppingCart className="h-5 w-5 text-yellow-600 drop-shadow-lg" />
                   </div>
-                  <div className="text-base font-bold text-gray-900">Shop</div>
+                  <div className="text-sm font-extrabold text-yellow-700 drop-shadow-sm tracking-wide">Shop</div>
+                  <div className="text-xs text-pink-700 font-semibold mt-0.5">Exklusive Packs</div>
                 </motion.div>
               </Link>
             </div>
@@ -1454,13 +1517,13 @@ const [copied, setCopied] = useState(false)
                   // Referral Dialog Open
                   setShowReferralDialog(true);
                 }}
-                className="w-full h-full rounded-xl bg-white p-4 shadow-lg flex flex-col items-center justify-center min-h-[90px] text-center font-bold hover:bg-gray-50 transition border border-gray-100 relative"
+                className="w-full h-full rounded-xl bg-white p-2 shadow-lg flex flex-col items-center justify-center min-h-[70px] text-center font-bold hover:bg-gray-50 transition border border-gray-100 relative"
                 type="button"
               >
-                <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center mb-2">
+                <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center mb-1">
                   <Gift className="h-5 w-5 text-amber-700" />
                 </div>
-                <div className="text-base font-bold text-gray-900">Referrals</div>
+                <div className="text-sm font-bold text-gray-900">Referrals</div>
                 {referredUsers.some((u) => u.level >= 5 && !u.reward_claimed) && (
                   <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow">
                     NEW
@@ -1471,10 +1534,10 @@ const [copied, setCopied] = useState(false)
             {/* Deals nebeneinander im Grid */}
             <div className="col-span-6 flex gap-0 w-full">
               {/* Deal of the Day */}
-              <div className="w-1/2 flex flex-col items-center bg-gradient-to-br from-purple-500 to-fuchsia-500 rounded-xl shadow-lg p-6 h-full text-white">
+              <div className="w-1/2 flex flex-col items-center bg-[#a259ff] rounded-xl p-6 h-full text-white">
                 {dailyDeal ? (
                   <>
-                    <div className="w-full aspect-[3/4] rounded-xl overflow-hidden flex items-center justify-center bg-white mb-2 relative">
+                    <div className="w-full aspect-[3/4] rounded-xl flex items-center justify-center mb-2 relative">
                       <img
                         src={getCloudflareImageUrl(dailyDeal.card_image_url)}
                         alt={dailyDeal.card_name}
@@ -1500,24 +1563,21 @@ const [copied, setCopied] = useState(false)
                           <Crown className="h-4 w-4 text-purple-500" />+{dailyDeal.elite_tickets}
                         </span>
                       )}
-                      {dailyDeal.icon_tickets > 0 && (
-                        <span className="inline-block px-2 py-1 rounded-full bg-indigo-100 text-indigo-700 text-base font-bold flex items-center gap-1 border border-white">
-                          <Crown className="h-4 w-4 text-indigo-500" />+{dailyDeal.icon_tickets}
-                        </span>
-                      )}
                     </div>
                     <div className="text-xl font-bold text-center mb-2">{dailyDeal.price} WLD</div>
-                    <Button className="bg-white/90 text-cyan-700 font-bold w-full mt-2">Buy Now</Button>
+                    <Button className="bg-white/90 text-cyan-700 font-bold w-full mt-2" onClick={handleBuyDailyDeal} disabled={buyingDailyDeal}>
+                      {buyingDailyDeal ? 'Processing...' : 'Buy Now'}
+                    </Button>
                   </>
                 ) : (
                   <div className="flex flex-1 items-center justify-center h-full text-white/70">No Deal of the Day</div>
                 )}
               </div>
               {/* Special Deal */}
-              <div className="w-1/2 flex flex-col items-center bg-gradient-to-br from-cyan-500 to-blue-500 rounded-xl shadow-lg p-6 h-full text-white">
+              <div className="w-1/2 flex flex-col items-center bg-[#2ec4f1] rounded-xl p-6 h-full text-white">
                 {specialDeal ? (
                   <>
-                    <div className="w-full aspect-[3/4] rounded-xl overflow-hidden flex items-center justify-center bg-white mb-2 relative">
+                    <div className="w-full aspect-[3/4] rounded-xl flex items-center justify-center mb-2 relative">
                       <img
                         src={getCloudflareImageUrl(specialDeal.card_image_url)}
                         alt={specialDeal.card_name}
@@ -1550,7 +1610,9 @@ const [copied, setCopied] = useState(false)
                       )}
                     </div>
                     <div className="text-xl font-bold text-center mb-2">{specialDeal.price} WLD</div>
-                    <Button className="bg-white/90 text-cyan-700 font-bold w-full mt-2">Buy Now</Button>
+                    <Button className="bg-white/90 text-cyan-700 font-bold w-full mt-2" onClick={handleBuySpecialDeal} disabled={buyingSpecialDeal}>
+                      {buyingSpecialDeal ? 'Processing...' : 'Buy Now'}
+                    </Button>
                   </>
                 ) : (
                   <div className="flex flex-1 items-center justify-center h-full text-white/70">Kein Special Deal heute</div>
@@ -1767,27 +1829,10 @@ const [copied, setCopied] = useState(false)
     </div>
   </DialogContent>
 </Dialog>
-      </div>
-      
-// Avatar-Kauf-Dialog
-<Dialog open={showBuyAvatarDialog} onOpenChange={setShowBuyAvatarDialog}>
-  <DialogContent>
-    <DialogTitle>Avatar kaufen</DialogTitle>
-    {selectedAvatarToBuy && (
-      <div className="flex flex-col items-center">
-        <img src={selectedAvatarToBuy.url} alt="Avatar" className="w-20 h-20 rounded-full mb-2" />
-        <span className={`text-xs font-bold px-2 py-0.5 rounded-full mb-2 ${selectedAvatarToBuy.rarity === 'epic' ? 'bg-purple-100 text-purple-700' : selectedAvatarToBuy.rarity === 'god' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-700'}`}>{selectedAvatarToBuy.rarity}</span>
-        <div className="mb-2 text-gray-700 text-sm">Preis: <span className="font-bold">{selectedAvatarToBuy.price}★</span></div>
-        <Button onClick={() => handleBuyAvatar(selectedAvatarToBuy)} disabled={buyingAvatar}>
-          {buyingAvatar ? "Zahlung läuft..." : "Jetzt kaufen"}
-        </Button>
-      </div>
-    )}
-  </DialogContent>
-</Dialog>
 
       
       <MobileNav />
+    </div>
     </ProtectedRoute>
   )
 }

@@ -337,65 +337,149 @@ await supabase.from("ticket_purchases").insert({
           {/* Tabs for different ticket types */}
 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
   <Tabs defaultValue="regular" className="w-full">
-    <TabsList className="grid w-full grid-cols-3 h-11 rounded-xl p-1 bg-gray-100 mb-6">
+    <TabsList className="grid w-full grid-cols-3 h-12 rounded-2xl p-1 bg-gradient-to-r from-yellow-100 via-pink-100 to-blue-100 mb-6 shadow">
       <TabsTrigger
         value="regular"
-        className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-violet-600 data-[state=active]:shadow-sm transition-all"
+        className="rounded-lg data-[state=active]:bg-white data-[state=active]:border-2 data-[state=active]:border-orange-400 data-[state=active]:text-orange-700 data-[state=active]:shadow transition-all"
       >
-        <Ticket className="h-4 w-4 mr-2 text-violet-500" />
-        Regular Tickets
+        <Ticket className="h-4 w-4 mr-2 text-orange-500" />
+        Classic Tickets
       </TabsTrigger>
       <TabsTrigger
         value="legendary"
-        className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-amber-600 data-[state=active]:shadow-sm transition-all"
+        className="rounded-lg data-[state=active]:bg-white data-[state=active]:border-2 data-[state=active]:border-blue-400 data-[state=active]:text-blue-700 data-[state=active]:shadow transition-all"
       >
-        <Ticket className="h-4 w-4 mr-2 text-amber-500" />
-        Legendary Tickets
+        <Ticket className="h-4 w-4 mr-2 text-blue-500" />
+        Elite Tickets
       </TabsTrigger>
       <TabsTrigger
         value="icon"
-        className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm transition-all"
+        className="rounded-lg data-[state=active]:bg-white data-[state=active]:border-2 data-[state=active]:border-indigo-400 data-[state=active]:text-indigo-700 data-[state=active]:shadow transition-all"
       >
-        <span className="font-extrabold text-indigo-600 mr-2">★</span>
+        <span className="font-extrabold text-indigo-500 mr-2">★</span>
         Icon Tickets
       </TabsTrigger>
     </TabsList>
 
-    {/* Regular Tickets Content */}
+    {/* Classic Tickets Content */}
     <TabsContent value="regular" className="mt-0 space-y-6">
       <div className="grid grid-cols-2 gap-3">
         {regularPackages.map((pkg) => {
           const originalPrice = pkg.price
           const discountedPrice = getDiscountedPrice(originalPrice)
           const hasDiscount = discountedPrice < originalPrice
-
           return (
-            <Card
+            <motion.div
               key={pkg.id}
-              className="relative overflow-hidden border bg-white/70 backdrop-blur-sm hover:shadow-md transition-all"
+              whileHover={{ scale: 1.03, boxShadow: '0 0 32px 0 rgba(168,85,247,0.18)' }}
+              className="relative"
             >
-              {hasDiscount && (
-                <div className="absolute top-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-                  -10%
-                </div>
-              )}
-              <CardHeader className="p-3 pb-2 space-y-1">
-                <CardTitle className="text-sm font-medium flex items-center">
-                  <span className="mr-1">{pkg.amount}</span>
-                  <Ticket className="h-3 w-3 text-violet-500 mx-1" />
-                  {pkg.amount === 1 ? "Ticket" : "Tickets"}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-3 pt-0 pb-2">
-                <Separator className="my-2" />
-                <div className="flex items-center justify-between">
+              <Card
+                className="overflow-hidden border-2 border-orange-400 bg-gradient-to-br from-orange-200 to-orange-400 rounded-2xl shadow-[0_0_24px_0_rgba(251,191,36,0.10)] transition-all"
+              >
+                {/* Shine Effekt */}
+                <motion.div
+                  className="absolute left-[-40%] top-0 w-1/2 h-full bg-gradient-to-r from-transparent via-orange-100/60 to-transparent skew-x-[-20deg] pointer-events-none"
+                  animate={{ left: ['-40%', '120%'] }}
+                  transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+                />
+                {hasDiscount && (
+                  <div className="absolute top-2 right-2 bg-gradient-to-r from-green-400 to-emerald-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow">
+                    -10%
+                  </div>
+                )}
+                <CardHeader className="p-4 pb-2 space-y-1">
+                  <CardTitle className="text-lg font-extrabold flex items-center text-orange-700 drop-shadow">
+                    <span className="mr-2">{pkg.amount}</span>
+                    <Ticket className="h-6 w-6 text-orange-500 drop-shadow-lg mx-1" />
+                    <span className="ml-1">{pkg.amount === 1 ? "Classic Ticket" : "Classic Tickets"}</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-4 pt-0 pb-2">
+                  <Separator className="my-2" />
+                  <div className="flex items-center justify-between">
+                    <div className="flex flex-col items-start">
+                      {hasDiscount && (
+                        <span className="text-xs text-gray-400 line-through">
+                          {price ? `${(originalPrice / price).toFixed(3)} WLD` : `${originalPrice.toFixed(3)} WLD`}
+                        </span>
+                      )}
+                      <span className="text-lg font-bold text-orange-700">
+                        {price
+                          ? `${(discountedPrice / price).toFixed(3)} WLD`
+                          : `${discountedPrice.toFixed(3)} WLD`}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        (~${discountedPrice.toFixed(2)})
+                      </span>
+                    </div>
+                  </div>
+                </CardContent>
+                <CardFooter className="p-4 pt-0">
+                  <Button
+                    className="w-full bg-gradient-to-r from-orange-300 to-orange-500 text-orange-900 font-bold border-0 hover:scale-105 hover:shadow-lg transition"
+                    onClick={() => sendPayment(originalPrice, pkg.id, pkg.amount, 'regular')}
+                    disabled={isLoading[pkg.id]}
+                  >
+                    {isLoading[pkg.id] ? (
+                      <>
+                        <div className="h-4 w-4 border-2 border-t-transparent border-violet-600 rounded-full animate-spin mr-2"></div>
+                        Processing...
+                      </>
+                    ) : (
+                      "Purchase"
+                    )}
+                  </Button>
+                </CardFooter>
+              </Card>
+            </motion.div>
+          )
+        })}
+      </div>
+    </TabsContent>
+
+    {/* Elite Tickets Content */}
+    <TabsContent value="legendary" className="mt-0 space-y-6">
+      <div className="grid grid-cols-2 gap-4">
+        {legendaryPackages.map((pkg) => {
+          const originalPrice = pkg.price
+          const discountedPrice = getDiscountedPrice(originalPrice)
+          const hasDiscount = discountedPrice < originalPrice
+          return (
+            <motion.div
+              key={pkg.id}
+              whileHover={{ scale: 1.03, boxShadow: '0 0 32px 0 rgba(251,191,36,0.18)' }}
+              className="relative"
+            >
+              <Card
+                className="overflow-hidden border-2 border-blue-400 bg-gradient-to-br from-blue-200 to-blue-500 rounded-2xl shadow-[0_0_24px_0_rgba(59,130,246,0.10)] transition-all"
+              >
+                <motion.div
+                  className="absolute left-[-40%] top-0 w-1/2 h-full bg-gradient-to-r from-transparent via-blue-100/60 to-transparent skew-x-[-20deg] pointer-events-none"
+                  animate={{ left: ['-40%', '120%'] }}
+                  transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+                />
+                {hasDiscount && (
+                  <div className="absolute top-2 right-2 bg-gradient-to-r from-green-400 to-emerald-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow">
+                    -10%
+                  </div>
+                )}
+                <CardHeader className="p-4 pb-2 space-y-1">
+                  <CardTitle className="text-lg font-extrabold flex items-center text-blue-700 drop-shadow">
+                    <span className="mr-2">{pkg.amount}</span>
+                    <Ticket className="h-6 w-6 text-blue-500 drop-shadow-lg mx-1" />
+                    <span className="ml-1">{pkg.amount === 1 ? "Elite Ticket" : "Elite Tickets"}</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-4 pt-0 pb-3">
+                  <Separator className="my-2" />
                   <div className="flex flex-col items-start">
                     {hasDiscount && (
                       <span className="text-xs text-gray-400 line-through">
                         {price ? `${(originalPrice / price).toFixed(3)} WLD` : `${originalPrice.toFixed(3)} WLD`}
                       </span>
                     )}
-                    <span className="text-sm font-semibold">
+                    <span className="text-lg font-bold text-blue-700">
                       {price
                         ? `${(discountedPrice / price).toFixed(3)} WLD`
                         : `${discountedPrice.toFixed(3)} WLD`}
@@ -404,92 +488,25 @@ await supabase.from("ticket_purchases").insert({
                       (~${discountedPrice.toFixed(2)})
                     </span>
                   </div>
-                </div>
-              </CardContent>
-              <CardFooter className="p-3 pt-0">
-                <Button
-                  className="w-full bg-white text-violet-600 border border-violet-200 hover:bg-violet-50 shadow-sm text-xs"
-                  variant="outline"
-                  onClick={() => sendPayment(originalPrice, pkg.id, "regular")}
-                  disabled={isLoading[pkg.id]}
-                >
-                  {isLoading[pkg.id] ? (
-                    <>
-                      <div className="h-3 w-3 border-2 border-t-transparent border-violet-600 rounded-full animate-spin mr-2"></div>
-                      Processing...
-                    </>
-                  ) : (
-                    "Purchase"
-                  )}
-                </Button>
-              </CardFooter>
-            </Card>
-          )
-        })}
-      </div>
-    </TabsContent>
-
-    {/* Legendary Tickets Content */}
-    <TabsContent value="legendary" className="mt-0 space-y-6">
-      <div className="grid grid-cols-2 gap-4">
-        {legendaryPackages.map((pkg) => {
-          const originalPrice = pkg.price
-          const discountedPrice = getDiscountedPrice(originalPrice)
-          const hasDiscount = discountedPrice < originalPrice
-
-          return (
-            <Card
-              key={pkg.id}
-              className="relative overflow-hidden border bg-white/70 backdrop-blur-sm hover:shadow-md transition-all"
-            >
-              {hasDiscount && (
-                <div className="absolute top-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-                  -10%
-                </div>
-              )}
-              <CardHeader className="p-4 pb-2 space-y-1">
-                <CardTitle className="text-base font-medium flex items-center">
-                  <span className="mr-1">{pkg.amount}</span>
-                  <Ticket className="h-4 w-4 text-amber-500 mx-1" />
-                  {pkg.amount === 1 ? "L. Ticket" : "L. Tickets"}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-4 pt-0 pb-3">
-                <Separator className="my-3" />
-                <div className="flex flex-col items-start">
-                  {hasDiscount && (
-                    <span className="text-xs text-gray-400 line-through">
-                      {price ? `${(originalPrice / price).toFixed(3)} WLD` : `${originalPrice.toFixed(3)} WLD`}
-                    </span>
-                  )}
-                  <span className="text-sm font-semibold">
-                    {price
-                      ? `${(discountedPrice / price).toFixed(3)} WLD`
-                      : `${discountedPrice.toFixed(3)} WLD`}
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    (~${discountedPrice.toFixed(2)})
-                  </span>
-                </div>
-              </CardContent>
-              <CardFooter className="p-4 pt-0">
-                <Button
-                  className="w-full bg-white text-amber-600 border border-amber-200 hover:bg-amber-50 shadow-sm"
-                  variant="outline"
-                  onClick={() => sendPayment(originalPrice, pkg.id, "legendary")}
-                  disabled={isLoading[pkg.id]}
-                >
-                  {isLoading[pkg.id] ? (
-                    <>
-                      <div className="h-4 w-4 border-2 border-t-transparent border-amber-600 rounded-full animate-spin mr-2"></div>
-                      Processing...
-                    </>
-                  ) : (
-                    "Purchase"
-                  )}
-                </Button>
-              </CardFooter>
-            </Card>
+                </CardContent>
+                <CardFooter className="p-4 pt-0">
+                  <Button
+                    className="w-full bg-gradient-to-r from-blue-300 to-blue-700 text-blue-900 font-bold border-0 hover:scale-105 hover:shadow-lg transition"
+                    onClick={() => sendPayment(originalPrice, pkg.id, pkg.amount, 'legendary')}
+                    disabled={isLoading[pkg.id]}
+                  >
+                    {isLoading[pkg.id] ? (
+                      <>
+                        <div className="h-4 w-4 border-2 border-t-transparent border-amber-600 rounded-full animate-spin mr-2"></div>
+                        Processing...
+                      </>
+                    ) : (
+                      "Purchase"
+                    )}
+                  </Button>
+                </CardFooter>
+              </Card>
+            </motion.div>
           )
         })}
       </div>
@@ -503,49 +520,62 @@ await supabase.from("ticket_purchases").insert({
           const discountedPrice = getDiscountedPrice(originalPrice)
           const hasDiscount = discountedPrice < originalPrice
           return (
-            <Card key={pkg.id} className="relative overflow-hidden border bg-white/70 backdrop-blur-sm hover:shadow-md transition-all">
-              {hasDiscount && (
-                <div className="absolute top-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">-10%</div>
-              )}
-              <CardHeader className="p-4 pb-2 space-y-1">
-                <CardTitle className="text-base font-medium flex items-center">
-                  <span className="mr-1">{pkg.amount}</span>
-                  <span className="font-extrabold text-indigo-600 mx-1">★</span>
-                  {pkg.amount === 1 ? "Icon Ticket" : "Icon Tickets"}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-4 pt-0 pb-3">
-                <Separator className="my-3" />
-                <div className="flex flex-col items-start">
-                  {hasDiscount && (
-                    <span className="text-xs text-gray-400 line-through">
-                      {price ? `${(originalPrice / price).toFixed(3)} WLD` : `${originalPrice.toFixed(3)} WLD`}
+            <motion.div
+              key={pkg.id}
+              whileHover={{ scale: 1.03, boxShadow: '0 0 32px 0 rgba(99,102,241,0.18)' }}
+              className="relative"
+            >
+              <Card
+                className="overflow-hidden border-2 border-indigo-400 bg-gradient-to-br from-indigo-100 via-indigo-200 to-indigo-400 rounded-2xl shadow-[0_0_24px_0_rgba(99,102,241,0.10)] transition-all"
+              >
+                <motion.div
+                  className="absolute left-[-40%] top-0 w-1/2 h-full bg-gradient-to-r from-transparent via-indigo-200/60 to-transparent skew-x-[-20deg] pointer-events-none"
+                  animate={{ left: ['-40%', '120%'] }}
+                  transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+                />
+                {hasDiscount && (
+                  <div className="absolute top-2 right-2 bg-gradient-to-r from-green-400 to-emerald-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow">
+                    -10%
+                  </div>
+                )}
+                <CardHeader className="p-4 pb-2 space-y-1">
+                  <CardTitle className="text-lg font-extrabold flex items-center text-indigo-700 drop-shadow">
+                    <span className="font-extrabold text-indigo-500 mx-1 text-2xl">★</span>
+                    <span className="ml-1">{pkg.amount === 1 ? "Icon Ticket" : "Icon Tickets"}</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-4 pt-0 pb-3">
+                  <Separator className="my-2" />
+                  <div className="flex flex-col items-start">
+                    {hasDiscount && (
+                      <span className="text-xs text-gray-400 line-through">
+                        {price ? `${(originalPrice / price).toFixed(3)} WLD` : `${originalPrice.toFixed(3)} WLD`}
+                      </span>
+                    )}
+                    <span className="text-lg font-bold text-indigo-700">
+                      {price ? `${(discountedPrice / price).toFixed(3)} WLD` : `${discountedPrice.toFixed(3)} WLD`}
                     </span>
-                  )}
-                  <span className="text-sm font-semibold">
-                    {price ? `${(discountedPrice / price).toFixed(3)} WLD` : `${discountedPrice.toFixed(3)} WLD`}
-                  </span>
-                  <span className="text-xs text-gray-500">(~${discountedPrice.toFixed(2)})</span>
-                </div>
-              </CardContent>
-              <CardFooter className="p-4 pt-0">
-                <Button
-                  className="w-full bg-white text-indigo-600 border border-indigo-200 hover:bg-indigo-50 shadow-sm"
-                  variant="outline"
-                  onClick={() => sendPayment(originalPrice, pkg.id, "icon")}
-                  disabled={isLoading[pkg.id]}
-                >
-                  {isLoading[pkg.id] ? (
-                    <>
-                      <div className="h-4 w-4 border-2 border-t-transparent border-indigo-600 rounded-full animate-spin mr-2"></div>
-                      Processing...
-                    </>
-                  ) : (
-                    "Purchase"
-                  )}
-                </Button>
-              </CardFooter>
-            </Card>
+                    <span className="text-xs text-gray-500">(~${discountedPrice.toFixed(2)})</span>
+                  </div>
+                </CardContent>
+                <CardFooter className="p-4 pt-0">
+                  <Button
+                    className="w-full bg-gradient-to-r from-indigo-200 via-indigo-400 to-blue-400 text-indigo-900 font-bold border-0 hover:scale-105 hover:shadow-lg transition"
+                    onClick={() => sendPayment(originalPrice, pkg.id, pkg.amount, 'icon')}
+                    disabled={isLoading[pkg.id]}
+                  >
+                    {isLoading[pkg.id] ? (
+                      <>
+                        <div className="h-4 w-4 border-2 border-t-transparent border-indigo-600 rounded-full animate-spin mr-2"></div>
+                        Processing...
+                      </>
+                    ) : (
+                      "Purchase"
+                    )}
+                  </Button>
+                </CardFooter>
+              </Card>
+            </motion.div>
           )
         })}
       </div>

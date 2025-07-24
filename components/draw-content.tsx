@@ -738,6 +738,15 @@ const [iconTickets, setIconTickets] = useState(0)
     return stats
   }
 
+  // Hilfsfunktion für die Anzeige der Rarity-Namen
+  const getDisplayRarity = (rarity: string) => {
+    if (rarity === 'common') return 'Classic';
+    if (rarity === 'epic') return 'Elite';
+    if (rarity === 'legendary') return 'Ultimate';
+    if (rarity === 'godlike') return 'GOAT';
+    return rarity.charAt(0).toUpperCase() + rarity.slice(1);
+  };
+
   if (!isClient) {
     return (
       <ProtectedRoute>
@@ -822,7 +831,7 @@ const [iconTickets, setIconTickets] = useState(0)
                   >
                     <div className="flex items-center justify-center gap-1">
                       <Ticket className="h-3 w-3" />
-                      <span>Regular</span>
+                      <span>Classic</span>
                     </div>
                   </button>
                   <button
@@ -835,7 +844,7 @@ const [iconTickets, setIconTickets] = useState(0)
                   >
                     <div className="flex items-center justify-center gap-1">
                       <Ticket className="h-3 w-3" />
-                      <span>Legendary</span>
+                      <span>Elite</span>
                     </div>
                   </button>
                   <button
@@ -848,7 +857,7 @@ const [iconTickets, setIconTickets] = useState(0)
                   >
                     <div className="flex items-center justify-center gap-1">
                       <Zap className="h-3 w-3" />
-                      <span>God</span>
+                      <span>GOAT</span>
                     </div>
                   </button>
                   <button
@@ -905,10 +914,12 @@ const [iconTickets, setIconTickets] = useState(0)
                         <Image
                           src={
                             activeTab === "god"
-                              ? "/god_pack.png"
+                              ? "/godpack-removebg-preview.png"
                               : activeTab === "legendary"
-                                ? "/anime-world-legendary-pack.jpg"
-                                : "/icon_pack_echt.png"
+                                ? "/elite_pack-removebg-preview.png"
+                                : activeTab === "icon"
+                                  ? "/icon_pack_echt-removebg-preview.png"
+                                  : "/classic_pack.png"
                           }
                           alt="Card Pack"
                           fill
@@ -918,7 +929,7 @@ const [iconTickets, setIconTickets] = useState(0)
 
                       <div className="text-center mb-4">
                         <h3 className="text-lg font-medium">
-                          {activeTab === "god" ? "God" : activeTab === "legendary" ? "Legendary" : activeTab === "icon" ? "ICON" : "Regular"} Card Pack
+                          {activeTab === "god" ? "GOAT" : activeTab === "legendary" ? "Ultimate" : activeTab === "icon" ? "ICON" : "Classic"} Card Pack
                         </h3>
                         <p className="text-sm text-gray-500">Contains 1 random card</p>
                         <div className="flex items-center justify-center gap-1 mt-1 text-xs text-violet-600">
@@ -949,11 +960,11 @@ const [iconTickets, setIconTickets] = useState(0)
                           <div className="border border-gray-200 rounded-lg p-3 relative">
                             <div className="space-y-2">
                               <div className="flex justify-between items-center text-sm">
-                                <span>Epic</span>
+                                <span>Elite</span>
                                 <span className="text-purple-500">{godPackChances.epic}%</span>
                               </div>
                               <div className="flex justify-between items-center text-sm">
-                                <span>Legendary</span>
+                                <span>Ultimate</span>
                                 <div className="flex items-center gap-1">
                                   <span className="text-amber-500">
                                     {userClanRole === "lucky_star" || userClanRole === "leader" ? "52%" : "50%"}
@@ -964,153 +975,89 @@ const [iconTickets, setIconTickets] = useState(0)
                                 </div>
                               </div>
                               <div className="flex justify-between items-center text-sm">
-                        
-                                <span className="font-bold text-red-600">Godlike</span>
-                         
+                                <span className="font-bold text-red-600">GOAT</span>
                                 <span className="text-red-500 font-bold">{godPackChances.godlike}%</span>
                               </div>
                             </div>
                             <div className="mt-2 text-sm text-blue-600 font-medium flex items-center justify-center gap-1">
-    <Ticket className="h-4 w-4 text-blue-500" />
-    Get +3 free Legendary Tickets 
-  </div>
+                              <Ticket className="h-4 w-4 text-blue-500" />
+                              Get +3 free Ultimate Tickets
+                            </div>
                           </div>
-                          
                         ) : activeTab === "legendary" ? (
                           <div className="border border-gray-200 rounded-lg p-3 relative">
-  <div className="space-y-2">
-    <div className="flex justify-between items-center text-sm">
-      <span>Common</span>
-      <span className="text-gray-500">10%</span>
-    </div>
-    <div className="flex justify-between items-center text-sm">
-      <span>Rare</span>
-      <span className="text-blue-500">40%</span>
-    </div>
-    <div className="flex justify-between items-center text-sm">
-      <span>Epic</span>
-      <span className="text-purple-500">
-        {userClanRole === "lucky_star" || userClanRole === "leader" ? "33%" : "35%"}
-      </span>
-    </div>
-    <div className="flex justify-between items-center text-sm">
-      <span>Legendary</span>
-      <div className="flex items-center gap-1">
-        <span className="text-amber-500">
-          {userClanRole === "lucky_star" || userClanRole === "leader" ? "17%" : "15%"}
-        </span>
-        {(userClanRole === "lucky_star" || userClanRole === "leader") && (
-          <Star className="h-3 w-3 text-yellow-500" />
-        )}
-      </div>
-    </div>
-  </div>
-</div>
-
+                            <div className="space-y-2">
+                              <div className="flex justify-between items-center text-sm">
+                                <span>Classic</span>
+                                <span className="text-gray-500">10%</span>
+                              </div>
+                              <div className="flex justify-between items-center text-sm">
+                                <span>Rare</span>
+                                <span className="text-blue-500">40%</span>
+                              </div>
+                              <div className="flex justify-between items-center text-sm">
+                                <span>Elite</span>
+                                <span className="text-purple-500">35%</span>
+                              </div>
+                              <div className="flex justify-between items-center text-sm">
+                                <span>Ultimate</span>
+                                <span className="text-amber-500">15%</span>
+                              </div>
+                            </div>
+                          </div>
                         ) : activeTab === "icon" ? (
                           <div className="border border-gray-200 rounded-lg p-3 relative">
                             <div className="space-y-2">
                               <div className="flex justify-between items-center text-sm">
-                                <span>Common</span>
+                                <span>Classic</span>
                                 <span className="text-gray-500">5%</span>
                               </div>
                               <div className="flex justify-between items-center text-sm">
                                 <span>Rare</span>
-                                <span className="text-blue-500">30%</span>
+                                <span className="text-blue-500">35%</span>
                               </div>
                               <div className="flex justify-between items-center text-sm">
-                                <span>Epic</span>
-                                <span className="text-purple-500">
-                                  {userClanRole === "lucky_star" || userClanRole === "leader" ? "40%" : "38%"}
-                                </span>
+                                <span>Elite</span>
+                                <span className="text-purple-500">40%</span>
                               </div>
                               <div className="flex justify-between items-center text-sm">
-                                <span>Legendary</span>
-                                <div className="flex items-center gap-1">
-                                  <span className="text-amber-500">
-                                    {userClanRole === "lucky_star" || userClanRole === "leader" ? "32%" : "30%"}
-                                  </span>
-                                  {(userClanRole === "lucky_star" || userClanRole === "leader") && (
-                                    <Star className="h-3 w-3 text-yellow-500" />
-                                  )}
-                                </div>
+                                <span>Ultimate</span>
+                                <span className="text-amber-500">20%</span>
                               </div>
                             </div>
                             <div className="mt-2 text-sm text-indigo-600 font-medium flex items-center justify-center gap-1">
                               <Crown className="h-4 w-4 text-indigo-500" />
-                              ICON Pack - 15% Better than Legendary
+                              ICON Pack - 8% Better than Elite
                             </div>
                           </div>
-
                         ) : (
                           <div className="border border-gray-200 rounded-lg p-3 relative">
-                            {hasPremiumPass && (
-                              <div className="absolute -top-3 right-3 bg-amber-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-                                PREMIUM BONUS
-                              </div>
-                            )}
                             <div className="space-y-2">
                               <div className="flex justify-between items-center text-sm">
-                                <span>Common</span>
+                                <span>Classic</span>
                                 <div className="flex items-center gap-2">
-                                  <span
-                                    className={`text-gray-500 ${hasPremiumPass ? "line-through text-gray-400" : ""}`}
-                                  >
-                                    50%
-                                  </span>
-                                  {hasPremiumPass && <span className="text-gray-500 font-medium">40%</span>}
+                                  <span className="text-gray-500">50%</span>
                                 </div>
                               </div>
                               <div className="flex justify-between items-center text-sm">
                                 <span>Rare</span>
                                 <div className="flex items-center gap-2">
-                                  <span
-                                    className={`text-blue-500 ${hasPremiumPass ? "line-through text-blue-400/70" : ""}`}
-                                  >
-                                    34%
-                                  </span>
-                                  {hasPremiumPass && <span className="text-blue-500 font-medium">36%</span>}
+                                  <span className="text-blue-500">34%</span>
                                 </div>
                               </div>
                               <div className="flex justify-between items-center text-sm">
-                                <span>Epic</span>
+                                <span>Elite</span>
                                 <div className="flex items-center gap-2">
-                                  <span
-                                    className={`text-purple-500 ${hasPremiumPass ? "line-through text-purple-400/70" : ""}`}
-                                  >
-                                    14%
-                                  </span>
-                                  {hasPremiumPass && <span className="text-purple-500 font-medium">18%</span>}
+                                  <span className="text-purple-500">14%</span>
                                 </div>
                               </div>
                               <div className="flex justify-between items-center text-sm">
-                                <span>Legendary</span>
+                                <span>Ultimate</span>
                                 <div className="flex items-center gap-2">
-                                  <span
-                                    className={`text-amber-500 ${hasPremiumPass ? "line-through text-amber-400/70" : ""}`}
-                                  >
-                                    {userClanRole === "lucky_star" || userClanRole === "leader" ? "4%" : "2%"}
-                                  </span>
-                                  {hasPremiumPass && (
-                                    <span className="text-amber-500 font-medium flex items-center gap-1">
-                                      {userClanRole === "lucky_star" || userClanRole === "leader" ? "8%" : "6%"}
-                                      {(userClanRole === "lucky_star" || userClanRole === "leader") && (
-                                        <Star className="h-3 w-3 text-yellow-500" />
-                                      )}
-                                    </span>
-                                  )}
-                                  {!hasPremiumPass && (userClanRole === "lucky_star" || userClanRole === "leader") && (
-                                    <Star className="h-3 w-3 text-yellow-500" />
-                                  )}
+                                  <span className="text-amber-500">2%</span>
                                 </div>
                               </div>
                             </div>
-                            {hasPremiumPass && (
-                              <div className="mt-2 flex items-center gap-1 text-xs text-amber-600">
-                                <Crown className="h-3 w-3" />
-                                <span>Premium Pass activated</span>
-                              </div>
-                            )}
                           </div>
                         )}
                       </div>
@@ -1132,7 +1079,7 @@ const [iconTickets, setIconTickets] = useState(0)
                             ) : (
                               <div className="flex items-center gap-2">
                                 <Zap className="h-5 w-5" />
-                                <span className="font-bold text-base">Open God Pack ({wldPriceEstimate} WLD)</span>
+                                <span className="font-bold text-base">{activeTab === "god" ? "Open GOAT Pack" : activeTab === "legendary" ? "Open Elite Pack" : activeTab === "icon" ? "Open ICON Pack" : "Open Classic Pack"} ({wldPriceEstimate} WLD)</span>
                               </div>
                             )}
                           </Button>
@@ -1273,7 +1220,7 @@ const [iconTickets, setIconTickets] = useState(0)
   .map(([rarity, count]) => (
     <div key={rarity} className={`p-2 rounded-lg ${getRarityStyles(rarity as CardRarity).bg}`}>
       <div className={`text-xs font-medium ${getRarityStyles(rarity as CardRarity).text}`}>
-        {rarity.toUpperCase()}
+        {getDisplayRarity(rarity)}
       </div>
       <div className="text-lg font-bold">{count}</div>
     </div>
@@ -1328,7 +1275,7 @@ const [iconTickets, setIconTickets] = useState(0)
                         <span
                           className={`z-10 px-3 py-1 rounded-full text-xs font-semibold uppercase shadow-sm backdrop-blur-sm bg-white/20 ${getRarityStyles(card.rarity).text}`}
                         >
-                          {card.rarity}
+                          {getDisplayRarity(card.rarity)}
                         </span>
                       </motion.div>
                     ))}
@@ -1417,15 +1364,15 @@ const [iconTickets, setIconTickets] = useState(0)
                     {Array.from({ length: 5 }).map((_, i) => (
                       <motion.div
                         key={`pack-${i}`}
-                        className="absolute w-16 h-20"
+                        className="absolute w-24 h-32"
                         style={{
-                          left: `${i * 20 - 40}px`,
-                          top: `${Math.sin(i) * 10}px`,
+                          left: `${i * 28 - 56}px`,
+                          top: `${Math.sin(i) * 14}px`,
                         }}
                         animate={{
-                          y: [0, -20, 0],
+                          y: [0, -28, 0],
                           rotateZ: [0, 5, -5, 0],
-                          scale: [1, 1.1, 1],
+                          scale: [1, 1.1, 0.9, 1.05, 1],
                         }}
                         transition={{
                           duration: 2,
@@ -1437,10 +1384,12 @@ const [iconTickets, setIconTickets] = useState(0)
                         <Image
                           src={
                             activeTab === "god"
-                              ? "/god_pack.png"
+                              ? "/godpack-removebg-preview.png"
                               : activeTab === "legendary"
-                                ? "/anime-world-legendary-pack.jpg"
-                                : "/icon_pack_echt.png"
+                                ? "/elite_pack-removebg-preview.png"
+                                : activeTab === "icon"
+                                  ? "/icon_pack_echt-removebg-preview.png"
+                                  : "/classic_pack.png"
                           }
                           alt="Card Pack"
                           fill
@@ -1723,7 +1672,7 @@ const [iconTickets, setIconTickets] = useState(0)
                 <div className="absolute inset-0 bg-black opacity-80" />
                 <div className="relative z-10 flex flex-col items-center">
                   <motion.div
-                    className="relative w-64 h-96 mb-8"
+                    className="relative w-80 h-[28rem] mb-8"
                     animate={{
                       y: [0, -15, 0, -15, 0],
                       rotateZ: packOpened ? [0, -5, 5, -3, 0] : 0,
@@ -1746,10 +1695,12 @@ const [iconTickets, setIconTickets] = useState(0)
                     <Image
                       src={
                         activeTab === "god"
-                          ? "/god_pack.png"
+                          ? "/godpack-removebg-preview.png"
                           : activeTab === "legendary"
-                            ? "/anime-world-legendary-pack.jpg"
-                            : "/icon_pack_echt.png"
+                            ? "/elite_pack-removebg-preview.png"
+                            : activeTab === "icon"
+                              ? "/icon_pack_echt-removebg-preview.png"
+                              : "/classic_pack.png"
                       }
                       alt="Card Pack"
                       fill
@@ -1876,7 +1827,7 @@ const [iconTickets, setIconTickets] = useState(0)
                                       : "text-gray-400"
                             }`}
                           >
-                            {card?.rarity?.toUpperCase()}
+                            {getDisplayRarity(card?.rarity)}
                           </div>
                         </motion.div>
                       )
@@ -1912,7 +1863,7 @@ const [iconTickets, setIconTickets] = useState(0)
                                 : "text-gray-400"
                       }`}
                     >
-                      {drawnCards[0]?.rarity?.toUpperCase()}
+                      {getDisplayRarity(drawnCards[0]?.rarity)}
                     </div>
                   </motion.div>
                 )}

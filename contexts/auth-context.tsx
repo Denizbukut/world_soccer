@@ -10,6 +10,7 @@ type User = {
   tickets: number
   legendary_tickets: number
   icon_tickets: number // NEW: icon tickets
+  elite_tickets: number // NEU: elite tickets
   coins: number
   level: number
   experience: number
@@ -65,7 +66,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
       const { data, error } = await supabase
         .from("users")
-        .select("username, tickets, legendary_tickets, icon_tickets, coins, level, world_id, experience, next_level_exp, has_premium, score, clan_id")
+        .select("username, tickets, legendary_tickets, icon_tickets, elite_tickets, coins, level, world_id, experience, next_level_exp, has_premium, score, clan_id")
         .eq("username", username)
         .single()
 
@@ -84,6 +85,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           tickets: Number(typedData.tickets || 0),
           legendary_tickets: Number(typedData.legendary_tickets || 0),
           icon_tickets: Number(typedData.icon_tickets || 0), // NEW
+          elite_tickets: Number(typedData.elite_tickets || 0), // NEU
           coins: Number(typedData.coins || 0),
           level: Number(typedData.level || 1),
           clan_id: Number(typedData.clan_id || null),
@@ -217,6 +219,7 @@ if (!isHumanVerified) {
         tickets: 5,
         legendary_tickets: 2,
         icon_tickets: 0, // NEW
+        elite_tickets: 0, // NEU
         coins: 1000,
         level: 1,
         experience: 0,
@@ -236,6 +239,8 @@ if (!isHumanVerified) {
         next_level_exp: newUserData.nextLevelExp,
         has_premium: newUserData.has_premium,
         score: newUserData.score, // Score in die Datenbank einfügen
+        icon_tickets: newUserData.icon_tickets,
+        elite_tickets: newUserData.elite_tickets,
       })
       
 
@@ -274,7 +279,7 @@ if (!isHumanVerified) {
     }
   }
 
-  const updateUserTickets = async (newTicketCount: number, newLegendaryTicketCount?: number, newIconTicketCount?: number) => {
+  const updateUserTickets = async (newTicketCount: number, newEliteTicketCount?: number, newIconTicketCount?: number) => {
     if (user) {
       // Create updated user with new ticket count
       const updatedUser = { ...user }
@@ -283,16 +288,16 @@ if (!isHumanVerified) {
         updatedUser.tickets = newTicketCount
       }
 
-      // Update legendary tickets if provided
-      if (typeof newLegendaryTicketCount === "number") {
-        updatedUser.legendary_tickets = newLegendaryTicketCount
+      // Update elite tickets if provided
+      if (typeof newEliteTicketCount === "number") {
+        updatedUser.elite_tickets = newEliteTicketCount
       }
 
       if (typeof newIconTicketCount === "number") {
         updatedUser.icon_tickets = newIconTicketCount
       }
 
-      console.log("Updating user tickets:", updatedUser.tickets, "legendary:", updatedUser.legendary_tickets)
+      console.log("Updating user tickets:", updatedUser.tickets, "elite:", updatedUser.elite_tickets)
 
       // Update state and localStorage
       setUser(updatedUser)
@@ -307,8 +312,8 @@ if (!isHumanVerified) {
         if (typeof newTicketCount === "number") {
           updateData.tickets = newTicketCount
         }
-        if (typeof newLegendaryTicketCount === "number") {
-          updateData.legendary_tickets = newLegendaryTicketCount
+        if (typeof newEliteTicketCount === "number") {
+          updateData.elite_tickets = newEliteTicketCount
         }
         if (typeof newIconTicketCount === "number") {
           updateData.icon_tickets = newIconTicketCount

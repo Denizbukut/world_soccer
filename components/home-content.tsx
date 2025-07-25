@@ -151,7 +151,7 @@ export default function Home() {
   const [referralLoading, setReferralLoading] = useState(false)
   const [alreadyClaimed, setAlreadyClaimed] = useState(false)
   const [timeUntilNextClaim, setTimeUntilNextClaim] = useState<number | null>(null)
-  const [legendaryTickets, setLegendaryTickets] = useState(0)
+  const [eliteTickets, setEliteTickets] = useState(0)
   const [tickets, setTickets] = useState(0)
   const [showClaimAnimation, setShowClaimAnimation] = useState(false)
   const [hasPremium, setHasPremium] = useState(false)
@@ -401,7 +401,7 @@ const [copied, setCopied] = useState(false)
         }
         // Update local state with explicit number types
         setTickets(newTicketCount)
-        setLegendaryTickets(newLegendaryTicketCount)
+        setEliteTickets(newLegendaryTicketCount)
         // Update auth context
         await updateUserTickets?.(newTicketCount, newLegendaryTicketCount)
         toast({
@@ -597,16 +597,27 @@ const [copied, setCopied] = useState(false)
       if (!supabase) return
 
       try {
-        // Get user data including ticket_last_claimed, token_last_claimed, legendary_tickets, tickets, tokens, has_premium
+        // Get user data including ticket_last_claimed, token_last_claimed, tickets, elite_tickets, icon_tickets, tokens, has_premium
         const { data, error } = await supabase
           .from("users")
-          .select("ticket_last_claimed, token_last_claimed, legendary_tickets, tickets, tokens, has_premium")
+          .select("ticket_last_claimed, token_last_claimed, tickets, elite_tickets, icon_tickets, tokens, has_premium")
           .eq("username", user.username)
           .single()
 
         if (error) {
           console.error("Error fetching user data:", error)
           return
+        }
+
+        // Update tickets, elite tickets, icon tickets
+        if (data && typeof data.tickets === "number") {
+          setTickets(data.tickets)
+        }
+        if (data && typeof data.elite_tickets === "number") {
+          setEliteTickets(data.elite_tickets)
+        }
+        if (data && typeof data.icon_tickets === "number") {
+          setIconTickets(data.icon_tickets)
         }
 
         // Update premium status
@@ -620,7 +631,7 @@ const [copied, setCopied] = useState(false)
         }
 
         if (data && typeof data.legendary_tickets === "number") {
-          setLegendaryTickets(data.legendary_tickets)
+          setEliteTickets(data.legendary_tickets)
         }
 
 
@@ -880,7 +891,7 @@ const [copied, setCopied] = useState(false)
   // Handle daily deal purchase success
   const handleDailyDealPurchaseSuccess = (newTickets: number, newLegendaryTickets: number) => {
     setTickets(newTickets)
-    setLegendaryTickets(newLegendaryTickets)
+    setEliteTickets(newLegendaryTickets)
 
     // Update deal interaction state
     if (dailyDealInteraction) {
@@ -900,7 +911,7 @@ const [copied, setCopied] = useState(false)
   // Handle special deal purchase success
   const handleSpecialDealPurchaseSuccess = (newTickets: number, newLegendaryTickets: number) => {
     setTickets(newTickets)
-    setLegendaryTickets(newLegendaryTickets)
+    setEliteTickets(newLegendaryTickets)
 
     // Update special deal interaction state
     if (specialDealInteraction) {
@@ -1001,7 +1012,7 @@ const [copied, setCopied] = useState(false)
   useEffect(() => {
     if (user) {
       if (typeof user.tickets === "number") setTickets(user.tickets)
-      if (typeof user.legendary_tickets === "number") setLegendaryTickets(user.legendary_tickets)
+      if (typeof user.elite_tickets === "number") setEliteTickets(user.elite_tickets)
       if (typeof user.icon_tickets === "number") setIconTickets(user.icon_tickets)
     }
   }, [user])
@@ -1219,8 +1230,8 @@ const [copied, setCopied] = useState(false)
         <span className="font-medium text-xs text-center">{tickets}</span>
       </div>
       <div className="flex flex-col items-center justify-center bg-white px-2 py-1 rounded-full shadow-sm border border-gray-100 min-w-[54px]">
-        <Ticket className="h-4 w-4 text-blue-500 mx-auto" />
-        <span className="font-medium text-xs text-center">{legendaryTickets}</span>
+        <Ticket className="h-4 w-4 text-purple-500 mx-auto" />
+        <span className="font-medium text-xs text-center">{eliteTickets}</span>
       </div>
       <div className="flex flex-col items-center justify-center bg-white px-2 py-1 rounded-full shadow-sm border border-gray-100 min-w-[54px]">
         <Crown className="h-4 w-4 text-indigo-500 mx-auto" />
@@ -1800,7 +1811,7 @@ const [copied, setCopied] = useState(false)
                               ) {
       await updateUserTickets(res.newTicketCount, res.newLegendaryTicketCount)
       setTickets(res.newTicketCount)
-      setLegendaryTickets(res.newLegendaryTicketCount)
+      setEliteTickets(res.newLegendaryTicketCount)
     }
     setReferredUsers((prev) =>
                                 prev.map((r) => (r.username === ref.username ? { ...r, reward_claimed: true } : r)),

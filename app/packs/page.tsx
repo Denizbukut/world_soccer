@@ -85,9 +85,19 @@ export default function PacksPage() {
         <header className="bg-orange-600 text-white p-4">
           <div className="flex justify-between items-center">
             <h1 className="text-2xl font-bold">Card Packs</h1>
-            <div className="flex items-center gap-1">
-              <Ticket className="h-5 w-5" />
-              <span className="font-bold">{user?.tickets || 0}</span>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1">
+                <Ticket className="h-5 w-5 text-amber-500" />
+                <span className="font-bold">{user?.tickets ?? 0}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Ticket className="h-5 w-5 text-purple-500" />
+                <span className="font-bold">{user?.elite_tickets ?? 0}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Package className="h-5 w-5 text-indigo-500" />
+                <span className="font-bold">{user?.icon_tickets ?? 0}</span>
+              </div>
             </div>
           </div>
         </header>

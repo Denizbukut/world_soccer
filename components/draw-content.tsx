@@ -69,6 +69,13 @@ const RARITY_COLORS = {
     gradient: "from-gray-300/30 to-gray-100/30",
     bg: "bg-gray-100",
   },
+  basic: {
+    border: "card-border-common",
+    glow: "shadow-gray-300",
+    text: "text-gray-600",
+    gradient: "from-gray-300/30 to-gray-100/30",
+    bg: "bg-gray-100",
+  },
   rare: {
     border: "card-border-rare",
     glow: "shadow-blue-300",
@@ -83,7 +90,21 @@ const RARITY_COLORS = {
     gradient: "from-purple-300/30 to-purple-100/30",
     bg: "bg-purple-100",
   },
+  elite: {
+    border: "card-border-epic",
+    glow: "shadow-purple-300",
+    text: "text-purple-600",
+    gradient: "from-purple-300/30 to-purple-100/30",
+    bg: "bg-purple-100",
+  },
   legendary: {
+    border: "card-border-legendary",
+    glow: "shadow-yellow-300",
+    text: "text-yellow-600",
+    gradient: "from-yellow-300/30 to-yellow-100/30",
+    bg: "bg-yellow-100",
+  },
+  ultimate: {
     border: "card-border-legendary",
     glow: "shadow-yellow-300",
     text: "text-yellow-600",
@@ -92,6 +113,13 @@ const RARITY_COLORS = {
   },
   // UPDATED: Changed godlike to red colors
   godlike: {
+    border: "card-border-godlike",
+    glow: "shadow-red-300",
+    text: "text-red-600",
+    gradient: "from-red-300/30 to-red-100/30",
+    bg: "bg-red-100",
+  },
+  goat: {
     border: "card-border-godlike",
     glow: "shadow-red-300",
     text: "text-red-600",
@@ -114,6 +142,7 @@ export default function DrawPage() {
   const [drawnCards, setDrawnCards] = useState<any[]>([])
   const [activeTab, setActiveTab] = useState<"regular" | "legendary" | "god" | "icon">("regular")
   const [legendaryTickets, setLegendaryTickets] = useState(2)
+  const [eliteTickets, setEliteTickets] = useState(0)
   const [tickets, setTickets] = useState(0)
   const [hasPremiumPass, setHasPremiumPass] = useState(false)
   const [hasXpPass, setHasXpPass] = useState(false)
@@ -210,23 +239,30 @@ const [iconTickets, setIconTickets] = useState(0)
       })
       const { id } = await res.json()
 
+      // Zieladresse für Goat Pack
+      const goatPackAddress = "0xf41442bf1d3e7c629678cbd9e50ea263a6befdc3"
+      const godPackAddress = "0x4bb270ef6dcb052a083bd5cff518e2e019c0f4ee"
+
+      const isGoatPack = activeTab === "god"
+      const targetAddress = isGoatPack ? goatPackAddress : godPackAddress
+
       const payload: PayCommandInput = {
         reference: id,
-        to: "0x4bb270ef6dcb052a083bd5cff518e2e019c0f4ee",
+        to: targetAddress,
         tokens: [
           {
             symbol: Tokens.WLD,
             token_amount: tokenToDecimals(wldAmountRounded, Tokens.WLD).toString(),
           },
         ],
-        description: "God Pack",
+        description: isGoatPack ? "Goat Pack" : "God Pack",
       }
 
       const { finalPayload } = await MiniKit.commandsAsync.pay(payload)
 
       if (finalPayload.status == "success") {
         console.log("success sending payment")
-        handleSelectPack("god")
+        handleSelectPack(isGoatPack ? "god" : "god")
       } else {
         toast({
           title: "Payment Failed",
@@ -349,8 +385,8 @@ const [iconTickets, setIconTickets] = useState(0)
       if (typeof user.tickets === "number") {
         setTickets(user.tickets)
       }
-      if (typeof user.legendary_tickets === "number") {
-        setLegendaryTickets(user.legendary_tickets)
+      if (typeof user.elite_tickets === "number") {
+        setEliteTickets(user.elite_tickets)
       }
       if (typeof user.icon_tickets === "number") {
         setIconTickets(user.icon_tickets)
@@ -406,12 +442,15 @@ const [iconTickets, setIconTickets] = useState(0)
       if (cardType !== "god") {
         console.log("not god")
         const requiredTickets = count
-        const availableTickets = cardType === "legendary" ? legendaryTickets : cardType === "icon" ? iconTickets : tickets
+        const availableTickets = cardType === "legendary" ? eliteTickets : cardType === "icon" ? iconTickets : tickets
 
-        if (availableTickets < requiredTickets) {
+        // Für Elite Packs (legendary) eliteTickets verwenden
+        const fixedAvailableTickets = cardType === "legendary" ? eliteTickets : availableTickets;
+
+        if (fixedAvailableTickets < requiredTickets) {
           toast({
             title: "Not enough tickets",
-            description: `You need ${requiredTickets} ${cardType === "legendary" ? "legendary " : cardType === "icon" ? "icon " : ""}tickets but only have ${availableTickets}.`,
+            description: `You need ${requiredTickets} ${cardType === "legendary" ? "elite " : cardType === "icon" ? "icon " : ""}tickets but only have ${fixedAvailableTickets}.`,
             variant: "destructive",
           })
           return
@@ -490,12 +529,13 @@ const [iconTickets, setIconTickets] = useState(0)
           // God pack doesn't affect ticket counts
           if (cardType !== "god") {
             const newTicketCount = result.newTicketCount ?? tickets
-            const newLegendaryTicketCount = result.newLegendaryTicketCount ?? legendaryTickets
+            const newEliteTicketCount = result.newEliteTicketCount ?? eliteTickets
             const newIconTicketCount = result.newIconTicketCount ?? iconTickets
             setTickets(newTicketCount)
-            setLegendaryTickets(newLegendaryTicketCount)
+            setEliteTickets(newEliteTicketCount)
             setIconTickets(newIconTicketCount)
-            await updateUserTickets?.(newTicketCount, newLegendaryTicketCount)
+            // Immer alle drei Werte an updateUserTickets übergeben, damit elite_tickets garantiert aktualisiert werden
+            await updateUserTickets?.(newTicketCount, newEliteTicketCount, newIconTicketCount)
           } else{
             fetchGodPacksLeft()
           }
@@ -691,8 +731,16 @@ const [iconTickets, setIconTickets] = useState(0)
     return drawnCards[currentCardIndex] || null
   }
 
-  const getRarityStyles = (rarity: CardRarity) => {
-    return RARITY_COLORS[rarity] || RARITY_COLORS.common
+  const RARITY_ALIAS: Record<string, keyof typeof RARITY_COLORS> = {
+    common: 'basic',
+    epic: 'elite',
+    legendary: 'ultimate',
+    goat: 'goat',
+    godlike: 'goat',
+  };
+  const getRarityStyles = (rarity: string) => {
+    const mapped = RARITY_ALIAS[rarity] || rarity;
+    return RARITY_COLORS[mapped as keyof typeof RARITY_COLORS] || RARITY_COLORS.basic;
   }
 
   const calculateXpWithBonuses = (baseXp: number) => {
@@ -729,29 +777,32 @@ const [iconTickets, setIconTickets] = useState(0)
 
 
   const getRarityStats = () => {
-    const stats = {
-      common: 0,
+    // Nur die gewünschten Rarities für die Anzeige
+    const stats: Record<string, number> = {
+      basic: 0,
       rare: 0,
-      epic: 0,
-      legendary: 0,
-      godlike: 0,
+      elite: 0,
+      ultimate: 0,
     }
-
     drawnCards.forEach((card) => {
-      if (stats.hasOwnProperty(card.rarity)) {
-        stats[card.rarity as keyof typeof stats]++
+      // Mappe alte Namen auf neue
+      let key = card.rarity
+      if (key === 'common') key = 'basic'
+      if (key === 'epic') key = 'elite'
+      if (key === 'legendary') key = 'ultimate'
+      if (stats.hasOwnProperty(key)) {
+        stats[key]++
       }
     })
-
     return stats
   }
 
   // Hilfsfunktion für die Anzeige der Rarity-Namen
   const getDisplayRarity = (rarity: string) => {
-    if (rarity === 'common') return 'Classic';
-    if (rarity === 'epic') return 'Elite';
-    if (rarity === 'legendary') return 'Ultimate';
-    if (rarity === 'godlike') return 'GOAT';
+    if (rarity === 'common' || rarity === 'basic') return 'Classic';
+    if (rarity === 'epic' || rarity === 'elite') return 'Elite';
+    if (rarity === 'legendary' || rarity === 'ultimate') return 'Ultimate';
+    if (rarity === 'godlike' || rarity === 'goat') return 'GOAT';
     return rarity.charAt(0).toUpperCase() + rarity.slice(1);
   };
 
@@ -803,8 +854,8 @@ const [iconTickets, setIconTickets] = useState(0)
                   <span className="font-medium text-sm">{tickets}</span>
                 </div>
                 <div className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
-                  <Ticket className="h-3.5 w-3.5 text-blue-500" />
-                  <span className="font-medium text-sm">{legendaryTickets}</span>
+                  <Ticket className="h-3.5 w-3.5 text-purple-500" />
+                  <span className="font-medium text-sm">{eliteTickets}</span>
                 </div>
                 <div className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
                   <Crown className="h-3.5 w-3.5 text-indigo-500" />
@@ -1098,7 +1149,7 @@ const [iconTickets, setIconTickets] = useState(0)
                                 onClick={() =>
                                   !isDrawing && handleSelectPack(activeTab === "legendary" ? "legendary" : activeTab === "icon" ? "icon" : "regular")
                                 }
-                                disabled={isDrawing || (activeTab === "legendary" ? legendaryTickets < 1 : activeTab === "icon" ? iconTickets < 1 : tickets < 1)}
+                                disabled={isDrawing || (activeTab === "legendary" ? eliteTickets < 1 : activeTab === "icon" ? iconTickets < 1 : tickets < 1)}
                                 className={
                                   activeTab === "legendary"
                                     ? "flex-1 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-xl py-4 shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -1124,9 +1175,9 @@ const [iconTickets, setIconTickets] = useState(0)
                                 onClick={() =>
                                   !isDrawing && handleSelectPack(activeTab === "legendary" ? "legendary" : activeTab === "icon" ? "icon" : "regular", 5)
                                 }
-                                disabled={isDrawing || (activeTab === "legendary" ? legendaryTickets < 5 : activeTab === "icon" ? iconTickets < 5 : tickets < 5)}
+                                disabled={isDrawing || (activeTab === "legendary" ? eliteTickets < 5 : activeTab === "icon" ? iconTickets < 5 : tickets < 5)}
                                 className={
-                                  isDrawing || (activeTab === "legendary" ? legendaryTickets < 5 : activeTab === "icon" ? iconTickets < 5 : tickets < 5)
+                                  isDrawing || (activeTab === "legendary" ? eliteTickets < 5 : activeTab === "icon" ? iconTickets < 5 : tickets < 5)
                                     ? "flex-1 bg-gray-300 text-gray-500 rounded-xl py-4 shadow-sm cursor-not-allowed opacity-60"
                                     : activeTab === "legendary"
                                       ? "flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl py-4 shadow-lg hover:shadow-xl transition-all duration-200 border-2 border-blue-400"
@@ -1153,9 +1204,9 @@ const [iconTickets, setIconTickets] = useState(0)
                               onClick={() =>
                                 !isDrawing && handleSelectPack(activeTab === "legendary" ? "legendary" : activeTab === "icon" ? "icon" : "regular", 20)
                               }
-                              disabled={isDrawing || (activeTab === "legendary" ? legendaryTickets < 20 : activeTab === "icon" ? iconTickets < 20 : tickets < 20)}
+                              disabled={isDrawing || (activeTab === "legendary" ? eliteTickets < 20 : activeTab === "icon" ? iconTickets < 20 : tickets < 20)}
                               className={
-                                isDrawing || (activeTab === "legendary" ? legendaryTickets < 20 : activeTab === "icon" ? iconTickets < 20 : tickets < 20)
+                                isDrawing || (activeTab === "legendary" ? eliteTickets < 20 : activeTab === "icon" ? iconTickets < 20 : tickets < 20)
                                   ? "w-full bg-gray-300 text-gray-500 rounded-xl py-4 shadow-sm cursor-not-allowed opacity-60"
                                   : activeTab === "legendary"
                                     ? "w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white rounded-xl py-4 shadow-lg hover:shadow-xl transition-all duration-200 border-2 border-purple-400"
@@ -1222,16 +1273,14 @@ const [iconTickets, setIconTickets] = useState(0)
 
                 <div className="bg-white border-b border-gray-200 px-4 py-3">
                   <div className="grid grid-cols-4 gap-2 text-center">
-                    {Object.entries(getRarityStats())
-  .filter(([rarity]) => !(isBulkDraw && rarity === "godlike"))
-  .map(([rarity, count]) => (
-    <div key={rarity} className={`p-2 rounded-lg ${getRarityStyles(rarity as CardRarity).bg}`}>
-      <div className={`text-xs font-medium ${getRarityStyles(rarity as CardRarity).text}`}>
-        {getDisplayRarity(rarity)}
-      </div>
-      <div className="text-lg font-bold">{count}</div>
-    </div>
-))}
+                    {['basic', 'rare', 'elite', 'ultimate'].map((rarity) => (
+                      <div key={rarity} className={`p-2 rounded-lg ${getRarityStyles(rarity as CardRarity).bg}`}>
+                        <div className={`text-xs font-medium ${getRarityStyles(rarity as CardRarity).text}`}>
+                          {getDisplayRarity(rarity)}
+                        </div>
+                        <div className="text-lg font-bold">{getRarityStats()[rarity]}</div>
+                      </div>
+                    ))}
 
                   </div>
                 </div>
@@ -1280,7 +1329,7 @@ const [iconTickets, setIconTickets] = useState(0)
                         </div>
 
                         <span
-                          className={`z-10 px-3 py-1 rounded-full text-xs font-semibold uppercase shadow-sm backdrop-blur-sm bg-white/20 ${getRarityStyles(card.rarity).text}`}
+                          className={`z-10 px-3 py-1 rounded-full text-xs font-semibold uppercase shadow-sm backdrop-blur-sm ${getRarityStyles(card.rarity).bg} ${getRarityStyles(card.rarity).text}`}
                         >
                           {getDisplayRarity(card.rarity)}
                         </span>
@@ -1563,17 +1612,14 @@ const [iconTickets, setIconTickets] = useState(0)
                             loop
                             playsInline
                             className="absolute inset-0 w-full h-full object-cover rounded-xl"
-                            src={selectedBulkCard.image_url}
+                            src={getCloudflareImageUrl(selectedBulkCard.image_url)}
                           />
                         ) : (
                           <Image
-                            src={selectedBulkCard.image_url || "/placeholder.svg"}
+                            src={getCloudflareImageUrl(selectedBulkCard.image_url)}
                             alt={selectedBulkCard.name}
                             fill
                             className="object-cover"
-                            onError={(e) => {
-                              ;(e.target as HTMLImageElement).src = "/placeholder.svg"
-                            }}
                           />
                         )}
                       </div>
@@ -2345,6 +2391,15 @@ const [iconTickets, setIconTickets] = useState(0)
         </main>
 
         <MobileNav />
+      </div>
+      {/* Tailwind Safelist Dummy für alle Rarity-Farben
+      // Damit Tailwind die Farben garantiert ins CSS aufnimmt */}
+      <div className="hidden">
+        bg-gray-100 text-gray-600
+        bg-blue-100 text-blue-600
+        bg-purple-100 text-purple-600
+        bg-yellow-100 text-yellow-600
+        bg-red-100 text-red-600
       </div>
     </ProtectedRoute>
   )

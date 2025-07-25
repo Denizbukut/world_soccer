@@ -6,7 +6,7 @@ import {  incrementMission } from "@/app/actions/missions"
 
 
 // Card rarity types
-type CardRarity = "common" | "rare" | "epic" | "legendary"
+type CardRarity = "common" | "rare" | "epic" | "legendary" | "basic" | "elite" | "ultimate" | "goat"
 
 // Define types for our data
 type UserCard = {
@@ -152,8 +152,11 @@ function generateRandomCard(rarity: CardRarity): Card {
     epic: ["Epic Card 1", "Epic Card 2"],
     legendary: ["Legendary Card 1", "Legendary Card 2"],
   }
-
-  const name = cardNames[rarity][Math.floor(Math.random() * cardNames[rarity].length)]
+  let fallback: keyof typeof cardNames = "common";
+  if (rarity === "rare") fallback = "rare";
+  if (rarity === "epic" || rarity === "elite") fallback = "epic";
+  if (rarity === "legendary" || rarity === "ultimate" || rarity === "goat") fallback = "legendary";
+  const name = cardNames[fallback][Math.floor(Math.random() * cardNames[fallback].length)]
   return {
     id: Math.random().toString(36).substring(2, 15), // Generate a random ID
     name: name,
@@ -239,7 +242,8 @@ export async function drawCards(username: string, packType: string, count = 1) {
     // Check if user has enough tickets
     const isLegendary = packType === "legendary"
     const isIcon = packType === "icon"
-    const ticketField = isLegendary ? "legendary_tickets" : isIcon ? "icon_tickets" : "tickets"
+    // Für Elite Packs elite_tickets verwenden
+    const ticketField = isLegendary ? "elite_tickets" : isIcon ? "icon_tickets" : "tickets"
     const currentTickets = userData[ticketField] || 0
 
     if (currentTickets < count) {
@@ -255,7 +259,7 @@ export async function drawCards(username: string, packType: string, count = 1) {
     // Update-Daten vorbereiten
     const updateData: Record<string, any> = {}
     if (isLegendary) {
-      updateData.legendary_tickets = newTicketCount
+      updateData.elite_tickets = newTicketCount
     } else if (isIcon) {
       updateData.icon_tickets = newTicketCount
     } else {
@@ -275,7 +279,6 @@ export async function drawCards(username: string, packType: string, count = 1) {
       .from("cards")
       .select("*")
       .eq("obtainable", true)
-      .eq("epoch", 1)
 
     if (cardsError || !availableCards || availableCards.length === 0) {
       console.error("Error fetching available cards:", cardsError)
@@ -283,10 +286,11 @@ export async function drawCards(username: string, packType: string, count = 1) {
     }
 
     // Filter cards by rarity for each pack type
-    const commonCards = availableCards.filter((card) => card.rarity === "common")
+    const commonCards = availableCards.filter((card) => card.rarity === "basic" || card.rarity === "common")
     const rareCards = availableCards.filter((card) => card.rarity === "rare")
-    const epicCards = availableCards.filter((card) => card.rarity === "epic")
-    const legendaryCards = availableCards.filter((card) => card.rarity === "legendary")
+    const epicCards = availableCards.filter((card) => card.rarity === "elite" || card.rarity === "epic")
+    const legendaryCards = availableCards.filter((card) => card.rarity === "ultimate" || card.rarity === "legendary")
+    const goatCards = availableCards.filter((card) => card.rarity === "goat" || card.rarity === "godlike")
 
     // Generate random cards based on rarity chances
     const drawnCards = []
@@ -297,66 +301,273 @@ export async function drawCards(username: string, packType: string, count = 1) {
       let rarity: CardRarity
       let cardPool: any[]
 
-      // Check if user has premium to determine drop rates
-      const hasPremium = userData.has_premium || false
       if (!isLegendary && !isIcon) {
         await incrementMission(username, "open_regular_pack")
+        // Neue Draw Rates für Classic Packs (nur Backend, nicht im UI anzeigen)
+        // 75–79: 43.90%
+        // 80–84: 25.08%
+        // 85: 16.72%
+        // 86: 7.00%
+        // 87: 4.00%
+        // 88: 1.50%
+        // 89: 0.80%
+        // 90: 0.50%
+        // 91: 0.0000000005555%
+        // 92+: 0.000000000000000000000444444%
+        let rating = 0;
+        if (random < 43.90) {
+          rating = Math.floor(Math.random() * 5) + 75; // 75–79
+        } else if (random < 43.90 + 25.08) {
+          rating = Math.floor(Math.random() * 5) + 80; // 80–84
+        } else if (random < 43.90 + 25.08 + 16.72) {
+          rating = 85;
+        } else if (random < 43.90 + 25.08 + 16.72 + 7.00) {
+          rating = 86;
+        } else if (random < 43.90 + 25.08 + 16.72 + 7.00 + 4.00) {
+          rating = 87;
+        } else if (random < 43.90 + 25.08 + 16.72 + 7.00 + 4.00 + 1.50) {
+          rating = 88;
+        } else if (random < 43.90 + 25.08 + 16.72 + 7.00 + 4.00 + 1.50 + 0.80) {
+          rating = 89;
+        } else if (random < 43.90 + 25.08 + 16.72 + 7.00 + 4.00 + 1.50 + 0.80 + 0.50) {
+          rating = 90;
+        } else if (random < 43.90 + 25.08 + 16.72 + 7.00 + 4.00 + 1.50 + 0.80 + 0.50 + 0.0000000005555) {
+          rating = 91;
+        } else {
+          rating = 92;
+        }
+        // Filter cards nach rating
+        let cardPool = availableCards.filter(card => card.overall_rating == rating);
+        // Fallback falls keine Karte mit rating vorhanden
+        if (!cardPool || cardPool.length === 0) {
+          cardPool = commonCards.length > 0 ? commonCards : availableCards;
+        }
+        rarity = cardPool[0]?.rarity || "basic";
+        const selectedCard = cardPool[Math.floor(Math.random() * cardPool.length)];
+        drawnCards.push(selectedCard);
+        if (selectedCard.rarity === "ultimate") {
+          await incrementMission(username, "draw_legendary_card");
+        }
+        // Calculate score for this card
+        const cardPoints = getScoreForRarity(selectedCard.rarity);
+        totalScoreToAdd += cardPoints;
+        // Add card to user's collection
+        const today = new Date().toISOString().split("T")[0];
+        const { data: existingCard, error: existingCardError } = await supabase
+          .from("user_cards")
+          .select("*")
+          .eq("user_id", username)
+          .eq("card_id", selectedCard.id)
+          .eq("level", 1)
+          .single();
+        if (existingCardError && existingCardError.code !== "PGRST116") {
+          console.error("Error checking existing card:", existingCardError);
+        }
+        if (existingCard) {
+          const newQuantity = (existingCard.quantity || 0) + 1;
+          const { error: updateCardError } = await supabase
+            .from("user_cards")
+            .update({ quantity: newQuantity })
+            .eq("id", existingCard.id)
+            .eq("level", 1);
+          if (updateCardError) {
+            console.error("Error updating card quantity:", updateCardError);
+          }
+        } else {
+          const { data: insertedCard, error: insertCardError } = await supabase
+            .from("user_cards")
+            .insert({
+              user_id: username,
+              card_id: selectedCard.id,
+              quantity: 1,
+              level: 1,
+              favorite: false,
+              obtained_at: today,
+            })
+            .select();
+          if (insertCardError) {
+            console.error("Error adding card to collection:", insertCardError);
+          }
+        }
+        continue;
       }
 
       if (isLegendary) {
-        // Legendary pack rarity distribution
-        let legendaryChance = 15
-
-        // Lucky Star bonus: +2% legendary chance
-        if (userClanRole === "lucky_star" || userClanRole === "leader") {
-          legendaryChance += 2
-        }
-
-         // Calculate thresholds
-        const commonThreshold = 10;              // 0–9 → 10%
-        const rareThreshold = 50;                // 10–49 → 40%
-        const epicThreshold = 100 - legendaryChance; // 50–(85 or 83) → Remaining for epic
-
-        if (random < commonThreshold) {
-          rarity = "common";
-          cardPool = commonCards;
-        } else if (random < rareThreshold) {
-          rarity = "rare";
-          cardPool = rareCards;
-        } else if (random < epicThreshold) {
-          rarity = "epic";
-          cardPool = epicCards;
+        // Neue Draw Rates für Elite Packs (nur Backend, nicht im UI anzeigen)
+        // 75–79: 10%
+        // 80–84: 22%
+        // 85: 20%
+        // 86: 17,5%
+        // 87: 15%
+        // 88: 10,5%
+        // 89: 3%
+        // 90: 1,5%
+        // 91: 0,5%
+        // 92+: 0.000000000000000000000444444
+        let rating = 0;
+        if (random < 10) {
+          rating = Math.floor(Math.random() * 5) + 75; // 75–79
+        } else if (random < 10 + 22) {
+          rating = Math.floor(Math.random() * 5) + 80; // 80–84
+        } else if (random < 10 + 22 + 20) {
+          rating = 85;
+        } else if (random < 10 + 22 + 20 + 17.5) {
+          rating = 86;
+        } else if (random < 10 + 22 + 20 + 17.5 + 15) {
+          rating = 87;
+        } else if (random < 10 + 22 + 20 + 17.5 + 15 + 10.5) {
+          rating = 88;
+        } else if (random < 10 + 22 + 20 + 17.5 + 15 + 10.5 + 3) {
+          rating = 89;
+        } else if (random < 10 + 22 + 20 + 17.5 + 15 + 10.5 + 3 + 1.5) {
+          rating = 90;
+        } else if (random < 10 + 22 + 20 + 17.5 + 15 + 10.5 + 3 + 1.5 + 0.5) {
+          rating = 91;
         } else {
-          rarity = "legendary";
-          cardPool = legendaryCards;
+          rating = 92;
         }
+        // Filter cards nach overall_rating
+        let cardPool = availableCards.filter(card => card.overall_rating == rating);
+        // Fallback falls keine Karte mit rating vorhanden
+        if (!cardPool || cardPool.length === 0) {
+          cardPool = epicCards.length > 0 ? epicCards : availableCards;
+        }
+        rarity = cardPool[0]?.rarity || "elite";
+        const selectedCard = cardPool[Math.floor(Math.random() * cardPool.length)];
+        drawnCards.push(selectedCard);
+        if (selectedCard.rarity === "ultimate") {
+          await incrementMission(username, "draw_legendary_card");
+        }
+        // Calculate score for this card
+        const cardPoints = getScoreForRarity(selectedCard.rarity);
+        totalScoreToAdd += cardPoints;
+        // Add card to user's collection
+        const today = new Date().toISOString().split("T")[0];
+        const { data: existingCard, error: existingCardError } = await supabase
+          .from("user_cards")
+          .select("*")
+          .eq("user_id", username)
+          .eq("card_id", selectedCard.id)
+          .eq("level", 1)
+          .single();
+        if (existingCardError && existingCardError.code !== "PGRST116") {
+          console.error("Error checking existing card:", existingCardError);
+        }
+        if (existingCard) {
+          const newQuantity = (existingCard.quantity || 0) + 1;
+          const { error: updateCardError } = await supabase
+            .from("user_cards")
+            .update({ quantity: newQuantity })
+            .eq("id", existingCard.id)
+            .eq("level", 1);
+          if (updateCardError) {
+            console.error("Error updating card quantity:", updateCardError);
+          }
+        } else {
+          const { data: insertedCard, error: insertCardError } = await supabase
+            .from("user_cards")
+            .insert({
+              user_id: username,
+              card_id: selectedCard.id,
+              quantity: 1,
+              level: 1,
+              favorite: false,
+              obtained_at: today,
+            })
+            .select();
+          if (insertCardError) {
+            console.error("Error adding card to collection:", insertCardError);
+          }
+        }
+        continue;
       } else if (isIcon) {
-        // ICON pack rarity distribution (15% better than legendary)
-        let legendaryChance = 30
-
-        // Lucky Star bonus: +2% legendary chance
-        if (userClanRole === "lucky_star" || userClanRole === "leader") {
-          legendaryChance += 2
-        }
-
-        // Calculate thresholds
-        const commonThreshold = 2;               // 0–1 → 2%
-        const rareThreshold = 32;                // 2–31 → 30%
-        const epicThreshold = 100 - legendaryChance; // 32–(68 or 66) → Remaining for epic
-
-        if (random < commonThreshold) {
-          rarity = "common";
-          cardPool = commonCards;
-        } else if (random < rareThreshold) {
-          rarity = "rare";
-          cardPool = rareCards;
-        } else if (random < epicThreshold) {
-          rarity = "epic";
-          cardPool = epicCards;
+        // Neue Draw Rates für Icon Packs (nur Backend, nicht im UI anzeigen)
+        // 75–78: 5%
+        // 79–84: 17%
+        // 85: 22%
+        // 86: 19%
+        // 87: 16,5%
+        // 88: 10,5%
+        // 89: 5%
+        // 90: 2,5%
+        // 91: 1,5%
+        // 92+: 0.000000000000000000000444444
+        let rating = 0;
+        if (random < 5) {
+          rating = Math.floor(Math.random() * 4) + 75; // 75–78
+        } else if (random < 5 + 17) {
+          rating = Math.floor(Math.random() * 6) + 79; // 79–84
+        } else if (random < 5 + 17 + 22) {
+          rating = 85;
+        } else if (random < 5 + 17 + 22 + 19) {
+          rating = 86;
+        } else if (random < 5 + 17 + 22 + 19 + 16.5) {
+          rating = 87;
+        } else if (random < 5 + 17 + 22 + 19 + 16.5 + 10.5) {
+          rating = 88;
+        } else if (random < 5 + 17 + 22 + 19 + 16.5 + 10.5 + 5) {
+          rating = 89;
+        } else if (random < 5 + 17 + 22 + 19 + 16.5 + 10.5 + 5 + 2.5) {
+          rating = 90;
+        } else if (random < 5 + 17 + 22 + 19 + 16.5 + 10.5 + 5 + 2.5 + 1.5) {
+          rating = 91;
         } else {
-          rarity = "legendary";
-          cardPool = legendaryCards;
+          rating = 92;
         }
+        // Filter cards nach overall_rating
+        let cardPool = availableCards.filter(card => card.overall_rating == rating);
+        // Fallback falls keine Karte mit rating vorhanden
+        if (!cardPool || cardPool.length === 0) {
+          cardPool = epicCards.length > 0 ? epicCards : availableCards;
+        }
+        rarity = cardPool[0]?.rarity || "elite";
+        const selectedCard = cardPool[Math.floor(Math.random() * cardPool.length)];
+        drawnCards.push(selectedCard);
+        if (selectedCard.rarity === "ultimate") {
+          await incrementMission(username, "draw_legendary_card");
+        }
+        // Calculate score for this card
+        const cardPoints = getScoreForRarity(selectedCard.rarity);
+        totalScoreToAdd += cardPoints;
+        // Add card to user's collection
+        const today = new Date().toISOString().split("T")[0];
+        const { data: existingCard, error: existingCardError } = await supabase
+          .from("user_cards")
+          .select("*")
+          .eq("user_id", username)
+          .eq("card_id", selectedCard.id)
+          .eq("level", 1)
+          .single();
+        if (existingCardError && existingCardError.code !== "PGRST116") {
+          console.error("Error checking existing card:", existingCardError);
+        }
+        if (existingCard) {
+          const newQuantity = (existingCard.quantity || 0) + 1;
+          const { error: updateCardError } = await supabase
+            .from("user_cards")
+            .update({ quantity: newQuantity })
+            .eq("id", existingCard.id)
+            .eq("level", 1);
+          if (updateCardError) {
+            console.error("Error updating card quantity:", updateCardError);
+          }
+        } else {
+          const { data: insertedCard, error: insertCardError } = await supabase
+            .from("user_cards")
+            .insert({
+              user_id: username,
+              card_id: selectedCard.id,
+              quantity: 1,
+              level: 1,
+              favorite: false,
+              obtained_at: today,
+            })
+            .select();
+          if (insertCardError) {
+            console.error("Error adding card to collection:", insertCardError);
+          }
+        }
+        continue;
       } else if (hasPremium) {
         // Premium user regular pack with Lucky Star bonus
         let legendaryChance = 5
@@ -365,16 +576,16 @@ export async function drawCards(username: string, packType: string, count = 1) {
         }
 
         if (random < 35) {
-          rarity = "common"
+          rarity = "basic"
           cardPool = commonCards
         } else if (random < 75) {
           rarity = "rare"
           cardPool = rareCards
         } else if (random < 95 + (legendaryChance - 5)) {
-          rarity = "epic"
+          rarity = "elite"
           cardPool = epicCards
         } else {
-          rarity = "legendary"
+          rarity = "ultimate"
           cardPool = legendaryCards
         }
       } else {
@@ -385,23 +596,23 @@ export async function drawCards(username: string, packType: string, count = 1) {
         }
 
         if (random < 50) {
-          rarity = "common"
+          rarity = "basic"
           cardPool = commonCards
         } else if (random < 84) {
           rarity = "rare"
           cardPool = rareCards
         } else if (random < 98 + (legendaryChance - 2)) {
-          rarity = "epic"
+          rarity = "elite"
           cardPool = epicCards
         } else {
-          rarity = "legendary"
+          rarity = "ultimate"
           cardPool = legendaryCards
         }
       }
 
       // If no cards of the selected rarity, fall back to common
       if (!cardPool || cardPool.length === 0) {
-        rarity = "common"
+        rarity = "basic"
         cardPool = commonCards.length > 0 ? commonCards : availableCards
       }
 
@@ -409,7 +620,7 @@ export async function drawCards(username: string, packType: string, count = 1) {
       const selectedCard = cardPool[Math.floor(Math.random() * cardPool.length)]
       drawnCards.push(selectedCard)
 
-      if (selectedCard.rarity === "legendary") {
+      if (selectedCard.rarity === "ultimate") {
         await incrementMission(username, "draw_legendary_card")
       }
 
@@ -590,7 +801,7 @@ if (!clanError && clanData) {
       success: true,
       drawnCards,
       newTicketCount: !isLegendary && !isIcon ? newTicketCount : userData.tickets,
-      newLegendaryTicketCount: isLegendary ? newTicketCount : userData.legendary_tickets,
+      newEliteTicketCount: isLegendary ? newTicketCount : userData.elite_tickets,
       newIconTicketCount: isIcon ? newTicketCount : userData.icon_tickets,
       scoreAdded: totalScoreToAdd,
       newScore: updatedUser?.score || newScore,

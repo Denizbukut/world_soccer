@@ -333,7 +333,7 @@ export default function DealOfTheDayDialog({
                       </div>
                     </div>
 
-                    {deal.regular_tickets > 0 && (
+                    {deal.regular_tickets && deal.regular_tickets > 0 && (
                       <div className="flex items-center">
                         <div className="w-9 h-9 rounded-md bg-amber-900/30 border border-amber-700/50 flex items-center justify-center mr-3">
                           <Ticket className="h-4 w-4 text-amber-400" />
@@ -345,7 +345,7 @@ export default function DealOfTheDayDialog({
                       </div>
                     )}
 
-                    {deal.legendary_tickets > 0 && (
+                    {deal.legendary_tickets && deal.legendary_tickets > 0 && (
                       <div className="flex items-center">
                         <div className="w-9 h-9 rounded-md bg-blue-900/30 border border-blue-700/50 flex items-center justify-center mr-3">
                           <Ticket className="h-4 w-4 text-blue-400" />

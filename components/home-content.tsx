@@ -1230,9 +1230,9 @@ const [copied, setCopied] = useState(false)
   </div>
 </header>
 
-        <main className="w-full">
+        <main className="w-full px-2 md:px-6"> {/* Padding hinzugefügt */}
          
-          <div className="grid grid-cols-6 gap-3">
+          <div className="grid grid-cols-6 gap-3 mt-2">
             {/* Profile */}
             <div className="col-span-3">
               {/* ...Profile Card... */}
@@ -1668,7 +1668,7 @@ const [copied, setCopied] = useState(false)
           </motion.div>
 
           {/* Quick Actions: Friends & Missions */}
-          <div className="mt-4 grid grid-cols-2 gap-3">
+          <div className="mt-4 mb-20 grid grid-cols-2 gap-3">
             <Link href="/friends" className="block w-full h-full">
               <div className="bg-white rounded-xl p-4 shadow-lg flex flex-col items-center justify-center min-h-[90px] h-full text-center hover:bg-gray-50 transition">
                 <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center mb-2">

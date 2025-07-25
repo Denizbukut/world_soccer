@@ -495,7 +495,7 @@ const [iconTickets, setIconTickets] = useState(0)
             setTickets(newTicketCount)
             setLegendaryTickets(newLegendaryTicketCount)
             setIconTickets(newIconTicketCount)
-            await updateUserTickets?.(newTicketCount, newLegendaryTicketCount, newIconTicketCount)
+            await updateUserTickets?.(newTicketCount, newLegendaryTicketCount)
           } else{
             fetchGodPacksLeft()
           }
@@ -989,7 +989,7 @@ const [iconTickets, setIconTickets] = useState(0)
                             </div>
                             <div className="mt-2 text-sm text-blue-600 font-medium flex items-center justify-center gap-1">
                               <Ticket className="h-4 w-4 text-blue-500" />
-                              Get +3 free Ultimate Tickets
+                              Get +3 free ICON Tickets
                             </div>
                           </div>
                         ) : activeTab === "legendary" ? (
@@ -1013,23 +1013,7 @@ const [iconTickets, setIconTickets] = useState(0)
                               </div>
                             </div>
                             {/* Detaillierte Draw Rate Tabelle */}
-                            <div className="mt-3">
-                              <div className="text-xs font-semibold text-blue-900 mb-1">Detailed Draw Rates:</div>
-                              <table className="w-full text-xs text-left">
-                                <tbody>
-                                  <tr><td className="pr-2">75–79</td><td>10&nbsp;%</td></tr>
-                                  <tr><td>80–84</td><td>22&nbsp;%</td></tr>
-                                  <tr><td>85</td><td>20&nbsp;%</td></tr>
-                                  <tr><td>86</td><td>17&nbsp;%</td></tr>
-                                  <tr><td>87</td><td>15&nbsp;%</td></tr>
-                                  <tr><td>88</td><td>10,5&nbsp;%</td></tr>
-                                  <tr><td>89</td><td>3&nbsp;%</td></tr>
-                                  <tr><td>90</td><td>1,5&nbsp;%</td></tr>
-                                  <tr><td>91</td><td>0,5&nbsp;%</td></tr>
-                                  <tr><td>92+</td><td>0.000000000000000000000444444&nbsp;%</td></tr>
-                                </tbody>
-                              </table>
-                            </div>
+                            
                           </div>
                         ) : activeTab === "icon" ? (
                           <div className="border border-gray-200 rounded-lg p-3 relative">

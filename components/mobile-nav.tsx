@@ -5,7 +5,7 @@ import type React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { Home, CreditCard, Package, Repeat, ShoppingCart, Coins } from "lucide-react"
+import { Home, CreditCard, Package, Repeat, ShoppingCart, Trophy } from "lucide-react"
 import { motion } from "framer-motion"
 
 export default function MobileNav() {
@@ -16,7 +16,7 @@ export default function MobileNav() {
       <div className="flex items-center justify-around h-16 max-w-lg mx-auto px-4">
         <NavItem href="/" icon={<Home />} label="Home" isActive={pathname === "/"} />
         <NavItem href="/draw" icon={<Package />} label="Draw" isActive={pathname === "/draw"} />
-        <NavItem href="/ani" icon={<Coins />} label="$ANIME" isActive={pathname === "/ani"} />
+        <NavItem href="/ani" icon={<Trophy className="h-5 w-5" />} label="Kick Off" isActive={pathname === "/ani"} />
         <NavItem href="/collection" icon={<CreditCard />} label="Collection" isActive={pathname === "/collection"} />
         <NavItem href="/trade" icon={<Repeat />} label="Trade" isActive={pathname === "/trade"} />
       </div>

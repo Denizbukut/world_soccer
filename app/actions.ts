@@ -1049,61 +1049,63 @@ export async function drawGodPacks(username: string, count = 1) {
 
     const drawCount = Math.min(count, remaining)
 
-    // Fetch available cards (including godlike)
+    // Fetch available cards (including goat/godlike)
     const { data: cards } = await supabase
       .from("cards")
       .select("*")
       .eq("obtainable", true)
-      .eq("epoch", 2)
-
-    const epic = cards?.filter((c) => c.rarity === "epic") || []
-    const legendary = cards?.filter((c) => c.rarity === "legendary") || []
-    const godlike = cards?.filter((c) => c.rarity === "godlike") || []
-
+    // Ziehe nur aus goat/godlike/elite/ultimate Karten mit overall_rating >= 84
+    const goatCards = (cards || []).filter((c) => {
+      const r = c.rarity;
+      const rating = Number(c.overall_rating);
+      return (
+        (r === "goat" || r === "godlike" || r === "elite" || r === "ultimate") && rating >= 84
+      );
+    });
     const drawnCards = []
     let totalScoreToAdd = 0
-
-    // Dynamische Wahrscheinlichkeiten je 10 Godpacks → +0.25% godlike, -0.25% epic
-    const godlikeBase = 1
-    const legendaryBase = 48
-    const epicBase = 51
-
-    const godlikeBonus = Math.floor(alreadyOpened / 10) * 0.25
-    const epicPenalty = godlikeBonus // genau gegenläufig
-
-    let godlikeChance = godlikeBase + godlikeBonus
-    let epicChance = epicBase - epicPenalty
-    let legendaryChance = 100 - godlikeChance - epicChance
-
-    // Sicherheitsgrenzen
-    if (epicChance < 0) {
-      epicChance = 0
-      legendaryChance = 100 - godlikeChance
-    }
-
-    for (let i = 0; i < drawCount; i++) {
-      const rand = Math.random() * 100
-      let pool: any[] = []
-
-      if (rand < godlikeChance) {
-        pool = godlike
-      } else if (rand < godlikeChance + legendaryChance) {
-        pool = legendary
-      } else {
-        pool = epic
+    // Draw-Rate-Definition
+    const drawRates = [
+      { rating: 84, chance: 9 },
+      { rating: 85, chance: 11 },
+      { rating: 86, chance: 13 },
+      { rating: 87, chance: 15 },
+      { rating: 88, chance: 17 },
+      { rating: 89, chance: 14 },
+      { rating: 90, chance: 11 },
+      { rating: 91, chance: 8 },
+      { rating: 92, chance: 0.75 },
+      { rating: 93, chance: 0.475 },
+      { rating: 94, chance: 0.0475 },
+      { rating: 95, chance: 0.12 },
+      { rating: 96, chance: 0.09 },
+      { rating: 97, chance: 0.07 },
+      { rating: 98, chance: 0.05 },
+      { rating: 99, chance: 0.02 },
+    ]
+    // Summierte Wahrscheinlichkeiten für die Ziehung
+    const totalChance = drawRates.reduce((sum, r) => sum + r.chance, 0)
+    for (let i = 0; i < count; i++) {
+      const rand = Math.random() * totalChance
+      let acc = 0
+      let selectedRating = 84
+      for (const entry of drawRates) {
+        acc += entry.chance
+        if (rand < acc) {
+          selectedRating = entry.rating
+          break
+        }
       }
-
-      // Falls leer, fallback auf alle Karten
-      if (!pool || pool.length === 0) pool = cards ?? []
-
-
+      // Ziehe aus goatCards mit passendem overall_rating
+      let pool = goatCards.filter(card => Number(card.overall_rating) === selectedRating)
+      if (!pool || pool.length === 0) {
+        // Fallback: Ziehe aus allen goatCards
+        pool = goatCards
+      }
       const selectedCard = pool[Math.floor(Math.random() * pool.length)]
       drawnCards.push(selectedCard)
-
-
       // Score
       totalScoreToAdd += getScoreForRarity(selectedCard.rarity)
-
       // Insert/update user_cards
       const { data: existingCard } = await supabase
         .from("user_cards")
@@ -1112,7 +1114,6 @@ export async function drawGodPacks(username: string, count = 1) {
         .eq("card_id", selectedCard.id)
         .eq("level", 1)
         .single()
-
       if (existingCard) {
         await supabase
           .from("user_cards")

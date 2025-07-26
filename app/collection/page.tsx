@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input"
 import { renderStars } from "@/utils/card-stars"
 import { LevelSystemInfoDialog } from "@/components/level-system-info-dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import Image from "next/image";
 
 export default function CollectionPage() {
   const { user } = useAuth()
@@ -28,6 +29,16 @@ export default function CollectionPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedEpoch, setSelectedEpoch] = useState<number | "all">("all")
   const [availableEpochs, setAvailableEpochs] = useState<number[]>([])
+  const [showSquad, setShowSquad] = useState(false);
+  // Squad-Positions-State
+  const initialSquad: Record<string, any> = {
+    GK: null,
+    DF1: null, DF2: null, DF3: null, DF4: null,
+    MF1: null, MF2: null, MF3: null, MF4: null,
+    FW1: null, FW2: null,
+  };
+  const [squad, setSquad] = useState<Record<string, any>>(initialSquad);
+  const [selectingPosition, setSelectingPosition] = useState<string | null>(null); // z.B. 'DF2'
 
   // Fetch user's cards
   useEffect(() => {
@@ -105,6 +116,7 @@ export default function CollectionPage() {
               quantity: userCard.quantity,
               level: userCard.level || 1,
               ...details,
+              imageUrl: details.image_url, // <-- wichtig für CardItem
             }
           })
           .filter(Boolean)
@@ -231,16 +243,129 @@ export default function CollectionPage() {
     )
   }
 
+  if (showSquad) {
+    // Karten nach Level sortieren (höchster zuerst)
+    const sortedUserCards = [...userCards].sort((a, b) => (b.level || 1) - (a.level || 1));
+    // My Squad Ansicht
+    return (
+      <div
+        className="relative min-h-screen w-full flex flex-col items-center justify-center overflow-hidden bg-black"
+        style={{ backgroundImage: 'url(/fußballpaltz.jpg)', backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }}
+      >
+        {/* Header */}
+        <header className="sticky top-0 z-30 backdrop-blur-md bg-white/90 border-b border-gray-100 shadow-sm w-full">
+          <div className="w-full max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
+            <h1 className="text-lg font-bold tracking-tight bg-gradient-to-r from-green-400 to-green-700 bg-clip-text text-transparent drop-shadow-md">
+              4-4-2
+            </h1>
+            <button onClick={() => setShowSquad(false)} className="text-sm text-gray-600 underline">Back</button>
+          </div>
+        </header>
+        {/* Spielfeld und Formation */}
+        <div className="relative w-full max-w-md mx-auto flex-1 flex flex-col items-center justify-center py-8">
+          {/* 1 Torwart */}
+          <div className="flex justify-center mb-6">
+            <div
+              className="w-16 h-24 bg-white/40 rounded-lg border-2 border-yellow-400 flex items-center justify-center shadow-lg cursor-pointer overflow-hidden"
+              onClick={() => setSelectingPosition('GK')}
+            >
+              {squad.GK ? (
+                <CardItem {...squad.GK} compact owned={true} hideOverlay={true} />
+              ) : 'GK'}
+            </div>
+          </div>
+          {/* 4 Verteidiger */}
+          <div className="flex justify-between mb-6 w-4/5 mx-auto">
+            {[1,2,3,4].map(i => (
+              <div
+                key={i}
+                className="w-16 h-24 bg-white/40 rounded-lg border-2 border-blue-400 flex items-center justify-center shadow-lg cursor-pointer overflow-hidden"
+                onClick={() => setSelectingPosition(`DF${i}`)}
+              >
+                {squad[`DF${i}`] ? (
+                  <CardItem {...squad[`DF${i}`]} compact owned={true} hideOverlay={true} />
+                ) : 'DF'}
+              </div>
+            ))}
+          </div>
+          {/* 4 Mittelfeld */}
+          <div className="flex justify-between mb-6 w-4/5 mx-auto">
+            {[1,2,3,4].map(i => (
+              <div
+                key={i}
+                className="w-16 h-24 bg-white/40 rounded-lg border-2 border-green-400 flex items-center justify-center shadow-lg cursor-pointer overflow-hidden"
+                onClick={() => setSelectingPosition(`MF${i}`)}
+              >
+                {squad[`MF${i}`] ? (
+                  <CardItem {...squad[`MF${i}`]} compact owned={true} hideOverlay={true} />
+                ) : 'MF'}
+              </div>
+            ))}
+          </div>
+          {/* 2 Stürmer */}
+          <div className="flex justify-center mb-6">
+            {[1,2].map(i => (
+              <div
+                key={i}
+                className="w-16 h-24 bg-white/40 rounded-lg border-2 border-red-400 flex items-center justify-center shadow-lg mx-4 cursor-pointer overflow-hidden"
+                onClick={() => setSelectingPosition(`FW${i}`)}
+              >
+                {squad[`FW${i}`] ? (
+                  <CardItem {...squad[`FW${i}`]} compact owned={true} hideOverlay={true} />
+                ) : 'FW'}
+              </div>
+            ))}
+          </div>
+          {/* Platzhalter für Drag&Drop oder Kartenauswahl */}
+          <div className="mt-8 text-white text-center">Hier kannst du später deine Karten in die Formation ziehen oder auswählen.</div>
+
+          {/* Auswahlmenü für Karten */}
+          {selectingPosition && (
+            <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+              <div className="bg-white rounded-xl p-6 max-w-xs w-full shadow-lg">
+                <h2 className="text-lg font-bold mb-4">Karte für {selectingPosition} wählen</h2>
+                <div className="max-h-64 overflow-y-auto space-y-2">
+                  {sortedUserCards.map(card => (
+                    <button
+                      key={card.cardId}
+                      className="w-full flex items-center gap-2 text-left px-3 py-2 rounded hover:bg-green-100 border border-gray-200 mb-1"
+                      onClick={() => {
+                        setSquad(prev => ({ ...prev, [selectingPosition]: card }));
+                        setSelectingPosition(null);
+                      }}
+                    >
+                      <div className="w-10 h-14 flex-shrink-0 overflow-hidden rounded">
+                        {card ? <CardItem {...card} compact /> : null}
+                      </div>
+                      <span className="flex-1">{card.name} ({card.character})</span>
+                      <span className="text-xs text-gray-500">Lvl {card.level}</span>
+                    </button>
+                  ))}
+                </div>
+                <button className="mt-4 w-full py-2 bg-gray-200 rounded" onClick={() => setSelectingPosition(null)}>Abbrechen</button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Normale Collection-Ansicht
   return (
     <div className="min-h-screen bg-[#f8f9ff] pb-20">
-      {/* Header */}
-      <header className="sticky top-0 z-10 backdrop-blur-md bg-white/80 border-b border-gray-100">
-        <div className="max-w-lg mx-auto px-4 py-3">
-          <div className="flex justify-between items-center">
-            <h1 className="text-lg font-medium">My Collection</h1>
-          </div>
-        </div>
-      </header>
+      {/* Header mit My Collection und My Squad */}
+      <div className="w-full max-w-lg mx-auto px-4 py-3 flex items-center justify-between sticky top-0 z-30 bg-white/90 border-b border-gray-100 shadow-sm">
+        <h1 className="text-lg font-bold tracking-tight bg-gradient-to-r from-violet-600 to-fuchsia-600 bg-clip-text text-transparent drop-shadow-md">
+          My Collection
+        </h1>
+        <button
+          onClick={() => setShowSquad(true)}
+          className="ml-4 px-4 py-2 rounded-full bg-green-600 text-white font-semibold shadow hover:bg-green-700 transition"
+        >
+          My Squad
+        </button>
+      </div>
 
       <main className="p-4 max-w-lg mx-auto">
         {/* Collection Stats */}
@@ -428,6 +553,12 @@ export default function CollectionPage() {
       </main>
 
       <MobileNav />
+      <button
+        onClick={() => setShowSquad(true)}
+        className="mt-8 px-6 py-3 bg-green-600 text-white rounded-full font-bold shadow-lg hover:bg-green-700 transition"
+      >
+        My Squad
+      </button>
     </div>
   )
 }

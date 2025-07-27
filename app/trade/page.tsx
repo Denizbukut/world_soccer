@@ -115,6 +115,14 @@ const getCloudflareImageUrl = (imageId?: string) => {
   return `https://pub-e74caca70ffd49459342dd56ea2b67c9.r2.dev/${cleaned}`
 }
 
+// Neue Bild-URL-Logik global für alle Card-Boxen
+const getCardImageUrl = (imageUrl?: string) => {
+  if (!imageUrl) return "/placeholder.svg";
+  // Entferne /world_soccer/ am Anfang!
+  let cleaned = imageUrl.replace(/^\/?world_soccer\//, "");
+  return `https://pub-e74caca70ffd49459342dd56ea2b67c9.r2.dev/${cleaned}`;
+}
+
 export default function TradePage() {
   const { user } = useAuth()
   const [activeTab, setActiveTab] = useState("marketplace")
@@ -598,12 +606,17 @@ export default function TradePage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-[#f8f9ff] pb-20">
+      <div className="min-h-screen pb-20" style={{ backgroundImage: 'url(/hintergrung.png)', backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }}>
         {/* Header */}
-        <header className="sticky top-0 z-10 backdrop-blur-md bg-white/80 border-b border-gray-100">
+        <header className="sticky top-0 z-10 bg-gradient-to-b from-black/90 to-black/60 border-b border-yellow-400">
           <div className="max-w-lg mx-auto px-4 py-3">
             <div className="flex justify-between items-center">
-              <h1 className="text-lg font-medium">Trade Center</h1>
+              <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+                <span className="inline-block bg-gradient-to-r from-yellow-400 to-yellow-600 text-black px-2 py-1 rounded mr-2">
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="10" fill="#FFD700"/></svg>
+                </span>
+                Transfer Market
+              </h1>
               <div className="flex items-center gap-2">
                 <div className="relative w-12 h-12">
                   <svg className="transform -rotate-90" width="48" height="48">
@@ -612,7 +625,7 @@ export default function TradePage() {
                       cx="24"
                       cy="24"
                       r="18"
-                      stroke={soldCount === 3 ? "#EF4444" : "#6366F1"}
+                      stroke={soldCount === 3 ? "#FFD700" : "#FFD700"}
                       strokeWidth="4"
                       strokeDasharray={2 * Math.PI * 18}
                       strokeDashoffset={2 * Math.PI * 18 - Math.min((soldCount || 0) / 3, 1) * 2 * Math.PI * 18}
@@ -620,14 +633,14 @@ export default function TradePage() {
                       fill="transparent"
                     />
                   </svg>
-                  <div className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-gray-700">
+                  <div className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-yellow-400">
                     {soldCount}/3
                   </div>
                 </div>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="w-6 h-6 p-0 text-gray-400 hover:text-gray-600"
+                  className="w-6 h-6 p-0 text-yellow-400 hover:text-yellow-500"
                   onClick={() => setShowSellLimitInfo(true)}
                 >
                   <AlertCircle className="h-4 w-4" />
@@ -660,26 +673,23 @@ export default function TradePage() {
 
         <main className="p-4 max-w-lg mx-auto">
           <Tabs defaultValue="marketplace" className="w-full" onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-3 bg-white h-12 p-1 mb-4">
-              <TabsTrigger value="marketplace" className="h-10">
+            <TabsList className="grid w-full grid-cols-3 bg-black/80 border border-yellow-400 rounded-lg h-12 p-1 mb-4">
+              <TabsTrigger value="marketplace" className="h-10 text-yellow-400 font-bold">
                 <div className="flex items-center justify-center gap-2">
                   <Users className="h-4 w-4" />
-                  <span className="hidden sm:inline">Market</span>
-                  <span className="sm:hidden">Market</span>
+                  <span>Market</span>
                 </div>
               </TabsTrigger>
-              <TabsTrigger value="sell" className="h-10">
+              <TabsTrigger value="sell" className="h-10 text-yellow-400 font-bold">
                 <div className="flex items-center justify-center gap-2">
                   <ShoppingBag className="h-4 w-4" />
-                  <span className="hidden sm:inline">Sell</span>
-                  <span className="sm:hidden">Sell</span>
+                  <span>List</span>
                 </div>
               </TabsTrigger>
-              <TabsTrigger value="sales-history" className="h-10">
+              <TabsTrigger value="sales-history" className="h-10 text-yellow-400 font-bold">
                 <div className="flex items-center justify-center gap-2">
                   <History className="h-4 w-4" />
-                  <span className="hidden sm:inline">Sales History</span>
-                  <span className="sm:hidden">History</span>
+                  <span>Transfer History</span>
                 </div>
               </TabsTrigger>
             </TabsList>
@@ -688,42 +698,42 @@ export default function TradePage() {
             <TabsContent value="marketplace">
               <div className="space-y-4">
                 {/* Search and Filter */}
-                <div className="bg-white rounded-xl p-3 shadow-sm">
+                <div className="bg-black/70 rounded-xl p-3 shadow-sm border border-yellow-400 mb-4">
                   <div className="flex gap-2 mb-3">
                     <div className="relative flex-1">
-                      <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
+                      <Search className="absolute left-2 top-2.5 h-4 w-4 text-yellow-400" />
                       <Input
                         placeholder="Search cards or sellers..."
-                        className="pl-8"
+                        className="pl-8 bg-black/80 text-white border border-yellow-400 placeholder-yellow-300 focus:ring-yellow-400"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                       />
                     </div>
                     <Select value={rarityFilter} onValueChange={setRarityFilter}>
-                      <SelectTrigger className="w-[130px]">
-                        <Filter className="h-4 w-4 mr-2" />
+                      <SelectTrigger className="w-[130px] bg-black/80 text-yellow-300 border border-yellow-400">
+                        <Filter className="h-4 w-4 mr-2 text-yellow-400" />
                         <SelectValue placeholder="Rarity" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-black/90 text-yellow-300 border border-yellow-400">
                         <SelectItem value="all">All Rarities</SelectItem>
-                        <SelectItem value="common">Common</SelectItem>
+                        <SelectItem value="common">Basic</SelectItem>
                         <SelectItem value="rare">Rare</SelectItem>
-                        <SelectItem value="epic">Epic</SelectItem>
+                        <SelectItem value="epic">Elite</SelectItem>
                         <SelectItem value="legendary">Legendary</SelectItem>
-                        <SelectItem value="godlike">Godlike</SelectItem>
+                        <SelectItem value="goat">GOAT</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="flex justify-between items-center">
-                    <div className="text-sm text-gray-500">
+                    <div className="text-sm text-yellow-200">
                       {marketPagination.total} {marketPagination.total === 1 ? "card" : "cards"} available
                     </div>
                     <Select value={sortOption} onValueChange={setSortOption}>
-                      <SelectTrigger className="w-[130px] h-8 text-xs">
-                        <ArrowUpDown className="h-3 w-3 mr-1" />
+                      <SelectTrigger className="w-[130px] h-8 text-xs bg-black/80 text-yellow-300 border border-yellow-400">
+                        <ArrowUpDown className="h-3 w-3 mr-1 text-yellow-400" />
                         <SelectValue placeholder="Sort by" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-black/90 text-yellow-300 border border-yellow-400">
                         <SelectItem value="newest">Newest First</SelectItem>
                         <SelectItem value="oldest">Oldest First</SelectItem>
                         <SelectItem value="price_low">Price: Low to High</SelectItem>
@@ -826,27 +836,27 @@ export default function TradePage() {
                 </div>
 
                 {/* Listing Limit Indicator */}
-                <div className="bg-white rounded-xl p-4 shadow-sm">
+                <div className="bg-black/70 rounded-xl p-4 shadow-sm border border-yellow-400 mb-4">
                   <div className="flex justify-between items-center mb-2">
                     <div className="flex items-center">
-                      <span className="font-medium">Listing Limit</span>
+                      <span className="font-medium text-yellow-200">Listing Limit</span>
                       {listingLimitReached && (
-                        <div className="ml-2 flex items-center text-red-500">
+                        <div className="ml-2 flex items-center text-red-400">
                           <AlertCircle className="h-4 w-4 mr-1" />
                           <span className="text-sm">Limit reached</span>
                         </div>
                       )}
                     </div>
-                    <span className={`font-medium ${listingLimitReached ? "text-red-500" : "text-gray-700"}`}>
+                    <span className={`font-medium ${listingLimitReached ? "text-red-400" : "text-yellow-300"}`}>
                       {listingCount}/{maxListings}
                     </span>
                   </div>
                   <Progress
                     value={(listingCount / maxListings) * 100}
-                    className={`h-2 ${listingLimitReached ? "bg-red-100" : "bg-gray-100"}`}
-                    indicatorClassName={listingLimitReached ? "bg-red-500" : "bg-violet-500"}
+                    className={`h-2 bg-yellow-900`}
+                    indicatorClassName={listingLimitReached ? "bg-red-500" : "bg-yellow-400"}
                   />
-                  <p className="text-xs text-gray-500 mt-2">
+                  <p className="text-xs text-yellow-200 mt-2">
                     {listingLimitReached
                       ? "You've reached the maximum number of cards you can list. Cancel some listings to add more."
                       : `You can list ${maxListings - listingCount} more card${maxListings - listingCount !== 1 ? "s" : ""}.`}
@@ -913,22 +923,18 @@ export default function TradePage() {
                   <div className="grid grid-cols-2 gap-2">
                     <Button
                       variant={historyType === "all" ? "default" : "outline"}
-                      className={`rounded-lg ${
-                        historyType === "all" ? "bg-gradient-to-r from-violet-500 to-fuchsia-500" : ""
-                      }`}
+                      className={`rounded-lg ${historyType === "all" ? "bg-gradient-to-r from-yellow-400 to-yellow-600 text-black border-yellow-400" : "bg-black/80 text-yellow-300 border border-yellow-400"}`}
                       onClick={() => setHistoryType("all")}
                     >
-                      <Globe className="h-4 w-4 mr-2" />
+                      <Globe className="h-4 w-4 mr-2 text-yellow-400" />
                       Market History
                     </Button>
                     <Button
                       variant={historyType === "my" ? "default" : "outline"}
-                      className={`rounded-lg ${
-                        historyType === "my" ? "bg-gradient-to-r from-violet-500 to-fuchsia-500" : ""
-                      }`}
+                      className={`rounded-lg ${historyType === "my" ? "bg-gradient-to-r from-yellow-400 to-yellow-600 text-black border-yellow-400" : "bg-black/80 text-yellow-300 border border-yellow-400"}`}
                       onClick={() => setHistoryType("my")}
                     >
-                      <User className="h-4 w-4 mr-2" />
+                      <User className="h-4 w-4 mr-2 text-yellow-400" />
                       My History
                     </Button>
                   </div>
@@ -1174,7 +1180,7 @@ export default function TradePage() {
                             src={getCloudflareImageUrl(selectedListing.card.image_url)}
                           />
                     ) : (<img
-                      src={getCloudflareImageUrl(selectedListing.card.image_url) || "/placeholder.svg"}
+                      src={getCardImageUrl(selectedListing.card.image_url) || "/placeholder.svg"}
                       alt="Card"
                       loading="lazy"
                       className="w-full h-full object-cover"
@@ -1377,85 +1383,40 @@ function MarketplaceCard({
     }).format(date)
   }
 
+  console.log('TradeCard', listing.card.image_url, listing.card.image_url);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="bg-white rounded-xl overflow-hidden shadow-sm relative"
+      onClick={() => onShowDetails()}
+      className="bg-gradient-to-br from-black/80 to-black/60 rounded-2xl shadow-lg p-4 flex items-center gap-4 mb-4 border border-yellow-400 cursor-pointer hover:scale-[1.02] transition-transform"
     >
-      <div className="p-3">
-        <div className="flex gap-3">
-          {/* Card Image */}
-          <div
-            className={`relative w-16 h-24 rounded-lg overflow-hidden border-2 ${rarityStyle.border} cursor-pointer`}
-            onClick={onShowDetails}
-          >
-            {listing.card.image_url?.endsWith(".mp4") ? (
-              <video
-                            autoPlay
-                            muted
-                            loop
-                            playsInline
-                            className="absolute inset-0 w-full h-full object-cover"
-                            src={listing.card.image_url}
-                          />
-            ) : (<img
-              src={getCloudflareImageUrl(listing.card.image_url) || "/placeholder.svg"}
-              alt="Card"
-              loading="lazy"
-              className="w-full h-full object-cover"
-            />)}
-            
-            <div className="absolute bottom-0 left-0 right-0 flex justify-center">
-              {renderStars(listing.card_level, "xs")}
-            </div>
-          </div>
-
-          {/* Card Details */}
-          <div className="flex-1">
-            <div className="flex justify-between items-start">
-              <div>
-                <h3 className="font-medium text-sm">{listing.card.name}</h3>
-                <p className="text-xs text-gray-500">{listing.card.character}</p>
-              </div>
-              <div className="flex flex-col items-end">
-                <Badge className={rarityStyle.badge}>{listing.card.rarity}</Badge>
-                <Badge variant="outline" className="mt-1 text-xs">
-                  Level {listing.card_level}
-                </Badge>
-              </div>
-            </div>
-
-            <div className="flex items-center mt-1 text-xs text-gray-500">
-              <span>
-                Seller:{" "}
-                {listing.seller_username.length > 15
-                  ? `${listing.seller_username.substring(0, 15)}...`
-                  : listing.seller_username}
-              </span>
-              {isOwnListing && <Badge className="ml-1 bg-red-500 text-[10px] h-4 px-1">My Listing</Badge>}
-            </div>
-
-            <div className="flex justify-between items-center mt-2">
-              <div className="flex items-center">
-                <span className="font-bold">{listing.price} WLD</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-400">{formatDate(listing.created_at)}</span>
-                {!isOwnListing && (
-                  <Button
-                    size="sm"
-                    onClick={onPurchase}
-                    className="h-8 rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500"
-                  >
-                    <ShoppingCart className="h-3 w-3 mr-1" />
-                    Buy
-                  </Button>
-                )}
-              </div>
-            </div>
-          </div>
+      <div className="w-16 h-24 flex-shrink-0 rounded-xl overflow-hidden bg-gray-900 flex items-center justify-center">
+        <img
+          src={getCardImageUrl(listing.card.image_url)}
+          alt="Card"
+          loading="lazy"
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute bottom-0 left-0 right-0 flex justify-center">
+          {renderStars(listing.card_level, "xs")}
+        </div>
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-lg font-bold text-white truncate">{listing.card.name}</span>
+          <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-bold bg-gray-800 text-yellow-400 uppercase">{listing.card.rarity}</span>
+          <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-bold bg-yellow-500 text-black">Level {listing.card_level}</span>
+        </div>
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-sm text-yellow-200 truncate">Seller: <span className="font-bold text-yellow-400">{listing.seller_username}</span></span>
+          {isOwnListing && <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-bold bg-red-500 text-white">My Listing</span>}
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xl font-bold text-yellow-400">{listing.price} WLD</span>
+          <span className="text-xs text-gray-300 ml-auto">{formatDate(listing.created_at)}</span>
         </div>
       </div>
     </motion.div>
@@ -1516,12 +1477,14 @@ function MyListingCard({
     }).format(date)
   }
 
+  console.log('TradeCard', listing.card.image_url, listing.card.image_url);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="bg-white rounded-xl overflow-hidden shadow-sm"
+      className="bg-gradient-to-br from-black/80 to-black/60 rounded-xl overflow-hidden shadow-sm"
     >
       <div className="p-3">
         <div className="flex gap-3">
@@ -1537,7 +1500,7 @@ function MyListingCard({
                             src={listing.card.image_url}
                           />
             ) : (<img
-              src={getCloudflareImageUrl(listing.card.image_url) || "/placeholder.svg"}
+              src={getCardImageUrl(listing.card.image_url) || "/placeholder.svg"}
               alt="Card"
               loading="lazy"
               className="w-full h-full object-cover"
@@ -1656,7 +1619,7 @@ function TransactionCard({ transaction }: { transaction: Transaction }) {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="bg-white rounded-xl overflow-hidden shadow-sm"
+      className="bg-gradient-to-br from-black/80 to-black/60 rounded-xl overflow-hidden shadow-sm"
     >
       <div className="p-3">
         <div className="flex gap-3">
@@ -1672,7 +1635,7 @@ function TransactionCard({ transaction }: { transaction: Transaction }) {
                             src={transaction.card.image_url}
                           />
             ) : (<img
-              src={getCloudflareImageUrl(transaction.card.image_url) || "/placeholder.svg"}
+              src={getCardImageUrl(transaction.card.image_url) || "/placeholder.svg"}
               alt="Card"
               loading="lazy"
               className="w-full h-full object-cover"
@@ -1792,7 +1755,7 @@ function RecentSaleCard({ sale }: { sale: RecentSale }) {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="bg-white rounded-xl overflow-hidden shadow-sm"
+      className="bg-gradient-to-br from-black/80 to-black/60 rounded-xl overflow-hidden shadow-sm"
     >
       <div className="p-3">
         <div className="flex gap-3">
@@ -1808,7 +1771,7 @@ function RecentSaleCard({ sale }: { sale: RecentSale }) {
                             src={sale.card.image_url}
                           />
             ) : (<img
-              src={getCloudflareImageUrl(sale.card.image_url) || "/placeholder.svg"}
+              src={getCardImageUrl(sale.card.image_url) || "/placeholder.svg"}
               alt="Card"
               loading="lazy"
               className="w-full h-full object-cover"

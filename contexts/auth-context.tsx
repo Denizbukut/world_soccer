@@ -204,6 +204,8 @@ if (!isHumanVerified) {
         localStorage.setItem("animeworld_user", JSON.stringify(userData))
         setUser(userData)
         setIsAuthenticated(true)
+        // Cookie setzen (1 Jahr gültig)
+        document.cookie = `animeworld_user=${encodeURIComponent(JSON.stringify(userData))}; path=/; max-age=31536000`;
         return { success: true }
       }
 
@@ -253,7 +255,8 @@ if (!isHumanVerified) {
       localStorage.setItem("animeworld_user", JSON.stringify(newUserData))
       setUser(newUserData)
       setIsAuthenticated(true)
-
+      // Cookie setzen (1 Jahr gültig)
+      document.cookie = `animeworld_user=${encodeURIComponent(JSON.stringify(newUserData))}; path=/; max-age=31536000`;
       return { success: true }
     } catch (error) {
       console.error("Login error:", error)

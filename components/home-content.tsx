@@ -201,29 +201,30 @@ export default function Home() {
 
   const loadUserAvatar = async () => {
     if (!user?.username) return
-
     const supabase = getSupabaseBrowserClient()
     if (!supabase) return
-
     // 1. User-Daten holen (inkl. avatar_id)
     const { data: userData, error: userError } = await supabase
       .from("users")
       .select("avatar_id")
       .eq("username", user.username)
       .single()
-
-    if (userError || !userData?.avatar_id) return
-
+    if (userError || !userData?.avatar_id) {
+      console.log("[DEBUG] Fehler beim Laden avatar_id aus users:", userError, userData)
+      return
+    }
     // 2. Avatar-Daten holen
     const { data: avatarData, error: avatarError } = await supabase
       .from("avatars")
       .select("image_url")
       .eq("id", userData.avatar_id)
       .single()
-
     if (!avatarError && avatarData?.image_url) {
       setCurrentAvatarId(Number(userData.avatar_id))
       setCurrentAvatarUrl(String(avatarData.image_url))
+      console.log("[DEBUG] Avatar aus DB geladen:", userData.avatar_id, avatarData?.image_url)
+    } else {
+      console.log("[DEBUG] Avatar nicht gefunden für avatar_id:", userData.avatar_id, avatarError)
     }
   }
 
@@ -1096,6 +1097,7 @@ const [copied, setCopied] = useState(false)
         const { data: unlocked } = await supabase.from("avatars_unlocked").select("avatar_id").eq("username", user.username)
         const unlockedIds = unlocked ? unlocked.map(a => a.avatar_id) : []
         setAvatarOptions(prev => prev.map(a => unlockedIds.includes(a.id) ? { ...a, is_free: true } : a))
+        await loadUserAvatar()
       }
       setShowBuyAvatarDialog(false)
       setSelectedAvatarToBuy(null)
@@ -1145,11 +1147,20 @@ const [copied, setCopied] = useState(false)
   const wikiUrl = 'https://upload.wikimedia.org/wikipedia/commons/4/47/PNG_transparency_demonstration_1.png';
 
   // Avatar-Auswahl Callback
-  const handleAvatarSelect = (url: string) => {
+  const handleAvatarSelect = async (url: string) => {
     setAvatarUrl(url)
-    // Optional: Avatar-ID setzen, falls benötigt
     const found = avatarOptions.find(a => a.url === url)
-    if (found) setCurrentAvatarId(found.id)
+    if (found) {
+      setCurrentAvatarId(found.id)
+      const supabase = getSupabaseBrowserClient()
+      if (supabase && user?.username) {
+        const { error } = await supabase.from("users").update({ avatar_id: found.id }).eq("username", user.username)
+        // Debug: Nach dem Update avatar_id aus DB lesen
+        const { data: userData } = await supabase.from("users").select("avatar_id").eq("username", user.username).single()
+        console.log("[DEBUG] Nach Auswahl avatar_id in users:", userData?.avatar_id, "Fehler:", error)
+        await loadUserAvatar()
+      }
+    }
     setShowAvatarDialog(false)
   }
 
@@ -1294,8 +1305,9 @@ const [copied, setCopied] = useState(false)
     </div>
                   {/* Avatar Image - full size in center */}
                   <div className="w-16 h-16 rounded-full overflow-hidden relative z-10">
+                    {console.log("[DEBUG] Avatar im UI:", avatarUrl || currentAvatarUrl)}
                     <img
-                      src={avatarUrl || 'https://ani-labs.xyz/pika.jpg'}
+                      src={avatarUrl || currentAvatarUrl || 'https://ani-labs.xyz/pika.jpg'}
                       alt="Your avatar"
                       className="w-full h-full object-cover"
                     />
@@ -1545,7 +1557,10 @@ const [copied, setCopied] = useState(false)
             {/* Deals nebeneinander im Grid */}
             <div className="col-span-6 flex gap-0 w-full">
               {/* Deal of the Day */}
-              <div className="w-1/2 flex flex-col items-center bg-[#a259ff] rounded-xl p-3 h-full text-white">
+              <div
+                className="w-1/2 flex flex-col items-center bg-[#a259ff] rounded-xl p-3 h-full text-white cursor-pointer"
+                onClick={() => setShowDailyDealDialog(true)}
+              >
                 {dailyDeal ? (
                   <>
                     <div className="w-full aspect-[3/4] max-h-[160px] rounded-xl flex items-center justify-center mb-1 relative">
@@ -1581,8 +1596,65 @@ const [copied, setCopied] = useState(false)
                   <div className="flex flex-1 items-center justify-center h-full text-white/70">No Deal of the Day</div>
                 )}
               </div>
+              <Dialog open={showDailyDealDialog} onOpenChange={setShowDailyDealDialog}>
+                {dailyDeal && (
+                  <DialogContent className="bg-[#1a1333] rounded-2xl p-0 overflow-hidden max-w-[380px] w-full">
+                    <DialogTitle className="sr-only">Deal of the Day kaufen</DialogTitle>
+                    <DialogDescription className="sr-only">Kaufe den Daily Deal und erhalte die angezeigten Karten und Tickets.</DialogDescription>
+                    <div className="bg-gradient-to-b from-[#2d1a4d] to-[#1a1333] p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <span className="bg-purple-600 text-white text-xs font-bold px-3 py-1 rounded-full">Daily Deal</span>
+                        <button onClick={() => setShowDailyDealDialog(false)} className="text-white text-2xl">&times;</button>
+                      </div>
+                      <div className="flex flex-col items-center">
+                        <div className="w-40 h-56 bg-[#2d1a4d] rounded-xl flex items-center justify-center mb-2 border-2 border-purple-500 shadow-lg">
+                          <img
+                            src={getCloudflareImageUrl(dailyDeal.card_image_url || '')}
+                            alt={dailyDeal.card_name || 'Card'}
+                            className="w-full h-full object-contain"
+                            onError={e => (e.currentTarget.src = '/placeholder.svg')}
+                          />
+                        </div>
+                        <div className="text-2xl font-bold text-white mb-1">{dailyDeal.card_name}</div>
+                        <div className="text-sm text-purple-200 mb-2">{dailyDeal.card_character}</div>
+                        <div className="flex gap-2 mb-3">
+                          {Number(dailyDeal.classic_tickets || 0) > 0 && (
+                            <span className="inline-flex items-center bg-blue-100 text-blue-700 text-xs font-bold px-2 py-1 rounded-full">
+                              <Ticket className="w-4 h-4 mr-1" />+{dailyDeal.classic_tickets}
+                            </span>
+                          )}
+                          {Number(dailyDeal.elite_tickets || 0) > 0 && (
+                            <span className="inline-flex items-center bg-purple-100 text-purple-700 text-xs font-bold px-2 py-1 rounded-full">
+                              <Crown className="w-4 h-4 mr-1" />+{dailyDeal.elite_tickets}
+                            </span>
+                          )}
+                        </div>
+                        <div className="bg-[#2d1a4d] rounded-lg p-3 w-full mb-3">
+                          <div className="text-xs text-gray-300 mb-1">What's Included:</div>
+                          <div className="flex items-center gap-2">
+                            <span className="bg-gray-700 text-white px-2 py-1 rounded text-xs font-bold">★{dailyDeal.card_level}</span>
+                            <span className="text-white font-bold">{dailyDeal.card_name}</span>
+                            <span className="text-gray-400 text-xs">Level {dailyDeal.card_level} {dailyDeal.card_rarity} Card</span>
+                          </div>
+                        </div>
+                        <div className="text-lg font-bold text-purple-300 mb-4">Price: <span className="text-2xl">{dailyDeal.price} WLD</span></div>
+                        <Button
+                          className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold py-3 rounded-xl text-lg"
+                          onClick={handleBuyDailyDeal}
+                          disabled={buyingDailyDeal}
+                        >
+                          {buyingDailyDeal ? "Kaufen..." : "Buy Now"}
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                )}
+              </Dialog>
               {/* Special Deal */}
-              <div className="w-1/2 flex flex-col items-center bg-[#2ec4f1] rounded-xl p-3 h-full text-white">
+              <div
+                className="w-1/2 flex flex-col items-center bg-[#2ec4f1] rounded-xl p-3 h-full text-white cursor-pointer"
+                onClick={() => setShowSpecialDealDialog(true)}
+              >
                 {specialDeal ? (
                   <>
                     <div className="w-full aspect-[3/4] max-h-[160px] rounded-xl flex items-center justify-center mb-1 relative">
@@ -1623,6 +1695,65 @@ const [copied, setCopied] = useState(false)
                   <div className="flex flex-1 items-center justify-center h-full text-white/70">Kein Special Deal heute</div>
                 )}
               </div>
+              <Dialog open={showSpecialDealDialog} onOpenChange={setShowSpecialDealDialog}>
+                {specialDeal && (
+                  <DialogContent className="bg-[#1a1333] rounded-2xl p-0 overflow-hidden max-w-[380px] w-full">
+                    <DialogTitle className="sr-only">Special Deal kaufen</DialogTitle>
+                    <DialogDescription className="sr-only">Kaufe den Special Deal und erhalte die angezeigten Karten und Tickets.</DialogDescription>
+                    <div className="bg-gradient-to-b from-[#2d1a4d] to-[#1a1333] p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <span className="bg-blue-500 text-white text-xs font-bold px-3 py-1 rounded-full">Special Deal</span>
+                        <button onClick={() => setShowSpecialDealDialog(false)} className="text-white text-2xl">&times;</button>
+                      </div>
+                      <div className="flex flex-col items-center">
+                        <div className="w-40 h-56 bg-[#2d1a4d] rounded-xl flex items-center justify-center mb-2 border-2 border-blue-500 shadow-lg">
+                          <img
+                            src={getCloudflareImageUrl(specialDeal.card_image_url || '')}
+                            alt={specialDeal.card_name || 'Card'}
+                            className="w-full h-full object-contain"
+                            onError={e => (e.currentTarget.src = '/placeholder.svg')}
+                          />
+                        </div>
+                        <div className="text-2xl font-bold text-white mb-1">{specialDeal.card_name}</div>
+                        <div className="text-sm text-blue-200 mb-2">{specialDeal.card_character}</div>
+                        <div className="flex gap-2 mb-3">
+                          {Number(specialDeal.classic_tickets || 0) > 0 && (
+                            <span className="inline-flex items-center bg-blue-100 text-blue-700 text-xs font-bold px-2 py-1 rounded-full">
+                              <Ticket className="w-4 h-4 mr-1" />+{specialDeal.classic_tickets}
+                            </span>
+                          )}
+                          {Number(specialDeal.elite_tickets || 0) > 0 && (
+                            <span className="inline-flex items-center bg-purple-100 text-purple-700 text-xs font-bold px-2 py-1 rounded-full">
+                              <Crown className="w-4 h-4 mr-1" />+{specialDeal.elite_tickets}
+                            </span>
+                          )}
+                          {Number(specialDeal.icon_tickets || 0) > 0 && (
+                            <span className="inline-flex items-center bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-1 rounded-full">
+                              🏆 +{specialDeal.icon_tickets}
+                            </span>
+                          )}
+                        </div>
+                        <div className="bg-[#2d1a4d] rounded-lg p-3 w-full mb-3">
+                          <div className="text-xs text-gray-300 mb-1">What's Included:</div>
+                          <div className="flex items-center gap-2">
+                            <span className="bg-gray-700 text-white px-2 py-1 rounded text-xs font-bold">★{specialDeal.card_level}</span>
+                            <span className="text-white font-bold">{specialDeal.card_name}</span>
+                            <span className="text-gray-400 text-xs">Level {specialDeal.card_level} {specialDeal.card_rarity} Card</span>
+                          </div>
+                        </div>
+                        <div className="text-lg font-bold text-blue-300 mb-4">Price: <span className="text-2xl">{specialDeal.price} WLD</span></div>
+                        <Button
+                          className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold py-3 rounded-xl text-lg"
+                          onClick={handleBuySpecialDeal}
+                          disabled={buyingSpecialDeal}
+                        >
+                          {buyingSpecialDeal ? "Kaufen..." : "Buy Now"}
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                )}
+              </Dialog>
             </div>
           </div>
           {/* Daily bonus (keep below the grid) */}

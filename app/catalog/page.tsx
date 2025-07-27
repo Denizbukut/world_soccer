@@ -244,7 +244,7 @@ export default function CatalogPage() {
                       id={card.id}
                       name={card.name}
                       character={card.character}
-                      imageUrl={card.image_url}
+                      imageUrl={card.imageUrl}
                       rarity={card.rarity}
                       level={userCards[card.id]?.level || 1}
                       owned={userCards[card.id]?.owned || false}
@@ -278,7 +278,7 @@ export default function CatalogPage() {
                     id={card.id}
                     name={card.name}
                     character={card.character}
-                    imageUrl={card.image_url}
+                    imageUrl={card.imageUrl}
                     rarity={card.rarity}
                     level={userCards[card.id]?.level || 1}
                     owned={userCards[card.id]?.owned || false}

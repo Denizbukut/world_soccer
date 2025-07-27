@@ -39,6 +39,35 @@ export default function CollectionPage() {
   };
   const [squad, setSquad] = useState<Record<string, any>>(initialSquad);
   const [selectingPosition, setSelectingPosition] = useState<string | null>(null); // z.B. 'DF2'
+  const [savingSquad, setSavingSquad] = useState(false);
+
+  // Squad aus API laden, wenn My Squad geöffnet wird
+  useEffect(() => {
+    if (!showSquad || !user?.username) return;
+    async function fetchSquad() {
+      try {
+        const res = await fetch("/api/save-squad", { method: "GET", credentials: "include" });
+        const data = await res.json();
+        if (data.squad) {
+          // Die Squad-Objekte enthalten nur Card-IDs, wir müssen die Card-Objekte aus userCards zuordnen
+          const newSquad: Record<string, any> = { ...initialSquad };
+          Object.entries(data.squad).forEach(([slot, cardId]) => {
+            if (cardId) {
+              const cardObj = userCards.find((c) => c.cardId === cardId);
+              if (cardObj) newSquad[slot] = cardObj;
+            }
+          });
+          setSquad(newSquad);
+        } else {
+          setSquad(initialSquad);
+        }
+      } catch (e) {
+        setSquad(initialSquad);
+      }
+    }
+    fetchSquad();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showSquad, user?.username, userCards]);
 
   // Fetch user's cards
   useEffect(() => {
@@ -175,8 +204,23 @@ export default function CollectionPage() {
       }
       return acc
     },
-    { total: 0, common: 0, rare: 0, epic: 0, legendary: 0, godlike: 0 },
+    { total: 0, common: 0, rare: 0, epic: 0, legendary: 0, goat: 0 },
   )
+
+  // DEV-Button: Cookie setzen, falls nicht vorhanden
+  function setDevCookie() {
+    try {
+      const userStr = localStorage.getItem("animeworld_user");
+      if (userStr) {
+        document.cookie = `animeworld_user=${encodeURIComponent(userStr)}; path=/; max-age=31536000`;
+        alert("DEV-Cookie gesetzt! Versuche jetzt, dein Team zu speichern.");
+      } else {
+        alert("Kein User im Local Storage gefunden!");
+      }
+    } catch (e) {
+      alert("Fehler beim Setzen des DEV-Cookies: " + e);
+    }
+  }
 
   if (loading) {
     return (
@@ -264,27 +308,25 @@ export default function CollectionPage() {
         {/* Spielfeld und Formation */}
         <div className="relative w-full max-w-md mx-auto flex-1 flex flex-col items-center justify-center py-8">
           {/* 1 Torwart */}
-          <div className="flex justify-center mb-6">
-            <div
-              className="w-16 h-24 bg-white/40 rounded-lg border-2 border-yellow-400 flex items-center justify-center shadow-lg cursor-pointer overflow-hidden"
-              onClick={() => setSelectingPosition('GK')}
-            >
-              {squad.GK ? (
-                <CardItem {...squad.GK} compact owned={true} hideOverlay={true} />
-              ) : 'GK'}
-            </div>
+          <div
+            className="aspect-[3/4] w-20 sm:w-24 border-2 border-yellow-400 rounded-xl overflow-hidden flex items-center justify-center cursor-pointer bg-white/10 p-0"
+            onClick={() => setSelectingPosition('GK')}
+          >
+            {squad.GK ? (
+              <CardItem {...squad.GK} compact owned={true} hideOverlay={true} hideName={true} hideQuantity={true} disableCardLink={true} onClick={() => {}} style={{ width: '100%', height: '100%' }} />
+            ) : null}
           </div>
           {/* 4 Verteidiger */}
           <div className="flex justify-between mb-6 w-4/5 mx-auto">
             {[1,2,3,4].map(i => (
               <div
                 key={i}
-                className="w-16 h-24 bg-white/40 rounded-lg border-2 border-blue-400 flex items-center justify-center shadow-lg cursor-pointer overflow-hidden"
+                className="aspect-[3/4] w-20 sm:w-24 border-2 border-blue-400 rounded-xl overflow-hidden flex items-center justify-center cursor-pointer bg-white/10 p-0"
                 onClick={() => setSelectingPosition(`DF${i}`)}
               >
                 {squad[`DF${i}`] ? (
-                  <CardItem {...squad[`DF${i}`]} compact owned={true} hideOverlay={true} />
-                ) : 'DF'}
+                  <CardItem {...squad[`DF${i}`]} compact owned={true} hideOverlay={true} hideName={true} hideQuantity={true} disableCardLink={true} onClick={() => {}} style={{ width: '100%', height: '100%' }} />
+                ) : null}
               </div>
             ))}
           </div>
@@ -293,12 +335,12 @@ export default function CollectionPage() {
             {[1,2,3,4].map(i => (
               <div
                 key={i}
-                className="w-16 h-24 bg-white/40 rounded-lg border-2 border-green-400 flex items-center justify-center shadow-lg cursor-pointer overflow-hidden"
+                className="aspect-[3/4] w-20 sm:w-24 border-2 border-green-400 rounded-xl overflow-hidden flex items-center justify-center cursor-pointer bg-white/10 p-0"
                 onClick={() => setSelectingPosition(`MF${i}`)}
               >
                 {squad[`MF${i}`] ? (
-                  <CardItem {...squad[`MF${i}`]} compact owned={true} hideOverlay={true} />
-                ) : 'MF'}
+                  <CardItem {...squad[`MF${i}`]} compact owned={true} hideOverlay={true} hideName={true} hideLevel={true} hideQuantity={true} />
+                ) : null}
               </div>
             ))}
           </div>
@@ -307,17 +349,56 @@ export default function CollectionPage() {
             {[1,2].map(i => (
               <div
                 key={i}
-                className="w-16 h-24 bg-white/40 rounded-lg border-2 border-red-400 flex items-center justify-center shadow-lg mx-4 cursor-pointer overflow-hidden"
+                className="aspect-[3/4] w-20 sm:w-24 border-2 border-red-400 rounded-xl overflow-hidden flex items-center justify-center cursor-pointer bg-white/10 p-0"
                 onClick={() => setSelectingPosition(`FW${i}`)}
               >
                 {squad[`FW${i}`] ? (
-                  <CardItem {...squad[`FW${i}`]} compact owned={true} hideOverlay={true} />
-                ) : 'FW'}
+                  <CardItem {...squad[`FW${i}`]} compact owned={true} hideOverlay={true} hideName={true} hideLevel={true} hideQuantity={true} />
+                ) : null}
               </div>
             ))}
           </div>
           {/* Platzhalter für Drag&Drop oder Kartenauswahl */}
           <div className="mt-8 text-white text-center">Hier kannst du später deine Karten in die Formation ziehen oder auswählen.</div>
+
+          {/* Save Squad Button */}
+          <button
+            className="mt-8 px-6 py-3 bg-green-600 text-white rounded-full font-bold shadow-lg hover:bg-green-700 transition disabled:opacity-60"
+            onClick={async () => {
+              setSavingSquad(true);
+              // Nur die Card-IDs speichern
+              const squadToSave: Record<string, string | null> = {};
+              Object.entries(squad).forEach(([slot, cardObj]) => {
+                squadToSave[slot] = cardObj ? cardObj.cardId : null;
+              });
+              // Validierung: Keine Karte doppelt im Team
+              const cardIds = Object.values(squadToSave).filter(Boolean);
+              const hasDuplicates = new Set(cardIds).size !== cardIds.length;
+              if (hasDuplicates) {
+                toast({ title: "Fehler", description: "Du hast dieselbe Karte mehrfach im Team!", variant: "destructive" });
+                setSavingSquad(false);
+                return;
+              }
+              console.log('Squad to save:', squadToSave);
+              const res = await fetch("/api/save-squad", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ squad: squadToSave }),
+                credentials: "include"
+              });
+              const data = await res.json();
+              setSavingSquad(false);
+              console.log("Save Squad Response:", data);
+              if (res.ok && data.success) {
+                toast({ title: "Squad gespeichert!", description: JSON.stringify(data) });
+              } else {
+                toast({ title: "Fehler", description: JSON.stringify(data), variant: "destructive" });
+              }
+            }}
+            disabled={savingSquad}
+          >
+            {savingSquad ? "Speichern..." : "Save Squad"}
+          </button>
 
           {/* Auswahlmenü für Karten */}
           {selectingPosition && (
@@ -325,23 +406,45 @@ export default function CollectionPage() {
               <div className="bg-white rounded-xl p-6 max-w-xs w-full shadow-lg">
                 <h2 className="text-lg font-bold mb-4">Karte für {selectingPosition} wählen</h2>
                 <div className="max-h-64 overflow-y-auto space-y-2">
-                  {sortedUserCards.map(card => (
-                    <button
-                      key={card.cardId}
-                      className="w-full flex items-center gap-2 text-left px-3 py-2 rounded hover:bg-green-100 border border-gray-200 mb-1"
-                      onClick={() => {
-                        setSquad(prev => ({ ...prev, [selectingPosition]: card }));
-                        setSelectingPosition(null);
-                      }}
-                    >
-                      <div className="w-10 h-14 flex-shrink-0 overflow-hidden rounded">
-                        {card ? <CardItem {...card} compact /> : null}
-                      </div>
-                      <span className="flex-1">{card.name} ({card.character})</span>
-                      <span className="text-xs text-gray-500">Lvl {card.level}</span>
-                    </button>
-                  ))}
+                  {sortedUserCards.map(card => {
+                    // Prüfen, ob die Karte schon in einer anderen Position ist
+                    const alreadyInSquad = Object.entries(squad).some(
+                      ([slot, c]) => c && c.cardId === card.cardId && slot !== selectingPosition
+                    );
+                    // Key eindeutig machen:
+                    const uniqueKey = card.cardId + '-' + selectingPosition;
+                    return (
+                      <button
+                        key={uniqueKey}
+                        className={`w-full flex items-center gap-2 text-left px-3 py-2 rounded border mb-1 ${alreadyInSquad ? 'bg-gray-100 text-gray-400 cursor-not-allowed opacity-60' : 'hover:bg-green-100 border-gray-200'}`}
+                        onClick={() => {
+                          if (alreadyInSquad) return;
+                          setSquad(prev => ({ ...prev, [selectingPosition]: card }));
+                          setSelectingPosition(null);
+                        }}
+                        disabled={alreadyInSquad}
+                      >
+                        <div className="w-10 h-14 flex-shrink-0 overflow-hidden rounded">
+                          {card ? <CardItem {...card} compact /> : null}
+                        </div>
+                        <span className="flex-1">{card.name} ({card.character})</span>
+                        <span className="flex items-center text-xs text-yellow-500 ml-2">
+                          ★ {card.level}
+                        </span>
+                        {alreadyInSquad && <span className="ml-2 text-xs text-red-400 font-semibold">Bereits im Team</span>}
+                      </button>
+                    );
+                  })}
                 </div>
+                <button
+                  className="mt-4 w-full py-2 bg-red-200 text-red-700 rounded font-bold"
+                  onClick={() => {
+                    setSquad(prev => ({ ...prev, [selectingPosition]: null }));
+                    setSelectingPosition(null);
+                  }}
+                >
+                  Karte entfernen
+                </button>
                 <button className="mt-4 w-full py-2 bg-gray-200 rounded" onClick={() => setSelectingPosition(null)}>Abbrechen</button>
               </div>
             </div>
@@ -354,6 +457,15 @@ export default function CollectionPage() {
   // Normale Collection-Ansicht
   return (
     <div className="min-h-screen bg-[#f8f9ff] pb-20">
+      {/* DEV-Button nur im Browser anzeigen */}
+      {typeof window !== "undefined" && (
+        <button
+          style={{ position: "fixed", top: 10, right: 10, zIndex: 9999, background: "#f59e42", color: "#fff", padding: "8px 16px", borderRadius: 8, fontWeight: "bold" }}
+          onClick={setDevCookie}
+        >
+          DEV: Cookie setzen
+        </button>
+      )}
       {/* Header mit My Collection und My Squad */}
       <div className="w-full max-w-lg mx-auto px-4 py-3 flex items-center justify-between sticky top-0 z-30 bg-white/90 border-b border-gray-100 shadow-sm">
         <h1 className="text-lg font-bold tracking-tight bg-gradient-to-r from-violet-600 to-fuchsia-600 bg-clip-text text-transparent drop-shadow-md">
@@ -391,11 +503,11 @@ export default function CollectionPage() {
             <div className="grid grid-cols-3 gap-2 text-center">
               {[
                 { label: "Total", value: collectionStats.total, color: "text-gray-600" },
-                { label: "Common", value: collectionStats.common, color: "text-gray-600" },
+                { label: "Basic", value: collectionStats.common, color: "text-gray-600" },
                 { label: "Rare", value: collectionStats.rare, color: "text-blue-600" },
-                { label: "Epic", value: collectionStats.epic, color: "text-purple-600" },
+                { label: "Elite", value: collectionStats.epic, color: "text-purple-600" },
                 { label: "Legend", value: collectionStats.legendary, color: "text-amber-600" },
-                { label: "Godlike", value: collectionStats.godlike, color: "text-[#b91c1c]" },
+                { label: "GOAT", value: collectionStats.goat, color: "text-[#b91c1c]" },
               ].map((stat) => (
                 <div key={stat.label} className="bg-gray-50 rounded-lg p-2">
                   <div className={`text-lg font-semibold ${stat.color}`}>{stat.value}</div>
@@ -456,20 +568,20 @@ export default function CollectionPage() {
               <TabsTrigger value="all" className="text-xs h-7">
                 All
               </TabsTrigger>
-              <TabsTrigger value="godlike" className="text-xs h-7">
-                Godlike
+              <TabsTrigger value="goat" className="text-xs h-7">
+                GOAT
               </TabsTrigger>
               <TabsTrigger value="legendary" className="text-xs h-7">
                 Legendary
               </TabsTrigger>
               <TabsTrigger value="epic" className="text-xs h-7">
-                Epic
+                Elite
               </TabsTrigger>
               <TabsTrigger value="rare" className="text-xs h-7">
                 Rare
               </TabsTrigger>
               <TabsTrigger value="common" className="text-xs h-7">
-                Common
+                Basic
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -502,29 +614,32 @@ export default function CollectionPage() {
                 transition={{ staggerChildren: 0.05 }}
               >
                 <AnimatePresence>
-                  {cardsByLevel[level].map((card) => (
-                    <motion.div
-                      key={card.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.9 }}
-                      whileHover={{ scale: 1.05 }}
-                      transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                    >
-                      <CardItem
-                        id={`${card.cardId}`}
-                        name={card.name}
-                        character={card.character}
-                        imageUrl={card.image_url}
-                        rarity={card.rarity}
-                        level={card.level || 1}
-                        quantity={card.quantity}
-                        owned={true}
-                        isCollection={true}
-                        epoch={card.epoch}
-                      />
-                    </motion.div>
-                  ))}
+                  {cardsByLevel[level].map((card) => {
+                    console.log('CollectionCard', card.imageUrl, card.image_url);
+                    return (
+                      <motion.div
+                        key={card.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.9 }}
+                        whileHover={{ scale: 1.05 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                      >
+                        <CardItem
+                          id={`${card.cardId}`}
+                          name={card.name}
+                          character={card.character}
+                          imageUrl={card.imageUrl}
+                          rarity={card.rarity}
+                          level={card.level || 1}
+                          quantity={card.quantity}
+                          owned={true}
+                          isCollection={true}
+                          epoch={card.epoch}
+                        />
+                      </motion.div>
+                    );
+                  })}
                 </AnimatePresence>
               </motion.div>
             </motion.div>

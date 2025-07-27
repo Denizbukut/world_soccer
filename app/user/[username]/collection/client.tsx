@@ -160,7 +160,7 @@ export default function UserCollectionClient({
                       id={card.card_id}
                       name={card.cardDetails?.name || "Unknown Card"}
                       character={card.cardDetails?.character || "Unknown Character"}
-                      imageUrl={card.cardDetails?.image_url}
+                      imageUrl={card.cardDetails?.imageUrl}
                       rarity={card.cardDetails?.rarity?.toLowerCase() || "common"}
                       level={card.level || 1}
                       quantity={card.quantity || 1}

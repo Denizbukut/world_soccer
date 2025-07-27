@@ -11,14 +11,11 @@ import { useRouter } from "next/navigation"
 import { useState } from "react";
 import CardDetailModal from "@/components/CardDetailModal";
 
-const getCloudflareImageUrl = (imageId?: string) => {
-  if (!imageId) return "/placeholder.svg"
-
-  // Entfernt führenden Slash und "anime-images/" Prefix
-  const cleaned = imageId.replace(/^\/?world_soccer\//, "")
-  console.log(cleaned)
-
-  return `https://pub-e74caca70ffd49459342dd56ea2b67c9.r2.dev/${cleaned}`
+const getCardImageUrl = (imageUrl?: string) => {
+  if (!imageUrl) return "/placeholder.svg";
+  // Entferne /world_soccer/ am Anfang!
+  let cleaned = imageUrl.replace(/^\/?world_soccer\//, "");
+  return `https://pub-e74caca70ffd49459342dd56ea2b67c9.r2.dev/${cleaned}`;
 }
 
 
@@ -72,10 +69,12 @@ export function CardItem({
   isContest = false,
   hideOverlay = false,
   forceEager = false,
-  // props
-disableEffect = false
-
-}: CardItemProps) {
+  disableEffect = false,
+  hideName = false,
+  hideLevel = false,
+  hideQuantity = false,
+  disableCardLink = false,
+}: CardItemProps & { hideName?: boolean; hideLevel?: boolean; hideQuantity?: boolean; disableCardLink?: boolean }) {
   if (!id) return null
 
   const rarityStyles = {
@@ -114,7 +113,7 @@ disableEffect = false
 
   const rarityStyle = rarityStyles[rarity as keyof typeof rarityStyles] || rarityStyles.basic
   const placeholderUrl = "/placeholder.svg"
-  const cardImageUrl = getCloudflareImageUrl(imageUrl)
+  const cardImageUrl = getCardImageUrl(imageUrl)
 
   const cardDetailUrl = isCollection ? `/cards/${id}-level-${level}` : `/cards/${id}`
 
@@ -140,6 +139,9 @@ const handleCardClick = () => {
 
 
   const CardWrapper = ({ children }: { children: React.ReactNode }) => {
+    if (disableCardLink) {
+      return <div className="w-full h-full select-none">{children}</div>;
+    }
     if (selectable) {
       return (
         <div
@@ -153,7 +155,6 @@ const handleCardClick = () => {
         </div>
       )
     }
-
     if (onClick) {
       return (
         <div onClick={onClick} className="cursor-pointer h-full">
@@ -161,13 +162,11 @@ const handleCardClick = () => {
         </div>
       )
     }
-
     return (
       <div onClick={handleCardClick} className="block h-full cursor-pointer">
         {children}
       </div>
     )
-
   }
 
   return (
@@ -175,13 +174,14 @@ const handleCardClick = () => {
     <CardWrapper>
       <div
         className={cn(
-          "h-full rounded-xl overflow-hidden",
-          "hover:shadow-lg transition-shadow duration-300",
+          disableCardLink
+            ? "w-full h-full overflow-hidden bg-transparent"
+            : "h-full rounded-xl overflow-hidden hover:shadow-lg transition-shadow duration-300",
           owned ? "" : "opacity-60 grayscale"
         )}
       >
-        <div className="relative aspect-[3/4] w-full overflow-hidden">
-          <div className={`w-full h-full relative rounded-xl ${isCollection || hideOverlay ? "" : rarityStyle.border}`}>
+        <div className={disableCardLink ? "w-full h-full relative" : "relative aspect-[3/4] w-full h-full overflow-hidden"}>
+          <div className={disableCardLink ? "w-full h-full relative" : `w-full h-full relative rounded-xl ${isCollection || hideOverlay ? "" : rarityStyle.border}` }>
             {cardImageUrl?.match(/\.(mp4|webm|ogg)$/i) ? (
             <video
               src={cardImageUrl}
@@ -200,12 +200,16 @@ const handleCardClick = () => {
             />
           )}
 
-
-
-
-            {(owned && quantity > 1) && (
-              <div className="absolute top-1 right-1 bg-black/70 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">
-                x{quantity}
+            {/* In My Collection: Zeige Anzahl (x{quantity}) oben rechts, sonst Stern+Level */}
+            {isCollection ? (
+              quantity > 1 && (
+                <div className="absolute top-1 right-1 bg-black/70 text-white text-xs font-bold px-2 py-1 rounded">
+                  x{quantity}
+                </div>
+              )
+            ) : (
+              <div className="absolute top-1 right-1 bg-black/70 text-yellow-400 text-xs font-bold px-2 py-1 rounded flex items-center">
+                <span className="mr-1">★</span> {level}
               </div>
             )}
 

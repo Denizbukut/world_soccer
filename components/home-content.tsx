@@ -1704,7 +1704,7 @@ const [copied, setCopied] = useState(false)
                 onClick={() => setShowSpecialDealDialog(true)}
               >
                 {/* Overlay für bessere Lesbarkeit */}
-                <div className="absolute inset-0 bg-black/30 rounded-xl"></div>
+                <div className="absolute inset-0 bg-black/10 rounded-xl"></div>
                 {/* Content über dem Overlay */}
                 <div className="relative z-10 w-full h-full flex flex-col items-center">
                 {specialDeal ? (

@@ -845,19 +845,28 @@ const [showInfo, setShowInfo] = useState(false)
   if (!isClient) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen bg-[#f8f9ff] pb-20">
-          <header className="sticky top-0 z-10 backdrop-blur-md bg-white/80 border-b border-gray-100">
+        <div 
+          className="min-h-screen pb-20"
+          style={{
+            backgroundImage: 'url(/hintergrung.png)',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+            backgroundAttachment: 'fixed'
+          }}
+        >
+          <header className="sticky top-0 z-10 backdrop-blur-md bg-black/70 border-b border-yellow-400">
             <div className="max-w-lg mx-auto px-4 py-3">
               <div className="flex justify-between items-center">
-                <h1 className="text-lg font-medium">Card Packs</h1>
+                <h1 className="text-lg font-medium text-yellow-200">Card Packs</h1>
                 <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
-                    <Ticket className="h-3.5 w-3.5 text-violet-500" />
-                    <span className="font-medium text-sm">0</span>
+                  <div className="flex items-center gap-1 bg-black/80 px-3 py-1.5 rounded-full shadow-sm border border-yellow-400">
+                    <Ticket className="h-3.5 w-3.5 text-yellow-400" />
+                    <span className="font-medium text-sm text-yellow-200">0</span>
                   </div>
-                  <div className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
-                    <Crown className="h-3.5 w-3.5 text-amber-500" />
-                    <span className="font-medium text-sm">0</span>
+                  <div className="flex items-center gap-1 bg-black/80 px-3 py-1.5 rounded-full shadow-sm border border-yellow-400">
+                    <Crown className="h-3.5 w-3.5 text-yellow-400" />
+                    <span className="font-medium text-sm text-yellow-200">0</span>
                   </div>
                 </div>
               </div>
@@ -878,24 +887,33 @@ const [showInfo, setShowInfo] = useState(false)
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-[#f8f9ff] pb-20">
+      <div 
+        className="min-h-screen pb-20"
+        style={{
+          backgroundImage: 'url(/hintergrung.png)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          backgroundAttachment: 'fixed'
+        }}
+      >
         {/* Header with tickets */}
-        <header className="sticky top-0 z-10 backdrop-blur-md bg-white/80 border-b border-gray-100">
+        <header className="sticky top-0 z-10 backdrop-blur-md bg-black/70 border-b border-yellow-400">
           <div className="max-w-lg mx-auto px-4 py-3">
             <div className="flex justify-between items-center">
-              <h1 className="text-lg font-medium">Card Packs</h1>
+              <h1 className="text-lg font-medium text-yellow-200">Card Packs</h1>
               <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
-                  <Ticket className="h-3.5 w-3.5 text-orange-500" />
-                  <span className="font-medium text-sm">{tickets}</span>
+                <div className="flex items-center gap-1 bg-black/80 px-3 py-1.5 rounded-full shadow-sm border border-yellow-400">
+                  <Ticket className="h-3.5 w-3.5 text-yellow-400" />
+                  <span className="font-medium text-sm text-yellow-200">{tickets}</span>
                 </div>
-                <div className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
-                  <Ticket className="h-3.5 w-3.5 text-purple-500" />
-                  <span className="font-medium text-sm">{eliteTickets}</span>
+                <div className="flex items-center gap-1 bg-black/80 px-3 py-1.5 rounded-full shadow-sm border border-yellow-400">
+                  <Ticket className="h-3.5 w-3.5 text-yellow-400" />
+                  <span className="font-medium text-sm text-yellow-200">{eliteTickets}</span>
                 </div>
-                <div className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
-                  <Crown className="h-3.5 w-3.5 text-indigo-500" />
-                  <span className="font-medium text-sm">{iconTickets}</span>
+                <div className="flex items-center gap-1 bg-black/80 px-3 py-1.5 rounded-full shadow-sm border border-yellow-400">
+                  <Crown className="h-3.5 w-3.5 text-yellow-400" />
+                  <span className="font-medium text-sm text-yellow-200">{iconTickets}</span>
                 </div>
               </div>
             </div>
@@ -915,13 +933,13 @@ const [showInfo, setShowInfo] = useState(false)
               >
 
                 {/* Tabs - UPDATED: Changed God tab to red gradient */}
-                <div className="grid grid-cols-4 rounded-xl overflow-hidden mb-6 border border-gray-200 bg-white">
+                <div className="grid grid-cols-4 rounded-xl overflow-hidden mb-6 border border-yellow-400 bg-black/70">
                   <button
                     onClick={() => setActiveTab("regular")}
                     className={`py-3 px-2 text-center font-medium transition-all text-xs ${
                       activeTab === "regular"
                         ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white"
-                        : "bg-white text-gray-500"
+                        : "bg-black/50 text-yellow-200"
                     }`}
                   >
                     <div className="flex items-center justify-center gap-1">
@@ -934,7 +952,7 @@ const [showInfo, setShowInfo] = useState(false)
                     className={`py-3 px-2 text-center font-medium transition-all text-xs ${
                       activeTab === "legendary"
                         ? "bg-gradient-to-r from-blue-500 to-cyan-500 text-white"
-                        : "bg-white text-gray-500"
+                        : "bg-black/50 text-yellow-200"
                     }`}
                   >
                     <div className="flex items-center justify-center gap-1">
@@ -947,7 +965,7 @@ const [showInfo, setShowInfo] = useState(false)
                     className={`py-3 px-2 text-center font-medium transition-all text-xs ${
                       activeTab === "god"
                         ? "bg-gradient-to-r from-red-500 to-red-600 text-white"
-                        : "bg-white text-gray-500"
+                        : "bg-black/50 text-yellow-200"
                     }`}
                   >
                     <div className="flex items-center justify-center gap-1">
@@ -960,7 +978,7 @@ const [showInfo, setShowInfo] = useState(false)
                     className={`py-3 px-2 text-center font-medium transition-all text-xs ${
                       activeTab === "icon"
                         ? "bg-gradient-to-r from-indigo-500 to-indigo-600 text-white"
-                        : "bg-white text-gray-500"
+                        : "bg-black/50 text-yellow-200"
                     }`}
                   >
                     <div className="flex items-center justify-center gap-1">
@@ -974,8 +992,8 @@ const [showInfo, setShowInfo] = useState(false)
                 {godPacksLeft !== null && (
                   <div className={`mb-4 text-center text-sm font-medium px-4 py-2 rounded-xl ${
                     godPacksLeft === 0
-                      ? "bg-gray-100 text-gray-600 border border-gray-300"
-                      : "bg-red-50 text-red-600 border border-red-200"
+                      ? "bg-black/70 text-yellow-200 border border-yellow-400"
+                      : "bg-black/70 text-red-400 border border-red-500"
                   }`}>
                     ⚡ God Packs opened today:{" "}
                     <span className="font-bold">{godPacksLeft}</span> / {max_godpacks_daily}
@@ -991,7 +1009,7 @@ const [showInfo, setShowInfo] = useState(false)
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ duration: 0.3 }}
-                  className="bg-white rounded-2xl overflow-hidden shadow-sm"
+                  className="bg-black/70 rounded-2xl overflow-hidden shadow-sm border border-yellow-400"
                 >
                   <div className="p-4">
                     <div className="flex flex-col items-center">
@@ -1055,11 +1073,11 @@ const [showInfo, setShowInfo] = useState(false)
                           <div className="border border-gray-200 rounded-lg p-3 relative">
                             <div className="space-y-2">
                               <div className="flex justify-between items-center text-sm">
-                                <span>Elite</span>
+                                <span className="text-purple-500">Elite</span>
                                 <span className="text-purple-500">{godPackChances.epic}%</span>
                               </div>
                               <div className="flex justify-between items-center text-sm">
-                                <span>Ultimate</span>
+                                <span className="text-amber-500">Ultimate</span>
                                 <div className="flex items-center gap-1">
                                   <span className="text-amber-500">
                                     {userClanRole === "lucky_star" || userClanRole === "leader" ? "52%" : "50%"}
@@ -1090,19 +1108,19 @@ const [showInfo, setShowInfo] = useState(false)
                             
                             <div className="space-y-2">
                               <div className="flex justify-between items-center text-sm">
-                                <span>Classic</span>
+                                <span className="text-gray-500">Classic</span>
                                 <span className="text-gray-500">{hasIconPass ? "7%" : "10%"}</span>
                               </div>
                               <div className="flex justify-between items-center text-sm">
-                                <span>Rare</span>
+                                <span className="text-blue-500">Rare</span>
                                 <span className="text-blue-500">{hasIconPass ? "35%" : "40%"}</span>
                               </div>
                               <div className="flex justify-between items-center text-sm">
-                                <span>Elite</span>
+                                <span className="text-purple-500">Elite</span>
                                 <span className="text-purple-500">{hasIconPass ? "40%" : "35%"}</span>
                               </div>
                               <div className="flex justify-between items-center text-sm">
-                                <span>Ultimate</span>
+                                <span className="text-amber-500">Ultimate</span>
                                 <span className="text-amber-500">{hasIconPass ? "18%" : "15%"}</span>
                               </div>
                             </div>
@@ -1111,19 +1129,19 @@ const [showInfo, setShowInfo] = useState(false)
                           <div className="border border-gray-200 rounded-lg p-3 relative">
                             <div className="space-y-2">
                               <div className="flex justify-between items-center text-sm">
-                                <span>Classic</span>
+                                <span className="text-gray-500">Classic</span>
                                 <span className="text-gray-500">5%</span>
                               </div>
                               <div className="flex justify-between items-center text-sm">
-                                <span>Rare</span>
+                                <span className="text-blue-500">Rare</span>
                                 <span className="text-blue-500">35%</span>
                               </div>
                               <div className="flex justify-between items-center text-sm">
-                                <span>Elite</span>
+                                <span className="text-purple-500">Elite</span>
                                 <span className="text-purple-500">40%</span>
                               </div>
                               <div className="flex justify-between items-center text-sm">
-                                <span>Ultimate</span>
+                                <span className="text-amber-500">Ultimate</span>
                                 <span className="text-amber-500">20%</span>
                               </div>
                             </div>
@@ -1138,25 +1156,25 @@ const [showInfo, setShowInfo] = useState(false)
                             )}
                             <div className="space-y-2">
                               <div className="flex justify-between items-center text-sm">
-                                <span>Classic</span>
+                                <span className="text-gray-500">Classic</span>
                                 <div className="flex items-center gap-2">
                                   <span className="text-gray-500">{hasPremiumPass ? "40%" : "50%"}</span>
                                 </div>
                               </div>
                               <div className="flex justify-between items-center text-sm">
-                                <span>Rare</span>
+                                <span className="text-blue-500">Rare</span>
                                 <div className="flex items-center gap-2">
                                   <span className="text-blue-500">{hasPremiumPass ? "36%" : "34%"}</span>
                                 </div>
                               </div>
                               <div className="flex justify-between items-center text-sm">
-                                <span>Elite</span>
+                                <span className="text-purple-500">Elite</span>
                                 <div className="flex items-center gap-2">
                                   <span className="text-purple-500">{hasPremiumPass ? "18%" : "14%"}</span>
                                 </div>
                               </div>
                               <div className="flex justify-between items-center text-sm">
-                                <span>Ultimate</span>
+                                <span className="text-amber-500">Ultimate</span>
                                 <div className="flex items-center gap-2">
                                   <span className="text-amber-500">{hasPremiumPass ? "6%" : "2%"}</span>
                                 </div>

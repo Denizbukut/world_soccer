@@ -173,7 +173,43 @@ export default function DrawPage() {
   const max_godpacks_daily = 100;
 const [godPackChances, setGodPackChances] = useState<{ godlike: number; epic: number }>({ godlike: 1, epic: 49 })
 const [showInfo, setShowInfo] = useState(false)
-const [iconTickets, setIconTickets] = useState(0)
+  const [iconTickets, setIconTickets] = useState(0)
+  const [hasIconPass, setHasIconPass] = useState(false)
+
+  // Check if user has active Icon Pass
+  useEffect(() => {
+    const checkIconPass = async () => {
+      if (!user?.username) return
+      
+      try {
+        const supabase = getSupabaseBrowserClient()
+        if (!supabase) return
+
+        const { data, error } = await supabase
+          .from('icon_passes')
+          .select('*')
+          .eq('user_id', user.username)
+          .eq('active', true)
+          .single()
+
+        console.log('Icon Pass check in draw-content:', { data, error, username: user.username })
+        
+        if (!error && data) {
+          setHasIconPass(true)
+          console.log('✅ Icon Pass is active in draw-content!')
+        } else {
+          setHasIconPass(false)
+          console.log('❌ No active Icon Pass found in draw-content')
+        }
+      } catch (error) {
+        console.error('❌ Error checking Icon Pass in draw-content:', error)
+        setHasIconPass(false)
+      }
+    }
+
+    checkIconPass()
+  }, [user?.username])
+
   const fetchGodPacksLeft = async () => {
     const supabase = getSupabaseBrowserClient()
     const today = new Date().toISOString().split("T")[0]
@@ -1045,26 +1081,31 @@ const [iconTickets, setIconTickets] = useState(0)
                           </div>
                         ) : activeTab === "legendary" ? (
                           <div className="border border-gray-200 rounded-lg p-3 relative">
+                            {/* PASS ACTIVE Badge */}
+                            {hasIconPass && (
+                              <div className="absolute -top-2 -right-2 bg-gradient-to-r from-yellow-400 to-yellow-600 text-white text-xs px-2 py-1 rounded-full font-bold z-10">
+                                PASS ACTIVE
+                              </div>
+                            )}
+                            
                             <div className="space-y-2">
                               <div className="flex justify-between items-center text-sm">
                                 <span>Classic</span>
-                                <span className="text-gray-500">10%</span>
+                                <span className="text-gray-500">{hasIconPass ? "7%" : "10%"}</span>
                               </div>
                               <div className="flex justify-between items-center text-sm">
                                 <span>Rare</span>
-                                <span className="text-blue-500">40%</span>
+                                <span className="text-blue-500">{hasIconPass ? "35%" : "40%"}</span>
                               </div>
                               <div className="flex justify-between items-center text-sm">
                                 <span>Elite</span>
-                                <span className="text-purple-500">35%</span>
+                                <span className="text-purple-500">{hasIconPass ? "40%" : "35%"}</span>
                               </div>
                               <div className="flex justify-between items-center text-sm">
                                 <span>Ultimate</span>
-                                <span className="text-amber-500">15%</span>
+                                <span className="text-amber-500">{hasIconPass ? "18%" : "15%"}</span>
                               </div>
                             </div>
-                            {/* Detaillierte Draw Rate Tabelle */}
-                            
                           </div>
                         ) : activeTab === "icon" ? (
                           <div className="border border-gray-200 rounded-lg p-3 relative">

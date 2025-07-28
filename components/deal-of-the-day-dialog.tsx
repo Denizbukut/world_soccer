@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { ShoppingBag, X, Ticket, Sparkles } from "lucide-react"
+import { ShoppingBag, X, Ticket, Sparkles, Crown } from "lucide-react"
 import Image from "next/image"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "@/components/ui/use-toast"
@@ -17,8 +17,8 @@ interface DailyDeal {
   id: number
   card_id: string
   card_level: number
-  regular_tickets?: number
-  legendary_tickets?: number
+  classic_tickets: number
+  elite_tickets: number
   price: number
   description: string
   discount_percentage: number
@@ -41,7 +41,7 @@ interface DealOfTheDayDialogProps {
   onClose: () => void
   deal: DailyDeal
   username: string
-  onPurchaseSuccess?: (newTickets: number, newLegendaryTickets: number) => void
+  onPurchaseSuccess?: (newTickets: number, newEliteTickets: number) => void
 }
 
 export default function DealOfTheDayDialog({
@@ -155,9 +155,9 @@ export default function DealOfTheDayDialog({
           if (
             onPurchaseSuccess &&
             typeof result.newTickets === "number" &&
-            typeof result.newLegendaryTickets === "number"
+            typeof result.newEliteTickets === "number"
           ) {
-            onPurchaseSuccess(result.newTickets, result.newLegendaryTickets)
+            onPurchaseSuccess(result.newTickets, result.newEliteTickets)
           }
         }, 2000)
       } else {
@@ -333,26 +333,26 @@ export default function DealOfTheDayDialog({
                       </div>
                     </div>
 
-                    {deal.regular_tickets && deal.regular_tickets > 0 && (
-                      <div className="flex items-center">
-                        <div className="w-9 h-9 rounded-md bg-amber-900/30 border border-amber-700/50 flex items-center justify-center mr-3">
-                          <Ticket className="h-4 w-4 text-amber-400" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-white">{deal.regular_tickets} Regular Tickets</p>
-                          <p className="text-xs text-gray-400">For standard card packs</p>
-                        </div>
-                      </div>
-                    )}
-
-                    {deal.legendary_tickets && deal.legendary_tickets > 0 && (
+                    {deal.classic_tickets && deal.classic_tickets > 0 && (
                       <div className="flex items-center">
                         <div className="w-9 h-9 rounded-md bg-blue-900/30 border border-blue-700/50 flex items-center justify-center mr-3">
                           <Ticket className="h-4 w-4 text-blue-400" />
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-white">{deal.legendary_tickets} Legendary Tickets</p>
-                          <p className="text-xs text-gray-400">For legendary card packs</p>
+                          <p className="text-sm font-medium text-white">{deal.classic_tickets} Classic Tickets</p>
+                          <p className="text-xs text-gray-400">For classic card packs</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {deal.elite_tickets && deal.elite_tickets > 0 && (
+                      <div className="flex items-center">
+                        <div className="w-9 h-9 rounded-md bg-purple-900/30 border border-purple-700/50 flex items-center justify-center mr-3">
+                          <Crown className="h-4 w-4 text-purple-400" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-white">{deal.elite_tickets} Elite Tickets</p>
+                          <p className="text-xs text-gray-400">For elite card packs</p>
                         </div>
                       </div>
                     )}

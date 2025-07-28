@@ -944,7 +944,7 @@ const handlePurchaseXpPass = async () => {
             <div className="relative p-4">
               <div className="flex justify-between items-start mb-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-400 to-blue-600 flex items-center justify-center relative">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-r from-orange-400 to-orange-600 flex items-center justify-center relative">
                     <Crown className="h-6 w-6 text-white" />
                     {(canClaimLegendary || unclaimedRewards > 0) && (
                       <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
@@ -956,14 +956,14 @@ const handlePurchaseXpPass = async () => {
                     <div className="flex items-center gap-2">
                       <h3 className="font-medium text-lg">Premium Pass</h3>
                       {hasPremium && (
-                        <Badge className="bg-gradient-to-r from-blue-400 to-blue-600 text-white">Active</Badge>
+                        <Badge className="bg-gradient-to-r from-orange-400 to-orange-600 text-white">Active</Badge>
                       )}
                     </div>
                     <p className="text-sm text-gray-500">
                       {hasPremium ? "Enjoy exclusive rewards and benefits!" : "Unlock exclusive rewards and benefits!"}
                     </p>
                     {hasPremium && premiumExpiryDate && (
-                      <div className="flex items-center gap-1 mt-1 text-xs text-blue-600">
+                      <div className="flex items-center gap-1 mt-1 text-xs text-orange-600">
                         <Calendar className="h-3 w-3" />
                         <span>Valid until {formatDate(premiumExpiryDate)}</span>
                       </div>
@@ -1005,7 +1005,7 @@ const handlePurchaseXpPass = async () => {
                   className="w-full flex items-center justify-between font-medium text-gray-800 mb-2"
                 >
                   <div className="flex items-center">
-                    <Sparkles className="h-4 w-4 mr-2 text-blue-500" />
+                    <Sparkles className="h-4 w-4 mr-2 text-orange-500" />
                     Premium Pass Benefits
                     {hasPremium && (
                       <div className="ml-2 bg-green-500 rounded-full p-0.5">
@@ -1014,9 +1014,9 @@ const handlePurchaseXpPass = async () => {
                     )}
                   </div>
                   {benefitsExpanded ? (
-                    <ChevronUp className="h-4 w-4 text-blue-500" />
+                    <ChevronUp className="h-4 w-4 text-orange-500" />
                   ) : (
-                    <ChevronDown className="h-4 w-4 text-blue-500" />
+                    <ChevronDown className="h-4 w-4 text-orange-500" />
                   )}
                 </button>
 
@@ -1040,7 +1040,7 @@ const handlePurchaseXpPass = async () => {
                     <div className="bg-white rounded-lg p-3 border border-gray-100">
                       <div className="flex items-center">
                         <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mr-2">
-                          <Gift className="h-3 w-3 text-blue-600" />
+                          <Gift className="h-3 w-3 text-orange-600" />
                         </div>
                         <span className="text-sm">Premium Level Rewards</span>
                       </div>
@@ -1068,7 +1068,7 @@ const handlePurchaseXpPass = async () => {
                     <div className="bg-white rounded-lg p-3 border border-gray-100">
                       <div className="flex items-center">
                         <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mr-2">
-                          <Calendar className="h-3 w-3 text-blue-600" />
+                          <Calendar className="h-3 w-3 text-orange-600" />
                         </div>
                         <span className="text-sm">14 Days Duration</span>
                       </div>
@@ -1088,7 +1088,7 @@ const handlePurchaseXpPass = async () => {
                     <Ticket className="h-4 w-4 text-blue-600" />
                   </div>
                   <div className="flex-1">
-                    <h4 className="font-medium text-sm">Daily Legend. Ticket</h4>
+                    <h4 className="font-medium text-sm">Daily Elite Ticket</h4>
                     <p className="text-xs text-gray-500">Claim 1 elite ticket every 24 hours</p>
                   </div>
                   <Button
@@ -1313,78 +1313,83 @@ const handlePurchaseXpPass = async () => {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.18, duration: 0.4 }}
-          className="bg-white rounded-2xl shadow-sm overflow-hidden mt-6"
+          className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-2xl shadow-sm overflow-hidden mt-6 border border-yellow-300"
         >
           <div className="relative p-4">
             <div className="flex justify-between items-start mb-4">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-r from-indigo-400 to-indigo-700 flex items-center justify-center relative">
-                  <Crown className="h-6 w-6 text-white" />
+                <div className="relative">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-r from-yellow-400 to-yellow-600 flex items-center justify-center relative">
+                    <Crown className="h-6 w-6 text-white animate-bounce" />
+                  </div>
+                  <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-full opacity-20 animate-pulse"></div>
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h3 className="font-medium text-lg">Icon Pass</h3>
+                    <h3 className="font-medium text-lg text-yellow-500">Icon Pass</h3>
                     {/* Hier ggf. Badge für Aktiv/Abgelaufen */}
                   </div>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-yellow-700">
                     Unlock exclusive Icon Ticket rewards and boost your Elite Pack drop rate!
                   </p>
                   {/* Laufzeit-Anzeige */}
-                  <div className="flex items-center gap-1 mt-1 text-xs text-indigo-600">
+                  <div className="flex items-center gap-1 mt-1 text-xs text-yellow-600">
                     <Clock className="h-3 w-3" />
                     <span>Valid for 7 days</span>
                   </div>
                 </div>
               </div>
               {/* Kaufen-Button oder Status */}
-              <Button className="bg-gradient-to-r from-indigo-400 to-indigo-700 hover:from-indigo-500 hover:to-indigo-800 text-white rounded-full">
-                <Crown className="h-4 w-4 mr-2" />
-                Get Icon Pass
-              </Button>
+              <Link href="/icon-pass">
+                <Button className="bg-gradient-to-r from-yellow-400 to-yellow-600 hover:from-yellow-500 hover:to-yellow-700 text-white rounded-full">
+                  <Crown className="h-4 w-4 mr-2" />
+                  Get Icon Pass
+                </Button>
+              </Link>
             </div>
             {/* Benefits */}
             <div className="space-y-3">
-              <div className="bg-white rounded-lg p-3 border border-gray-100">
+              <div className="bg-white/80 rounded-lg p-3 border border-yellow-200">
                 <div className="flex items-center">
-                  <div className="w-5 h-5 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0 mr-2">
-                    <Crown className="h-3 w-3 text-indigo-600" />
+                  <div className="w-5 h-5 rounded-full bg-yellow-100 flex items-center justify-center flex-shrink-0 mr-2">
+                    <Ticket className="h-3 w-3 text-blue-600" />
                   </div>
-                  <span className="text-sm">1 Icon Ticket per Level</span>
+                  <span className="text-sm text-yellow-800">1 Icon Ticket per Level</span>
                 </div>
-                <p className="text-xs text-gray-600 mt-2 pl-7">
+                <p className="text-xs text-yellow-700 mt-2 pl-7">
                   Get <b>1 icon ticket</b> for each <b>level up</b>
                 </p>
               </div>
-              <div className="bg-white rounded-lg p-3 border border-gray-100">
+              <div className="bg-white/80 rounded-lg p-3 border border-yellow-200">
                 <div className="flex items-center">
-                  <div className="w-5 h-5 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0 mr-2">
-                    <Crown className="h-3 w-3 text-indigo-600" />
+                  <div className="w-5 h-5 rounded-full bg-yellow-100 flex items-center justify-center flex-shrink-0 mr-2">
+                    <Ticket className="h-3 w-3 text-purple-600" />
                   </div>
-                  <span className="text-sm">5 Icon Tickets every 5 Levels</span>
+                  <span className="text-sm text-yellow-800">5 Icon Tickets every 5 Levels</span>
                 </div>
-                <p className="text-xs text-gray-600 mt-2 pl-7">
+                <p className="text-xs text-yellow-700 mt-2 pl-7">
                   Get <b>5 icon tickets</b> for every <b>5th level up</b>
                 </p>
               </div>
-              <div className="bg-white rounded-lg p-3 border border-gray-100">
+              <div className="bg-white/80 rounded-lg p-3 border border-yellow-200">
                 <div className="flex items-center">
-                  <div className="w-5 h-5 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0 mr-2">
-                    <Crown className="h-3 w-3 text-indigo-600" />
+                  <div className="w-5 h-5 rounded-full bg-yellow-100 flex items-center justify-center flex-shrink-0 mr-2">
+                    <ArrowRight className="h-3 w-3 text-green-600" />
                   </div>
-                  <span className="text-sm">Improved Elite Pack Drop Rate</span>
+                  <span className="text-sm text-yellow-800">Improved Elite Pack Drop Rate</span>
                 </div>
-                <p className="text-xs text-gray-600 mt-2 pl-7">
+                <p className="text-xs text-yellow-700 mt-2 pl-7">
                   Higher chance to get rare cards from <b>Elite Packs</b>
                 </p>
               </div>
-              <div className="bg-white rounded-lg p-3 border border-gray-100">
+              <div className="bg-white/80 rounded-lg p-3 border border-yellow-200">
                 <div className="flex items-center">
-                  <div className="w-5 h-5 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0 mr-2">
-                    <Crown className="h-3 w-3 text-indigo-600" />
+                  <div className="w-5 h-5 rounded-full bg-yellow-100 flex items-center justify-center flex-shrink-0 mr-2">
+                    <Clock className="h-3 w-3 text-yellow-600" />
                   </div>
-                  <span className="text-sm">Daily Icon Ticket Claim</span>
+                  <span className="text-sm text-yellow-800">Daily Icon Ticket Claim</span>
                 </div>
-                <p className="text-xs text-gray-600 mt-2 pl-7">
+                <p className="text-xs text-yellow-700 mt-2 pl-7">
                   Claim <b>1 icon ticket</b> every <b>24 hours</b> while your Icon Pass is active
                 </p>
               </div>

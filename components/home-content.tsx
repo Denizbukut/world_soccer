@@ -34,6 +34,7 @@ import {
   Repeat,
   Sparkles,
   ChevronLeft,
+  ShoppingBag,
 } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
 import Link from "next/link"
@@ -44,16 +45,38 @@ import { MiniKit, Tokens, tokenToDecimals, type PayCommandInput } from "@worldco
 import { useWldPrice } from "@/contexts/WldPriceContext"
 import { claimReferralRewardForUser } from "@/app/actions/referrals"
 import { Progress } from "@/components/ui/progress" // Import Progress component
+import { renderStars } from "@/utils/card-stars"
 
 // Add the Cloudflare URL function
 const getCloudflareImageUrl = (imagePath?: string) => {
-  if (!imagePath) return "/placeholder.svg"
+  if (!imagePath) {
+    console.log("[DEBUG] No image path provided, using placeholder")
+    return "/placeholder.svg"
+  }
+  
+  console.log("[DEBUG] getCloudflareImageUrl called with:", imagePath)
+  
   // Remove leading slash and any world_soccer/world-soccer prefix
   let cleaned = imagePath.replace(/^\/?(world[-_])?soccer\//i, "")
+  console.log("[DEBUG] Cleaned path:", cleaned)
+  
   // Wenn schon http, dann direkt zurückgeben
-  if (cleaned.startsWith("http")) return cleaned
+  if (cleaned.startsWith("http")) {
+    console.log("[DEBUG] Already a full URL, returning as is")
+    return cleaned
+  }
+  
+  // Special handling for Haaland image
+  if (cleaned.toLowerCase().includes("haaland")) {
+    console.log("[DEBUG] Haaland image detected, using direct URL")
+    return "https://pub-e74caca70ffd49459342dd56ea2b67c9.r2.dev/Haaland-removebg-preview.png"
+  }
+  
   // Pub-URL verwenden, KEIN world-soccer/ mehr anhängen!
-  return `https://pub-e74caca70ffd49459342dd56ea2b67c9.r2.dev/${encodeURIComponent(cleaned)}`
+  const finalUrl = `https://pub-e74caca70ffd49459342dd56ea2b67c9.r2.dev/${encodeURIComponent(cleaned)}`
+  console.log("[DEBUG] Final Cloudflare URL:", finalUrl)
+  
+  return finalUrl
 }
 
 // XP Color definitions
@@ -86,8 +109,6 @@ interface DailyDeal {
   card_level: number
   classic_tickets: number
   elite_tickets: number
-  regular_tickets?: number // <- number | undefined
-  legendary_tickets?: number
   price: number
   description: string
   discount_percentage: number
@@ -146,7 +167,7 @@ interface AvatarOption {
 }
 
 export default function Home() {
-  const { user, updateUserTickets, refreshUserData } = useAuth()
+  const { user, updateUserTickets, refreshUserData, updateUserAvatar } = useAuth()
   const [claimLoading, setClaimLoading] = useState(false)
   const [referralLoading, setReferralLoading] = useState(false)
   const [alreadyClaimed, setAlreadyClaimed] = useState(false)
@@ -203,28 +224,45 @@ export default function Home() {
     if (!user?.username) return
     const supabase = getSupabaseBrowserClient()
     if (!supabase) return
-    // 1. User-Daten holen (inkl. avatar_id)
-    const { data: userData, error: userError } = await supabase
-      .from("users")
-      .select("avatar_id")
-      .eq("username", user.username)
-      .single()
-    if (userError || !userData?.avatar_id) {
-      console.log("[DEBUG] Fehler beim Laden avatar_id aus users:", userError, userData)
-      return
-    }
-    // 2. Avatar-Daten holen
+    
+    // Use avatar_id from Auth-Context instead of fetching from database
+    const avatarId = user.avatar_id || 1
+    console.log("[DEBUG] Loading avatar for user:", user.username, "avatar_id:", avatarId)
+    
+    // First, check if the avatar exists in the avatars table
     const { data: avatarData, error: avatarError } = await supabase
       .from("avatars")
-      .select("image_url")
-      .eq("id", userData.avatar_id)
+      .select("id, image_url, rarity, is_free")
+      .eq("id", avatarId)
       .single()
+    
     if (!avatarError && avatarData?.image_url) {
-      setCurrentAvatarId(Number(userData.avatar_id))
+      setCurrentAvatarId(Number(avatarId))
       setCurrentAvatarUrl(String(avatarData.image_url))
-      console.log("[DEBUG] Avatar aus DB geladen:", userData.avatar_id, avatarData?.image_url)
+      console.log("[DEBUG] Avatar erfolgreich geladen:", avatarId, avatarData?.image_url, "Rarity:", avatarData?.rarity)
     } else {
-      console.log("[DEBUG] Avatar nicht gefunden für avatar_id:", userData.avatar_id, avatarError)
+      console.log("[DEBUG] Avatar nicht gefunden für avatar_id:", avatarId, "Error:", avatarError)
+      
+      // Fallback: Try to get the first available avatar
+      const { data: fallbackAvatar, error: fallbackError } = await supabase
+        .from("avatars")
+        .select("id, image_url, rarity, is_free")
+        .eq("is_free", true)
+        .limit(1)
+        .single()
+      
+      if (!fallbackError && fallbackAvatar?.image_url) {
+        console.log("[DEBUG] Using fallback avatar:", fallbackAvatar.id, fallbackAvatar.image_url)
+        setCurrentAvatarId(Number(fallbackAvatar.id))
+        setCurrentAvatarUrl(String(fallbackAvatar.image_url))
+        // Update the user's avatar_id in the database
+        await updateUserAvatar(Number(fallbackAvatar.id))
+      } else {
+        console.log("[DEBUG] No fallback avatar available:", fallbackError)
+        // Set a default placeholder
+        setCurrentAvatarId(1)
+        setCurrentAvatarUrl("/placeholder.svg")
+      }
     }
   }
 
@@ -568,9 +606,12 @@ const [copied, setCopied] = useState(false)
     try {
       const result = await getDailyDeal(user.username)
 
-      // Daily deal result loaded
+      console.log("[DEBUG] Daily deal result:", result)
 
       if (result.success && result.deal) {
+        console.log("[DEBUG] Daily deal data:", result.deal)
+        console.log("[DEBUG] Card image URL from DB:", result.deal.card_image_url)
+        console.log("[DEBUG] Card name from DB:", result.deal.card_name)
         setDailyDeal(result.deal)
         setDailyDealInteraction(result.interaction ?? null)
 
@@ -578,9 +619,11 @@ const [copied, setCopied] = useState(false)
         if (!result.interaction.seen && !result.interaction.dismissed && !result.interaction.purchased) {
           setShowDailyDealDialog(true)
         }
+      } else {
+        console.log("[DEBUG] No daily deal available or error:", result.error)
       }
     } catch (error) {
-      console.error("Error checking daily deal:", error)
+      console.error("[DEBUG] Error checking daily deal:", error)
     } finally {
       setDailyDealLoading(false)
     }
@@ -631,8 +674,8 @@ const [copied, setCopied] = useState(false)
           setTickets(data.tickets)
         }
 
-        if (data && typeof data.legendary_tickets === "number") {
-          setEliteTickets(data.legendary_tickets)
+        if (data && typeof data.elite_tickets === "number") {
+          setEliteTickets(data.elite_tickets)
         }
 
 
@@ -890,9 +933,9 @@ const [copied, setCopied] = useState(false)
   }
 
   // Handle daily deal purchase success
-  const handleDailyDealPurchaseSuccess = (newTickets: number, newLegendaryTickets: number) => {
+  const handleDailyDealPurchaseSuccess = (newTickets: number, newEliteTickets: number) => {
     setTickets(newTickets)
-    setEliteTickets(newLegendaryTickets)
+    setEliteTickets(newEliteTickets)
 
     // Update deal interaction state
     if (dailyDealInteraction) {
@@ -945,23 +988,23 @@ const [copied, setCopied] = useState(false)
       key: 'xppass',
       title: 'XP Pass',
       icon: <Sparkles className="h-8 w-8" />, 
-      bg: 'from-violet-400 to-violet-600',
-      border: 'border-violet-100',
+      bg: 'from-blue-400 to-blue-600',
+      border: 'border-blue-100',
       text: 'Boost your XP gain!', // Nur kurzer Text, keine Benefits und kein Kaufen-Button
       href: '/xp-booster',
-      color: 'text-violet-700',
-      dot: 'bg-violet-500',
+      color: 'text-blue-700',
+      dot: 'bg-blue-500',
     },
     {
       key: 'iconpass',
       title: 'Icon Pass',
-      icon: <Crown className="h-8 w-8 text-indigo-500" />, 
-      bg: 'from-indigo-400 to-indigo-700',
-      border: 'border-indigo-100',
+      icon: <Crown className="h-8 w-8 text-yellow-500" />, 
+      bg: 'from-white to-yellow-200',
+      border: 'border-yellow-100',
       text: 'Unlock exclusive ICON rewards!',
       href: '/icon-pass',
-      color: 'text-indigo-700',
-      dot: 'bg-indigo-500',
+      color: 'text-yellow-700',
+      dot: 'bg-yellow-500',
     },
   ]
   const handlePrev = () => setPassIndex((prev) => (prev === 0 ? passSlides.length - 1 : prev - 1))
@@ -1082,9 +1125,7 @@ const [copied, setCopied] = useState(false)
 
   // handleBuyAvatar: Payment + DB-Speichern
   const handleBuyAvatar = async (avatar: AvatarOption) => {
-    setBuyingAvatar(true)
     const paymentSuccess = await sendPaymentForAvatar(avatar)
-    setBuyingAvatar(false)
     if (paymentSuccess) {
       const supabase = getSupabaseBrowserClient()
       if (supabase && user?.username) {
@@ -1148,18 +1189,30 @@ const [copied, setCopied] = useState(false)
 
   // Avatar-Auswahl Callback
   const handleAvatarSelect = async (url: string) => {
+    console.log("[DEBUG] Avatar selection triggered for URL:", url)
     setAvatarUrl(url)
     const found = avatarOptions.find(a => a.url === url)
     if (found) {
-      setCurrentAvatarId(found.id)
-      const supabase = getSupabaseBrowserClient()
-      if (supabase && user?.username) {
-        const { error } = await supabase.from("users").update({ avatar_id: found.id }).eq("username", user.username)
-        // Debug: Nach dem Update avatar_id aus DB lesen
-        const { data: userData } = await supabase.from("users").select("avatar_id").eq("username", user.username).single()
-        console.log("[DEBUG] Nach Auswahl avatar_id in users:", userData?.avatar_id, "Fehler:", error)
+      console.log("[DEBUG] Found avatar in options:", found.id, found.rarity, "is_free:", found.is_free)
+      
+      // Check if user can use this avatar (is_free or unlocked)
+      if (found.is_free) {
+        setCurrentAvatarId(found.id)
+        // Update avatar in Auth-Context (this will also update database and localStorage)
+        await updateUserAvatar(found.id)
+        // Also update local state
         await loadUserAvatar()
+        console.log("[DEBUG] Avatar successfully updated to:", found.id)
+      } else {
+        console.log("[DEBUG] Avatar not available for user:", found.id)
+        toast({ 
+          title: "Avatar nicht verfügbar", 
+          description: "Du musst diesen Avatar erst freischalten.", 
+          variant: "destructive" 
+        })
       }
+    } else {
+      console.log("[DEBUG] Avatar not found in options for URL:", url)
     }
     setShowAvatarDialog(false)
   }
@@ -1305,13 +1358,12 @@ const [copied, setCopied] = useState(false)
     </div>
                   {/* Avatar Image - full size in center */}
                   <div className="w-16 h-16 rounded-full overflow-hidden relative z-10">
-                    {console.log("[DEBUG] Avatar im UI:", avatarUrl || currentAvatarUrl)}
                     <img
                       src={avatarUrl || currentAvatarUrl || 'https://ani-labs.xyz/pika.jpg'}
                       alt="Your avatar"
                       className="w-full h-full object-cover"
                     />
-  </div>
+                  </div>
                 </button>
                 {/* Username und Lvl nebeneinander */}
                 <div className="flex items-center gap-2 mt-1">
@@ -1598,54 +1650,29 @@ const [copied, setCopied] = useState(false)
               </div>
               <Dialog open={showDailyDealDialog} onOpenChange={setShowDailyDealDialog}>
                 {dailyDeal && (
-                  <DialogContent className="bg-[#1a1333] rounded-2xl p-0 overflow-hidden max-w-[380px] w-full">
-                    <DialogTitle className="sr-only">Deal of the Day kaufen</DialogTitle>
-                    <DialogDescription className="sr-only">Kaufe den Daily Deal und erhalte die angezeigten Karten und Tickets.</DialogDescription>
-                    <div className="bg-gradient-to-b from-[#2d1a4d] to-[#1a1333] p-6">
-                      <div className="flex items-center justify-between mb-4">
-                        <span className="bg-purple-600 text-white text-xs font-bold px-3 py-1 rounded-full">Daily Deal</span>
-                        <button onClick={() => setShowDailyDealDialog(false)} className="text-white text-2xl">&times;</button>
+                  <DialogContent className="sm:max-w-md p-8 bg-white">
+                    <DialogTitle>Daily Deal Test</DialogTitle>
+                    <div className="text-center">
+                      <h3 className="text-lg font-bold mb-4">{dailyDeal.card_name}</h3>
+                      <div className="w-40 h-56 mx-auto border-2 border-gray-300 rounded-lg overflow-hidden">
+                        <img
+                          src="https://pub-e74caca70ffd49459342dd56ea2b67c9.r2.dev/Haaland-removebg-preview.png"
+                          alt="Haaland"
+                          className="w-full h-full object-cover"
+                          onError={e => {
+                            console.log("[DEBUG] Image failed to load!")
+                            e.currentTarget.src = '/placeholder.svg'
+                          }}
+                          onLoad={() => {
+                            console.log("[DEBUG] Image loaded successfully!")
+                          }}
+                        />
                       </div>
-                      <div className="flex flex-col items-center">
-                        <div className="w-40 h-56 bg-[#2d1a4d] rounded-xl flex items-center justify-center mb-2 border-2 border-purple-500 shadow-lg">
-                          <img
-                            src={getCloudflareImageUrl(dailyDeal.card_image_url || '')}
-                            alt={dailyDeal.card_name || 'Card'}
-                            className="w-full h-full object-contain"
-                            onError={e => (e.currentTarget.src = '/placeholder.svg')}
-                          />
-                        </div>
-                        <div className="text-2xl font-bold text-white mb-1">{dailyDeal.card_name}</div>
-                        <div className="text-sm text-purple-200 mb-2">{dailyDeal.card_character}</div>
-                        <div className="flex gap-2 mb-3">
-                          {Number(dailyDeal.classic_tickets || 0) > 0 && (
-                            <span className="inline-flex items-center bg-blue-100 text-blue-700 text-xs font-bold px-2 py-1 rounded-full">
-                              <Ticket className="w-4 h-4 mr-1" />+{dailyDeal.classic_tickets}
-                            </span>
-                          )}
-                          {Number(dailyDeal.elite_tickets || 0) > 0 && (
-                            <span className="inline-flex items-center bg-purple-100 text-purple-700 text-xs font-bold px-2 py-1 rounded-full">
-                              <Crown className="w-4 h-4 mr-1" />+{dailyDeal.elite_tickets}
-                            </span>
-                          )}
-                        </div>
-                        <div className="bg-[#2d1a4d] rounded-lg p-3 w-full mb-3">
-                          <div className="text-xs text-gray-300 mb-1">What's Included:</div>
-                          <div className="flex items-center gap-2">
-                            <span className="bg-gray-700 text-white px-2 py-1 rounded text-xs font-bold">★{dailyDeal.card_level}</span>
-                            <span className="text-white font-bold">{dailyDeal.card_name}</span>
-                            <span className="text-gray-400 text-xs">Level {dailyDeal.card_level} {dailyDeal.card_rarity} Card</span>
-                          </div>
-                        </div>
-                        <div className="text-lg font-bold text-purple-300 mb-4">Price: <span className="text-2xl">{dailyDeal.price} WLD</span></div>
-                        <Button
-                          className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold py-3 rounded-xl text-lg"
-                          onClick={handleBuyDailyDeal}
-                          disabled={buyingDailyDeal}
-                        >
-                          {buyingDailyDeal ? "Kaufen..." : "Buy Now"}
-                        </Button>
-                      </div>
+                      <p className="mt-4 text-sm text-gray-600">Card Level: {dailyDeal.card_level}</p>
+                      <p className="text-sm text-gray-600">Price: ${dailyDeal.price}</p>
+                    </div>
+                    <div className="mt-6 flex justify-end">
+                      <Button onClick={() => setShowDailyDealDialog(false)}>Close</Button>
                     </div>
                   </DialogContent>
                 )}
@@ -1697,57 +1724,107 @@ const [copied, setCopied] = useState(false)
               </div>
               <Dialog open={showSpecialDealDialog} onOpenChange={setShowSpecialDealDialog}>
                 {specialDeal && (
-                  <DialogContent className="bg-[#1a1333] rounded-2xl p-0 overflow-hidden max-w-[380px] w-full">
-                    <DialogTitle className="sr-only">Special Deal kaufen</DialogTitle>
-                    <DialogDescription className="sr-only">Kaufe den Special Deal und erhalte die angezeigten Karten und Tickets.</DialogDescription>
-                    <div className="bg-gradient-to-b from-[#2d1a4d] to-[#1a1333] p-6">
-                      <div className="flex items-center justify-between mb-4">
-                        <span className="bg-blue-500 text-white text-xs font-bold px-3 py-1 rounded-full">Special Deal</span>
-                        <button onClick={() => setShowSpecialDealDialog(false)} className="text-white text-2xl">&times;</button>
+                  <DialogContent className="sm:max-w-md p-0 overflow-hidden rounded-xl border-0 bg-gray-900 text-white">
+                    <DialogTitle className="sr-only">Special Deal</DialogTitle>
+                    {/* Close button */}
+                    <button
+                      onClick={() => setShowSpecialDealDialog(false)}
+                      className="absolute top-4 right-4 bg-gray-800/50 rounded-full p-1.5 backdrop-blur-sm hover:bg-gray-700/50 transition-colors z-10"
+                    >
+                      <X className="h-4 w-4 text-gray-300" />
+                    </button>
+                    {/* Card Showcase */}
+                    <div className="relative pt-8 pb-12 flex justify-center items-center">
+                      <div className="absolute inset-0 overflow-hidden">
+                        <div className="absolute w-full h-full bg-gradient-to-b from-blue-900/30 to-transparent"></div>
+                        <div className="absolute -top-24 left-1/2 transform -translate-x-1/2 w-96 h-96 rounded-full bg-blue-500/10 blur-3xl"></div>
                       </div>
-                      <div className="flex flex-col items-center">
-                        <div className="w-40 h-56 bg-[#2d1a4d] rounded-xl flex items-center justify-center mb-2 border-2 border-blue-500 shadow-lg">
+                      <div className="relative w-40 h-56 shadow-[0_0_15px_rgba(61,174,245,0.5)]">
+                        <div className="absolute inset-0 rounded-lg border-2 border-[#3DAEF5] overflow-hidden">
                           <img
                             src={getCloudflareImageUrl(specialDeal.card_image_url || '')}
                             alt={specialDeal.card_name || 'Card'}
-                            className="w-full h-full object-contain"
+                            className="object-cover w-full h-full"
                             onError={e => (e.currentTarget.src = '/placeholder.svg')}
                           />
-                        </div>
-                        <div className="text-2xl font-bold text-white mb-1">{specialDeal.card_name}</div>
-                        <div className="text-sm text-blue-200 mb-2">{specialDeal.card_character}</div>
-                        <div className="flex gap-2 mb-3">
-                          {Number(specialDeal.classic_tickets || 0) > 0 && (
-                            <span className="inline-flex items-center bg-blue-100 text-blue-700 text-xs font-bold px-2 py-1 rounded-full">
-                              <Ticket className="w-4 h-4 mr-1" />+{specialDeal.classic_tickets}
-                            </span>
-                          )}
-                          {Number(specialDeal.elite_tickets || 0) > 0 && (
-                            <span className="inline-flex items-center bg-purple-100 text-purple-700 text-xs font-bold px-2 py-1 rounded-full">
-                              <Crown className="w-4 h-4 mr-1" />+{specialDeal.elite_tickets}
-                            </span>
-                          )}
-                          {Number(specialDeal.icon_tickets || 0) > 0 && (
-                            <span className="inline-flex items-center bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-1 rounded-full">
-                              🏆 +{specialDeal.icon_tickets}
-                            </span>
-                          )}
-                        </div>
-                        <div className="bg-[#2d1a4d] rounded-lg p-3 w-full mb-3">
-                          <div className="text-xs text-gray-300 mb-1">What's Included:</div>
-                          <div className="flex items-center gap-2">
-                            <span className="bg-gray-700 text-white px-2 py-1 rounded text-xs font-bold">★{specialDeal.card_level}</span>
-                            <span className="text-white font-bold">{specialDeal.card_name}</span>
-                            <span className="text-gray-400 text-xs">Level {specialDeal.card_level} {specialDeal.card_rarity} Card</span>
+                          <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 z-10">
+                            {renderStars(specialDeal.card_level || 1, 'sm')}
                           </div>
                         </div>
-                        <div className="text-lg font-bold text-blue-300 mb-4">Price: <span className="text-2xl">{specialDeal.price} WLD</span></div>
+                        <div className="absolute -top-4 -right-4 bg-[#3DAEF5] text-white text-xs font-bold py-1 px-3 rounded-full flex items-center gap-1 shadow-lg">
+                          <Sparkles className="h-3 w-3" />
+                          <span>Special Deal</span>
+                        </div>
+                      </div>
+                    </div>
+                    {/* Card Details */}
+                    <div className="bg-gray-800 rounded-t-3xl px-6 pt-6 pb-8 -mt-6 relative z-10">
+                      <div className="mb-5">
+                        <div className="flex items-center justify-between mb-1">
+                          <h3 className="text-xl font-bold text-white">{specialDeal.card_name}</h3>
+                          <span className="bg-blue-900 text-blue-200 px-3 py-1 rounded-full text-xs font-bold">{specialDeal.card_rarity}</span>
+                        </div>
+                        <p className="text-sm text-[#3DAEF5]">{specialDeal.card_character}</p>
+                        <p className="text-sm text-gray-400 mt-3">{specialDeal.description}</p>
+                      </div>
+                      {/* What's Included */}
+                      <div className="bg-gray-900/50 rounded-xl p-4 mb-5 border border-gray-700/50">
+                        <h4 className="text-sm font-medium text-gray-300 mb-3">What's Included:</h4>
+                        <div className="space-y-3">
+                          <div className="flex items-center">
+                            <div className="w-9 h-9 rounded-md border-2 border-violet-500 flex items-center justify-center mr-3 bg-gray-800">
+                              <span className="text-xs font-bold text-violet-400">★{specialDeal.card_level}</span>
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-white">{specialDeal.card_name}</p>
+                              <p className="text-xs text-gray-400">Level {specialDeal.card_level} {specialDeal.card_rarity} Card</p>
+                            </div>
+                          </div>
+                          {/* Elite Tickets */}
+                          <div className={`flex items-center ${specialDeal.elite_tickets > 0 ? '' : 'opacity-50'}`}> 
+                            <div className="w-9 h-9 rounded-md bg-purple-900/30 border border-purple-700/50 flex items-center justify-center mr-3">
+                              <Crown className="h-4 w-4 text-purple-400" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-white">{specialDeal.elite_tickets} Elite Tickets</p>
+                              <p className="text-xs text-gray-400">For elite card packs</p>
+                            </div>
+                          </div>
+                          {/* Icon Tickets */}
+                          <div className={`flex items-center ${specialDeal.icon_tickets > 0 ? '' : 'opacity-50'}`}> 
+                            <div className="w-9 h-9 rounded-md bg-indigo-900/30 border border-indigo-700/50 flex items-center justify-center mr-3">
+                              <Crown className="h-4 w-4 text-indigo-400" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-white">{specialDeal.icon_tickets} Icon Tickets</p>
+                              <p className="text-xs text-gray-400">For icon rewards</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      {/* Price and Action */}
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-gray-400">Price:</p>
+                          <p className="text-2xl font-bold text-[#3DAEF5]">{price ? `${(specialDeal.price / price).toFixed(2)} WLD` : `$${specialDeal.price.toFixed(2)} USD`}</p>
+                        </div>
                         <Button
-                          className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold py-3 rounded-xl text-lg"
                           onClick={handleBuySpecialDeal}
                           disabled={buyingSpecialDeal}
+                          size="lg"
+                          className="bg-gradient-to-r from-[#3DAEF5] to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-full shadow-lg shadow-blue-900/30"
                         >
-                          {buyingSpecialDeal ? "Kaufen..." : "Buy Now"}
+                          {buyingSpecialDeal ? (
+                            <>
+                              <div className="h-4 w-4 border-2 border-t-transparent border-white rounded-full animate-spin mr-2"></div>
+                              Processing...
+                            </>
+                          ) : (
+                            <>
+                              <ShoppingBag className="h-4 w-4 mr-2" />
+                              Buy Now
+                            </>
+                          )}
                         </Button>
                       </div>
                     </div>
@@ -1967,6 +2044,65 @@ const [copied, setCopied] = useState(false)
 </Dialog>
 
       
+      {/* Avatar Kauf Dialog */}
+      <Dialog open={showBuyAvatarDialog} onOpenChange={setShowBuyAvatarDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogTitle className="text-lg font-bold">Avatar kaufen</DialogTitle>
+          {selectedAvatarToBuy && (
+            <>
+              <div className="flex items-center gap-4 mb-4">
+                <div className="relative w-20 h-20 overflow-hidden rounded-full">
+                  <img
+                    src={selectedAvatarToBuy.url}
+                    alt={selectedAvatarToBuy.rarity}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg">{selectedAvatarToBuy.rarity} Avatar</h3>
+                  <p className="text-sm text-gray-600">Exklusiver Avatar</p>
+                  <div className="flex items-center gap-1 mt-2">
+                    <span className="text-lg font-bold text-yellow-600">{selectedAvatarToBuy.price} WLD</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-amber-50 p-3 rounded-lg text-sm mb-4">
+                <p className="text-amber-800">
+                  <span className="font-medium">Preis:</span> {selectedAvatarToBuy.price} WLD
+                </p>
+                <p className="text-amber-800 mt-1">
+                  <span className="font-medium">Rarity:</span> {selectedAvatarToBuy.rarity}
+                </p>
+              </div>
+              
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setShowBuyAvatarDialog(false)}>
+                  Abbrechen
+                </Button>
+                <Button
+                  onClick={() => handleBuyAvatar(selectedAvatarToBuy)}
+                  disabled={buyingAvatar}
+                  className="bg-gradient-to-r from-violet-500 to-fuchsia-500"
+                >
+                  {buyingAvatar ? (
+                    <>
+                      <div className="h-4 w-4 border-2 border-t-transparent border-white rounded-full animate-spin mr-2"></div>
+                      Verarbeite...
+                    </>
+                  ) : (
+                    <>
+                      <ShoppingCart className="h-4 w-4 mr-2" />
+                      Kaufen
+                    </>
+                  )}
+                </Button>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
       <MobileNav />
     </div>
     </ProtectedRoute>

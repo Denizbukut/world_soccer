@@ -18,6 +18,7 @@ type User = {
   has_premium?: boolean
   score?: number // Hinzufügen des score-Felds
   clan_id?: number
+  avatar_id?: number // NEW: avatar_id hinzufügen
 }
 
 type AuthContextType = {
@@ -31,6 +32,7 @@ type AuthContextType = {
   setUserPremium: (hasPremium: boolean) => void
   refreshUserData: () => Promise<void>
   updateUserScore: (scoreToAdd: number) => void // Neue Methode zum Aktualisieren des Scores
+  updateUserAvatar: (avatarId: number) => Promise<void> // NEW: Avatar aktualisieren
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -44,6 +46,7 @@ const AuthContext = createContext<AuthContextType>({
   setUserPremium: () => {},
   refreshUserData: async () => {},
   updateUserScore: () => {}, // Standardimplementierung
+  updateUserAvatar: async () => {}, // NEW: Standardimplementierung
 })
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
@@ -66,7 +69,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
       const { data, error } = await supabase
         .from("users")
-        .select("username, tickets, legendary_tickets, icon_tickets, elite_tickets, coins, level, world_id, experience, next_level_exp, has_premium, score, clan_id")
+        .select("username, tickets, legendary_tickets, icon_tickets, elite_tickets, coins, level, world_id, experience, next_level_exp, has_premium, score, clan_id, avatar_id")
         .eq("username", username)
         .single()
 
@@ -93,6 +96,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           nextLevelExp: Number(typedData.next_level_exp || 100),
           has_premium: Boolean(typedData.has_premium || false),
           score: Number(typedData.score || 0), // Score aus der Datenbank laden
+          avatar_id: Number(typedData.avatar_id || 1), // NEW: avatar_id hinzufügen (Standard: 1)
         }
 
         return userData
@@ -464,6 +468,28 @@ if (!isHumanVerified) {
     }
   }
 
+  const updateUserAvatar = async (avatarId: number) => {
+    if (user) {
+      const updatedUser = { ...user, avatar_id: avatarId }
+      setUser(updatedUser)
+      localStorage.setItem("animeworld_user", JSON.stringify(updatedUser))
+
+      // Update database
+      try {
+        const supabase = getSupabaseBrowserClient()
+        if (!supabase) return
+
+        const { error } = await supabase.from("users").update({ avatar_id: avatarId }).eq("username", user.username)
+
+        if (error) {
+          console.error("Error updating avatar in database:", error)
+        }
+      } catch (error) {
+        console.error("Error in updateUserAvatar:", error)
+      }
+    }
+  }
+
   return (
     <AuthContext.Provider
       value={{
@@ -477,6 +503,7 @@ if (!isHumanVerified) {
         setUserPremium,
         refreshUserData,
         updateUserScore, // Neue Methode zum Context hinzufügen
+        updateUserAvatar,
       }}
     >
       {children}

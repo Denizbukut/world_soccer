@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { getSupabaseBrowserClient } from "@/lib/supabase"
 import { useAuth } from "@/contexts/auth-context"
 import { drawCardPack } from "@/app/actions"
 import ProtectedRoute from "@/components/protected-route"
@@ -9,7 +10,7 @@ import CardItem from "@/components/card-item"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Ticket, Package, PackageOpen, Sparkles } from "lucide-react"
+import { Ticket, Package, PackageOpen, Sparkles, Crown, ArrowRight } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
 import { PackOpeningAnimation } from "@/components/pack-opening-animation"
 import Image from "next/image"
@@ -22,6 +23,58 @@ export default function PacksPage() {
   const [showAnimation, setShowAnimation] = useState(false)
   const [drawnCards, setDrawnCards] = useState<any[]>([])
   const [currentPackType, setCurrentPackType] = useState<"basic" | "premium" | "ultimate">("basic")
+  const [hasIconPass, setHasIconPass] = useState(false)
+
+  // Debug: Log user state
+  console.log('PacksPage rendered, user:', user?.username, 'hasIconPass:', hasIconPass)
+
+  // Check if user has active Icon Pass
+  useEffect(() => {
+    console.log('useEffect triggered, user:', user?.username)
+    
+    // TEMPORARY: Force hasIconPass to true for testing
+    console.log('🔧 TEMPORARY: Setting hasIconPass to true for testing')
+    setHasIconPass(true)
+    
+    const checkIconPass = async () => {
+      if (!user?.username) {
+        console.log('No username found, returning')
+        return
+      }
+      
+      try {
+        console.log('Starting Icon Pass check for user:', user.username)
+        const supabase = getSupabaseBrowserClient()
+        if (!supabase) {
+          console.log('No Supabase client found')
+          return
+        }
+
+        console.log('Querying icon_passes table...')
+        const { data, error } = await supabase
+          .from('icon_passes')
+          .select('*')
+          .eq('user_id', user.username)
+          .eq('active', true)
+          .single()
+
+        console.log('Icon Pass check result:', { data, error, username: user.username })
+        
+        if (!error && data) {
+          setHasIconPass(true)
+          console.log('✅ Icon Pass is active!')
+        } else {
+          setHasIconPass(false)
+          console.log('❌ No active Icon Pass found, error:', error)
+        }
+      } catch (error) {
+        console.error('❌ Error checking Icon Pass:', error)
+        setHasIconPass(false)
+      }
+    }
+
+    checkIconPass()
+  }, [user?.username])
 
   const handleDrawPack = async (packType: string) => {
     if (!user) return
@@ -149,6 +202,11 @@ export default function PacksPage() {
                 <CardTitle className="flex items-center gap-2">
                   <PackageOpen className="h-5 w-5 text-blue-500" />
                   Premium Pack
+                  {hasIconPass && (
+                    <div className="bg-gradient-to-r from-yellow-400 to-yellow-600 text-white text-xs px-2 py-1 rounded-full font-bold">
+                      PASS ACTIVE
+                    </div>
+                  )}
                 </CardTitle>
                 <CardDescription>3 cards with better odds for Rare and Epic</CardDescription>
               </CardHeader>
@@ -176,6 +234,68 @@ export default function PacksPage() {
                     {isDrawing ? "Drawing..." : "Draw Pack"}
                   </Button>
                 </div>
+                
+
+                
+                {/* Improved Drop Rates for Icon Pass Users */}
+                {hasIconPass && (
+                  <div className="mt-4 bg-gradient-to-r from-blue-100 to-blue-200 rounded-lg p-3 border border-blue-300">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Crown className="h-4 w-4 text-blue-600" />
+                      <div className="font-semibold text-blue-800 text-xs">PASS ACTIVE - Improved Drop Rates</div>
+                    </div>
+                    
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-gray-500"></div>
+                          <span className="text-xs text-blue-800">Basic</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs text-blue-700">10%</span>
+                          <ArrowRight className="h-2 w-2 text-blue-500" />
+                          <span className="text-xs text-blue-700">7%</span>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                          <span className="text-xs text-blue-800">Rare</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs text-blue-700">40%</span>
+                          <ArrowRight className="h-2 w-2 text-blue-500" />
+                          <span className="text-xs text-blue-700">35%</span>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-purple-500"></div>
+                          <span className="text-xs text-blue-800">Elite</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs text-blue-700">35%</span>
+                          <ArrowRight className="h-2 w-2 text-blue-500" />
+                          <span className="text-xs text-blue-700">40%</span>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
+                          <span className="text-xs text-blue-800">Ultimate</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs text-blue-700">15%</span>
+                          <ArrowRight className="h-2 w-2 text-blue-500" />
+                          <span className="text-xs text-blue-700">18%</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
 

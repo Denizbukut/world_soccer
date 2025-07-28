@@ -19,6 +19,8 @@ export const getDailyDeal = cache(async (username: string) => {
     const supabase = createSupabaseServer()
     const today = new Date().toISOString().split("T")[0]
 
+    console.log("[DEBUG] getDailyDeal called for date:", today)
+
     // Get today's deal
     const { data: deal, error: dealError } = await supabase.from("daily_deals").select("*").eq("date", today).single()
 
@@ -26,6 +28,8 @@ export const getDailyDeal = cache(async (username: string) => {
       console.error("Error fetching daily deal:", dealError)
       return { success: false, error: "No deal available today" }
     }
+
+    console.log("[DEBUG] Daily deal data:", deal)
 
     // Get card information
     const { data: card, error: cardError } = await supabase.from("cards").select("*").eq("id", deal.card_id).single()
@@ -35,6 +39,8 @@ export const getDailyDeal = cache(async (username: string) => {
       return { success: false, error: "Failed to fetch card details" }
     }
 
+    console.log("[DEBUG] Card data:", card)
+
     // Format the deal data to include card information
     const formattedDeal = {
       ...deal,
@@ -43,6 +49,8 @@ export const getDailyDeal = cache(async (username: string) => {
       card_rarity: card.rarity,
       card_character: card.character,
     }
+
+    console.log("[DEBUG] Formatted deal data:", formattedDeal)
 
     // Check if user has already interacted with this deal
     const { data: interaction, error: interactionError } = await supabase
@@ -220,7 +228,7 @@ export async function purchaseDeal(username: string, dealId: number) {
     // 3. Add tickets to user's account
     const { data: userData, error: userError } = await supabase
       .from("users")
-      .select("tickets, legendary_tickets")
+      .select("tickets, elite_tickets")
       .eq("username", username)
       .single()
 
@@ -229,14 +237,14 @@ export async function purchaseDeal(username: string, dealId: number) {
       return { success: false, error: "User not found" }
     }
 
-    const newTickets = (userData.tickets || 0) + deal.regular_tickets
-    const newLegendaryTickets = (userData.legendary_tickets || 0) + deal.legendary_tickets
+    const newTickets = (userData.tickets || 0) + deal.classic_tickets
+    const newEliteTickets = (userData.elite_tickets || 0) + deal.elite_tickets
 
     const { error: updateError } = await supabase
       .from("users")
       .update({
         tickets: newTickets,
-        legendary_tickets: newLegendaryTickets,
+        elite_tickets: newEliteTickets,
       })
       .eq("username", username)
 
@@ -251,7 +259,7 @@ export async function purchaseDeal(username: string, dealId: number) {
     return {
       success: true,
       newTickets,
-      newLegendaryTickets,
+      newEliteTickets,
     }
   } catch (error) {
     console.error("Error in purchaseDeal:", error)

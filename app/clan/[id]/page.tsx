@@ -900,9 +900,9 @@ export default function ModernClanPage() {
   const getMissionReward = (missionType: string) => {
     switch (missionType) {
       case "regular_packs":
-        return "2 Regular Tickets"
+        return "2 Classic Tickets"
       case "legendary_cards":
-        return "2 Legendary Tickets"
+        return "2 Elite Tickets"
       case "legendary_packs":
         return "+2 Clan XP"
       default:

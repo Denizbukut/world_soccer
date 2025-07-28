@@ -55,7 +55,7 @@ export default function ModernMissionsPage() {
     setClaimingBonus(true)
     const res = await claimBonusReward(user.username)
     if (res.success) {
-      toast.success("Bonus legendary ticket claimed! 🎉")
+      toast.success("Bonus elite ticket claimed! 🎉")
       await refreshUserData()
       setBonusClaimed(true)
       loadMissions()
@@ -215,7 +215,7 @@ export default function ModernMissionsPage() {
                   <p className="text-xs text-gray-700">
                     Complete <span className="font-bold text-purple-600">4 Missions</span> to earn{" "}
                     <span className="font-semibold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                      +1 Legendary Ticket
+                      +1 Elite Ticket
                     </span>
                   </p>
 

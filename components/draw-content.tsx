@@ -7,7 +7,7 @@ import { updateScoreForCards, updateScoreForLevelUp } from "@/app/actions/update
 import ProtectedRoute from "@/components/protected-route"
 import MobileNav from "@/components/mobile-nav"
 import { Button } from "@/components/ui/button"
-import { Ticket, Crown, Star, Sword, Zap, X } from "lucide-react"
+import { Ticket, Crown, Star, Sword, Zap, X, ArrowUp } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
 import { motion, AnimatePresence, useAnimation, useMotionValue, useTransform } from "framer-motion"
 import Image from "next/image"
@@ -1131,29 +1131,34 @@ const [showInfo, setShowInfo] = useState(false)
                           </div>
                         ) : (
                           <div className="border border-gray-200 rounded-lg p-3 relative">
+                            {hasPremiumPass && (
+                              <div className="absolute -top-2 -right-2 bg-gradient-to-r from-yellow-400 to-yellow-600 text-white text-xs px-2 py-1 rounded-full font-bold">
+                                PASS ACTIVE
+                              </div>
+                            )}
                             <div className="space-y-2">
                               <div className="flex justify-between items-center text-sm">
                                 <span>Classic</span>
                                 <div className="flex items-center gap-2">
-                                  <span className="text-gray-500">50%</span>
+                                  <span className="text-gray-500">{hasPremiumPass ? "40%" : "50%"}</span>
                                 </div>
                               </div>
                               <div className="flex justify-between items-center text-sm">
                                 <span>Rare</span>
                                 <div className="flex items-center gap-2">
-                                  <span className="text-blue-500">34%</span>
+                                  <span className="text-blue-500">{hasPremiumPass ? "36%" : "34%"}</span>
                                 </div>
                               </div>
                               <div className="flex justify-between items-center text-sm">
                                 <span>Elite</span>
                                 <div className="flex items-center gap-2">
-                                  <span className="text-purple-500">14%</span>
+                                  <span className="text-purple-500">{hasPremiumPass ? "18%" : "14%"}</span>
                                 </div>
                               </div>
                               <div className="flex justify-between items-center text-sm">
                                 <span>Ultimate</span>
                                 <div className="flex items-center gap-2">
-                                  <span className="text-amber-500">2%</span>
+                                  <span className="text-amber-500">{hasPremiumPass ? "6%" : "2%"}</span>
                                 </div>
                               </div>
                             </div>

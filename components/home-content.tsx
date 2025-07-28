@@ -1586,7 +1586,7 @@ const [copied, setCopied] = useState(false)
                     <ShoppingCart className="h-5 w-5 text-white drop-shadow-lg" />
                   </div>
                   <div className="text-sm font-extrabold text-yellow-100 drop-shadow-sm tracking-wide">Shop</div>
-                  <div className="text-xs text-pink-700 font-semibold mt-0.5">Exklusive Packs</div>
+                  <div className="text-xs text-sky-400 font-semibold mt-0.5">Exklusive Packs</div>
                 </motion.div>
               </Link>
             </div>
@@ -2006,10 +2006,10 @@ const [copied, setCopied] = useState(false)
       <h4 className="text-sm font-semibold text-amber-700 mb-1">What you get:</h4>
       <ul className="text-sm text-amber-800 list-disc list-inside space-y-1">
                 <li>
-                  <strong>+5</strong> Regular Tickets
+                  <strong>+5</strong> Classic Tickets
                 </li>
                 <li>
-                  <strong>+3</strong> Legendary Tickets
+                  <strong>+3</strong> Elite Tickets
                 </li>
                 <li>
                   Once your friend reaches <strong>Level 5</strong>

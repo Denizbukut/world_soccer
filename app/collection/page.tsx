@@ -207,20 +207,7 @@ export default function CollectionPage() {
     { total: 0, common: 0, rare: 0, epic: 0, legendary: 0, goat: 0 },
   )
 
-  // DEV-Button: Cookie setzen, falls nicht vorhanden
-  function setDevCookie() {
-    try {
-      const userStr = localStorage.getItem("animeworld_user");
-      if (userStr) {
-        document.cookie = `animeworld_user=${encodeURIComponent(userStr)}; path=/; max-age=31536000`;
-        alert("DEV-Cookie gesetzt! Versuche jetzt, dein Team zu speichern.");
-      } else {
-        alert("Kein User im Local Storage gefunden!");
-      }
-    } catch (e) {
-      alert("Fehler beim Setzen des DEV-Cookies: " + e);
-    }
-  }
+
 
   if (loading) {
     return (
@@ -457,15 +444,6 @@ export default function CollectionPage() {
   // Normale Collection-Ansicht
   return (
     <div className="min-h-screen bg-[#f8f9ff] pb-20">
-      {/* DEV-Button nur im Browser anzeigen */}
-      {typeof window !== "undefined" && (
-        <button
-          style={{ position: "fixed", top: 10, right: 10, zIndex: 9999, background: "#f59e42", color: "#fff", padding: "8px 16px", borderRadius: 8, fontWeight: "bold" }}
-          onClick={setDevCookie}
-        >
-          DEV: Cookie setzen
-        </button>
-      )}
       {/* Header mit My Collection und My Squad */}
       <div className="w-full max-w-lg mx-auto px-4 py-3 flex items-center justify-between sticky top-0 z-30 bg-white/90 border-b border-gray-100 shadow-sm">
         <h1 className="text-lg font-bold tracking-tight bg-gradient-to-r from-violet-600 to-fuchsia-600 bg-clip-text text-transparent drop-shadow-md">

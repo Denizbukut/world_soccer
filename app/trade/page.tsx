@@ -781,19 +781,19 @@ export default function TradePage() {
                     <Pagination pagination={marketPagination} onPageChange={handleMarketPageChange} />
                   </>
                 ) : (
-                  <div className="bg-white rounded-xl p-6 shadow-sm text-center">
+                  <div className="bg-black/70 rounded-xl p-6 shadow-sm text-center border border-yellow-400">
                     <div className="flex flex-col items-center">
-                      <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-3">
-                        <Tag className="h-8 w-8 text-gray-400" />
+                      <div className="w-16 h-16 rounded-full bg-yellow-900/50 flex items-center justify-center mb-3 border border-yellow-400">
+                        <Tag className="h-8 w-8 text-yellow-400" />
                       </div>
-                      <h3 className="text-lg font-medium mb-1">No Cards Found</h3>
-                      <p className="text-gray-500 text-sm mb-4">
+                      <h3 className="text-lg font-medium mb-1 text-yellow-200">No Cards Found</h3>
+                      <p className="text-yellow-300 text-sm mb-4">
                         {searchTerm || rarityFilter !== "all"
                           ? "Try adjusting your search or filters"
                           : "There are no cards available for purchase right now"}
                       </p>
                       <Link href="/collection">
-                        <Button variant="outline" size="sm" className="rounded-full">
+                        <Button variant="outline" size="sm" className="rounded-full border-yellow-400 text-yellow-400 hover:bg-yellow-400 hover:text-black">
                           <Plus className="h-4 w-4 mr-1" />
                           Sell Your Cards
                         </Button>
@@ -896,15 +896,15 @@ export default function TradePage() {
                     <Pagination pagination={userListingsPagination} onPageChange={handleUserListingsPageChange} />
                   </>
                 ) : (
-                  <div className="bg-white rounded-xl p-6 shadow-sm text-center">
+                  <div className="bg-black/70 rounded-xl p-6 shadow-sm text-center border border-yellow-400">
                     <div className="flex flex-col items-center">
-                      <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-3">
-                        <Tag className="h-8 w-8 text-gray-400" />
+                      <div className="w-16 h-16 rounded-full bg-yellow-900/50 flex items-center justify-center mb-3 border border-yellow-400">
+                        <Tag className="h-8 w-8 text-yellow-400" />
                       </div>
-                      <h3 className="text-lg font-medium mb-1">No Listed Cards</h3>
-                      <p className="text-gray-500 text-sm mb-4">You haven't listed any cards for sale yet</p>
+                      <h3 className="text-lg font-medium mb-1 text-yellow-200">No Listed Cards</h3>
+                      <p className="text-yellow-300 text-sm mb-4">You haven't listed any cards for sale yet</p>
                       <Link href="/collection">
-                        <Button className="rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500">
+                        <Button className="rounded-full bg-gradient-to-r from-yellow-400 to-yellow-600 text-black hover:from-yellow-500 hover:to-yellow-700">
                           <Plus className="h-4 w-4 mr-1" />
                           Sell Your First Card
                         </Button>
@@ -1009,18 +1009,18 @@ export default function TradePage() {
                     </div>
 
                     {/* Search for Recent Sales */}
-                    <div className="bg-white rounded-xl p-3 shadow-sm">
+                    <div className="bg-black/70 rounded-xl p-3 shadow-sm border border-yellow-400">
                       <div className="relative">
-                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
+                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-yellow-400" />
                         <Input
                           placeholder="Search cards, buyers or sellers..."
-                          className="pl-8"
+                          className="pl-8 bg-black/80 text-white border border-yellow-400 placeholder-yellow-300 focus:ring-yellow-400"
                           value={salesSearchTerm}
                           onChange={(e) => setSalesSearchTerm(e.target.value)}
                         />
                       </div>
                       <div className="flex justify-between items-center mt-2">
-                        <div className="text-sm text-gray-500">
+                        <div className="text-sm text-yellow-200">
                           {recentSalesPagination.total} {recentSalesPagination.total === 1 ? "sale" : "sales"} found
                         </div>
                         <Button
@@ -1030,7 +1030,7 @@ export default function TradePage() {
                             setSalesSearchTerm("")
                             loadRecentSales(1)
                           }}
-                          className="h-7 text-xs"
+                          className="h-7 text-xs text-yellow-400 hover:text-yellow-300"
                           disabled={!salesSearchTerm}
                         >
                           <X className="h-3 w-3 mr-1" />
@@ -1040,8 +1040,8 @@ export default function TradePage() {
                     </div>
 
                     {/* Market Activity Info */}
-                    <div className="bg-white rounded-xl p-4 shadow-sm">
-                      <p className="text-sm text-gray-600">
+                    <div className="bg-black/70 rounded-xl p-4 shadow-sm border border-yellow-400">
+                      <p className="text-sm text-yellow-300">
                         View all recent card sales in the marketplace. This helps you understand current market trends
                         and card values.
                       </p>
@@ -1074,19 +1074,19 @@ export default function TradePage() {
                         <Pagination pagination={recentSalesPagination} onPageChange={handleRecentSalesPageChange} />
                       </>
                     ) : (
-                      <div className="bg-white rounded-xl p-6 shadow-sm text-center">
+                      <div className="bg-black/70 rounded-xl p-6 shadow-sm text-center border border-yellow-400">
                         <div className="flex flex-col items-center">
-                          <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-3">
-                            <BarChart2 className="h-8 w-8 text-gray-400" />
+                          <div className="w-16 h-16 rounded-full bg-yellow-900/50 flex items-center justify-center mb-3 border border-yellow-400">
+                            <BarChart2 className="h-8 w-8 text-yellow-400" />
                           </div>
-                          <h3 className="text-lg font-medium mb-1">No Recent Sales</h3>
-                          <p className="text-gray-500 text-sm mb-4">
+                          <h3 className="text-lg font-medium mb-1 text-yellow-200">No Recent Sales</h3>
+                          <p className="text-yellow-300 text-sm mb-4">
                             {salesSearchTerm
                               ? "No sales match your search criteria. Try a different search term."
                               : "There haven't been any card sales recently"}
                           </p>
                           <Link href="/marketplace">
-                            <Button variant="outline" size="sm" className="rounded-full">
+                            <Button variant="outline" size="sm" className="rounded-full border-yellow-400 text-yellow-400 hover:bg-yellow-400 hover:text-black">
                               <Tag className="h-4 w-4 mr-1" />
                               Browse Marketplace
                             </Button>

@@ -1478,7 +1478,7 @@ const handlePurchaseXpPass = async () => {
                     <Ticket className="h-4 w-4 text-violet-500" />
                     <span className="font-medium">x3</span>
                   </div>
-                  <span className="text-xs text-gray-500">Regular Tickets</span>
+                  <span className="text-xs text-gray-500">Classic Tickets</span>
                 </div>
                 {hasPremium && (
                   <div className="flex flex-col items-center">
@@ -1542,7 +1542,7 @@ const handlePurchaseXpPass = async () => {
                     <Ticket className="h-5 w-5 text-violet-500" />
                   </div>
                   <div className="flex-1">
-                    <h4 className="font-medium">Regular Tickets</h4>
+                    <h4 className="font-medium">Classic Tickets</h4>
                     <p className="text-sm text-violet-600 font-bold">+{claimedRewardsInfo.standardTickets}</p>
                   </div>
                 </div>

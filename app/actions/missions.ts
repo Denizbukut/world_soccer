@@ -232,13 +232,13 @@ export async function claimBonusReward(username: string) {
 
   const { data: user } = await supabase
   .from("users")
-  .select("legendary_tickets")
+  .select("elite_tickets")
   .eq("username", username)
   .single()
 
 await supabase
   .from("users")
-  .update({ legendary_tickets: (user?.legendary_tickets || 0) + 1 })
+  .update({ elite_tickets: (user?.elite_tickets || 0) + 1 })
   .eq("username", username)
 
   if (!bonusRow) {

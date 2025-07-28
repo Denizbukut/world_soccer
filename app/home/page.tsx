@@ -256,7 +256,7 @@ export default function HomePage() {
               <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center mb-2">
                 <ArrowRightLeft className="h-5 w-5 text-green-500" />
               </div>
-              <h3 className="font-bold text-black">Trade</h3>
+              <h3 className="font-bold text-black">Transfer</h3>
               <p className="text-sm text-gray-700">Exchange cards</p>
             </div>
           </Link>

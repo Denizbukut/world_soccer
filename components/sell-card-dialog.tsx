@@ -164,6 +164,8 @@ export default function SellCardDialog({ isOpen, onClose, card, username, onSucc
         setTimeout(() => {
           onSuccess?.()
           onClose()
+          // Seite neu laden, um das Squad zu aktualisieren
+          window.location.reload()
         }, 1500)
       } else {
         console.error("Error from createListing:", result.error)
@@ -216,7 +218,7 @@ export default function SellCardDialog({ isOpen, onClose, card, username, onSucc
     },
   }
 
-  const rarityStyle = rarityStyles[card?.rarity || "common"]
+  const rarityStyle = rarityStyles[card?.rarity as keyof typeof rarityStyles] || rarityStyles.common
 
   return (
     <Dialog

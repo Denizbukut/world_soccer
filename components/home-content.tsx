@@ -976,7 +976,7 @@ const [copied, setCopied] = useState(false)
     {
       key: 'gamepass',
       title: 'Game Pass',
-      icon: <Crown className="h-8 w-8" />, 
+      icon: <Crown className="h-8 w-8 text-amber-800" />, 
       bg: 'from-amber-400 to-amber-600',
       border: 'border-yellow-100',
       text: 'Claim rewards!',
@@ -987,7 +987,7 @@ const [copied, setCopied] = useState(false)
     {
       key: 'xppass',
       title: 'XP Pass',
-      icon: <Sparkles className="h-8 w-8" />, 
+      icon: <Sparkles className="h-8 w-8 text-blue-800" />, 
       bg: 'from-blue-400 to-blue-600',
       border: 'border-blue-100',
       text: 'Boost your XP gain!', // Nur kurzer Text, keine Benefits und kein Kaufen-Button
@@ -998,7 +998,7 @@ const [copied, setCopied] = useState(false)
     {
       key: 'iconpass',
       title: 'Icon Pass',
-      icon: <Crown className="h-8 w-8 text-yellow-500" />, 
+      icon: <Crown className="h-8 w-8 text-yellow-600" />, 
       bg: 'from-white to-yellow-200',
       border: 'border-yellow-100',
       text: 'Unlock exclusive ICON rewards!',
@@ -1254,12 +1254,21 @@ const [copied, setCopied] = useState(false)
 
   return (
     <ProtectedRoute>
-      <div className="flex flex-col h-screen bg-gradient-to-b from-gray-50 to-white text-black">
+      <div 
+        className="flex flex-col min-h-screen text-white relative"
+        style={{
+          backgroundImage: 'url("/hintergrung.png")',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          backgroundAttachment: 'fixed'
+        }}
+      >
         {/* Header with glass effect */}
-        <header className="sticky top-0 z-30 backdrop-blur-md bg-white/90 border-b border-gray-100 shadow-sm">
+        <header className="sticky top-0 z-30 backdrop-blur-md bg-gradient-to-br from-[#232526]/90 to-[#414345]/90 border-b-2 border-yellow-400 shadow-sm">
           <div className="w-full px-4 py-3 flex items-center justify-between">
             <div className="flex items-center">
-              <h1 className="text-sm font-bold tracking-tight bg-gradient-to-r from-violet-600 to-fuchsia-600 bg-clip-text text-transparent">
+              <h1 className="text-sm font-bold tracking-tight bg-gradient-to-r from-yellow-400 to-yellow-600 bg-clip-text text-transparent">
         WORLD SOCCER
       </h1>
               {/* Social Icon Buttons */}
@@ -1289,25 +1298,25 @@ const [copied, setCopied] = useState(false)
     </div>
             </div>
     <div className="flex items-center gap-2 ml-2 flex-shrink-0">
-      <div className="flex flex-col items-center justify-center bg-white px-2 py-1 rounded-full shadow-sm border border-gray-100 min-w-[54px]">
-        <Ticket className="h-4 w-4 text-amber-500 mx-auto" />
-        <span className="font-medium text-xs text-center">{tickets}</span>
+      <div className="flex flex-col items-center justify-center bg-gradient-to-br from-[#232526] to-[#414345] px-2 py-1 rounded-full shadow-sm border-2 border-yellow-400 min-w-[54px]">
+        <Ticket className="h-4 w-4 text-yellow-400 mx-auto" />
+        <span className="font-medium text-xs text-center text-yellow-100">{tickets}</span>
       </div>
-      <div className="flex flex-col items-center justify-center bg-white px-2 py-1 rounded-full shadow-sm border border-gray-100 min-w-[54px]">
-        <Ticket className="h-4 w-4 text-purple-500 mx-auto" />
-        <span className="font-medium text-xs text-center">{eliteTickets}</span>
+      <div className="flex flex-col items-center justify-center bg-gradient-to-br from-[#232526] to-[#414345] px-2 py-1 rounded-full shadow-sm border-2 border-yellow-400 min-w-[54px]">
+        <Ticket className="h-4 w-4 text-yellow-400 mx-auto" />
+        <span className="font-medium text-xs text-center text-yellow-100">{eliteTickets}</span>
       </div>
-      <div className="flex flex-col items-center justify-center bg-white px-2 py-1 rounded-full shadow-sm border border-gray-100 min-w-[54px]">
-        <Crown className="h-4 w-4 text-indigo-500 mx-auto" />
-        <span className="font-medium text-xs text-center">{iconTickets}</span>
+      <div className="flex flex-col items-center justify-center bg-gradient-to-br from-[#232526] to-[#414345] px-2 py-1 rounded-full shadow-sm border-2 border-yellow-400 min-w-[54px]">
+        <Crown className="h-4 w-4 text-yellow-400 mx-auto" />
+        <span className="font-medium text-xs text-center text-yellow-100">{iconTickets}</span>
       </div>
     </div>
   </div>
 </header>
 
-        <main className="w-full px-2 md:px-6"> {/* Padding hinzugefügt */}
+        <main className="w-full px-2 md:px-6 flex-1"> {/* Padding hinzugefügt */}
          
-          <div className="grid grid-cols-6 gap-3 mt-2">
+          <div className="grid grid-cols-6 gap-3 mt-2 pb-4">
             {/* Profile */}
             <div className="col-span-3">
               {/* ...Profile Card... */}
@@ -1315,7 +1324,7 @@ const [copied, setCopied] = useState(false)
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4 }}
-                className="bg-white rounded-xl shadow-lg p-2 flex flex-col items-center justify-center min-h-[80px] h-full"
+                className="bg-gradient-to-br from-[#232526] to-[#414345] rounded-xl shadow-lg p-2 flex flex-col items-center justify-center min-h-[80px] h-full border-2 border-yellow-400"
               >
                 <button
                   onClick={() => setShowAvatarDialog(true)}
@@ -1367,8 +1376,8 @@ const [copied, setCopied] = useState(false)
                 </button>
                 {/* Username und Lvl nebeneinander */}
                 <div className="flex items-center gap-2 mt-1">
-                  <p className="text-sm font-semibold text-violet-700">{user?.username ? (user.username.length > 7 ? user.username.slice(0, 7) + '…' : user.username) : ''}</p>
-                  <span className="bg-violet-100 text-violet-700 text-xs px-2 py-0.5 rounded-full whitespace-nowrap font-bold">Lvl {user?.level || 1}</span>
+                  <p className="text-sm font-semibold text-yellow-100">{user?.username ? (user.username.length > 7 ? user.username.slice(0, 7) + '…' : user.username) : ''}</p>
+                  <span className="bg-yellow-400 text-white text-xs px-2 py-0.5 rounded-full whitespace-nowrap font-bold">Lvl {user?.level || 1}</span>
                 </div>
                 {/* Avatar-Auswahl-Dialog */}
                 <Dialog open={showAvatarDialog} onOpenChange={setShowAvatarDialog}>
@@ -1471,7 +1480,7 @@ const [copied, setCopied] = useState(false)
                       role="button"
                       aria-label={`Open ${passSlides[passIndex].title}`}
                     >
-                      <div className="w-14 h-14 rounded-full flex items-center justify-center bg-white text-2xl mb-2 relative">
+                      <div className="w-14 h-14 rounded-full flex items-center justify-center bg-white/90 text-2xl mb-2 relative shadow-lg">
                         {passSlides[passIndex].icon}
                       </div>
                       <div className={`text-lg font-bold ${passSlides[passIndex].color}`}>{passSlides[passIndex].title}</div>
@@ -1552,16 +1561,16 @@ const [copied, setCopied] = useState(false)
             {/* $ANI Card (replaces Chat) */}
             <div className="col-span-2">
               <div
-                className="bg-white rounded-xl p-2 shadow-lg flex flex-col items-center justify-center min-h-[70px] h-full text-center cursor-pointer hover:bg-gray-50 transition"
+                className="bg-gradient-to-br from-[#232526] to-[#414345] rounded-xl p-2 shadow-lg flex flex-col items-center justify-center min-h-[70px] h-full text-center cursor-pointer transition border-2 border-yellow-400"
                 onClick={() => router.push('/ani')}
                 role="button"
                 tabIndex={0}
                 aria-label="Go to $ANI page"
               >
-                <div className="w-8 h-8 rounded-full bg-black flex items-center justify-center mb-1">
+                <div className="w-8 h-8 rounded-full bg-yellow-400 flex items-center justify-center mb-1 border border-yellow-300">
                   <img src={getCloudflareImageUrl("/anime-images/ani-labs-logo-white.png")} alt="$ANI Logo" className="w-8 h-8" />
                 </div>
-                <div className="text-sm font-bold text-gray-900">$ANI</div>
+                <div className="text-sm font-bold text-yellow-100">$ANI</div>
               </div>
             </div>
             <div className="col-span-2">
@@ -1571,17 +1580,12 @@ const [copied, setCopied] = useState(false)
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2, duration: 0.4 }}
                   whileHover={{ scale: 1.04, boxShadow: '0 0 32px 0 rgba(255, 215, 0, 0.25)' }}
-                  className="relative bg-gradient-to-br from-yellow-200 via-pink-200 to-blue-200 rounded-2xl p-3 shadow-2xl flex flex-col items-center justify-center min-h-[70px] h-full text-center border-2 border-yellow-300 hover:from-yellow-100 hover:to-pink-100 transition overflow-hidden"
+                  className="relative bg-gradient-to-br from-[#232526] to-[#414345] rounded-2xl p-3 shadow-2xl flex flex-col items-center justify-center min-h-[70px] h-full text-center border-2 border-yellow-400 transition overflow-hidden"
                 >
-                  <motion.div
-                    className="absolute left-[-40%] top-0 w-1/2 h-full bg-gradient-to-r from-transparent via-yellow-100/60 to-transparent skew-x-[-20deg] pointer-events-none"
-                    animate={{ left: ['-40%', '120%'] }}
-                    transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
-                  />
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-yellow-300 via-pink-200 to-blue-200 flex items-center justify-center mb-1 shadow-[0_0_8px_2px_rgba(251,191,36,0.18)] border border-yellow-400">
-                    <ShoppingCart className="h-5 w-5 text-yellow-600 drop-shadow-lg" />
+                  <div className="w-8 h-8 rounded-full bg-yellow-400 flex items-center justify-center mb-1 shadow-[0_0_8px_2px_rgba(251,191,36,0.18)] border border-yellow-300">
+                    <ShoppingCart className="h-5 w-5 text-white drop-shadow-lg" />
                   </div>
-                  <div className="text-sm font-extrabold text-yellow-700 drop-shadow-sm tracking-wide">Shop</div>
+                  <div className="text-sm font-extrabold text-yellow-100 drop-shadow-sm tracking-wide">Shop</div>
                   <div className="text-xs text-pink-700 font-semibold mt-0.5">Exklusive Packs</div>
                 </motion.div>
               </Link>
@@ -1592,13 +1596,13 @@ const [copied, setCopied] = useState(false)
                   // Referral Dialog Open
                   setShowReferralDialog(true);
                 }}
-                className="w-full h-full rounded-xl bg-white p-2 shadow-lg flex flex-col items-center justify-center min-h-[70px] text-center font-bold hover:bg-gray-50 transition border border-gray-100 relative"
+                className="w-full h-full rounded-xl bg-gradient-to-br from-[#232526] to-[#414345] p-2 shadow-lg flex flex-col items-center justify-center min-h-[70px] text-center font-bold transition border-2 border-yellow-400 relative"
                 type="button"
               >
-                <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center mb-1">
-                  <Gift className="h-5 w-5 text-amber-700" />
+                <div className="w-8 h-8 rounded-full bg-yellow-400 flex items-center justify-center mb-1 border border-yellow-300">
+                  <Gift className="h-5 w-5 text-white" />
                 </div>
-                <div className="text-sm font-bold text-gray-900">Referrals</div>
+                <div className="text-sm font-bold text-yellow-100">Referrals</div>
                 {referredUsers.some((u) => u.level >= 5 && !u.reward_claimed) && (
                   <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow">
                     NEW
@@ -1610,9 +1614,19 @@ const [copied, setCopied] = useState(false)
             <div className="col-span-6 flex gap-0 w-full">
               {/* Deal of the Day */}
               <div
-                className="w-1/2 flex flex-col items-center bg-[#a259ff] rounded-xl p-3 h-full text-white cursor-pointer"
+                className="w-1/2 flex flex-col items-center rounded-xl p-3 h-full text-white cursor-pointer relative overflow-hidden"
+                style={{
+                  backgroundImage: 'url("/deal of the day.png")',
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  backgroundRepeat: 'no-repeat'
+                }}
                 onClick={() => setShowDailyDealDialog(true)}
               >
+                {/* Overlay für bessere Lesbarkeit */}
+                <div className="absolute inset-0 bg-black/30 rounded-xl"></div>
+                {/* Content über dem Overlay */}
+                <div className="relative z-10 w-full h-full flex flex-col items-center">
                 {dailyDeal ? (
                   <>
                     <div className="w-full aspect-[3/4] max-h-[160px] rounded-xl flex items-center justify-center mb-1 relative">
@@ -1647,6 +1661,7 @@ const [copied, setCopied] = useState(false)
                 ) : (
                   <div className="flex flex-1 items-center justify-center h-full text-white/70">No Deal of the Day</div>
                 )}
+                </div>
               </div>
               <Dialog open={showDailyDealDialog} onOpenChange={setShowDailyDealDialog}>
                 {dailyDeal && (
@@ -1679,9 +1694,19 @@ const [copied, setCopied] = useState(false)
               </Dialog>
               {/* Special Deal */}
               <div
-                className="w-1/2 flex flex-col items-center bg-[#2ec4f1] rounded-xl p-3 h-full text-white cursor-pointer"
+                className="w-1/2 flex flex-col items-center rounded-xl p-3 h-full text-white cursor-pointer relative overflow-hidden"
+                style={{
+                  backgroundImage: 'url("/special deal.jpg")',
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  backgroundRepeat: 'no-repeat'
+                }}
                 onClick={() => setShowSpecialDealDialog(true)}
               >
+                {/* Overlay für bessere Lesbarkeit */}
+                <div className="absolute inset-0 bg-black/30 rounded-xl"></div>
+                {/* Content über dem Overlay */}
+                <div className="relative z-10 w-full h-full flex flex-col items-center">
                 {specialDeal ? (
                   <>
                     <div className="w-full aspect-[3/4] max-h-[160px] rounded-xl flex items-center justify-center mb-1 relative">
@@ -1721,6 +1746,7 @@ const [copied, setCopied] = useState(false)
                 ) : (
                   <div className="flex flex-1 items-center justify-center h-full text-white/70">Kein Special Deal heute</div>
                 )}
+                </div>
               </div>
               <Dialog open={showSpecialDealDialog} onOpenChange={setShowSpecialDealDialog}>
                 {specialDeal && (
@@ -1838,18 +1864,18 @@ const [copied, setCopied] = useState(false)
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1, duration: 0.4 }}
-            className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden mt-6"
+            className="bg-gradient-to-br from-[#232526] to-[#414345] rounded-xl shadow-md border-2 border-yellow-400 overflow-hidden mt-6"
           >
             <div className="relative">
               <div className="relative p-3">
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center">
-                      <Gift className="h-4 w-4 text-violet-500" />
+                    <div className="w-8 h-8 rounded-full bg-yellow-400 flex items-center justify-center border border-yellow-300">
+                      <Gift className="h-4 w-4 text-white" />
                     </div>
                     <div>
-                      <h3 className="font-medium text-sm">Ticket Claim</h3>
-                      <p className="text-xs text-gray-500">
+                      <h3 className="font-medium text-sm text-yellow-100">Ticket Claim</h3>
+                      <p className="text-xs text-yellow-200">
   Get {ticketClaimAmount} tickets every 24 hours
   {ticketClaimAmount === 4 && (
     <span className="text-emerald-600 font-medium"> (+1 Clan Bonus)</span>
@@ -1863,8 +1889,8 @@ const [copied, setCopied] = useState(false)
                     size="sm"
                     className={`rounded-full px-4 ${
                       alreadyClaimed
-                        ? "bg-gray-100 text-gray-500 hover:bg-gray-100"
-                        : "bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 text-white"
+                        ? "bg-gray-600 text-gray-300 hover:bg-gray-600"
+                        : "bg-gradient-to-r from-yellow-400 to-yellow-600 hover:from-yellow-500 hover:to-yellow-700 text-white"
                     }`}
                   >
                     {claimLoading ? (
@@ -1889,19 +1915,19 @@ const [copied, setCopied] = useState(false)
           {/* Quick Actions: Friends & Missions */}
           <div className="mt-4 mb-20 grid grid-cols-2 gap-3">
             <Link href="/friends" className="block w-full h-full">
-              <div className="bg-white rounded-xl p-4 shadow-lg flex flex-col items-center justify-center min-h-[90px] h-full text-center hover:bg-gray-50 transition">
-                <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center mb-2">
-                  <Users className="h-5 w-5 text-rose-600" />
+              <div className="bg-gradient-to-br from-[#232526] to-[#414345] rounded-xl p-4 shadow-lg flex flex-col items-center justify-center min-h-[90px] h-full text-center transition border-2 border-yellow-400">
+                <div className="w-10 h-10 rounded-full bg-yellow-400 flex items-center justify-center mb-2 border border-yellow-300">
+                  <Users className="h-5 w-5 text-white" />
                 </div>
-                <div className="text-base font-bold text-gray-900">Friends</div>
+                <div className="text-base font-bold text-yellow-100">Friends</div>
               </div>
             </Link>
             <Link href="/missions" className="block w-full h-full">
-              <div className="bg-white rounded-xl p-4 shadow-lg flex flex-col items-center justify-center min-h-[90px] h-full text-center hover:bg-gray-50 transition">
-                <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center mb-2">
-                  <Trophy className="h-5 w-5 text-amber-600" />
+              <div className="bg-gradient-to-br from-[#232526] to-[#414345] rounded-xl p-4 shadow-lg flex flex-col items-center justify-center min-h-[90px] h-full text-center transition border-2 border-yellow-400">
+                <div className="w-10 h-10 rounded-full bg-yellow-400 flex items-center justify-center mb-2 border border-yellow-300">
+                  <Trophy className="h-5 w-5 text-white" />
                 </div>
-                <div className="text-base font-bold text-gray-900">Missions</div>
+                <div className="text-base font-bold text-yellow-100">Missions</div>
               </div>
             </Link>
           </div>

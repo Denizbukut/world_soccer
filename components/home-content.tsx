@@ -1498,7 +1498,7 @@ const [copied, setCopied] = useState(false)
                 {/* Avatar-Auswahl-Dialog */}
                 <Dialog open={showAvatarDialog} onOpenChange={setShowAvatarDialog}>
                   <DialogContent>
-                    <DialogTitle>Avatar & XP-Ring auswählen</DialogTitle>
+                    <DialogTitle>Choose Avatar & XP-Ring</DialogTitle>
                     <div className="grid grid-cols-3 gap-3 mt-4">
                       {avatarOptions.map((avatar) => (
                         <button
@@ -1529,7 +1529,7 @@ const [copied, setCopied] = useState(false)
         </div>
                     {/* XP-Ring Farbauswahl */}
                     <div className="mt-6">
-                      <div className="text-xs font-semibold mb-2">XP-Ring Farbe:</div>
+                      <div className="text-xs font-semibold mb-2">XP-Ring Color:</div>
                       <div className="flex gap-2">
                         {Object.entries(XP_COLORS).map(([color, val]) => (
                           <button

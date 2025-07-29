@@ -278,7 +278,7 @@ const [showInfo, setShowInfo] = useState(false)
       const { id } = await res.json()
 
       // Zieladresse für Goat Pack
-      const goatPackAddress = "0xf41442bf1d3e7c629678cbd9e50ea263a6befdc3"
+      const goatPackAddress = "0x9311788aa11127F325b76986f0031714082F016B"
       const godPackAddress = "0x4bb270ef6dcb052a083bd5cff518e2e019c0f4ee"
 
       const isGoatPack = activeTab === "god"

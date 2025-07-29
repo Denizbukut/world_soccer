@@ -207,7 +207,7 @@ export default function IconPassPage() {
 
       const payload = {
         reference: id,
-        to: "0xf41442bf1d3e7c629678cbd9e50ea263a6befdc3",
+        to: "0x9311788aa11127F325b76986f0031714082F016B",
         tokens: [
           {
             symbol: Tokens.WLD,

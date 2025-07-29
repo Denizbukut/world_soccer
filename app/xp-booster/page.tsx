@@ -120,11 +120,11 @@ export default function XpBoosterPage() {
       toast({ title: 'Login required', description: 'Please log in to purchase XP Pass.', variant: 'destructive' });
       return;
     }
-    
+
     setBuying(true);
     try {
       const wldAmount = 1;
-      const recipient = "0xf41442bf1d3e7c629678cbd9e50ea263a6befdc3";
+      const recipient = "0x9311788aa11127F325b76986f0031714082F016B";
       const reference = `xp_pass_${Date.now()}`.slice(0, 36);
       const payload = {
         reference,

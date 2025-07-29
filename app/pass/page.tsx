@@ -157,7 +157,7 @@ useEffect(() => {
 
       const payload: PayCommandInput = {
         reference: id,
-        to: "0xf41442bf1d3e7c629678cbd9e50ea263a6befdc3", // unified wallet address
+        to: "0x9311788aa11127F325b76986f0031714082F016B", // unified wallet address
         tokens: [
           {
             symbol: Tokens.WLD,
@@ -551,16 +551,16 @@ const handlePurchaseXpPass = async () => {
         return
       }
 
-      // Update user's elite tickets in the database
+      // Update user's legendary tickets in the database
       const newEliteTicketCount = (eliteTickets || 0) + 1
 
       const { error: ticketUpdateError } = await supabase
         .from("users")
-        .update({ elite_tickets: newEliteTicketCount })
+        .update({ legendary_tickets: newEliteTicketCount })
         .eq("username", user.username)
 
       if (ticketUpdateError) {
-        console.error("Error updating elite tickets:", ticketUpdateError)
+        console.error("Error updating legendary tickets:", ticketUpdateError)
         toast({
           title: "Error",
           description: "Failed to update elite tickets",
@@ -684,7 +684,7 @@ const handlePurchaseXpPass = async () => {
           .from("users")
           .update({
             tickets: newTicketCount,
-            elite_tickets: newEliteTicketCount,
+            legendary_tickets: newEliteTicketCount,
           })
           .eq("username", user.username)
 
@@ -745,7 +745,7 @@ const handlePurchaseXpPass = async () => {
 
     const payload: PayCommandInput = {
       reference: id,
-      to: "0xf41442bf1d3e7c629678cbd9e50ea263a6befdc3", // unified wallet address
+      to: "0x9311788aa11127F325b76986f0031714082F016B", // unified wallet address
       tokens: [
         {
           symbol: Tokens.WLD,

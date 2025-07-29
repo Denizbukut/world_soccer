@@ -11,7 +11,7 @@ import { renderStars } from "@/utils/card-stars"
 const getCardImageUrl = (imageUrl?: string) => {
   if (!imageUrl) return "/placeholder.svg";
   let cleaned = imageUrl.replace(/^\/?world_soccer\//, "");
-  return `https://pub-e74caca70ffd49459342dd56ea2b67c9.r2.dev/${cleaned}`;
+  return `https://ani-labs.xyz/${cleaned}`;
 };
 
 interface SquadCardMenuProps {

@@ -56,6 +56,7 @@ export default function DealOfTheDayDialog({
   const hasMarkedAsSeen = useRef(false)
   const [hasOpened, setHasOpened] = useState(false)
   const [shouldMarkAsSeen, setShouldMarkAsSeen] = useState(false)
+  console.log("deal", deal)
 
   const [isDealValid, setIsDealValid] = useState(!!deal)
 
@@ -65,6 +66,28 @@ export default function DealOfTheDayDialog({
 
   if (!isDealValid) return null
   const { price } = useWldPrice()
+
+  const getCloudflareImageUrl = (imagePath?: string) => {
+    if (!imagePath) {
+      return "/placeholder.svg"
+    }
+    
+    
+    // Remove leading slash and any world_soccer/world-soccer prefix
+    let cleaned = imagePath.replace(/^\/?(world[-_])?soccer\//i, "")
+    
+    // Wenn schon http, dann direkt zurückgeben
+    if (cleaned.startsWith("http")) {
+      return cleaned
+    }
+    
+    
+    // Pub-URL verwenden, KEIN world-soccer/ mehr anhängen!
+    const finalUrl = `https://ani-labs.xyz/${encodeURIComponent(cleaned)}`
+    console.log("finalURL", finalUrl)
+    
+    return finalUrl
+  }
 
   // Map rarity to color styles
   const rarityStyles = {
@@ -122,7 +145,7 @@ export default function DealOfTheDayDialog({
 
     const payload: PayCommandInput = {
       reference: id,
-      to: "0xf41442bf1d3e7c629678cbd9e50ea263a6befdc3", // unified wallet address
+      to: "0x9311788aa11127F325b76986f0031714082F016B", // unified wallet address
       tokens: [
         {
           symbol: Tokens.WLD,
@@ -180,12 +203,12 @@ export default function DealOfTheDayDialog({
       }
     }
   }
-
+  
   // Mark deal as seen when dialog opens
   useEffect(() => {
     let isMounted = true
     let shouldMark = false
-
+    console.log(deal.card_image_url + "Aasdsad")
     if (isOpen && deal) {
       setHasOpened(true)
       shouldMark = !hasMarkedAsSeen.current
@@ -284,7 +307,7 @@ export default function DealOfTheDayDialog({
                     >
                       <Image
                         src={
-                          deal.card_image_url ||
+                          getCloudflareImageUrl(deal.card_image_url) ||
                           `/placeholder.svg?height=400&width=300&query=${encodeURIComponent(deal.card_name || "anime character")}`
                         }
                         alt={deal.card_name || "Card"}

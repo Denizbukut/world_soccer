@@ -434,7 +434,7 @@ const [cardFromParams, setCardFromParams] = useState<Card | null>(null)
     setTimeout(() => {
       setShowLevelUpAnimation(false);
       window.location.reload();
-    }, 3000);
+    }, 1000);
   } catch (error) {
     toast({
       title: "Level Up Failed",

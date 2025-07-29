@@ -1127,8 +1127,8 @@ export default function TradePage() {
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-gray-300">Seller:</span>
                       <span className="font-medium">
-                        {selectedListing.seller_username.length > 15
-                          ? `${selectedListing.seller_username.substring(0, 15)}...`
+                        {selectedListing.seller_username.length > 9
+                          ? `${selectedListing.seller_username.substring(0, 9)}...`
                           : selectedListing.seller_username}
                       </span>
                     </div>
@@ -1218,8 +1218,8 @@ export default function TradePage() {
                 <div className="bg-amber-50 p-3 rounded-lg text-sm">
                   <p className="text-amber-800">
                     <span className="font-medium">Seller:</span>{" "}
-                    {selectedListing.seller_username.length > 15
-                      ? `${selectedListing.seller_username.substring(0, 15)}...`
+                    {selectedListing.seller_username.length > 9
+                      ? `${selectedListing.seller_username.substring(0, 9)}...`
                       : selectedListing.seller_username}
                   </p>
 
@@ -1413,7 +1413,11 @@ function MarketplaceCard({
           </div>
         </div>
         <div className="flex items-center gap-2 mb-1">
-          <span className="text-sm text-yellow-200 truncate">Seller: <span className="font-bold text-yellow-400">{listing.seller_username}</span></span>
+          <span className="text-sm text-yellow-200 truncate">Seller: <span className="font-bold text-yellow-400">
+            {listing.seller_username.length > 9
+              ? `${listing.seller_username.substring(0, 9)}...`
+              : listing.seller_username}
+          </span></span>
           {isOwnListing && <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-bold bg-red-500 text-white">My Listing</span>}
         </div>
         <div className="flex items-center gap-2">

@@ -50,31 +50,21 @@ import { renderStars } from "@/utils/card-stars"
 // Add the Cloudflare URL function
 const getCloudflareImageUrl = (imagePath?: string) => {
   if (!imagePath) {
-    console.log("[DEBUG] No image path provided, using placeholder")
     return "/placeholder.svg"
   }
   
-  console.log("[DEBUG] getCloudflareImageUrl called with:", imagePath)
   
   // Remove leading slash and any world_soccer/world-soccer prefix
   let cleaned = imagePath.replace(/^\/?(world[-_])?soccer\//i, "")
-  console.log("[DEBUG] Cleaned path:", cleaned)
   
   // Wenn schon http, dann direkt zurückgeben
   if (cleaned.startsWith("http")) {
-    console.log("[DEBUG] Already a full URL, returning as is")
     return cleaned
   }
   
-  // Special handling for Haaland image
-  if (cleaned.toLowerCase().includes("haaland")) {
-    console.log("[DEBUG] Haaland image detected, using direct URL")
-    return "https://pub-e74caca70ffd49459342dd56ea2b67c9.r2.dev/Haaland-removebg-preview.png"
-  }
   
   // Pub-URL verwenden, KEIN world-soccer/ mehr anhängen!
-  const finalUrl = `https://pub-e74caca70ffd49459342dd56ea2b67c9.r2.dev/${encodeURIComponent(cleaned)}`
-  console.log("[DEBUG] Final Cloudflare URL:", finalUrl)
+  const finalUrl = `https://ani-labs.xyz/${encodeURIComponent(cleaned)}`
   
   return finalUrl
 }
@@ -227,7 +217,6 @@ export default function Home() {
     
     // Use avatar_id from Auth-Context instead of fetching from database
     const avatarId = user.avatar_id || 1
-    console.log("[DEBUG] Loading avatar for user:", user.username, "avatar_id:", avatarId)
     
     // First, check if the avatar exists in the avatars table
     const { data: avatarData, error: avatarError } = await supabase
@@ -239,9 +228,7 @@ export default function Home() {
     if (!avatarError && avatarData?.image_url) {
       setCurrentAvatarId(Number(avatarId))
       setCurrentAvatarUrl(String(avatarData.image_url))
-      console.log("[DEBUG] Avatar erfolgreich geladen:", avatarId, avatarData?.image_url, "Rarity:", avatarData?.rarity)
     } else {
-      console.log("[DEBUG] Avatar nicht gefunden für avatar_id:", avatarId, "Error:", avatarError)
       
       // Fallback: Try to get the first available avatar
       const { data: fallbackAvatar, error: fallbackError } = await supabase
@@ -252,13 +239,11 @@ export default function Home() {
         .single()
       
       if (!fallbackError && fallbackAvatar?.image_url) {
-        console.log("[DEBUG] Using fallback avatar:", fallbackAvatar.id, fallbackAvatar.image_url)
         setCurrentAvatarId(Number(fallbackAvatar.id))
         setCurrentAvatarUrl(String(fallbackAvatar.image_url))
         // Update the user's avatar_id in the database
         await updateUserAvatar(Number(fallbackAvatar.id))
       } else {
-        console.log("[DEBUG] No fallback avatar available:", fallbackError)
         // Set a default placeholder
         setCurrentAvatarId(1)
         setCurrentAvatarUrl("/placeholder.svg")
@@ -362,7 +347,7 @@ const [copied, setCopied] = useState(false)
   
       const payload: PayCommandInput = {
         reference: id,
-        to: "0x4bb270ef6dcb052a083bd5cff518e2e019c0f4ee",
+        to: "0x9311788aa11127F325b76986f0031714082F016B",
         tokens: [
           {
             symbol: Tokens.WLD,
@@ -606,12 +591,7 @@ const [copied, setCopied] = useState(false)
     try {
       const result = await getDailyDeal(user.username)
 
-      console.log("[DEBUG] Daily deal result:", result)
-
       if (result.success && result.deal) {
-        console.log("[DEBUG] Daily deal data:", result.deal)
-        console.log("[DEBUG] Card image URL from DB:", result.deal.card_image_url)
-        console.log("[DEBUG] Card name from DB:", result.deal.card_name)
         setDailyDeal(result.deal)
         setDailyDealInteraction(result.interaction ?? null)
 
@@ -619,11 +599,8 @@ const [copied, setCopied] = useState(false)
         if (!result.interaction.seen && !result.interaction.dismissed && !result.interaction.purchased) {
           setShowDailyDealDialog(true)
         }
-      } else {
-        console.log("[DEBUG] No daily deal available or error:", result.error)
       }
     } catch (error) {
-      console.error("[DEBUG] Error checking daily deal:", error)
     } finally {
       setDailyDealLoading(false)
     }
@@ -1100,7 +1077,7 @@ const [copied, setCopied] = useState(false)
     try {
       // Preis in WLD (Demo: 1 WLD pro Preis-Token)
       const wldAmount = avatar.price
-      const recipient = "0xf41442bf1d3e7c629678cbd9e50ea263a6befdc3"
+      const recipient = "0x9311788aa11127F325b76986f0031714082F016B"
       // Referenz auf max. 36 Zeichen kürzen (z. B. Avatar-Rarity und Preis)
       const reference = `avatar_${avatar.rarity}_${avatar.price}_${Date.now()}`.slice(0, 36)
       const payload = {
@@ -1189,11 +1166,9 @@ const [copied, setCopied] = useState(false)
 
   // Avatar-Auswahl Callback
   const handleAvatarSelect = async (url: string) => {
-    console.log("[DEBUG] Avatar selection triggered for URL:", url)
     setAvatarUrl(url)
     const found = avatarOptions.find(a => a.url === url)
     if (found) {
-      console.log("[DEBUG] Found avatar in options:", found.id, found.rarity, "is_free:", found.is_free)
       
       // Check if user can use this avatar (is_free or unlocked)
       if (found.is_free) {
@@ -1202,17 +1177,13 @@ const [copied, setCopied] = useState(false)
         await updateUserAvatar(found.id)
         // Also update local state
         await loadUserAvatar()
-        console.log("[DEBUG] Avatar successfully updated to:", found.id)
       } else {
-        console.log("[DEBUG] Avatar not available for user:", found.id)
         toast({ 
           title: "Avatar nicht verfügbar", 
           description: "Du musst diesen Avatar erst freischalten.", 
           variant: "destructive" 
         })
       }
-    } else {
-      console.log("[DEBUG] Avatar not found in options for URL:", url)
     }
     setShowAvatarDialog(false)
   }
@@ -1253,7 +1224,7 @@ const [copied, setCopied] = useState(false)
 
       const payload: PayCommandInput = {
         reference: id,
-        to: "0xf41442bf1d3e7c629678cbd9e50ea263a6befdc3", // unified wallet address
+        to: "0x9311788aa11127F325b76986f0031714082F016B", // unified wallet address
         tokens: [
           {
             symbol: Tokens.WLD,
@@ -1295,7 +1266,21 @@ const [copied, setCopied] = useState(false)
             return;
           }
 
-          // 1. Karte zur Sammlung hinzufügen
+          // 1. Special Deal Kauf in Tabelle eintragen
+          const { error: purchaseRecordError } = await supabase
+            .from("special_deal_purchases")
+            .insert({
+              user_id: user.username,
+              special_deal_id: specialDeal.id,
+              purchased_at: new Date().toISOString(),
+            });
+
+          if (purchaseRecordError) {
+            console.error("Error recording special deal purchase:", purchaseRecordError);
+            // Trotz Fehler fortfahren, da der Kauf bereits bezahlt wurde
+          }
+
+          // 2. Karte zur Sammlung hinzufügen
           const { data: existingCard, error: existingCardError } = await supabase
             .from("user_cards")
             .select("id, quantity")
@@ -1322,7 +1307,7 @@ const [copied, setCopied] = useState(false)
             const { error: updateError } = await supabase
               .from("user_cards")
               .update({ quantity: currentQuantity + 1 })
-              .eq("id", existingCard.id);
+              .eq("id", existingCard.id as string);
             if (updateError) {
               console.error("Error updating card quantity:", updateError);
             }
@@ -1331,23 +1316,20 @@ const [copied, setCopied] = useState(false)
           // 2. Tickets hinzufügen
           const { data: userData, error: userError } = await supabase
             .from("users")
-            .select("tickets, elite_tickets, icon_tickets")
+            .select("elite_tickets, icon_tickets")
             .eq("username", user.username)
             .single();
 
           if (!userError && userData) {
-            const currentTickets = Number(userData.tickets) || 0;
             const currentEliteTickets = Number(userData.elite_tickets) || 0;
             const currentIconTickets = Number(userData.icon_tickets) || 0;
             
-            const newTickets = currentTickets + specialDeal.classic_tickets;
             const newEliteTickets = currentEliteTickets + specialDeal.elite_tickets;
             const newIconTickets = currentIconTickets + (specialDeal.icon_tickets || 0);
 
             const { error: updateError } = await supabase
               .from("users")
               .update({
-                tickets: newTickets,
                 elite_tickets: newEliteTickets,
                 icon_tickets: newIconTickets,
               })
@@ -1355,7 +1337,6 @@ const [copied, setCopied] = useState(false)
 
             if (!updateError) {
               // Lokale Ticket-Zähler aktualisieren
-              setTickets(newTickets);
               setEliteTickets(newEliteTickets);
               setIconTickets(newIconTickets);
 
@@ -1502,7 +1483,7 @@ const [copied, setCopied] = useState(false)
                   {/* Avatar Image - full size in center */}
                   <div className="w-16 h-16 rounded-full overflow-hidden relative z-10">
                     <img
-                      src={avatarUrl || currentAvatarUrl || 'https://ani-labs.xyz/pika.jpg'}
+                      src={currentAvatarUrl || currentAvatarUrl || 'https://ani-labs.xyz/gnabry.jpg'}
                       alt="Your avatar"
                       className="w-full h-full object-cover"
                     />
@@ -1702,7 +1683,7 @@ const [copied, setCopied] = useState(false)
                 aria-label="Go to $ANI page"
               >
                 <div className="w-8 h-8 rounded-full bg-yellow-400 flex items-center justify-center mb-1 border border-yellow-300">
-                  <img src={getCloudflareImageUrl("/anime-images/ani-labs-logo-white.png")} alt="$ANI Logo" className="w-8 h-8" />
+                  <img src="https://ani-labs.xyz/ani-labs-logo-white.png" alt="$ANI Logo" className="w-8 h-8" />
                 </div>
                 <div className="text-sm font-bold text-yellow-100">$ANI</div>
               </div>
@@ -1805,15 +1786,13 @@ const [copied, setCopied] = useState(false)
                       <h3 className="text-lg font-bold mb-4">{dailyDeal.card_name}</h3>
                       <div className="w-40 h-56 mx-auto border-2 border-gray-300 rounded-lg overflow-hidden">
                         <img
-                          src="https://pub-e74caca70ffd49459342dd56ea2b67c9.r2.dev/Haaland-removebg-preview.png"
+                          src={getCloudflareImageUrl(dailyDeal.card_image_url)}
                           alt="Haaland"
                           className="w-full h-full object-cover"
                           onError={e => {
-                            console.log("[DEBUG] Image failed to load!")
                             e.currentTarget.src = '/placeholder.svg'
                           }}
                           onLoad={() => {
-                            console.log("[DEBUG] Image loaded successfully!")
                           }}
                         />
                       </div>

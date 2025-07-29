@@ -8,7 +8,7 @@ const nextConfig = {
   },
   images: {
     domains: [
-      'fda1523f9dc7558ddc4fcf148e01a03a.r2.cloudflarestorage.com',
+      'ani-labs.xyz',
       'upload.wikimedia.org',
     ],
     remotePatterns: [
@@ -20,7 +20,7 @@ const nextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'fda1523f9dc7558ddc4fcf148e01a03a.r2.cloudflarestorage.com',
+        hostname: 'ani-labs.xyz',
         port: '',
         pathname: '/**',
       },

@@ -1646,7 +1646,7 @@ const [copied, setCopied] = useState(false)
         className="mt-2 text-lg font-bold text-yellow-300 drop-shadow-lg"
         style={{ letterSpacing: 1 }}
       >
-        Win $200 in WLD!
+        Win $50 in WLD!
       </motion.div>
     </motion.div>
     <div>

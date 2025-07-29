@@ -156,8 +156,17 @@ export default function TradeMenu() {
         return
       }
 
+      // Deduplicate user cards by card_id - keep only one entry per card
+      const uniqueUserCards = userCardsData.reduce((acc, current) => {
+        const existingCard = acc.find(card => card.card_id === current.card_id)
+        if (!existingCard) {
+          acc.push(current)
+        }
+        return acc
+      }, [] as typeof userCardsData)
+
       // Extract card IDs
-      const cardIds = userCardsData.map((uc) => uc.card_id)
+      const cardIds = uniqueUserCards.map((uc) => uc.card_id)
 
       // Fetch the actual card details
       const { data: cardsData, error: cardsError } = await supabase
@@ -184,7 +193,7 @@ export default function TradeMenu() {
       })
 
       // Combine the data
-      const combinedData = userCardsData
+      const combinedData = uniqueUserCards
         .map((userCard) => {
           const details = cardMap.get(userCard.card_id)
           if (!details) return null

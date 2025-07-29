@@ -6,16 +6,11 @@ import { useRouter } from "next/navigation"
 import { ArrowLeft, Trophy } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import CardItem from "@/components/card-item"
+import { WEEKLY_CONTEST_CONFIG, getContestEndTimestamp, getTimeUntilContestEnd } from "@/lib/weekly-contest-config"
 
-const WEEKLY_PRIZE_POOL = [
-  { rank: "1st Place", reward: "150 WLD + 5000 $ANI", icon: "🥇" },
-  { rank: "2nd Place", reward: "100 WLD + 3000 $ANI", icon: "🥈" },
-  { rank: "3rd Place", reward: "70 WLD + 1000 $ANI", icon: "🥉" },
-  { rank: "4th–6th Place", reward: "30 WLD", icon: "🎖️" },
-  { rank: "7th–10th Place", reward: "15 WLD", icon: "🎖️" },
-]
+const WEEKLY_PRIZE_POOL = WEEKLY_CONTEST_CONFIG.prizePool
 
-const CONTEST_END_TIMESTAMP = new Date("2025-07-02T23:59:59Z").getTime()
+const CONTEST_END_TIMESTAMP = getContestEndTimestamp()
 
 type Entry = {
   user_id: string
@@ -33,7 +28,7 @@ export default function WeeklyContestPage() {
   const [leaderboard, setLeaderboard] = useState<Entry[]>([])
   const [userStats, setUserStats] = useState<UserStats | null>(null)
   const [loading, setLoading] = useState(true)
-  const [countdown, setCountdown] = useState(CONTEST_END_TIMESTAMP - Date.now())
+  const [countdown, setCountdown] = useState(getTimeUntilContestEnd())
 
   useEffect(() => {
     const fetchData = async () => {
@@ -65,8 +60,7 @@ export default function WeeklyContestPage() {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      const diff = CONTEST_END_TIMESTAMP - Date.now()
-      setCountdown(diff > 0 ? diff : 0)
+      setCountdown(getTimeUntilContestEnd())
     }, 1000)
     return () => clearInterval(interval)
   }, [])

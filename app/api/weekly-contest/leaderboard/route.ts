@@ -1,9 +1,10 @@
 import { createClient } from "@supabase/supabase-js"
 import { NextResponse } from "next/server"
+import { WEEKLY_CONTEST_CONFIG } from "@/lib/weekly-contest-config"
 
 export async function GET() {
   const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
-  const weekStart = "2025-06-25"
+  const weekStart = WEEKLY_CONTEST_CONFIG.weekStart
 
   try {
     // Top 20 Weekly

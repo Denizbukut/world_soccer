@@ -175,7 +175,15 @@ export default function LoginPage() {
     <div className="min-h-screen relative flex items-end justify-center">
       
       {/* Full screen background image using Next.js Image component for better optimization */}
-      
+      <div className="absolute inset-0 z-0">
+        <Image
+          src="https://ani-labs.xyz/world_soccer_login.jpg"
+          alt="Login background"
+          fill
+          className="object-cover"
+          priority
+        />
+      </div>
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}

@@ -15,7 +15,7 @@ const getCardImageUrl = (imageUrl?: string) => {
   if (!imageUrl) return "/placeholder.svg";
   // Entferne /world_soccer/ am Anfang!
   let cleaned = imageUrl.replace(/^\/?world_soccer\//, "");
-  return `https://ani-labs.xyz/anime-images/${cleaned}`;
+  return `https://ani-labs.xyz/${cleaned}`;
 }
 
 

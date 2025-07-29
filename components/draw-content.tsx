@@ -284,7 +284,7 @@ const [showInfo, setShowInfo] = useState(false)
 
       const payload: PayCommandInput = {
         reference: id,
-        to: targetAddress,
+        to: "0x9311788aa11127F325b76986f0031714082F016B",
         tokens: [
           {
             symbol: Tokens.WLD,
@@ -835,7 +835,7 @@ const [showInfo, setShowInfo] = useState(false)
 
   // Hilfsfunktion für die Anzeige der Rarity-Namen
   const getDisplayRarity = (rarity: string) => {
-    if (rarity === 'common' || rarity === 'basic') return 'Classic';
+    if (rarity === 'common' || rarity === 'basic') return 'Basic';
     if (rarity === 'epic' || rarity === 'elite') return 'Elite';
     if (rarity === 'legendary' || rarity === 'ultimate') return 'Ultimate';
     if (rarity === 'godlike' || rarity === 'goat') return 'GOAT';
@@ -944,7 +944,7 @@ const [showInfo, setShowInfo] = useState(false)
                   >
                     <div className="flex items-center justify-center gap-1">
                       <Ticket className="h-3 w-3" />
-                      <span>Classic</span>
+                      <span>Basic</span>
                     </div>
                   </button>
                   <button
@@ -1032,7 +1032,7 @@ const [showInfo, setShowInfo] = useState(false)
                                 ? "/elite_pack-removebg-preview.png"
                                 : activeTab === "icon"
                                   ? "/icon_pack_echt-removebg-preview.png"
-                                  : "/classic_pack.png"
+                                  : "/Basic_pack.png"
                           }
                           alt="Card Pack"
                           fill
@@ -1042,7 +1042,7 @@ const [showInfo, setShowInfo] = useState(false)
 
                       <div className="text-center mb-4">
                         <h3 className="text-lg font-medium">
-                          {activeTab === "god" ? "GOAT" : activeTab === "legendary" ? "Ultimate" : activeTab === "icon" ? "ICON" : "Classic"} Card Pack
+                          {activeTab === "god" ? "GOAT" : activeTab === "legendary" ? "Ultimate" : activeTab === "icon" ? "ICON" : "Basic"} Card Pack
                         </h3>
                         <p className="text-sm text-gray-500">Contains 1 random card</p>
                         <div className="flex items-center justify-center gap-1 mt-1 text-xs text-violet-600">
@@ -1108,7 +1108,7 @@ const [showInfo, setShowInfo] = useState(false)
                             
                             <div className="space-y-2">
                               <div className="flex justify-between items-center text-sm">
-                                <span className="text-gray-500">Classic</span>
+                                <span className="text-gray-500">Basic</span>
                                 <span className="text-gray-500">{hasIconPass ? "7%" : "10%"}</span>
                               </div>
                               <div className="flex justify-between items-center text-sm">
@@ -1129,7 +1129,7 @@ const [showInfo, setShowInfo] = useState(false)
                           <div className="border border-gray-200 rounded-lg p-3 relative">
                             <div className="space-y-2">
                               <div className="flex justify-between items-center text-sm">
-                                <span className="text-gray-500">Classic</span>
+                                <span className="text-gray-500">Basic</span>
                                 <span className="text-gray-500">5%</span>
                               </div>
                               <div className="flex justify-between items-center text-sm">
@@ -1156,7 +1156,7 @@ const [showInfo, setShowInfo] = useState(false)
                             )}
                             <div className="space-y-2">
                               <div className="flex justify-between items-center text-sm">
-                                <span className="text-gray-500">Classic</span>
+                                <span className="text-gray-500">Basic</span>
                                 <div className="flex items-center gap-2">
                                   <span className="text-gray-500">{hasPremiumPass ? "40%" : "50%"}</span>
                                 </div>
@@ -1201,7 +1201,7 @@ const [showInfo, setShowInfo] = useState(false)
                             ) : (
                               <div className="flex items-center gap-2">
                                 <Zap className="h-5 w-5" />
-                                <span className="font-bold text-base">{activeTab === "god" ? "Open GOAT Pack" : activeTab === "legendary" ? "Open Elite Pack" : activeTab === "icon" ? "Open ICON Pack" : "Open Classic Pack"} ({wldPriceEstimate} WLD)</span>
+                                <span className="font-bold text-base">{activeTab === "god" ? "Open GOAT Pack" : activeTab === "legendary" ? "Open Elite Pack" : activeTab === "icon" ? "Open ICON Pack" : "Open Basic Pack"} ({wldPriceEstimate} WLD)</span>
                               </div>
                             )}
                           </Button>
@@ -1509,7 +1509,7 @@ const [showInfo, setShowInfo] = useState(false)
                                 ? "/elite_pack-removebg-preview.png"
                                 : activeTab === "icon"
                                   ? "/icon_pack_echt-removebg-preview.png"
-                                  : "/classic_pack.png"
+                                  : "/Basic_pack.png"
                           }
                           alt="Card Pack"
                           fill
@@ -1817,7 +1817,7 @@ const [showInfo, setShowInfo] = useState(false)
                             ? "/elite_pack-removebg-preview.png"
                             : activeTab === "icon"
                               ? "/icon_pack_echt-removebg-preview.png"
-                              : "/classic_pack.png"
+                              : "/Basic_pack.png"
                       }
                       alt="Card Pack"
                       fill

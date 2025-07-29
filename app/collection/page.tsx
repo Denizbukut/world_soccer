@@ -88,13 +88,14 @@ export default function CollectionPage() {
       const supabase = getSupabaseBrowserClient()
 
       try {
-        // 1. First get user's cards
+        // 1. First get user's cards - only one entry per card_id
         if (!supabase) return
         const { data: userCardsData, error: userCardsError } = await supabase
           .from("user_cards")
           .select(`id, card_id, quantity, level`)
           .eq("user_id", user.username)
           .gt("quantity", 0)
+          .order('card_id', { ascending: true })
 
         if (userCardsError) {
           console.error("Error fetching user cards:", userCardsError)
@@ -114,10 +115,19 @@ export default function CollectionPage() {
           return
         }
 
-        // 2. Get the card IDs to fetch
-        const cardIds = userCardsData.map((uc) => uc.card_id)
+        // 2. Deduplicate user cards by card_id - keep only one entry per card
+        const uniqueUserCards = userCardsData.reduce((acc, current) => {
+          const existingCard = acc.find(card => card.card_id === current.card_id && card.level === current.level)
+          if (!existingCard) {
+            acc.push(current)
+          }
+          return acc
+        }, [] as typeof userCardsData)
 
-        // 3. Fetch the card details including epoch
+        // 3. Get the card IDs to fetch
+        const cardIds = uniqueUserCards.map((uc) => uc.card_id)
+
+        // 4. Fetch the card details including epoch
         const { data: cardsData, error: cardsError } = await supabase
           .from("cards")
           .select("id, name, character, image_url, rarity, epoch")
@@ -140,12 +150,12 @@ export default function CollectionPage() {
           cardMap.set(c.id, c)
         })
 
-        // 4. Get available epochs from user's cards
+        // 5. Get available epochs from user's cards
         const epochs = [...new Set(cardsData?.map((card) => card.epoch).filter(Boolean))] as number[]
         setAvailableEpochs(epochs.sort((a, b) => b - a)) // Sort newest first
 
-        // 5. Combine the data
-        const processedCards = userCardsData
+        // 6. Combine the data
+        const processedCards = uniqueUserCards
           .map((userCard) => {
             const details = cardMap.get(userCard.card_id)
             if (!details) return null
@@ -436,9 +446,6 @@ export default function CollectionPage() {
               </div>
             ))}
           </div>
-          {/* Platzhalter für Drag&Drop oder Kartenauswahl */}
-          <div className="mt-8 text-white text-center">Hier kannst du später deine Karten in die Formation ziehen oder auswählen.</div>
-
           {/* Save Squad Button */}
           <button
             className="mt-8 px-6 py-3 bg-green-600 text-white rounded-full font-bold shadow-lg hover:bg-green-700 transition disabled:opacity-60"
@@ -482,7 +489,7 @@ export default function CollectionPage() {
           {selectingPosition && (
             <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
               <div className="bg-black/90 border border-yellow-500 rounded-xl p-6 max-w-sm w-full shadow-lg text-white">
-                <h2 className="text-lg font-bold mb-4 text-yellow-300">Karte für {selectingPosition} wählen</h2>
+                <h2 className="text-lg font-bold mb-4 text-yellow-300">Select Card for {selectingPosition}</h2>
                 <div className="max-h-64 overflow-y-auto space-y-2">
                   {sortedUserCards.map(card => {
                     // Prüfen, ob die Karte schon in einer anderen Position ist
@@ -536,13 +543,13 @@ export default function CollectionPage() {
                     setSelectingPosition(null);
                   }}
                 >
-                  Karte entfernen
+                  Remove Card
                 </button>
                 <button 
                   className="mt-2 w-full py-2 bg-gray-500/20 text-gray-300 border border-gray-500/50 rounded-lg hover:bg-gray-500/30 transition-colors" 
                   onClick={() => setSelectingPosition(null)}
                 >
-                  Abbrechen
+                  Cancel
                 </button>
               </div>
             </div>

@@ -1771,7 +1771,7 @@ const [copied, setCopied] = useState(false)
                         </span>
                       )}
                     </div>
-                    <div className="text-lg font-bold text-center mb-1">{dailyDeal.price} WLD</div>
+                    <div className="text-lg font-bold text-center mb-1">{price ? `${(dailyDeal.price / price).toFixed(2)} WLD` : `$${dailyDeal.price.toFixed(2)} USD`}</div>
                   </>
                 ) : (
                   <div className="flex flex-1 items-center justify-center h-full text-white/70">No Deal of the Day</div>
@@ -1854,7 +1854,7 @@ const [copied, setCopied] = useState(false)
                         </span>
                       )}
                     </div>
-                    <div className="text-lg font-bold text-center mb-1">{specialDeal.price} WLD</div>
+                    <div className="text-lg font-bold text-center mb-1">{price ? `${(specialDeal.price / price).toFixed(2)} WLD` : `$${specialDeal.price.toFixed(2)} USD`}</div>
                   </>
                 ) : (
                   <div className="flex flex-1 items-center justify-center h-full text-white/70">No Special Deal Today</div>

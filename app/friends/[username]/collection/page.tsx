@@ -27,8 +27,8 @@ export default async function UserCollectionPage({
     redirect("/friends")
   }
 
-  // Get user cards
-  const { data: userCards, error: userCardsError } = await supabase
+  // Get user cards - deduplicate by card_id and level
+  const { data: userCardsRaw, error: userCardsError } = await supabase
     .from("user_cards")
     .select(`id, user_id, card_id, quantity, favorite, obtained_at, level`)
     .eq("user_id", username)
@@ -53,6 +53,15 @@ export default async function UserCollectionPage({
       </div>
     )
   }
+
+  // Deduplicate user cards by card_id and level
+  const userCards = userCardsRaw.reduce((acc, current) => {
+    const existingCard = acc.find(card => card.card_id === current.card_id && card.level === current.level)
+    if (!existingCard) {
+      acc.push(current)
+    }
+    return acc
+  }, [] as typeof userCardsRaw)
 
   let combinedCards: CombinedCard[] = []
 

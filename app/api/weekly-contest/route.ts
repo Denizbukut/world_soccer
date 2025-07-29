@@ -1,10 +1,11 @@
 // /app/api/weekly-contest/route.ts
 import { createClient } from "@supabase/supabase-js"
 import { NextResponse } from "next/server"
+import { WEEKLY_CONTEST_CONFIG } from "@/lib/weekly-contest-config"
 
 export async function GET() {
   const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
-  const weekStart = "2025-06-09"
+  const weekStart = WEEKLY_CONTEST_CONFIG.weekStart
 
   const { data, error } = await supabase
     .from("weekly_contest_entries")

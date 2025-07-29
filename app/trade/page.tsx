@@ -112,7 +112,7 @@ const getCloudflareImageUrl = (imageId?: string) => {
   const cleaned = imageId.replace(/^\/?anime-images\//, "")
   console.log(cleaned)
 
-  return `https://pub-e74caca70ffd49459342dd56ea2b67c9.r2.dev/${cleaned}`
+  return `https://https://ani-labs.xyz/${cleaned}`
 }
 
 // Neue Bild-URL-Logik global für alle Card-Boxen
@@ -120,7 +120,7 @@ const getCardImageUrl = (imageUrl?: string) => {
   if (!imageUrl) return "/placeholder.svg";
   // Entferne /world_soccer/ am Anfang!
   let cleaned = imageUrl.replace(/^\/?world_soccer\//, "");
-  return `https://pub-e74caca70ffd49459342dd56ea2b67c9.r2.dev/${cleaned}`;
+  return `https://ani-labs.xyz/${cleaned}`;
 }
 
 export default function TradePage() {
@@ -689,7 +689,7 @@ export default function TradePage() {
               <TabsTrigger value="sales-history" className="h-10 text-yellow-400 font-bold">
                 <div className="flex items-center justify-center gap-2">
                   <History className="h-4 w-4" />
-                  <span>Transfer History</span>
+                  <span>History</span>
                 </div>
               </TabsTrigger>
             </TabsList>
@@ -919,7 +919,7 @@ export default function TradePage() {
             <TabsContent value="sales-history">
               <div className="space-y-4">
                 {/* History Type Selector */}
-                <div className="bg-white rounded-xl p-2 shadow-sm">
+                <div className=" rounded-xl p-2 shadow-sm">
                   <div className="grid grid-cols-2 gap-2">
                     <Button
                       variant={historyType === "all" ? "default" : "outline"}
@@ -934,7 +934,7 @@ export default function TradePage() {
                       className={`rounded-lg ${historyType === "my" ? "bg-gradient-to-r from-yellow-400 to-yellow-600 text-black border-yellow-400" : "bg-black/80 text-yellow-300 border border-yellow-400"}`}
                       onClick={() => setHistoryType("my")}
                     >
-                      <User className="h-4 w-4 mr-2 text-yellow-400" />
+                      <User className="h-4 w-4 mr-2 text-black" />
                       My History
                     </Button>
                   </div>
@@ -943,7 +943,7 @@ export default function TradePage() {
                 {/* My Transaction History */}
                 {historyType === "my" && (
                   <>
-                    <div className="flex justify-between items-center">
+                    <div className="flex justify-between items-center text-white font-bold">
                       <h2 className="text-lg font-medium">My Transaction History</h2>
                       <Badge variant="outline" className="bg-white">
                         <Clock className="h-3 w-3 mr-1 text-blue-500" />
@@ -1519,27 +1519,27 @@ function MyListingCard({
           <div className="flex-1">
             <div className="flex justify-between items-start">
               <div>
-                <h3 className="font-medium text-sm">{listing.card.name}</h3>
-                <p className="text-xs text-gray-500">{listing.card.character}</p>
+                <h3 className="font-medium text-sm text-white">{listing.card.name}</h3>
+                <p className="text-xs text-yellow-200">{listing.card.character}</p>
                 <div className="flex items-center mt-1">
                   {renderStars(listing.card_level, "xs")}
                 </div>
               </div>
               <div className="flex flex-col items-end">
                 <Badge className={rarityStyle.badge}>{listing.card.rarity}</Badge>
-                <Badge variant="outline" className="mt-1 text-xs">
+                <Badge variant="outline" className="mt-1 text-xs text-yellow-300 border-yellow-400">
                   Level {listing.card_level}
                 </Badge>
               </div>
             </div>
 
-            <div className="flex items-center mt-1 text-xs text-gray-500">
-              <span>Listed: {formatDate(listing.created_at)}</span>
+            <div className="flex items-center mt-1 text-xs text-yellow-200">
+              <span>Listed: <span className="text-yellow-300">{formatDate(listing.created_at)}</span></span>
             </div>
 
             <div className="flex justify-between items-center mt-2">
               <div className="flex items-center">
-                <span className="font-bold">{listing.price} WLD</span>
+                <span className="font-bold text-yellow-400">{listing.price} WLD</span>
               </div>
               <div className="flex gap-2">
                 <Button
@@ -1657,31 +1657,31 @@ function TransactionCard({ transaction }: { transaction: Transaction }) {
           <div className="flex-1">
             <div className="flex justify-between items-start">
               <div>
-                <h3 className="font-medium text-sm">{transaction.card.name}</h3>
-                <p className="text-xs text-gray-500">{transaction.card.character}</p>
+                <h3 className="font-medium text-sm text-white">{transaction.card.name}</h3>
+                <p className="text-xs text-yellow-200">{transaction.card.character}</p>
               </div>
               <div className="flex flex-col items-end">
                 <Badge className={transaction.transaction_type === "purchased" ? "bg-blue-500" : "bg-green-500"}>
                   {transaction.transaction_type === "purchased" ? "Bought" : "Sold"}
                 </Badge>
-                <Badge variant="outline" className="mt-1 text-xs">
+                <Badge variant="outline" className="mt-1 text-xs text-yellow-300 border-yellow-400">
                   Level {transaction.card_level}
                 </Badge>
               </div>
             </div>
 
-            <div className="flex items-center mt-1 text-xs text-gray-500">
+            <div className="flex items-center mt-1 text-xs text-yellow-200">
               <span>
                 {transaction.transaction_type === "purchased" ? "From: " : "To: "}
-                {transaction.other_party}
+                <span className="font-medium text-yellow-400">{transaction.other_party}</span>
               </span>
             </div>
 
             <div className="flex justify-between items-center mt-2">
               <div className="flex items-center">
-                <span className="font-bold">{transaction.price} WLD</span>
+                <span className="font-bold text-yellow-400">{transaction.price} WLD</span>
               </div>
-              <div className="text-xs text-gray-400">{formatDate(transaction.sold_at || "")}</div>
+              <div className="text-xs text-yellow-300">{formatDate(transaction.sold_at || "")}</div>
             </div>
           </div>
         </div>
@@ -1793,34 +1793,34 @@ function RecentSaleCard({ sale }: { sale: RecentSale }) {
           <div className="flex-1">
             <div className="flex justify-between items-start">
               <div>
-                <h3 className="font-medium text-sm">{sale.card.name}</h3>
-                <p className="text-xs text-gray-500">{sale.card.character}</p>
+                <h3 className="font-medium text-sm text-white">{sale.card.name}</h3>
+                <p className="text-xs text-yellow-200">{sale.card.character}</p>
               </div>
               <div className="flex flex-col items-end">
                 <Badge className={rarityStyle.badge}>{sale.card.rarity}</Badge>
-                <Badge variant="outline" className="mt-1 text-xs">
+                <Badge variant="outline" className="mt-1 text-xs text-yellow-300 border-yellow-400">
                   Level {sale.card_level}
                 </Badge>
               </div>
             </div>
 
-            <div className="flex items-center mt-1 text-xs text-gray-500">
+            <div className="flex items-center mt-1 text-xs text-yellow-200">
               <span>
-                Seller: {sale.seller_id.length > 15 ? `${sale.seller_id.substring(0, 12)}..` : sale.seller_id}
+                Seller: <span className="font-medium text-yellow-400">{sale.seller_id.length > 15 ? `${sale.seller_id.substring(0, 12)}..` : sale.seller_id}</span>
               </span>
-              <span className="mx-1">•</span>
-              <span>Buyer: {sale.buyer_id.length > 15 ? `${sale.buyer_id.substring(0, 12)}..` : sale.buyer_id}</span>
+              <span className="mx-1 text-yellow-300">•</span>
+              <span>Buyer: <span className="font-medium text-yellow-400">{sale.buyer_id.length > 15 ? `${sale.buyer_id.substring(0, 12)}..` : sale.buyer_id}</span></span>
             </div>
 
             <div className="flex justify-between items-center mt-2">
               <div className="flex items-center">
-                <span className="font-bold">{sale.price} WLD</span>
+                <span className="font-bold text-yellow-400">{sale.price} WLD</span>
                 <Badge variant="outline" className="ml-2 bg-green-50 text-green-600 border-green-200">
                   <DollarSign className="h-3 w-3 mr-1" />
                   Sold
                 </Badge>
               </div>
-              <div className="text-xs text-gray-400">
+              <div className="text-xs text-yellow-300">
                 <span title={formatDate(sale.sold_at)}>{getTimeAgo(sale.sold_at)}</span>
               </div>
             </div>

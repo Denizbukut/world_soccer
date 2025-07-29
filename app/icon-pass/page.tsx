@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
 import { MiniKit, Tokens, tokenToDecimals } from "@worldcoin/minikit-js";
 import { useAuth } from "@/contexts/auth-context";
+import { useWldPrice } from "@/contexts/WldPriceContext";
 
 interface LevelReward {
   level: number
@@ -15,6 +16,7 @@ interface LevelReward {
 
 export default function IconPassPage() {
   const { user, updateUserTickets, refreshUserData } = useAuth();
+  const { price } = useWldPrice();
   const [buying, setBuying] = useState(false);
   const [success, setSuccess] = useState(false);
   const [claiming, setClaiming] = useState(false);
@@ -191,6 +193,12 @@ export default function IconPassPage() {
     setBuying(true);
     
     try {
+      // Calculate WLD amount based on $3 USD price
+      const dollarPrice = 3;
+      const fallbackWldAmount = 3; // Fallback if price is not available
+      const wldAmount = price ? dollarPrice / price : fallbackWldAmount;
+      const roundedWldAmount = Number.parseFloat(wldAmount.toFixed(3));
+      
       // Payment durchführen
       const res = await fetch("/api/initiate-payment", {
         method: "POST",
@@ -203,7 +211,7 @@ export default function IconPassPage() {
         tokens: [
           {
             symbol: Tokens.WLD,
-            token_amount: tokenToDecimals(1.5, Tokens.WLD).toString(),
+            token_amount: tokenToDecimals(roundedWldAmount, Tokens.WLD).toString(),
           },
         ],
         description: "Buy Icon Pass",
@@ -573,7 +581,17 @@ export default function IconPassPage() {
                 disabled={buying}
                 className="bg-yellow-500 hover:bg-yellow-600 text-white px-8 py-3 rounded-lg text-lg font-semibold"
               >
-                {buying ? 'Processing...' : 'Buy Icon Pass (1.5 WLD)'}
+                {buying ? 'Processing...' : (
+                  <div className="flex flex-col items-center">
+                    <span>Buy Icon Pass</span>
+                    <span className="text-sm">
+                      {price 
+                        ? `${(3 / price).toFixed(3)} WLD (~$3.00)`
+                        : '3.000 WLD (~$3.00)'
+                      }
+                    </span>
+                  </div>
+                )}
               </Button>
             </div>
           )}

@@ -1546,19 +1546,7 @@ const [copied, setCopied] = useState(false)
   </div>
                   </DialogContent>
                 </Dialog>
-                {/* Clan anzeigen, falls vorhanden, sonst Join-Button */}
-                {userClanInfo?.name ? (
-                  <button
-                    className="flex items-center gap-2 mt-4 text-xs font-semibold text-violet-700 bg-violet-100 hover:bg-violet-200 rounded-full px-3 py-1 shadow-sm transition border border-violet-200"
-                    onClick={() => router.push(`/clan/${userClanInfo.id}`)}
-                    type="button"
-                  >
-                  
-                    <span className="truncate max-w-[90px]">{userClanInfo.name}</span>
-                  </button>
-                ) : (
-                  <button className="mt-4 px-3 py-1 text-xs rounded-full bg-violet-100 text-violet-700 font-semibold hover:bg-violet-200 transition border border-violet-200" onClick={() => router.push('/clan')} type="button">Join a Clan</button>
-                )}
+               
               </motion.div>
 </div>
             {/* Game Pass / XP Pass Carousel */}

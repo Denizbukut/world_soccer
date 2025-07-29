@@ -10,11 +10,11 @@ export const WEEKLY_CONTEST_CONFIG = {
   
   // Prize Pool Configuration
   prizePool: [
-    { rank: "1st Place", reward: "150 WLD + 5000 $ANI", icon: "🥇" },
-    { rank: "2nd Place", reward: "100 WLD + 3000 $ANI", icon: "🥈" },
-    { rank: "3rd Place", reward: "70 WLD + 1000 $ANI", icon: "🥉" },
-    { rank: "4th–6th Place", reward: "30 WLD", icon: "🎖️" },
-    { rank: "7th–10th Place", reward: "15 WLD", icon: "🎖️" },
+    { rank: "1st Place", reward: "$50 in WLD + Foden Lvl. 4", icon: "🥇" },
+    { rank: "2nd Place", reward: "$30 in WLD + Foden Lvl. 3", icon: "🥈" },
+    { rank: "3rd Place", reward: "$20 in WLD + Foden Lvl. 2", icon: "🥉" },
+    { rank: "4th–6th Place", reward: "Pedri Lvl. 4", icon: "🎖️" },
+    { rank: "7th–10th Place", reward: "Pedri Lvl. 3", icon: "🎖️" },
   ]
 } as const
 

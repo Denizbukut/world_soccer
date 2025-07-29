@@ -1401,7 +1401,7 @@ const [copied, setCopied] = useState(false)
                   </svg>
       </a>
       <a
-        href="https://t.me/+Dx-fEykc-BY5ZmQy"
+        href="https://t.me/+QGM1e6G4rhxkNzBi"
         target="_blank"
         rel="noopener noreferrer"
                   className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center transition-transform hover:scale-105 shadow border-2 border-white"
@@ -2120,7 +2120,7 @@ const [copied, setCopied] = useState(false)
         <Button
       size="sm"
       onClick={() => {
-                    const link = `https://worldcoin.org/mini-app?app_id=app_ee60c6a9a47604ff83f1af2dce203e7a&ref=${user?.username}`
+                    const link = `https://worldcoin.org/mini-app?app_id=app_81194a47953b441d325cb47c8e632c95&ref=${user?.username}`
         navigator.clipboard.writeText(link)
                     setCopied(true)
                     setTimeout(() => setCopied(false), 2000)

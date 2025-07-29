@@ -9,7 +9,7 @@ interface IRequestPayload {
 
 export async function POST(req: NextRequest) {
   const { payload, action, signal } = (await req.json()) as IRequestPayload
-  const app_id = `app_ee60c6a9a47604ff83f1af2dce203e7a`
+  const app_id = `app_81194a47953b441d325cb47c8e632c95`
   const verifyRes = (await verifyCloudProof(payload, app_id, action, signal)) as IVerifyResponse
   console.log("verifying")
   const userId = payload.nullifier_hash

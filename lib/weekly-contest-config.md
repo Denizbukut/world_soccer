@@ -13,8 +13,8 @@ Diese Datei (`lib/weekly-contest-config.ts`) ist die zentrale Konfiguration für
 ### Beispiel für einen neuen Contest:
 ```typescript
 export const WEEKLY_CONTEST_CONFIG = {
-  weekStart: "2025-07-29",        // Montag der neuen Woche
-  contestEnd: "2025-07-30T23:59:59Z", // Dienstag der nächsten Woche
+  weekStart: "2025-07-28",        // Montag der neuen Woche
+  contestEnd: "2025-08-03T23:59:59Z", // Dienstag der nächsten Woche
   // ... rest der Konfiguration
 }
 ```

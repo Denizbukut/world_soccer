@@ -2,6 +2,7 @@
 
 import type React from "react"
 import { useState, useEffect, useRef, useCallback } from "react"
+import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
 import { updateScoreForCards, updateScoreForLevelUp } from "@/app/actions/update-score"
 import ProtectedRoute from "@/components/protected-route"
@@ -133,10 +134,11 @@ const getCloudflareImageUrl = (imagePath?: string) => {
   if (!imagePath) return "/placeholder.svg";
   if (imagePath.startsWith("http")) return imagePath;
   let cleaned = imagePath.replace(/^\/?(world[-_])?soccer\//i, "");
-  return `https://pub-e74caca70ffd49459342dd56ea2b67c9.r2.dev/${encodeURIComponent(cleaned)}`;
+  return `https://ani-labs.xyz/${encodeURIComponent(cleaned)}`;
 };
 
 export default function DrawPage() {
+  const router = useRouter()
   const { user, updateUserTickets, updateUserExp, refreshUserData, updateUserScore } = useAuth()
   const [isDrawing, setIsDrawing] = useState(false)
   const [drawnCards, setDrawnCards] = useState<any[]>([])
@@ -532,6 +534,11 @@ const [showInfo, setShowInfo] = useState(false)
           await incrementMission(user.username, "draw_legendary_card", legendaryCards.length)
         }
 
+        const ultimateCards = result.drawnCards?.filter((card: any) => card.rarity === "ultimate") || []
+        if (ultimateCards.length > 0) {
+          await incrementLegendaryDraw(user.username, ultimateCards.length)
+        }
+
         // Mission tracking for godlike cards
         const godlikeCards = result.drawnCards?.filter((card: any) => card.rarity === "godlike") || []
         if (godlikeCards.length > 0) {
@@ -555,7 +562,6 @@ const [showInfo, setShowInfo] = useState(false)
         if (legendary_cards.length > 0) {
           if (user.clan_id !== undefined) {
             await incrementClanMission(user.clan_id, "legendary_cards", legendary_cards.length)
-            await incrementLegendaryDraw(user.username, legendary_cards.length)
           }
         }
 
@@ -1032,7 +1038,7 @@ const [showInfo, setShowInfo] = useState(false)
                                 ? "/elite_pack-removebg-preview.png"
                                 : activeTab === "icon"
                                   ? "/icon_pack_echt-removebg-preview.png"
-                                  : "/Basic_pack.png"
+                                  : "/classic_pack.png"
                           }
                           alt="Card Pack"
                           fill
@@ -1310,7 +1316,7 @@ const [showInfo, setShowInfo] = useState(false)
             >
               <Button
                 variant="outline"
-                onClick={() => (window.location.href = "/shop")}
+                onClick={() => router.push("/shop")}
                 className="w-full border border-gray-300 text-gray-700 hover:bg-gray-50"
               >
                 <Ticket className="h-4 w-4 mr-2 text-orange-500" />
@@ -1509,7 +1515,7 @@ const [showInfo, setShowInfo] = useState(false)
                                 ? "/elite_pack-removebg-preview.png"
                                 : activeTab === "icon"
                                   ? "/icon_pack_echt-removebg-preview.png"
-                                  : "/Basic_pack.png"
+                                  : "/classic_pack.png"
                           }
                           alt="Card Pack"
                           fill
@@ -1817,7 +1823,7 @@ const [showInfo, setShowInfo] = useState(false)
                             ? "/elite_pack-removebg-preview.png"
                             : activeTab === "icon"
                               ? "/icon_pack_echt-removebg-preview.png"
-                              : "/Basic_pack.png"
+                              : "/classic_pack.png"
                       }
                       alt="Card Pack"
                       fill
@@ -2026,7 +2032,7 @@ const [showInfo, setShowInfo] = useState(false)
                                   loop
                                   playsInline
                                   className="absolute inset-0 w-full h-full object-cover rounded-xl"
-                                  src={card.image_url}
+                                  src={getCloudflareImageUrl(card.image_url)}
                                 />
                               ) : (
                                 <Image
@@ -2136,7 +2142,7 @@ const [showInfo, setShowInfo] = useState(false)
                                   loop
                                   playsInline
                                   className="absolute inset-0 w-full h-full object-cover rounded-xl"
-                                  src={getCurrentCard()?.image_url}
+                                  src={getCloudflareImageUrl(getCurrentCard()?.image_url)}
                                 />
                               ) : (
                                 <Image
@@ -2287,7 +2293,7 @@ const [showInfo, setShowInfo] = useState(false)
                               loop
                               playsInline
                               className="absolute inset-0 w-full h-full object-cover rounded-xl"
-                              src={getSelectedCard()?.image_url}
+                              src={getCloudflareImageUrl(getSelectedCard()?.image_url)}
                             />
                           ) : (
                             <Image

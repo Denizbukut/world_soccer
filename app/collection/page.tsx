@@ -427,7 +427,7 @@ export default function CollectionPage() {
                 onClick={() => squad[`MF${i}`] && squad[`MF${i}`].id ? handleSquadCardClick(squad[`MF${i}`], `MF${i}`) : setSelectingPosition(`MF${i}`)}
               >
                 {squad[`MF${i}`] ? (
-                  <CardItem {...squad[`MF${i}`]} compact owned={true} hideOverlay={true} hideName={true} hideLevel={true} hideQuantity={true} disableCardLink={true} onClick={() => squad[`MF${i}`] && squad[`MF${i}`].id ? handleSquadCardClick(squad[`MF${i}`], `MF${i}`) : null} style={{ width: '100%', height: '100%' }} />
+                  <CardItem {...squad[`MF${i}`]} compact owned={true} hideOverlay={true} hideName={true} hideQuantity={true} disableCardLink={true} onClick={() => squad[`MF${i}`] && squad[`MF${i}`].id ? handleSquadCardClick(squad[`MF${i}`], `MF${i}`) : null} style={{ width: '100%', height: '100%' }} />
                 ) : null}
               </div>
             ))}
@@ -441,7 +441,7 @@ export default function CollectionPage() {
                 onClick={() => squad[`FW${i}`] && squad[`FW${i}`].id ? handleSquadCardClick(squad[`FW${i}`], `FW${i}`) : setSelectingPosition(`FW${i}`)}
               >
                 {squad[`FW${i}`] ? (
-                  <CardItem {...squad[`FW${i}`]} compact owned={true} hideOverlay={true} hideName={true} hideLevel={true} hideQuantity={true} disableCardLink={true} onClick={() => squad[`FW${i}`] && squad[`FW${i}`].id ? handleSquadCardClick(squad[`FW${i}`], `FW${i}`) : null} style={{ width: '100%', height: '100%' }} />
+                  <CardItem {...squad[`FW${i}`]} compact owned={true} hideOverlay={true} hideName={true} hideQuantity={true} disableCardLink={true} onClick={() => squad[`FW${i}`] && squad[`FW${i}`].id ? handleSquadCardClick(squad[`FW${i}`], `FW${i}`) : null} style={{ width: '100%', height: '100%' }} />
                 ) : null}
               </div>
             ))}

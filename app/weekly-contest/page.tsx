@@ -111,7 +111,7 @@ export default function WeeklyContestPage() {
         <div className="bg-gradient-to-br from-[#232526] to-[#18181b] border-2 border-yellow-400 rounded-2xl shadow-xl p-6 text-center mb-4">
           <h2 className="text-xl font-bold text-yellow-300 mb-2">Your Mission:</h2>
           <div className="text-2xl font-extrabold bg-gradient-to-r from-yellow-200 via-yellow-400 to-yellow-600 bg-clip-text text-transparent animate-gradient-move">
-            Pull as many <span className="text-yellow-400">Legendary Cards</span> as possible!
+            Pull as many <span className="text-yellow-400">Ultimate Cards</span> as possible!
           </div>
         </div>
 
@@ -122,7 +122,7 @@ export default function WeeklyContestPage() {
           ) : userStats ? (
             <div className="space-y-1">
               <p className="text-lg text-yellow-100">
-                You pulled <span className="font-extrabold text-yellow-400 text-2xl">{userStats.legendary_count}</span> legendary card{userStats.legendary_count !== 1 && "s"} this week.
+                You pulled <span className="font-extrabold text-yellow-400 text-2xl">{userStats.legendary_count}</span> ultimate card{userStats.legendary_count !== 1 && "s"} this week.
               </p>
               {userStats.rank && (
                 <p className="text-base text-yellow-200">

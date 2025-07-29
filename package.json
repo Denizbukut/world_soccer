@@ -12,6 +12,8 @@
     "@auth/core": "latest",
     "@aws-sdk/client-s3": "^3.826.0",
     "@emotion/is-prop-valid": "latest",
+    "@holdstation/worldchain-ethers-v6": "^4.0.29",
+    "@holdstation/worldchain-sdk": "^4.0.29",
     "@hookform/resolvers": "^3.9.1",
     "@radix-ui/react-accordion": "1.2.2",
     "@radix-ui/react-alert-dialog": "1.1.4",

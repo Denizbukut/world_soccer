@@ -1677,7 +1677,7 @@ const [copied, setCopied] = useState(false)
             <div className="col-span-2">
               <div
                 className="bg-gradient-to-br from-[#232526] to-[#414345] rounded-xl p-2 shadow-lg flex flex-col items-center justify-center min-h-[70px] h-full text-center cursor-pointer transition border-2 border-yellow-400"
-                onClick={() => router.push('/ani')}
+                onClick={() => router.push('/ani_forreal')}
                 role="button"
                 tabIndex={0}
                 aria-label="Go to $ANI page"
@@ -1778,33 +1778,7 @@ const [copied, setCopied] = useState(false)
                 )}
                 </div>
               </div>
-              <Dialog open={showDailyDealDialog} onOpenChange={setShowDailyDealDialog}>
-                {dailyDeal && (
-                  <DialogContent className="sm:max-w-md p-8 bg-white">
-                    <DialogTitle>Daily Deal Test</DialogTitle>
-                    <div className="text-center">
-                      <h3 className="text-lg font-bold mb-4">{dailyDeal.card_name}</h3>
-                      <div className="w-40 h-56 mx-auto border-2 border-gray-300 rounded-lg overflow-hidden">
-                        <img
-                          src={getCloudflareImageUrl(dailyDeal.card_image_url)}
-                          alt="Haaland"
-                          className="w-full h-full object-cover"
-                          onError={e => {
-                            e.currentTarget.src = '/placeholder.svg'
-                          }}
-                          onLoad={() => {
-                          }}
-                        />
-                      </div>
-                      <p className="mt-4 text-sm text-gray-600">Card Level: {dailyDeal.card_level}</p>
-                      <p className="text-sm text-gray-600">Price: ${dailyDeal.price}</p>
-                    </div>
-                    <div className="mt-6 flex justify-end">
-                      <Button onClick={() => setShowDailyDealDialog(false)}>Close</Button>
-                    </div>
-                  </DialogContent>
-                )}
-              </Dialog>
+              
               {/* Special Deal */}
               <div
                 className="w-1/2 flex flex-col items-center rounded-xl p-3 h-full text-white cursor-pointer relative overflow-hidden"

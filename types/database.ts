@@ -17,13 +17,21 @@ export interface User {
   }
   
   export interface PremiumPass {
-    id: string
-    user_id: string
-    active: boolean
-    purchased_at: string
-    expires_at?: string
-    last_legendary_claim?: string
-  }
+  id: string
+  user_id: string
+  active: boolean
+  purchased_at: string
+  expires_at?: string
+  last_legendary_claim?: string
+}
+
+export interface XpPass {
+  id: string
+  user_id: string
+  active: boolean
+  purchased_at: string
+  expires_at: string
+}
   
   export interface ClaimedReward {
     id: string
@@ -119,5 +127,15 @@ export interface ClanLevelReward {
   level: number
   reward_type: string
   claimed_by: string[]
+  created_at: string
+}
+
+export interface XpPassPurchase {
+  id: string
+  username: string
+  price_usd: number
+  price_wld?: number
+  duration_days: number
+  purchased_at: string
   created_at: string
 }

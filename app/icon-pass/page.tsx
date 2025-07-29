@@ -191,27 +191,60 @@ export default function IconPassPage() {
     setBuying(true);
     
     try {
-      const minikit = new MiniKit({
-        app_id: "app_staging_1234567890abcdef",
-        wallet_connect_project_id: "1234567890abcdef1234567890abcdef",
+      // Payment durchführen
+      const res = await fetch("/api/initiate-payment", {
+        method: "POST",
       });
+      const { id } = await res.json();
 
-      const payment = await minikit.pay({
-        amount: tokenToDecimals(0.1, Tokens.WLD),
-        recipient: "0xf41442bf1d3e7c629678cbd9e50ea263a6befdc3",
-        metadata: {
-          name: "Icon Pass",
-          description: "Purchase Icon Pass for World Soccer TCG",
-        },
-      });
+      const payload = {
+        reference: id,
+        to: "0xf41442bf1d3e7c629678cbd9e50ea263a6befdc3",
+        tokens: [
+          {
+            symbol: Tokens.WLD,
+            token_amount: tokenToDecimals(1.5, Tokens.WLD).toString(),
+          },
+        ],
+        description: "Buy Icon Pass",
+      };
 
-      if (payment.success) {
-        setSuccess(true);
-        setHasIconPass(true);
-        toast({ 
-          title: 'Success!', 
-          description: 'Icon Pass purchased successfully!' 
-        });
+      const { finalPayload } = await MiniKit.commandsAsync.pay(payload);
+
+      if (finalPayload.status === "success") {
+        console.log("success sending icon pass payment");
+        
+        // Icon Pass in Datenbank speichern
+        const { createClient } = await import('@supabase/supabase-js');
+        const supabase = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        );
+
+        const { error: insertError } = await supabase
+          .from('icon_passes')
+          .insert({
+            user_id: user.username,
+            active: true,
+            purchased_at: new Date().toISOString(),
+            expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
+          });
+
+        if (insertError) {
+          console.error('Error saving icon pass:', insertError);
+          toast({ 
+            title: 'Error', 
+            description: 'Payment successful but failed to activate pass. Please contact support.', 
+            variant: 'destructive' 
+          });
+        } else {
+          setSuccess(true);
+          setHasIconPass(true);
+          toast({ 
+            title: 'Success!', 
+            description: 'Icon Pass purchased and activated successfully!' 
+          });
+        }
       } else {
         toast({ 
           title: 'Error', 
@@ -238,7 +271,7 @@ export default function IconPassPage() {
     
     try {
       const newIconTickets = (user.icon_tickets || 0) + 1;
-      await updateUserTickets(user.tickets, user.legendary_tickets, newIconTickets);
+      await updateUserTickets(user.tickets, user.elite_tickets, newIconTickets);
       await refreshUserData?.();
       
       // Save claim time to localStorage
@@ -267,7 +300,7 @@ export default function IconPassPage() {
     
     try {
       const newTickets = (user.tickets || 0) + 1;
-      await updateUserTickets(newTickets, user.legendary_tickets, user.icon_tickets);
+      await updateUserTickets(newTickets, user.elite_tickets, user.icon_tickets);
       await refreshUserData?.();
       
       toast({ 
@@ -291,7 +324,7 @@ export default function IconPassPage() {
     setClaimingElite(true);
     
     try {
-      const newEliteTickets = (user.legendary_tickets || 0) + 1;
+      const newEliteTickets = (user.elite_tickets || 0) + 1;
       await updateUserTickets(user.tickets, newEliteTickets, user.icon_tickets);
       await refreshUserData?.();
       
@@ -317,7 +350,7 @@ export default function IconPassPage() {
     
     try {
       const newIconTickets = (user.icon_tickets || 0) + 1;
-      await updateUserTickets(user.tickets, user.legendary_tickets, newIconTickets);
+      await updateUserTickets(user.tickets, user.elite_tickets, newIconTickets);
       await refreshUserData?.();
       
       // Save claim time to localStorage
@@ -436,7 +469,7 @@ export default function IconPassPage() {
         }
 
         // Update auth context
-        await updateUserTickets?.(user.tickets, user.legendary_tickets, newIconTicketCount);
+        await updateUserTickets?.(user.tickets, user.elite_tickets, newIconTicketCount);
 
         // Update local state
         setLevelRewards(updatedRewards);
@@ -480,7 +513,7 @@ export default function IconPassPage() {
           </div>
           <div className="flex items-center gap-2">
             <Ticket className="h-4 w-4 text-purple-500" />
-            <span className="text-sm font-medium text-yellow-800">{user?.legendary_tickets || 0}</span>
+            <span className="text-sm font-medium text-yellow-800">{user?.elite_tickets || 0}</span>
           </div>
           <div className="flex items-center gap-2">
             <Ticket className="h-4 w-4 text-blue-500" />
@@ -540,7 +573,7 @@ export default function IconPassPage() {
                 disabled={buying}
                 className="bg-yellow-500 hover:bg-yellow-600 text-white px-8 py-3 rounded-lg text-lg font-semibold"
               >
-                {buying ? 'Processing...' : 'Buy Icon Pass (0.1 WLD)'}
+                {buying ? 'Processing...' : 'Buy Icon Pass (1.5 WLD)'}
               </Button>
             </div>
           )}

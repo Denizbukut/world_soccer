@@ -120,7 +120,7 @@ export function CardItem({
   const router = useRouter()
   const [modalOpen, setModalOpen] = useState(false);
 
-  console.log(cardImageUrl)
+  console.log('CardItem Debug:', { id, name, imageUrl, cardImageUrl, rarity })
 
 
 const handleCardClick = () => {
@@ -202,15 +202,17 @@ const handleCardClick = () => {
 
             {/* In My Collection: Zeige Anzahl (x{quantity}) oben rechts, sonst Stern+Level */}
             {isCollection ? (
-              quantity > 1 && (
+              quantity > 1 && !hideQuantity && (
                 <div className="absolute top-1 right-1 bg-black/70 text-white text-xs font-bold px-2 py-1 rounded">
                   x{quantity}
                 </div>
               )
             ) : (
-              <div className="absolute top-1 right-1 bg-black/70 text-yellow-400 text-xs font-bold px-2 py-1 rounded flex items-center">
-                <span className="mr-1">★</span> {level}
-              </div>
+              !hideLevel && (
+                <div className="absolute top-1 right-1 bg-black/70 text-yellow-400 text-xs font-bold px-2 py-1 rounded flex items-center">
+                  <span className="mr-1">★</span> {level}
+                </div>
+              )
             )}
 
             {!isCollection && !hideOverlay && (
@@ -221,7 +223,7 @@ const handleCardClick = () => {
               </div>
             )}
 
-            {isCollection || isContest && (
+            {(isCollection || isContest) && !hideLevel && (
               <div className="absolute bottom-1 left-0 right-0 flex justify-center">{renderStars(level, "xs")}</div>
             )}
 

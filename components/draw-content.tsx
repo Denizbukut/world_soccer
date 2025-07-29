@@ -995,7 +995,7 @@ const [showInfo, setShowInfo] = useState(false)
                       ? "bg-black/70 text-yellow-200 border border-yellow-400"
                       : "bg-black/70 text-red-400 border border-red-500"
                   }`}>
-                    ⚡ God Packs opened today:{" "}
+                    ⚡ Goat Packs opened today:{" "}
                     <span className="font-bold">{godPacksLeft}</span> / {max_godpacks_daily}
                   </div>
                 )}

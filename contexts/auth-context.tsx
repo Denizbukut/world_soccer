@@ -26,7 +26,7 @@ type AuthContextType = {
   loading: boolean
   login: (username: string) => Promise<{ success: boolean; error?: string }>
   logout: () => void
-  updateUserTickets: (newTicketCount: number, newLegendaryTicketCount?: number) => void
+  updateUserTickets: (newTicketCount: number, newEliteTicketCount?: number, newIconTicketCount?: number) => void
   updateUserCoins: (newCoinCount: number) => void
   updateUserExp: (expToAdd: number) => Promise<{ leveledUp: boolean; newLevel?: number }>
   setUserPremium: (hasPremium: boolean) => void

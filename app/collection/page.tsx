@@ -173,7 +173,13 @@ export default function CollectionPage() {
       card.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       card.character?.toLowerCase().includes(searchTerm.toLowerCase())
 
-    const matchesRarity = activeTab === "all" || card.rarity === activeTab.toLowerCase()
+
+      const matchesRarity = activeTab === "all" || 
+      (activeTab === "ultima" && (card.rarity?.toLowerCase() === "legendary" || card.rarity?.toLowerCase() === "ultima" || card.rarity?.toLowerCase() === "ultimate")) || 
+      (activeTab === "epic" && (card.rarity?.toLowerCase() === "epic" || card.rarity?.toLowerCase() === "elite")) ||
+      (activeTab === "rare" && card.rarity?.toLowerCase() === "rare") ||
+      (activeTab === "common" && (card.rarity?.toLowerCase() === "common" || card.rarity?.toLowerCase() === "basic")) ||
+      (activeTab === "goat" && card.rarity?.toLowerCase() === "goat")
 
     const matchesEpoch = selectedEpoch === "all" || card.epoch === selectedEpoch
 
@@ -195,44 +201,71 @@ export default function CollectionPage() {
     .map(Number)
     .sort((a, b) => b - a)
 
+  // Debug: Log all rarity values to see what's in the database
+  console.log("All card rarities:", userCards.map(card => ({ name: card.name, rarity: card.rarity, quantity: card.quantity })))
+  
   // Calculate collection stats
   const collectionStats = userCards.reduce(
     (acc, card) => {
       acc.total += card.quantity || 0
       if (card.rarity) {
-        acc[card.rarity] = (acc[card.rarity] || 0) + (card.quantity || 0)
+        // Map all possible rarity names to our display names
+        let rarityKey = card.rarity.toLowerCase()
+        
+        // Handle different possible rarity values
+        if (rarityKey === 'legendary' || rarityKey === 'ultima' || rarityKey === 'ultimate') {
+          rarityKey = 'ultima'
+        } else if (rarityKey === 'epic' || rarityKey === 'elite') {
+          rarityKey = 'epic'
+        } else if (rarityKey === 'rare') {
+          rarityKey = 'rare'
+        } else if (rarityKey === 'common' || rarityKey === 'basic') {
+          rarityKey = 'common'
+        } else if (rarityKey === 'goat') {
+          rarityKey = 'goat'
+        }
+        
+        // Initialize the key if it doesn't exist
+        if (!acc.hasOwnProperty(rarityKey)) {
+          acc[rarityKey] = 0
+        }
+        
+        acc[rarityKey] = (acc[rarityKey] || 0) + (card.quantity || 0)
       }
       return acc
     },
-    { total: 0, common: 0, rare: 0, epic: 0, legendary: 0, goat: 0 },
+    { total: 0, common: 0, rare: 0, epic: 0, ultima: 0, goat: 0 },
   )
+  
+  // Debug: Log the final stats
+  console.log("Collection stats:", collectionStats)
 
 
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#f8f9ff] pb-20">
-        <header className="sticky top-0 z-10 backdrop-blur-md bg-white/80 border-b border-gray-100">
+      <div className="min-h-screen pb-20" style={{ backgroundImage: 'url(/hintergrung.png)', backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }}>
+        <header className="sticky top-0 z-10 backdrop-blur-md bg-black/80 border-b border-yellow-500">
           <div className="max-w-lg mx-auto px-4 py-3">
             <div className="flex justify-between items-center">
-              <h1 className="text-lg font-medium">My Collection</h1>
+              <h1 className="text-lg font-medium text-yellow-300">My Collection</h1>
             </div>
           </div>
         </header>
         <div className="p-4 max-w-lg mx-auto">
-          <div className="bg-white rounded-2xl shadow-sm mb-4 p-4">
-            <Skeleton className="h-6 w-32 mb-3" />
+          <div className="bg-black/80 rounded-2xl shadow-sm mb-4 p-4 border border-yellow-500">
+            <Skeleton className="h-6 w-32 mb-3 bg-yellow-500/20" />
             <div className="grid grid-cols-5 gap-2">
               {Array.from({ length: 5 }).map((_, i) => (
-                <Skeleton key={i} className="h-16 rounded-lg" />
+                <Skeleton key={i} className="h-16 rounded-lg bg-yellow-500/20" />
               ))}
             </div>
           </div>
-          <Skeleton className="h-10 w-full mb-4" />
+          <Skeleton className="h-10 w-full mb-4 bg-yellow-500/20" />
           <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
             {Array.from({ length: 9 }).map((_, index) => (
               <div key={index} className="aspect-[3/4]">
-                <Skeleton className="h-full w-full rounded-xl" />
+                <Skeleton className="h-full w-full rounded-xl bg-yellow-500/20" />
               </div>
             ))}
           </div>
@@ -244,21 +277,21 @@ export default function CollectionPage() {
 
   if (userCards.length === 0) {
     return (
-      <div className="min-h-screen bg-[#f8f9ff] pb-20">
-        <header className="sticky top-0 z-10 backdrop-blur-md bg-white/80 border-b border-gray-100">
+      <div className="min-h-screen pb-20" style={{ backgroundImage: 'url(/hintergrung.png)', backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }}>
+        <header className="sticky top-0 z-10 backdrop-blur-md bg-black/80 border-b border-yellow-500">
           <div className="max-w-lg mx-auto px-4 py-3">
             <div className="flex justify-between items-center">
-              <h1 className="text-lg font-medium">My Collection</h1>
+              <h1 className="text-lg font-medium text-yellow-300">My Collection</h1>
             </div>
           </div>
         </header>
         <div className="p-4 max-w-lg mx-auto">
-          <div className="bg-white rounded-2xl shadow-sm p-8 text-center">
-            <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
-              <AlertCircle className="h-8 w-8 text-gray-400" />
+          <div className="bg-black/80 rounded-2xl shadow-sm p-8 text-center border border-yellow-500">
+            <div className="w-16 h-16 rounded-full bg-yellow-500/20 flex items-center justify-center mx-auto mb-4">
+              <AlertCircle className="h-8 w-8 text-yellow-500" />
             </div>
-            <h2 className="text-xl font-medium mb-2">No Cards Yet</h2>
-            <p className="text-gray-500 mb-6 max-w-xs mx-auto">
+            <h2 className="text-xl font-medium mb-2 text-yellow-300">No Cards Yet</h2>
+            <p className="text-yellow-400 mb-6 max-w-xs mx-auto">
               You don't have any cards in your collection yet. Open some packs to get started!
             </p>
             <Button
@@ -443,15 +476,15 @@ export default function CollectionPage() {
 
   // Normale Collection-Ansicht
   return (
-    <div className="min-h-screen bg-[#f8f9ff] pb-20">
+    <div className="min-h-screen pb-20" style={{ backgroundImage: 'url(/hintergrung.png)', backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }}>
       {/* Header mit My Collection und My Squad */}
-      <div className="w-full max-w-lg mx-auto px-4 py-3 flex items-center justify-between sticky top-0 z-30 bg-white/90 border-b border-gray-100 shadow-sm">
-        <h1 className="text-lg font-bold tracking-tight bg-gradient-to-r from-violet-600 to-fuchsia-600 bg-clip-text text-transparent drop-shadow-md">
+      <div className="w-full max-w-lg mx-auto px-4 py-3 flex items-center justify-between sticky top-0 z-30 bg-black/80 border-b border-yellow-500 shadow-sm">
+        <h1 className="text-lg font-bold tracking-tight text-yellow-300 drop-shadow-md">
           My Collection
         </h1>
         <button
           onClick={() => setShowSquad(true)}
-          className="ml-4 px-4 py-2 rounded-full bg-green-600 text-white font-semibold shadow hover:bg-green-700 transition"
+          className="ml-4 px-4 py-2 rounded-full bg-gradient-to-r from-yellow-500 to-yellow-600 text-black font-semibold shadow hover:from-yellow-600 hover:to-yellow-700 transition"
         >
           My Squad
         </button>
@@ -463,11 +496,11 @@ export default function CollectionPage() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="bg-white rounded-2xl shadow-sm mb-4 overflow-hidden"
+          className="bg-black/80 rounded-2xl shadow-sm mb-4 overflow-hidden border border-yellow-500"
         >
           <div className="p-4">
             <div className="flex justify-between items-center mb-3">
-              <h2 className="text-sm font-medium">Collection Stats</h2>
+              <h2 className="text-sm font-medium text-yellow-300">Collection Stats</h2>
               <Link href="/catalog">
                 <Button
                   size="sm"
@@ -480,16 +513,16 @@ export default function CollectionPage() {
             </div>
             <div className="grid grid-cols-3 gap-2 text-center">
               {[
-                { label: "Total", value: collectionStats.total, color: "text-gray-600" },
-                { label: "Basic", value: collectionStats.common, color: "text-gray-600" },
-                { label: "Rare", value: collectionStats.rare, color: "text-blue-600" },
-                { label: "Elite", value: collectionStats.epic, color: "text-purple-600" },
-                { label: "Legend", value: collectionStats.legendary, color: "text-amber-600" },
-                { label: "GOAT", value: collectionStats.goat, color: "text-[#b91c1c]" },
+                { label: "Total", value: collectionStats.total, color: "text-yellow-300" },
+                { label: "Basic", value: collectionStats.common, color: "text-yellow-300" },
+                { label: "Rare", value: collectionStats.rare, color: "text-blue-400" },
+                { label: "Elite", value: collectionStats.epic, color: "text-purple-400" },
+                { label: "Ultima", value: collectionStats.ultima, color: "text-amber-400" },
+                { label: "GOAT", value: collectionStats.goat, color: "text-red-400" },
               ].map((stat) => (
-                <div key={stat.label} className="bg-gray-50 rounded-lg p-2">
+                <div key={stat.label} className="bg-black/60 rounded-lg p-2 border border-yellow-500/50">
                   <div className={`text-lg font-semibold ${stat.color}`}>{stat.value}</div>
-                  <div className="text-xs text-gray-500">{stat.label}</div>
+                  <div className="text-xs text-yellow-300">{stat.label}</div>
                 </div>
               ))}
             </div>
@@ -509,10 +542,10 @@ export default function CollectionPage() {
           className="mb-4 space-y-3"
         >
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-yellow-500" />
             <Input
               placeholder="Search cards..."
-              className="pl-10 bg-white"
+              className="pl-10 bg-black/80 border-yellow-500 text-yellow-300 placeholder-yellow-400 focus:ring-yellow-500"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -521,12 +554,12 @@ export default function CollectionPage() {
           {/* Epoch Filter */}
           {availableEpochs.length > 1 && (
             <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-gray-500" />
+              <Filter className="h-4 w-4 text-yellow-500" />
               <Select
                 value={selectedEpoch.toString()}
                 onValueChange={(value) => setSelectedEpoch(value === "all" ? "all" : Number.parseInt(value))}
               >
-                <SelectTrigger className="w-32 bg-white">
+                <SelectTrigger className="w-32 bg-black/80 border-yellow-500 text-yellow-300">
                   <SelectValue placeholder="Epoch" />
                 </SelectTrigger>
                 <SelectContent>
@@ -542,23 +575,23 @@ export default function CollectionPage() {
           )}
 
           <Tabs defaultValue="all" className="w-full" onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-6 bg-white h-9">
-              <TabsTrigger value="all" className="text-xs h-7">
+            <TabsList className="grid w-full grid-cols-6 bg-black/80 border-yellow-500 h-9">
+              <TabsTrigger value="all" className="text-xs h-7 text-yellow-300 data-[state=active]:bg-yellow-500 data-[state=active]:text-black">
                 All
               </TabsTrigger>
-              <TabsTrigger value="goat" className="text-xs h-7">
+              <TabsTrigger value="goat" className="text-xs h-7 text-yellow-300 data-[state=active]:bg-yellow-500 data-[state=active]:text-black">
                 GOAT
               </TabsTrigger>
-              <TabsTrigger value="legendary" className="text-xs h-7">
-                Legendary
+              <TabsTrigger value="ultima" className="text-xs h-7 text-yellow-300 data-[state=active]:bg-yellow-500 data-[state=active]:text-black">
+                Ultima
               </TabsTrigger>
-              <TabsTrigger value="epic" className="text-xs h-7">
+              <TabsTrigger value="epic" className="text-xs h-7 text-yellow-300 data-[state=active]:bg-yellow-500 data-[state=active]:text-black">
                 Elite
               </TabsTrigger>
-              <TabsTrigger value="rare" className="text-xs h-7">
+              <TabsTrigger value="rare" className="text-xs h-7 text-yellow-300 data-[state=active]:bg-yellow-500 data-[state=active]:text-black">
                 Rare
               </TabsTrigger>
-              <TabsTrigger value="common" className="text-xs h-7">
+              <TabsTrigger value="common" className="text-xs h-7 text-yellow-300 data-[state=active]:bg-yellow-500 data-[state=active]:text-black">
                 Basic
               </TabsTrigger>
             </TabsList>
@@ -576,11 +609,11 @@ export default function CollectionPage() {
               className="mb-8"
             >
               <div className="flex items-center mb-3">
-                <Badge variant="outline" className="mr-2 font-bold">
+                <Badge variant="outline" className="mr-2 font-bold border-yellow-400 text-yellow-200">
                   Level {level}
                 </Badge>
                 <div className="flex">{renderStars(level, "xs")}</div>
-                <span className="ml-2 text-sm text-gray-700">
+                <span className="ml-2 text-sm text-yellow-200">
                   ({cardsByLevel[level].length} {cardsByLevel[level].length === 1 ? "card" : "cards"})
                 </span>
               </div>
@@ -623,16 +656,17 @@ export default function CollectionPage() {
             </motion.div>
           ))
         ) : (
-          <div className="bg-white rounded-2xl shadow-sm p-8 text-center">
-            <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
-              <Search className="h-6 w-6 text-gray-400" />
+          <div className="bg-black/70 rounded-2xl shadow-sm p-8 text-center border border-yellow-400">
+            <div className="w-12 h-12 rounded-full bg-yellow-400/20 flex items-center justify-center mx-auto mb-4">
+              <Search className="h-6 w-6 text-yellow-400" />
             </div>
-            <h2 className="text-lg font-medium mb-2">No Results</h2>
-            <p className="text-gray-500 mb-4">
+            <h2 className="text-lg font-medium mb-2 text-yellow-200">No Results</h2>
+            <p className="text-yellow-300 mb-4">
               No cards match your search criteria. Try different keywords or filters.
             </p>
             <Button
               variant="outline"
+              className="border-yellow-400 text-yellow-200 hover:bg-yellow-400 hover:text-black"
               onClick={() => {
                 setSearchTerm("")
                 setActiveTab("all")

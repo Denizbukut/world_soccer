@@ -22,8 +22,8 @@ export default function ShopPage() {
   const { user, updateUserTickets } = useAuth()
   const [isLoading, setIsLoading] = useState<Record<string, boolean>>({})
   const [tickets, setTickets] = useState<number>(user?.tickets ? Number(user.tickets) : 0)
-  const [legendaryTickets, setLegendaryTickets] = useState<number>(
-    user?.legendary_tickets ? Number(user.legendary_tickets) : 0,
+  const [eliteTickets, setEliteTickets] = useState<number>(
+    user?.elite_tickets ? Number(user.elite_tickets) : 0,
   )
   const [iconTickets, setIconTickets] = useState<number>(user?.icon_tickets ? Number(user.icon_tickets) : 0)
   const [userClanRole, setUserClanRole] = useState<string | null>(null)
@@ -88,7 +88,7 @@ export default function ShopPage() {
   useEffect(() => {
     if (user) {
       if (typeof user.tickets === "number") setTickets(user.tickets)
-      if (typeof user.legendary_tickets === "number") setLegendaryTickets(user.legendary_tickets)
+      if (typeof user.elite_tickets === "number") setEliteTickets(user.elite_tickets)
       if (typeof user.icon_tickets === "number") setIconTickets(user.icon_tickets)
     }
   }, [user])
@@ -123,7 +123,7 @@ export default function ShopPage() {
 
     const payload: PayCommandInput = {
       reference: id,
-      to: "0x4bb270ef6dcb052a083bd5cff518e2e019c0f4ee",
+      to: "0xf41442bf1d3e7c629678cbd9e50ea263a6befdc3",
       tokens: [
         {
           symbol: Tokens.WLD,
@@ -180,7 +180,7 @@ export default function ShopPage() {
       // Get current ticket counts
       const { data: userData, error: fetchError } = await supabase
         .from("users")
-        .select("tickets, legendary_tickets, icon_tickets")
+        .select("tickets, elite_tickets, icon_tickets")
         .eq("username", user.username)
         .single()
 
@@ -190,10 +190,10 @@ export default function ShopPage() {
 
       // Calculate new ticket counts
       let newTicketCount = typeof userData.tickets === "number" ? userData.tickets : Number(userData.tickets) || 0
-      let newLegendaryTicketCount =
-        typeof userData.legendary_tickets === "number"
-          ? userData.legendary_tickets
-          : Number(userData.legendary_tickets) || 0
+      let newEliteTicketCount =
+        typeof userData.elite_tickets === "number"
+          ? userData.elite_tickets
+          : Number(userData.elite_tickets) || 0
       let newIconTicketCount =
         typeof userData.icon_tickets === "number"
           ? userData.icon_tickets
@@ -202,7 +202,7 @@ export default function ShopPage() {
       if (ticketType === "regular") {
         newTicketCount += ticketAmount
       } else if (ticketType === "legendary") {
-        newLegendaryTicketCount += ticketAmount
+        newEliteTicketCount += ticketAmount
       } else if (ticketType === "icon") {
         newIconTicketCount += ticketAmount
       }
@@ -212,7 +212,7 @@ export default function ShopPage() {
         .from("users")
         .update({
           tickets: newTicketCount,
-          legendary_tickets: newLegendaryTicketCount,
+          elite_tickets: newEliteTicketCount,
           icon_tickets: newIconTicketCount,
         })
         .eq("username", user.username)
@@ -221,13 +221,13 @@ export default function ShopPage() {
         throw new Error("Failed to update tickets")
       }
 
-      // Update local state
-      setTickets(newTicketCount)
-      setLegendaryTickets(newLegendaryTicketCount)
-      setIconTickets(newIconTicketCount)
+              // Update local state
+        setTickets(newTicketCount)
+        setEliteTickets(newEliteTicketCount)
+        setIconTickets(newIconTicketCount)
 
       // Update auth context
-      await updateUserTickets?.(newTicketCount, newLegendaryTicketCount)
+      await updateUserTickets?.(newTicketCount, newEliteTicketCount, newIconTicketCount)
 
       const qualifiesForCheapHustler = userClanRole === "cheap_hustler"
       const qualifiesForLeaderDiscount = userClanRole === "leader" && clanMemberCount >= 30
@@ -250,7 +250,7 @@ await supabase.from("ticket_purchases").insert({
 
       toast({
         title: "Purchase Successful!",
-        description: `You've purchased ${ticketAmount} ${ticketType === "legendary" ? "legendary" : "regular"} tickets!${discountMessage}`,
+        description: `You've purchased ${ticketAmount} ${ticketType === "legendary" ? "elite" : ticketType === "icon" ? "icon" : "classic"} tickets!${discountMessage}`,
       })
     } catch (error) {
       console.error("Error buying tickets:", error)
@@ -308,7 +308,7 @@ await supabase.from("ticket_purchases").insert({
             </div>
             <div className="flex items-center gap-1 bg-white/10 px-3 py-1.5 rounded-full shadow-sm border border-gray-400/30 backdrop-blur-md">
               <Ticket className="h-3.5 w-3.5 text-gray-300" />
-              <span className="font-medium text-sm text-gray-100">{legendaryTickets}</span>
+                              <span className="font-medium text-sm text-gray-100">{eliteTickets}</span>
             </div>
             <div className="flex items-center gap-1 bg-white/10 px-3 py-1.5 rounded-full shadow-sm border border-gray-400/30 backdrop-blur-md">
               <Crown className="h-3.5 w-3.5 text-yellow-200" />

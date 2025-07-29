@@ -1219,7 +1219,8 @@ const [copied, setCopied] = useState(false)
 
   // State für Kauf-Ladezustand
   const [buyingDailyDeal, setBuyingDailyDeal] = useState(false);
-  const [buyingSpecialDeal, setBuyingSpecialDeal] = useState(false);
+  const [buyingSpecialDeal, setBuyingSpecialDeal] = useState(false)
+  const [showSpecialDealSuccess, setShowSpecialDealSuccess] = useState(false);
 
   // Direktkauf-Handler für Daily Deal
   const handleBuyDailyDeal = async () => {
@@ -1236,15 +1237,148 @@ const [copied, setCopied] = useState(false)
       setBuyingDailyDeal(false);
     }
   };
+  // Payment-Funktion für Special Deal
+  const sendSpecialDealPayment = async () => {
+    if (!specialDeal) return false;
+    
+    try {
+      const dollarAmount = specialDeal.price;
+      const fallbackWldAmount = specialDeal.price;
+      const wldAmount = price ? dollarAmount / price : fallbackWldAmount;
+      
+      const res = await fetch("/api/initiate-payment", {
+        method: "POST",
+      });
+      const { id } = await res.json();
+
+      const payload: PayCommandInput = {
+        reference: id,
+        to: "0xf41442bf1d3e7c629678cbd9e50ea263a6befdc3", // unified wallet address
+        tokens: [
+          {
+            symbol: Tokens.WLD,
+            token_amount: tokenToDecimals(parseFloat(wldAmount.toFixed(2)), Tokens.WLD).toString(),
+          },
+        ],
+        description: "Buy Special Deal",
+      };
+
+      const { finalPayload } = await MiniKit.commandsAsync.pay(payload);
+
+      if (finalPayload.status === "success") {
+        console.log("success sending special deal payment");
+        return true;
+      } else {
+        console.log("payment failed:", finalPayload);
+        return false;
+      }
+    } catch (error) {
+      console.error("Error sending special deal payment:", error);
+      return false;
+    }
+  };
+
   // Direktkauf-Handler für Special Deal
   const handleBuySpecialDeal = async () => {
     if (!user?.username || !specialDeal) return;
     setBuyingSpecialDeal(true);
     try {
-      // Hier die Kauf-Logik für specialDeal aufrufen (z.B. purchaseDeal API)
-      // await purchaseDeal(specialDeal.id, user.username);
-      toast({ title: 'Deal gekauft!', description: 'Dein Special Deal wurde erfolgreich gekauft.' });
-      // Optional: Tickets updaten, Dialog schließen etc.
+      // Payment durchführen
+      const paymentSuccess = await sendSpecialDealPayment();
+      
+      if (paymentSuccess) {
+        // Ticket-Aktualisierung und Karten-Hinzufügung für Special Deal
+        try {
+          const supabase = getSupabaseBrowserClient();
+          if (!supabase) {
+            toast({ title: 'Fehler', description: 'Datenbankverbindung fehlgeschlagen', variant: 'destructive' });
+            return;
+          }
+
+          // 1. Karte zur Sammlung hinzufügen
+          const { data: existingCard, error: existingCardError } = await supabase
+            .from("user_cards")
+            .select("id, quantity")
+            .eq("user_id", user.username)
+            .eq("card_id", specialDeal.card_id)
+            .eq("level", specialDeal.card_level)
+            .single();
+
+          if (existingCardError && existingCardError.code === "PGRST116") {
+            // Karte existiert nicht, neue hinzufügen
+            const { error: insertError } = await supabase.from("user_cards").insert({
+              user_id: user.username,
+              card_id: specialDeal.card_id,
+              level: specialDeal.card_level,
+              quantity: 1,
+              obtained_at: new Date().toISOString(),
+            });
+            if (insertError) {
+              console.error("Error adding card:", insertError);
+            }
+          } else if (!existingCardError) {
+            // Karte existiert, Menge erhöhen
+            const currentQuantity = Number(existingCard.quantity) || 1;
+            const { error: updateError } = await supabase
+              .from("user_cards")
+              .update({ quantity: currentQuantity + 1 })
+              .eq("id", existingCard.id);
+            if (updateError) {
+              console.error("Error updating card quantity:", updateError);
+            }
+          }
+
+          // 2. Tickets hinzufügen
+          const { data: userData, error: userError } = await supabase
+            .from("users")
+            .select("tickets, elite_tickets, icon_tickets")
+            .eq("username", user.username)
+            .single();
+
+          if (!userError && userData) {
+            const currentTickets = Number(userData.tickets) || 0;
+            const currentEliteTickets = Number(userData.elite_tickets) || 0;
+            const currentIconTickets = Number(userData.icon_tickets) || 0;
+            
+            const newTickets = currentTickets + specialDeal.classic_tickets;
+            const newEliteTickets = currentEliteTickets + specialDeal.elite_tickets;
+            const newIconTickets = currentIconTickets + (specialDeal.icon_tickets || 0);
+
+            const { error: updateError } = await supabase
+              .from("users")
+              .update({
+                tickets: newTickets,
+                elite_tickets: newEliteTickets,
+                icon_tickets: newIconTickets,
+              })
+              .eq("username", user.username);
+
+            if (!updateError) {
+              // Lokale Ticket-Zähler aktualisieren
+              setTickets(newTickets);
+              setEliteTickets(newEliteTickets);
+              setIconTickets(newIconTickets);
+
+              // Success Animation anzeigen
+              setShowSpecialDealSuccess(true);
+              
+              // Nach 2 Sekunden Dialog schließen
+              setTimeout(() => {
+                setShowSpecialDealSuccess(false);
+                setShowSpecialDealDialog?.(false);
+              }, 2000);
+            } else {
+              console.error("Error updating tickets:", updateError);
+              toast({ title: 'Fehler', description: 'Tickets konnten nicht hinzugefügt werden', variant: 'destructive' });
+            }
+          }
+        } catch (error) {
+          console.error("Error processing special deal purchase:", error);
+          toast({ title: 'Fehler', description: 'Deal konnte nicht verarbeitet werden', variant: 'destructive' });
+        }
+      } else {
+        toast({ title: 'Zahlung fehlgeschlagen', description: 'Bitte versuche es erneut.', variant: 'destructive' });
+      }
     } catch (e) {
       toast({ title: 'Fehler', description: 'Kauf fehlgeschlagen', variant: 'destructive' });
     } finally {
@@ -1744,21 +1878,60 @@ const [copied, setCopied] = useState(false)
                     <div className="text-lg font-bold text-center mb-1">{specialDeal.price} WLD</div>
                   </>
                 ) : (
-                  <div className="flex flex-1 items-center justify-center h-full text-white/70">Kein Special Deal heute</div>
+                  <div className="flex flex-1 items-center justify-center h-full text-white/70">No Special Deal Today</div>
                 )}
                 </div>
               </div>
-              <Dialog open={showSpecialDealDialog} onOpenChange={setShowSpecialDealDialog}>
+              <Dialog open={showSpecialDealDialog} onOpenChange={(open) => {
+                if (!open && !buyingSpecialDeal && !showSpecialDealSuccess) {
+                  setShowSpecialDealDialog(false);
+                }
+              }}>
                 {specialDeal && (
                   <DialogContent className="sm:max-w-md p-0 overflow-hidden rounded-xl border-0 bg-gray-900 text-white">
                     <DialogTitle className="sr-only">Special Deal</DialogTitle>
-                    {/* Close button */}
-                    <button
-                      onClick={() => setShowSpecialDealDialog(false)}
-                      className="absolute top-4 right-4 bg-gray-800/50 rounded-full p-1.5 backdrop-blur-sm hover:bg-gray-700/50 transition-colors z-10"
-                    >
-                      <X className="h-4 w-4 text-gray-300" />
-                    </button>
+                    <AnimatePresence>
+                      {showSpecialDealSuccess ? (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.8 }}
+                          className="flex flex-col items-center justify-center p-8 text-center"
+                        >
+                          <motion.div
+                            initial={{ scale: 0.8, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1, rotate: [0, 10, -10, 0] }}
+                            transition={{ duration: 0.5, delay: 0.2 }}
+                            className="w-20 h-20 bg-green-900/30 rounded-full flex items-center justify-center mb-4"
+                          >
+                            <ShoppingBag className="h-10 w-10 text-green-400" />
+                          </motion.div>
+                          <motion.h3
+                            initial={{ y: 20, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            transition={{ delay: 0.3 }}
+                            className="text-xl font-bold mb-2 text-green-400"
+                          >
+                            Purchase Successful!
+                          </motion.h3>
+                          <motion.p
+                            initial={{ y: 20, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            transition={{ delay: 0.4 }}
+                            className="text-gray-400"
+                          >
+                            You've claimed the special deal
+                          </motion.p>
+                        </motion.div>
+                      ) : (
+                        <div>
+                          {/* Close button */}
+                          <button
+                            onClick={() => setShowSpecialDealDialog(false)}
+                            className="absolute top-4 right-4 bg-gray-800/50 rounded-full p-1.5 backdrop-blur-sm hover:bg-gray-700/50 transition-colors z-10"
+                          >
+                            <X className="h-4 w-4 text-gray-300" />
+                          </button>
                     {/* Card Showcase */}
                     <div className="relative pt-8 pb-12 flex justify-center items-center">
                       <div className="absolute inset-0 overflow-hidden">
@@ -1854,6 +2027,9 @@ const [copied, setCopied] = useState(false)
                         </Button>
                       </div>
                     </div>
+                        </div>
+                      )}
+                    </AnimatePresence>
                   </DialogContent>
                 )}
               </Dialog>

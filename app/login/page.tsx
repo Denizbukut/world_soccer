@@ -9,103 +9,31 @@ import Image from "next/image"
 import { Globe } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { useEffect } from "react"
-import { MiniKit, type VerifyCommandInput, VerificationLevel, type ISuccessResult } from "@worldcoin/minikit-js"
+import { MiniKit } from "@worldcoin/minikit-js"
 
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [referralWarning, setReferralWarning] = useState<string | null>(null)
-  const [isVerified, setIsVerified] = useState(false)
-  const [showWalletNotice, setShowWalletNotice] = useState(false)
-
-
   const [error, setError] = useState<string | null>(null)
   const [referralCode, setReferralCode] = useState("")
   const router = useRouter()
   const { login } = useAuth()
+  
   useEffect(() => {
-  if (typeof window !== "undefined") {
-    const urlParams = new URLSearchParams(window.location.search)
-    const ref = urlParams.get("ref")
-    if (ref) setReferralCode(ref)
-  }
-}, [])
-useEffect(() => {
-  if (isVerified) {
-    setShowWalletNotice(true)
-
-    signInWithWallet()
-
-  }
-}, [isVerified])
-
-
-const verifyPayload: VerifyCommandInput = {
-    action: "login", // This is your action ID from the Developer Portal
-    verification_level: VerificationLevel.Orb, // Orb | Device
-  }
-
-
-  const handleWorldIDLogin = async () => {
-    setIsLoading(true)
-
-    try {
-      if (!MiniKit.isInstalled()) {
-        console.log("Minikit not installed")
-        alert("World App is not installed. Please install it to continue.")
-        setIsLoading(false)
-        return
-      }
-
-      // World App will open a drawer prompting the user to confirm the operation
-      const { finalPayload } = await MiniKit.commandsAsync.verify(verifyPayload)
-
-      if (finalPayload.status === "error") {
-        console.log("Error payload", finalPayload)
-        setIsLoading(false)
-        return
-      }
-
-      // Verify the proof in the backend
-      const verifyResponse = await fetch("/api/verify", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          payload: finalPayload as ISuccessResult,
-          action: "login",
-        }),
-      })
-
-      const verifyResponseJson = await verifyResponse.json()
-
-      if (verifyResponseJson.status === 200) {
-        console.log("Verification success!")
-
-        // Store the user ID in localStorage for use across the app
-        localStorage.setItem("isVerifiedAsHuman", "true")
-        localStorage.setItem("worldId_userId", verifyResponseJson.userId)
-
-
-        setIsVerified(true)
-      } else {
-        console.log("Verification failed:", verifyResponseJson.error)
-        alert("Verification failed. Please try again.")
-      }
-    } catch (error) {
-      console.error("Login error:", error)
-      alert("An error occurred during login. Please try again.")
-    } finally {
-      setIsLoading(false)
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search)
+      const ref = urlParams.get("ref")
+      if (ref) setReferralCode(ref)
     }
-  }
+  }, [])
+
 
   useEffect(() => {
-  // Entferne evtl. alte Tokens, um neue Verifikation zu erzwingen
-  localStorage.removeItem("worldId_userId")
-  localStorage.removeItem("animeworld_user")
-}, [])
+    // Entferne evtl. alte Tokens
+    localStorage.removeItem("worldId_userId")
+    localStorage.removeItem("animeworld_user")
+  }, [])
 
 
   const signInWithWallet = async () => {
@@ -224,7 +152,7 @@ const verifyPayload: VerifyCommandInput = {
 
         if (loginResult.success) {
           // Navigate to home page
-          if(isVerified) router.push("/")
+          router.push("/")
           return true
         } else {
           setError(loginResult.error || "Login failed. Please try again.")
@@ -281,41 +209,21 @@ const verifyPayload: VerifyCommandInput = {
   </div>
 )}
 
-                {!isVerified ? (
-          <button
-  className="w-full bg-white text-black font-medium py-4 rounded-xl mb-6 hover:bg-gray-100 transition-all duration-300 flex items-center justify-center gap-2 shadow-md border border-gray-300"
-  onClick={handleWorldIDLogin}
-  disabled={isLoading}
->
-  <Globe className="text-black" size={20} />
-  {isLoading ? (
-    <div className="flex items-center">
-      <div className="h-4 w-4 border-2 border-black border-t-transparent rounded-full animate-spin mr-2"></div>
-      Connecting...
-    </div>
-  ) : (
-    "Login with WorldID"
-  )}
-</button>
-
-
-        ) : (
-          <button
-            onClick={signInWithWallet}
-            style={{ backgroundColor: "#2E5283" }}
-            className="w-full text-white border border-black font-medium py-4 rounded-xl mb-6 hover:from-black hover:to-gray-800 transition-all duration-300 flex items-center justify-center gap-2 shadow-md"
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              "Connecting..."
-            ) : (
-              <>
-                <Globe className="text-white" size={20} />
-                Connect Wallet
-              </>
-            )}
-          </button>
-        )}
+        <button
+          onClick={signInWithWallet}
+          style={{ backgroundColor: "#2E5283" }}
+          className="w-full text-white border border-black font-medium py-4 rounded-xl mb-6 hover:from-black hover:to-gray-800 transition-all duration-300 flex items-center justify-center gap-2 shadow-md"
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            "Connecting..."
+          ) : (
+            <>
+              <Globe className="text-white" size={20} />
+              Connect Wallet
+            </>
+          )}
+        </button>
 
       </motion.div>
     </div>

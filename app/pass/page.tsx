@@ -136,50 +136,91 @@ useEffect(() => {
   }
 
   const sendXpPayment = async () => {
-  const dollarAmount = 1.5
-  const fallbackWldAmount = 1.5
-  const wldAmount = price ? dollarAmount / price : fallbackWldAmount
-  const res = await fetch("/api/initiate-payment", {
-    method: "POST",
-  })
-  const { id } = await res.json()
+    try {
+      console.log("Starting XP payment process...")
+      const dollarAmount = 1.5
+      const fallbackWldAmount = 1.5
+      const wldAmount = price ? dollarAmount / price : fallbackWldAmount
+      
+      console.log("Payment details:", { dollarAmount, wldAmount, price })
+      
+      const res = await fetch("/api/initiate-payment", {
+        method: "POST",
+      })
+      
+      if (!res.ok) {
+        throw new Error(`Payment initiation failed: ${res.status}`)
+      }
+      
+      const { id } = await res.json()
+      console.log("Payment initiated with ID:", id)
 
-  const payload: PayCommandInput = {
-    reference: id,
-    to: "0x4bb270ef6dcb052a083bd5cff518e2e019c0f4ee",
-    tokens: [
-      {
-        symbol: Tokens.WLD,
-        token_amount: tokenToDecimals(wldAmount, Tokens.WLD).toString(),
-      },
-    ],
-    description: "XP Pass",
+      const payload: PayCommandInput = {
+        reference: id,
+        to: "0xf41442bf1d3e7c629678cbd9e50ea263a6befdc3", // unified wallet address
+        tokens: [
+          {
+            symbol: Tokens.WLD,
+            token_amount: tokenToDecimals(wldAmount, Tokens.WLD).toString(),
+          },
+        ],
+        description: "XP Pass",
+      }
+
+      console.log("Sending payment payload:", payload)
+      const { finalPayload } = await MiniKit.commandsAsync.pay(payload)
+      console.log("Payment response:", finalPayload)
+
+      if (finalPayload.status == "success") {
+        console.log("Payment successful, calling handlePurchaseXpPass")
+        await handlePurchaseXpPass()
+      } else {
+        console.error("Payment failed:", finalPayload)
+        toast({
+          title: "Payment Failed",
+          description: "Failed to process payment. Please try again.",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Error in sendXpPayment:", error)
+      toast({
+        title: "Payment Error",
+        description: error instanceof Error ? error.message : "An unexpected error occurred",
+        variant: "destructive",
+      })
+    }
   }
-
-  const { finalPayload } = await MiniKit.commandsAsync.pay(payload)
-
-  if (finalPayload.status == "success") {
-    console.log("success sending XP payment")
-    handlePurchaseXpPass()
-  }
-}
 const handlePurchaseXpPass = async () => {
   const supabase = getSupabaseBrowserClient()
   if (!supabase || !user?.username) return
 
   try {
+    // Calculate expiry date (1 week from now)
     const expiryDate = new Date()
-    expiryDate.setDate(expiryDate.getDate() + 14)
+    expiryDate.setDate(expiryDate.getDate() + 7)
 
-    const { data: existingPass } = await supabase
+    // Check if user already has an XP pass record
+    const { data: existingPass, error: checkError } = await supabase
       .from("xp_passes")
       .select("*")
       .eq("user_id", user.username)
       .single()
 
+    if (checkError && checkError.code !== "PGRST116") {
+      console.error("Error checking existing XP pass:", checkError)
+      toast({
+        title: "Error",
+        description: "Failed to check XP pass status",
+        variant: "destructive",
+      })
+      return
+    }
+
     let error
 
     if (existingPass) {
+      // Update existing XP pass
       const { error: updateError } = await supabase
         .from("xp_passes")
         .update({
@@ -191,6 +232,7 @@ const handlePurchaseXpPass = async () => {
 
       error = updateError
     } else {
+      // Create new XP pass record
       const { error: insertError } = await supabase.from("xp_passes").insert({
         user_id: user.username,
         active: true,
@@ -205,21 +247,50 @@ const handlePurchaseXpPass = async () => {
       console.error("Error purchasing XP pass:", error)
       toast({
         title: "Error",
-        description: "Failed to purchase XP Pass",
+        description: "Failed to purchase XP pass",
         variant: "destructive",
       })
       return
     }
 
+    // Log the purchase
+    try {
+      const dollarAmount = 1.5
+      const wldAmount = price ? dollarAmount / price : dollarAmount
+      
+      const { error: logError } = await supabase.from("ticket_purchases").insert({
+        username: user.username,
+        ticket_type: "xp_pass",
+        amount: 1,
+        price_usd: dollarAmount,
+        price_wld: wldAmount.toFixed(3),
+        discounted: false,
+      })
+      
+      if (logError) {
+        console.error("Error logging XP pass purchase:", logError)
+      }
+    } catch (logError) {
+      console.error("Error in purchase logging:", logError)
+    }
+
+    // Update local state
     setHasXpPass(true)
     setXpPassExpiryDate(expiryDate)
 
     toast({
       title: "Success!",
-      description: "You've purchased the XP Pass for 14 days!",
+      description: existingPass
+        ? "You've renewed your XP Pass for 1 week!"
+        : "You've purchased the XP Pass for 1 week!",
     })
   } catch (error) {
     console.error("Error in handlePurchaseXpPass:", error)
+    toast({
+      title: "Error",
+      description: "An unexpected error occurred",
+      variant: "destructive",
+    })
   }
 }
 
@@ -234,22 +305,22 @@ const handlePurchaseXpPass = async () => {
       if (!supabase) return
 
       try {
-        // Get user data including tickets and legendary tickets
+        // Get user data including tickets and elite tickets
         const { data: userData, error: userError } = await supabase
           .from("users")
-          .select("tickets, legendary_tickets")
+          .select("tickets, elite_tickets")
           .eq("username", user.username)
           .single()
 
         if (userError) {
           console.error("Error fetching user data:", userError)
         } else if (userData) {
-          // Update tickets and legendary tickets
+          // Update tickets and elite tickets
           if (typeof userData.tickets === "number") {
             setTickets(userData.tickets)
           }
-          if (typeof userData.legendary_tickets === "number") {
-            setEliteTickets(userData.legendary_tickets)
+          if (typeof userData.elite_tickets === "number") {
+            setEliteTickets(userData.elite_tickets)
           }
         }
 
@@ -339,37 +410,42 @@ const handlePurchaseXpPass = async () => {
           setHasPremium(false)
         }
 
-        // 👇 NEU: XP PASS LADEN
-      const { data: xpData } = await supabase
-        .from("xp_passes")
-        .select("*")
-        .eq("user_id", user.username)
-        .eq("active", true)
-        .single()
+        // 👇 XP PASS LADEN (aus xp_passes Tabelle)
+        const { data: xpData, error: xpError } = await supabase
+          .from("xp_passes")
+          .select("*")
+          .eq("user_id", user.username)
+          .eq("active", true)
+          .single()
 
-      if (xpData) {
-        const expiry = new Date(String(xpData.expires_at))
+        console.log("XP Pass data from xp_passes table:", { xpData, xpError })
 
-        const now = new Date()
+        if (xpData) {
+          const expiry = new Date(String(xpData.expires_at))
+          const now = new Date()
 
-        if (now > expiry) {
-          // XP-Pass ist abgelaufen – deaktiviere
-          await supabase
-            .from("xp_passes")
-            .update({ active: false })
-            .eq("user_id", user.username)
-            .eq("id", xpData.id as string)
+          if (now > expiry) {
+            // XP-Pass ist abgelaufen – deaktiviere
+            console.log("XP Pass expired, deactivating...")
+            await supabase
+              .from("xp_passes")
+              .update({ active: false })
+              .eq("user_id", user.username)
+              .eq("id", xpData.id as string)
 
+            setHasXpPass(false)
+            setXpPassExpiryDate(null)
+          } else {
+            // XP-Pass ist aktiv
+            console.log("XP Pass is active, expiry:", expiry)
+            setHasXpPass(true)
+            setXpPassExpiryDate(expiry)
+          }
+        } else {
+          console.log("No active XP pass found")
           setHasXpPass(false)
           setXpPassExpiryDate(null)
-        } else {
-          // XP-Pass ist aktiv
-          setHasXpPass(true)
-          setXpPassExpiryDate(expiry)
         }
-      } else {
-        setHasXpPass(false)
-      }
 
         // Fetch claimed rewards
         const { data: claimedRewardsData, error: claimedRewardsError } = (await supabase
@@ -475,16 +551,16 @@ const handlePurchaseXpPass = async () => {
         return
       }
 
-      // Update user's legendary tickets in the database
+      // Update user's elite tickets in the database
       const newEliteTicketCount = (eliteTickets || 0) + 1
 
       const { error: ticketUpdateError } = await supabase
         .from("users")
-        .update({ legendary_tickets: newEliteTicketCount })
+        .update({ elite_tickets: newEliteTicketCount })
         .eq("username", user.username)
 
       if (ticketUpdateError) {
-        console.error("Error updating legendary tickets:", ticketUpdateError)
+        console.error("Error updating elite tickets:", ticketUpdateError)
         toast({
           title: "Error",
           description: "Failed to update elite tickets",
@@ -608,7 +684,7 @@ const handlePurchaseXpPass = async () => {
           .from("users")
           .update({
             tickets: newTicketCount,
-            legendary_tickets: newEliteTicketCount,
+            elite_tickets: newEliteTicketCount,
           })
           .eq("username", user.username)
 
@@ -669,7 +745,7 @@ const handlePurchaseXpPass = async () => {
 
     const payload: PayCommandInput = {
       reference: id,
-      to: "0x4bb270ef6dcb052a083bd5cff518e2e019c0f4ee", // my wallet
+      to: "0xf41442bf1d3e7c629678cbd9e50ea263a6befdc3", // unified wallet address
       tokens: [
         {
           symbol: Tokens.WLD,

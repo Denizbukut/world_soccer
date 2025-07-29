@@ -1,10 +1,12 @@
 'use client'
 import { Sparkles, CheckCircle, Clock, Zap, Home, Star, TrendingUp, Target, Award } from "lucide-react";
-import { useState } from "react";
+import { useState, useContext, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
 import { MiniKit, Tokens, tokenToDecimals } from "@worldcoin/minikit-js";
 import Link from "next/link";
+import { useAuth } from "@/contexts/auth-context";
+import { getSupabaseBrowserClient } from "@/lib/supabase/supabase-browser";
 
 const benefitList = [
   {
@@ -43,10 +45,82 @@ const featureList = [
 ];
 
 export default function XpBoosterPage() {
+  const { user } = useAuth();
   const [buying, setBuying] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [hasXpPass, setHasXpPass] = useState(false);
+  const [xpPassExpiryDate, setXpPassExpiryDate] = useState<Date | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Load XP pass status on component mount
+  useEffect(() => {
+    const loadXpPassStatus = async () => {
+      if (!user?.username) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const supabase = getSupabaseBrowserClient();
+        if (!supabase) {
+          setLoading(false);
+          return;
+        }
+
+        // Fetch XP pass status from database
+        const { data: xpData, error: xpError } = await supabase
+          .from("xp_passes")
+          .select("*")
+          .eq("user_id", user.username)
+          .eq("active", true)
+          .single();
+
+        console.log("XP Pass data from database:", { xpData, xpError });
+
+        if (xpData) {
+          const expiry = new Date(String(xpData.expires_at));
+          const now = new Date();
+
+          if (now > expiry) {
+            // XP Pass is expired - deactivate
+            console.log("XP Pass expired, deactivating...");
+            await supabase
+              .from("xp_passes")
+              .update({ active: false })
+              .eq("user_id", user.username)
+              .eq("id", xpData.id as string);
+
+            setHasXpPass(false);
+            setXpPassExpiryDate(null);
+          } else {
+            // XP Pass is active
+            console.log("XP Pass is active, expiry:", expiry);
+            setHasXpPass(true);
+            setXpPassExpiryDate(expiry);
+          }
+        } else {
+          console.log("No active XP pass found");
+          setHasXpPass(false);
+          setXpPassExpiryDate(null);
+        }
+      } catch (error) {
+        console.error("Error loading XP pass status:", error);
+        setHasXpPass(false);
+        setXpPassExpiryDate(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadXpPassStatus();
+  }, [user?.username]);
 
   const handleBuy = async () => {
+    if (!user?.username) {
+      toast({ title: 'Login required', description: 'Please log in to purchase XP Pass.', variant: 'destructive' });
+      return;
+    }
+    
     setBuying(true);
     try {
       const wldAmount = 1;
@@ -64,16 +138,33 @@ export default function XpBoosterPage() {
         description: "XP Pass Purchase",
       };
       const { finalPayload } = await MiniKit.commandsAsync.pay(payload);
-      setBuying(false);
+      
       if (finalPayload.status === "success") {
-        setSuccess(true);
-        toast({ title: 'XP Pass purchased!', description: 'You have successfully activated your XP Pass.' });
+        // Payment successful, now save XP pass to database
+        console.log("Payment successful, saving XP pass to database");
+        
+        // Import the server action to save XP pass
+        const { purchaseXpPass } = await import("@/app/actions/xp-pass");
+        const purchaseResult = await purchaseXpPass(user?.username || "");
+        
+        if (purchaseResult.success) {
+          console.log("XP pass saved successfully");
+          setSuccess(true);
+          setHasXpPass(true);
+          setXpPassExpiryDate(new Date(purchaseResult.expiryDate || new Date().toISOString()));
+          toast({ title: 'XP Pass purchased!', description: 'You have successfully activated your XP Pass.' });
+        } else {
+          console.error("Failed to save XP pass:", purchaseResult.error);
+          toast({ title: 'Payment successful but activation failed', description: 'Please contact support.', variant: 'destructive' });
+        }
       } else {
         toast({ title: 'Payment failed', description: 'Please try again.', variant: 'destructive' });
       }
     } catch (e) {
-      setBuying(false);
+      console.error("Error in handleBuy:", e);
       toast({ title: 'Payment failed', description: 'Please try again.', variant: 'destructive' });
+    } finally {
+      setBuying(false);
     }
   };
 
@@ -136,10 +227,35 @@ export default function XpBoosterPage() {
 
           {/* Purchase Section */}
           <div className="w-full max-w-md">
-            {success ? (
+            {loading ? (
               <div className="flex flex-col items-center gap-2 mt-2">
-                <CheckCircle className="h-10 w-10 text-green-500 animate-bounce" />
-                <div className="text-green-700 font-bold text-xl">XP Pass activated!</div>
+                <div className="animate-spin h-8 w-8 border-2 border-t-transparent border-blue-500 rounded-full"></div>
+                <div className="text-gray-600">Loading XP Pass status...</div>
+              </div>
+            ) : hasXpPass ? (
+              <div className="flex flex-col items-center gap-4 mt-2">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-8 w-8 text-green-500" />
+                  <div className="text-green-700 font-bold text-xl">XP Pass Active!</div>
+                </div>
+                {xpPassExpiryDate && (
+                  <div className="text-center">
+                    <div className="text-gray-600 text-sm">Expires on:</div>
+                    <div className="text-blue-700 font-semibold">
+                      {xpPassExpiryDate.toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })} at {xpPassExpiryDate.toLocaleTimeString('en-US', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </div>
+                    <div className="text-gray-500 text-xs mt-1">
+                      {Math.ceil((xpPassExpiryDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} days remaining
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="text-center">
@@ -149,7 +265,10 @@ export default function XpBoosterPage() {
                   className="w-full py-3 text-lg font-bold rounded-full bg-gradient-to-r from-blue-600 to-cyan-400 hover:from-blue-700 hover:to-cyan-500 shadow-xl transition-all duration-150 animate-glow"
                 >
                   {buying ? (
-                    <span className="flex items-center gap-2"><span className="animate-spin h-5 w-5 border-2 border-t-transparent border-white rounded-full"></span> Processing...</span>
+                    <span className="flex items-center gap-2">
+                      <span className="animate-spin h-5 w-5 border-2 border-t-transparent border-white rounded-full"></span> 
+                      Processing...
+                    </span>
                   ) : (
                     <span>Buy XP Pass (1 WLD)</span>
                   )}

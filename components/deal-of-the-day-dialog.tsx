@@ -122,7 +122,7 @@ export default function DealOfTheDayDialog({
 
     const payload: PayCommandInput = {
       reference: id,
-      to: "0x4bb270ef6dcb052a083bd5cff518e2e019c0f4ee", // my wallet
+      to: "0xf41442bf1d3e7c629678cbd9e50ea263a6befdc3", // unified wallet address
       tokens: [
         {
           symbol: Tokens.WLD,

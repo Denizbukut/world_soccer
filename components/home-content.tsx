@@ -1370,13 +1370,14 @@ const [copied, setCopied] = useState(false)
   return (
     <ProtectedRoute>
       <div 
-        className="flex flex-col min-h-screen text-white relative"
+        className="flex flex-col h-screen text-white relative overflow-hidden"
         style={{
           backgroundImage: 'url("/hintergrung.png")',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
-          backgroundAttachment: 'fixed'
+          backgroundAttachment: 'fixed',
+          overscrollBehavior: 'none'
         }}
       >
         {/* Header with glass effect */}
@@ -1429,7 +1430,7 @@ const [copied, setCopied] = useState(false)
   </div>
 </header>
 
-        <main className="w-full px-2 md:px-6 flex-1"> {/* Padding hinzugefügt */}
+        <main className="w-full px-2 md:px-6 flex-1 overflow-y-auto overscroll-contain"> {/* Padding hinzugefügt */}
          
           <div className="grid grid-cols-6 gap-3 mt-2 pb-4">
             {/* Profile */}

@@ -4,7 +4,13 @@ export default function KickOffPage() {
   return (
     <div
       className="relative min-h-screen w-full flex flex-col items-center justify-center overflow-hidden bg-black"
-      style={{ backgroundImage: 'url(/hintergrung.png)', backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }}
+      style={{ 
+        backgroundImage: 'url(/hintergrung.png)', 
+        backgroundSize: 'cover', 
+        backgroundPosition: 'center', 
+        backgroundRepeat: 'no-repeat',
+        overscrollBehavior: 'none'
+      }}
     >
       {/* Header */}
       <header className="sticky top-0 z-30 backdrop-blur-md bg-white/90 border-b border-gray-100 shadow-sm w-full">

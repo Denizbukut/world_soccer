@@ -900,7 +900,8 @@ const [showInfo, setShowInfo] = useState(false)
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
-          backgroundAttachment: 'fixed'
+          backgroundAttachment: 'fixed',
+          overscrollBehavior: 'none'
         }}
       >
         {/* Header with tickets */}
@@ -926,7 +927,7 @@ const [showInfo, setShowInfo] = useState(false)
           </div>
         </header>
 
-        <main className="p-4 max-w-lg mx-auto">
+        <main className="p-4 max-w-lg mx-auto" style={{ overscrollBehavior: 'none' }}>
 
           {/* Pack Selection Screen */}
           <AnimatePresence>

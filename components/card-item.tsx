@@ -11,11 +11,25 @@ import { useRouter } from "next/navigation"
 import { useState } from "react";
 import CardDetailModal from "@/components/CardDetailModal";
 
-const getCardImageUrl = (imageUrl?: string) => {
-  if (!imageUrl) return "/placeholder.svg";
-  // Entferne /world_soccer/ am Anfang!
-  let cleaned = imageUrl.replace(/^\/?world_soccer\//, "");
-  return `https://ani-labs.xyz/${cleaned}`;
+const getCloudflareImageUrl = (imagePath?: string) => {
+  if (!imagePath) {
+    return "/placeholder.svg"
+  }
+  
+  
+  // Remove leading slash and any world_soccer/world-soccer prefix
+  let cleaned = imagePath.replace(/^\/?(world[-_])?soccer\//i, "")
+  
+  // Wenn schon http, dann direkt zurückgeben
+  if (cleaned.startsWith("http")) {
+    return cleaned
+  }
+  
+  
+  // Pub-URL verwenden, KEIN world-soccer/ mehr anhängen!
+  const finalUrl = `https://ani-labs.xyz/${encodeURIComponent(cleaned)}`
+  
+  return finalUrl
 }
 
 
@@ -113,7 +127,7 @@ export function CardItem({
 
   const rarityStyle = rarityStyles[rarity as keyof typeof rarityStyles] || rarityStyles.basic
   const placeholderUrl = "/placeholder.svg"
-  const cardImageUrl = getCardImageUrl(imageUrl)
+  const cardImageUrl = getCloudflareImageUrl(imageUrl)
 
   const cardDetailUrl = isCollection ? `/cards/${id}-level-${level}` : `/cards/${id}`
 
@@ -193,7 +207,7 @@ const handleCardClick = () => {
             />
           ) : (
             <img
-              src={cardImageUrl}
+              src={getCloudflareImageUrl(cardImageUrl)}
               alt="Card"
               className="w-full h-full object-cover"
               loading={forceEager ? "eager" : "lazy"}

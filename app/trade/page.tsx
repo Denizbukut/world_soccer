@@ -109,10 +109,10 @@ const getCloudflareImageUrl = (imageId?: string) => {
   if (!imageId) return "/placeholder.svg"
 
   // Entfernt führenden Slash und "anime-images/" Prefix
-  const cleaned = imageId.replace(/^\/?anime-images\//, "")
+  const cleaned = imageId.replace(/^\/?world_soccer\//, "")
   console.log(cleaned)
 
-  return `https://https://ani-labs.xyz/${cleaned}`
+  return `https://ani-labs.xyz/${cleaned}`
 }
 
 // Neue Bild-URL-Logik global für alle Card-Boxen
@@ -1180,7 +1180,7 @@ export default function TradePage() {
                             src={getCloudflareImageUrl(selectedListing.card.image_url)}
                           />
                     ) : (<img
-                      src={getCardImageUrl(selectedListing.card.image_url) || "/placeholder.svg"}
+                      src={getCloudflareImageUrl(selectedListing.card.image_url) || "/placeholder.svg"}
                       alt="Card"
                       loading="lazy"
                       className="w-full h-full object-cover"

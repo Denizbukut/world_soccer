@@ -46,6 +46,27 @@ export default function SellCardDialog({ isOpen, onClose, card, username, onSucc
   const [activeListings, setActiveListings] = useState<number | null>(null)
   const [cardsSoldCount, setCardsSoldCount] = useState<number | null>(null)
 
+  const getCloudflareImageUrl = (imagePath?: string) => {
+    if (!imagePath) {
+      return "/placeholder.svg"
+    }
+    
+    
+    // Remove leading slash and any world_soccer/world-soccer prefix
+    let cleaned = imagePath.replace(/^\/?(world[-_])?soccer\//i, "")
+    
+    // Wenn schon http, dann direkt zurückgeben
+    if (cleaned.startsWith("http")) {
+      return cleaned
+    }
+    
+    
+    // Pub-URL verwenden, KEIN world-soccer/ mehr anhängen!
+    const finalUrl = `https://ani-labs.xyz/${encodeURIComponent(cleaned)}`
+    
+    return finalUrl
+  }
+
   useEffect(() => {
     const fetchSellLimits = async () => {
       const supabase = getSupabaseBrowserClient()
@@ -194,27 +215,27 @@ export default function SellCardDialog({ isOpen, onClose, card, username, onSucc
     common: {
       border: "border-gray-400",
       text: "text-gray-600",
-      badge: "bg-gray-500",
+      badge: "bg-gray-500 text-white font-semibold",
     },
     rare: {
       border: "border-blue-500",
       text: "text-blue-600",
-      badge: "bg-blue-500",
+      badge: "bg-blue-500 text-white font-semibold",
     },
     epic: {
       border: "border-purple-500",
       text: "text-purple-600",
-      badge: "bg-purple-500",
+      badge: "bg-purple-500 text-white font-semibold",
     },
     legendary: {
       border: "border-yellow-500",
       text: "text-yellow-600",
-      badge: "bg-amber-500",
+      badge: "bg-amber-500 text-white font-semibold",
     },
     godlike: {
       border: "border-red-500",
       text: "text-red-600",
-      badge: "bg-red-500",
+      badge: "bg-red-500 text-white font-semibold",
     },
   }
 
@@ -287,11 +308,11 @@ export default function SellCardDialog({ isOpen, onClose, card, username, onSucc
                             loop
                             playsInline
                             className="absolute inset-0 w-full h-full object-cover"
-                            src={card?.image_url}
+                            src={getCloudflareImageUrl(card?.image_url)}
                           />
                   ) : ( <Image
                     src={
-                      card?.image_url ||
+                      getCloudflareImageUrl(card?.image_url) ||
                       `/placeholder.svg?height=400&width=300&query=${encodeURIComponent(card?.character || "anime character")}`
                     }
                     alt={card?.name || "Card"}

@@ -21,6 +21,27 @@ export default function PurchaseSuccessAnimation({
 }: PurchaseSuccessAnimationProps) {
   const confettiRef = useRef<HTMLDivElement>(null)
 
+  const getCloudflareImageUrl = (imagePath?: string) => {
+    if (!imagePath) {
+      return "/placeholder.svg"
+    }
+    
+    
+    // Remove leading slash and any world_soccer/world-soccer prefix
+    let cleaned = imagePath.replace(/^\/?(world[-_])?soccer\//i, "")
+    
+    // Wenn schon http, dann direkt zurückgeben
+    if (cleaned.startsWith("http")) {
+      return cleaned
+    }
+    
+    
+    // Pub-URL verwenden, KEIN world-soccer/ mehr anhängen!
+    const finalUrl = `https://ani-labs.xyz/${encodeURIComponent(cleaned)}`
+    
+    return finalUrl
+  }
+
   useEffect(() => {
     if (show && confettiRef.current) {
       // Verzögerung für den Konfetti-Effekt
@@ -109,7 +130,7 @@ export default function PurchaseSuccessAnimation({
                 className="relative w-40 h-56 mx-auto mb-6 rounded-lg overflow-hidden border-4 border-indigo-500 shadow-lg"
               >
                 <Image
-                  src={cardImageUrl || `/placeholder.svg?height=400&width=300&query=${encodeURIComponent(cardName)}`}
+                  src={getCloudflareImageUrl(cardImageUrl) || `/placeholder.svg?height=400&width=300&query=${encodeURIComponent(cardName)}`}
                   alt={cardName}
                   fill
                   className="object-cover"

@@ -93,22 +93,22 @@ export default function SellCardDialog({ isOpen, onClose, card, username, onSucc
     common: {
       border: "border-gray-400",
       text: "text-gray-600",
-      badge: "bg-gray-500",
+      badge: "bg-gray-500 text-white font-semibold",
     },
     rare: {
       border: "border-blue-500",
       text: "text-blue-600",
-      badge: "bg-blue-500",
+      badge: "bg-blue-500 text-white font-semibold",
     },
     epic: {
       border: "border-purple-500",
       text: "text-purple-600",
-      badge: "bg-purple-500",
+      badge: "bg-purple-500 text-white font-semibold",
     },
     legendary: {
       border: "border-yellow-500",
       text: "text-yellow-600",
-      badge: "bg-amber-500",
+      badge: "bg-amber-500 text-white font-semibold",
     },
   }
 

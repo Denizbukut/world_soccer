@@ -253,15 +253,15 @@ export default function TradesPage() {
   const getRarityColor = (rarity: string) => {
     switch (rarity) {
       case "legendary":
-        return "bg-orange-500"
+        return "bg-orange-500 text-white font-semibold"
       case "ultra-rare":
-        return "bg-purple-500"
+        return "bg-purple-500 text-white font-semibold"
       case "rare":
-        return "bg-blue-500"
+        return "bg-blue-500 text-white font-semibold"
       case "uncommon":
-        return "bg-green-500"
+        return "bg-green-500 text-white font-semibold"
       default:
-        return "bg-slate-500"
+        return "bg-slate-500 text-white font-semibold"
     }
   }
 

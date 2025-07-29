@@ -71,15 +71,12 @@ export default function TiltableCard({
       gradient: "from-red-400/30 to-red-100/30",
     },
   }
-  const getCloudflareImageUrl = (imageId?: string) => {
-  if (!imageId) return "/placeholder.svg"
-
-  // Entfernt führenden Slash und "anime-images/" Prefix
-  const cleaned = imageId.replace(/^\/?anime-images\//, "")
-  console.log(cleaned)
-
-  return `https://pub-e74caca70ffd49459342dd56ea2b67c9.r2.dev/${cleaned}`
-}
+  const getCardImageUrl = (imageUrl?: string) => {
+    if (!imageUrl) return "/placeholder.svg";
+    // Entferne /world_soccer/ am Anfang!
+    let cleaned = imageUrl.replace(/^\/?world_soccer\//, "");
+    return `https://pub-e74caca70ffd49459342dd56ea2b67c9.r2.dev/${cleaned}`;
+  }
 
   const rarityStyle = rarityStyles[rarity as keyof typeof rarityStyles] || rarityStyles.common
 
@@ -88,7 +85,10 @@ export default function TiltableCard({
   const placeholderUrl = `/placeholder.svg?height=400&width=300&query=${encodeURIComponent(query)}`
 
   // Use the provided imageUrl, or generate a placeholder
-  const cardImageUrl = getCloudflareImageUrl(imageUrl) || placeholderUrl
+  const cardImageUrl = getCardImageUrl(imageUrl) || placeholderUrl
+  
+  // Debug: Log image URL processing
+  console.log('TiltableCard Debug:', { id, name, imageUrl, cardImageUrl })
 
   // Handle card tilt effect with improved sensitivity for reflections
   const handleCardMove = (event: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {

@@ -1400,15 +1400,17 @@ function MarketplaceCard({
           loading="lazy"
           className="w-full h-full object-cover"
         />
-        <div className="absolute bottom-0 left-0 right-0 flex justify-center">
-          {renderStars(listing.card_level, "xs")}
-        </div>
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
           <span className="text-lg font-bold text-white truncate">{listing.card.name}</span>
           <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-bold bg-gray-800 text-yellow-400 uppercase">{listing.card.rarity}</span>
           <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-bold bg-yellow-500 text-black">Level {listing.card_level}</span>
+        </div>
+        <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center">
+            {renderStars(listing.card_level, "xs")}
+          </div>
         </div>
         <div className="flex items-center gap-2 mb-1">
           <span className="text-sm text-yellow-200 truncate">Seller: <span className="font-bold text-yellow-400">{listing.seller_username}</span></span>
@@ -1506,9 +1508,7 @@ function MyListingCard({
               className="w-full h-full object-cover"
             />)}
             
-            <div className="absolute bottom-0 left-0 right-0 flex justify-center">
-              {renderStars(listing.card_level, "xs")}
-            </div>
+
           </div>
 
           {/* Card Details */}
@@ -1517,6 +1517,9 @@ function MyListingCard({
               <div>
                 <h3 className="font-medium text-sm">{listing.card.name}</h3>
                 <p className="text-xs text-gray-500">{listing.card.character}</p>
+                <div className="flex items-center mt-1">
+                  {renderStars(listing.card_level, "xs")}
+                </div>
               </div>
               <div className="flex flex-col items-end">
                 <Badge className={rarityStyle.badge}>{listing.card.rarity}</Badge>

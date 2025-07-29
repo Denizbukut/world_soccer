@@ -18,7 +18,8 @@ import { Input } from "@/components/ui/input"
 import { renderStars } from "@/utils/card-stars"
 import { LevelSystemInfoDialog } from "@/components/level-system-info-dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import Image from "next/image";
+import Image from "next/image"
+import SquadCardMenu from "@/components/squad-card-menu"
 
 export default function CollectionPage() {
   const { user } = useAuth()
@@ -40,6 +41,10 @@ export default function CollectionPage() {
   const [squad, setSquad] = useState<Record<string, any>>(initialSquad);
   const [selectingPosition, setSelectingPosition] = useState<string | null>(null); // z.B. 'DF2'
   const [savingSquad, setSavingSquad] = useState(false);
+  // Squad Management Menu State
+  const [squadMenuOpen, setSquadMenuOpen] = useState(false);
+  const [selectedCard, setSelectedCard] = useState<any>(null);
+  const [selectedPosition, setSelectedPosition] = useState<string>("");
 
   // Squad aus API laden, wenn My Squad geöffnet wird
   useEffect(() => {
@@ -54,7 +59,12 @@ export default function CollectionPage() {
           Object.entries(data.squad).forEach(([slot, cardId]) => {
             if (cardId) {
               const cardObj = userCards.find((c) => c.cardId === cardId);
-              if (cardObj) newSquad[slot] = cardObj;
+              if (cardObj) {
+                console.log(`Found squad card for ${slot}:`, cardObj);
+                newSquad[slot] = cardObj;
+              } else {
+                console.log(`Card not found for ${slot} with cardId:`, cardId);
+              }
             }
           });
           setSquad(newSquad);
@@ -240,6 +250,54 @@ export default function CollectionPage() {
   // Debug: Log the final stats
   console.log("Collection stats:", collectionStats)
 
+  // Squad Management Functions
+  const handleSquadCardClick = (card: any, position: string) => {
+    if (!card) {
+      console.error("No card provided to handleSquadCardClick");
+      return;
+    }
+    console.log(`Squad card clicked for ${position}:`, card);
+    setSelectedCard(card);
+    setSelectedPosition(position);
+    setSquadMenuOpen(true);
+  };
+
+  const handleRemoveCard = async (position: string) => {
+    try {
+      const newSquad = { ...squad };
+      newSquad[position] = null;
+      setSquad(newSquad);
+      
+      // Save to API
+      const response = await fetch("/api/save-squad", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ squad: newSquad }),
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to save squad");
+      }
+      
+      toast({
+        title: "Success",
+        description: "Card removed from squad",
+      });
+    } catch (error) {
+      console.error("Error removing card:", error);
+      toast({
+        title: "Error",
+        description: "Failed to remove card from squad",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleReplaceCard = async (position: string) => {
+    setSelectingPosition(position);
+    setSquadMenuOpen(false);
+  };
+
 
 
   if (loading) {
@@ -330,10 +388,10 @@ export default function CollectionPage() {
           {/* 1 Torwart */}
           <div
             className="aspect-[3/4] w-20 sm:w-24 border-2 border-yellow-400 rounded-xl overflow-hidden flex items-center justify-center cursor-pointer bg-white/10 p-0"
-            onClick={() => setSelectingPosition('GK')}
+            onClick={() => squad.GK && squad.GK.id ? handleSquadCardClick(squad.GK, 'GK') : setSelectingPosition('GK')}
           >
             {squad.GK ? (
-              <CardItem {...squad.GK} compact owned={true} hideOverlay={true} hideName={true} hideQuantity={true} disableCardLink={true} onClick={() => {}} style={{ width: '100%', height: '100%' }} />
+              <CardItem {...squad.GK} compact owned={true} hideOverlay={true} hideName={true} hideQuantity={true} disableCardLink={true} onClick={() => squad.GK && squad.GK.id ? handleSquadCardClick(squad.GK, 'GK') : null} style={{ width: '100%', height: '100%' }} />
             ) : null}
           </div>
           {/* 4 Verteidiger */}
@@ -342,10 +400,10 @@ export default function CollectionPage() {
               <div
                 key={i}
                 className="aspect-[3/4] w-20 sm:w-24 border-2 border-blue-400 rounded-xl overflow-hidden flex items-center justify-center cursor-pointer bg-white/10 p-0"
-                onClick={() => setSelectingPosition(`DF${i}`)}
+                onClick={() => squad[`DF${i}`] && squad[`DF${i}`].id ? handleSquadCardClick(squad[`DF${i}`], `DF${i}`) : setSelectingPosition(`DF${i}`)}
               >
                 {squad[`DF${i}`] ? (
-                  <CardItem {...squad[`DF${i}`]} compact owned={true} hideOverlay={true} hideName={true} hideQuantity={true} disableCardLink={true} onClick={() => {}} style={{ width: '100%', height: '100%' }} />
+                  <CardItem {...squad[`DF${i}`]} compact owned={true} hideOverlay={true} hideName={true} hideQuantity={true} disableCardLink={true} onClick={() => squad[`DF${i}`] && squad[`DF${i}`].id ? handleSquadCardClick(squad[`DF${i}`], `DF${i}`) : null} style={{ width: '100%', height: '100%' }} />
                 ) : null}
               </div>
             ))}
@@ -356,10 +414,10 @@ export default function CollectionPage() {
               <div
                 key={i}
                 className="aspect-[3/4] w-20 sm:w-24 border-2 border-green-400 rounded-xl overflow-hidden flex items-center justify-center cursor-pointer bg-white/10 p-0"
-                onClick={() => setSelectingPosition(`MF${i}`)}
+                onClick={() => squad[`MF${i}`] && squad[`MF${i}`].id ? handleSquadCardClick(squad[`MF${i}`], `MF${i}`) : setSelectingPosition(`MF${i}`)}
               >
                 {squad[`MF${i}`] ? (
-                  <CardItem {...squad[`MF${i}`]} compact owned={true} hideOverlay={true} hideName={true} hideLevel={true} hideQuantity={true} />
+                  <CardItem {...squad[`MF${i}`]} compact owned={true} hideOverlay={true} hideName={true} hideLevel={true} hideQuantity={true} disableCardLink={true} onClick={() => squad[`MF${i}`] && squad[`MF${i}`].id ? handleSquadCardClick(squad[`MF${i}`], `MF${i}`) : null} style={{ width: '100%', height: '100%' }} />
                 ) : null}
               </div>
             ))}
@@ -370,10 +428,10 @@ export default function CollectionPage() {
               <div
                 key={i}
                 className="aspect-[3/4] w-20 sm:w-24 border-2 border-red-400 rounded-xl overflow-hidden flex items-center justify-center cursor-pointer bg-white/10 p-0"
-                onClick={() => setSelectingPosition(`FW${i}`)}
+                onClick={() => squad[`FW${i}`] && squad[`FW${i}`].id ? handleSquadCardClick(squad[`FW${i}`], `FW${i}`) : setSelectingPosition(`FW${i}`)}
               >
                 {squad[`FW${i}`] ? (
-                  <CardItem {...squad[`FW${i}`]} compact owned={true} hideOverlay={true} hideName={true} hideLevel={true} hideQuantity={true} />
+                  <CardItem {...squad[`FW${i}`]} compact owned={true} hideOverlay={true} hideName={true} hideLevel={true} hideQuantity={true} disableCardLink={true} onClick={() => squad[`FW${i}`] && squad[`FW${i}`].id ? handleSquadCardClick(squad[`FW${i}`], `FW${i}`) : null} style={{ width: '100%', height: '100%' }} />
                 ) : null}
               </div>
             ))}
@@ -423,8 +481,8 @@ export default function CollectionPage() {
           {/* Auswahlmenü für Karten */}
           {selectingPosition && (
             <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-              <div className="bg-white rounded-xl p-6 max-w-xs w-full shadow-lg">
-                <h2 className="text-lg font-bold mb-4">Karte für {selectingPosition} wählen</h2>
+              <div className="bg-black/90 border border-yellow-500 rounded-xl p-6 max-w-sm w-full shadow-lg text-white">
+                <h2 className="text-lg font-bold mb-4 text-yellow-300">Karte für {selectingPosition} wählen</h2>
                 <div className="max-h-64 overflow-y-auto space-y-2">
                   {sortedUserCards.map(card => {
                     // Prüfen, ob die Karte schon in einer anderen Position ist
@@ -436,7 +494,11 @@ export default function CollectionPage() {
                     return (
                       <button
                         key={uniqueKey}
-                        className={`w-full flex items-center gap-2 text-left px-3 py-2 rounded border mb-1 ${alreadyInSquad ? 'bg-gray-100 text-gray-400 cursor-not-allowed opacity-60' : 'hover:bg-green-100 border-gray-200'}`}
+                        className={`w-full flex items-center gap-3 text-left px-3 py-3 rounded-lg border mb-2 transition-colors ${
+                          alreadyInSquad 
+                            ? 'bg-gray-800/50 text-gray-400 cursor-not-allowed opacity-60 border-gray-600' 
+                            : 'hover:bg-yellow-500/20 border-yellow-500/50 text-white hover:border-yellow-400'
+                        }`}
                         onClick={() => {
                           if (alreadyInSquad) return;
                           setSquad(prev => ({ ...prev, [selectingPosition]: card }));
@@ -445,7 +507,18 @@ export default function CollectionPage() {
                         disabled={alreadyInSquad}
                       >
                         <div className="w-10 h-14 flex-shrink-0 overflow-hidden rounded">
-                          {card ? <CardItem {...card} compact /> : null}
+                          {card ? (
+                            <CardItem 
+                              {...card} 
+                              compact 
+                              owned={true}
+                              hideOverlay={true}
+                              hideName={true}
+                              hideQuantity={true}
+                              hideLevel={true}
+                              style={{ width: '100%', height: '100%' }}
+                            />
+                          ) : null}
                         </div>
                         <span className="flex-1">{card.name} ({card.character})</span>
                         <span className="flex items-center text-xs text-yellow-500 ml-2">
@@ -457,7 +530,7 @@ export default function CollectionPage() {
                   })}
                 </div>
                 <button
-                  className="mt-4 w-full py-2 bg-red-200 text-red-700 rounded font-bold"
+                  className="mt-4 w-full py-2 bg-red-500/20 text-red-400 border border-red-500/50 rounded-lg font-bold hover:bg-red-500/30 transition-colors"
                   onClick={() => {
                     setSquad(prev => ({ ...prev, [selectingPosition]: null }));
                     setSelectingPosition(null);
@@ -465,11 +538,26 @@ export default function CollectionPage() {
                 >
                   Karte entfernen
                 </button>
-                <button className="mt-4 w-full py-2 bg-gray-200 rounded" onClick={() => setSelectingPosition(null)}>Abbrechen</button>
+                <button 
+                  className="mt-2 w-full py-2 bg-gray-500/20 text-gray-300 border border-gray-500/50 rounded-lg hover:bg-gray-500/30 transition-colors" 
+                  onClick={() => setSelectingPosition(null)}
+                >
+                  Abbrechen
+                </button>
               </div>
             </div>
           )}
         </div>
+        
+        {/* Squad Management Menu */}
+        <SquadCardMenu
+          isOpen={squadMenuOpen}
+          onClose={() => setSquadMenuOpen(false)}
+          card={selectedCard}
+          position={selectedPosition}
+          onRemove={handleRemoveCard}
+          onReplace={handleReplaceCard}
+        />
       </div>
     );
   }

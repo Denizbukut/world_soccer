@@ -240,6 +240,9 @@ const [cardFromParams, setCardFromParams] = useState<Card | null>(null)
         return;
       }
 
+      // Debug: Log card data
+      console.log("Card data from database:", cardData);
+
       const validCard = toCard(cardData);
       if (!validCard) {
         toast({
@@ -249,6 +252,9 @@ const [cardFromParams, setCardFromParams] = useState<Card | null>(null)
         });
         return;
       }
+
+      // Debug: Log processed card
+      console.log("Processed card:", validCard);
 
       setCard(validCard);
 

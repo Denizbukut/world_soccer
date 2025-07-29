@@ -1397,7 +1397,7 @@ const [copied, setCopied] = useState(false)
                   aria-label="Twitter"
       >
                   <span className="sr-only">Twitter</span>
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" className="w-5 h-5 text-white">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" className="w-4 h-4 text-white">
                     <path d="M17.53 3H21.5L14.36 10.66L22.75 21H16.28L11.22 14.73L5.52 21H1.54L9.04 12.76L1 3H7.6L12.18 8.67L17.53 3ZM16.4 19.13H18.18L7.45 4.76H5.54L16.4 19.13Z" fill="currentColor"/>
                   </svg>
       </a>
@@ -1409,7 +1409,7 @@ const [copied, setCopied] = useState(false)
                   aria-label="Telegram"
       >
                   <span className="sr-only">Telegram</span>
-                  <Send className="w-5 h-5 text-white" />
+                  <Send className="w-4 h-4 text-white" />
       </a>
     </div>
             </div>

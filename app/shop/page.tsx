@@ -130,7 +130,7 @@ export default function ShopPage() {
           token_amount: tokenToDecimals(roundedWldAmount, Tokens.WLD).toString(),
         },
       ],
-      description: `${ticketAmount} ${ticketType === "legendary" ? "Legendary" : "Regular"} Tickets`,
+      description: `${ticketAmount} ${ticketType === "legendary" ? "Elite" : ticketType === "icon" ? "Icon" : "Classic"} Tickets`,
     }
 
     const { finalPayload } = await MiniKit.commandsAsync.pay(payload)
@@ -241,7 +241,7 @@ export default function ShopPage() {
         // Log the purchase
 await supabase.from("ticket_purchases").insert({
   username: user.username,
-  ticket_type: ticketType,
+  ticket_type: ticketType === "regular" ? "classic" : ticketType === "legendary" ? "elite" : "icon",
   amount: ticketAmount,
   price_usd: getDiscountedPrice(packageId.startsWith("reg") ? regularPackages.find(p => p.id === packageId)?.price ?? 0 : legendaryPackages.find(p => p.id === packageId)?.price ?? 0),
   price_wld: price ? (getDiscountedPrice(packageId.startsWith("reg") ? regularPackages.find(p => p.id === packageId)?.price ?? 0 : legendaryPackages.find(p => p.id === packageId)?.price ?? 0) / price).toFixed(3) : null,

@@ -431,9 +431,37 @@ const [cardFromParams, setCardFromParams] = useState<Card | null>(null)
     }
 
     setShowLevelUpAnimation(true);
-    setTimeout(() => {
+    setTimeout(async () => {
       setShowLevelUpAnimation(false);
-      window.location.reload();
+      
+      // Refresh card data instead of reloading the page
+      try {
+        // Fetch updated user cards data
+        const { data: updatedUserCardsData, error: userCardsError } = await supabase
+          .from("user_cards")
+          .select("*")
+          .eq("user_id", user.username)
+          .eq("card_id", card.id);
+
+        if (!userCardsError && updatedUserCardsData) {
+          const validUserCards = toUserCards(updatedUserCardsData);
+          setAllUserCards(validUserCards);
+
+          // Find the highest level card to display
+          const highestLevelCard = validUserCards.reduce((a, b) => (a.level! > b.level! ? a : b));
+          setUserCard(highestLevelCard);
+          setFavorite(Boolean(highestLevelCard.favorite));
+        }
+
+        toast({
+          title: "Level Up Successful!",
+          description: `${card.name} is now level ${nextLevel}!`,
+        });
+      } catch (refreshError) {
+        console.error("Error refreshing card data:", refreshError);
+        // Fallback to page reload if refresh fails
+        window.location.reload();
+      }
     }, 1000);
   } catch (error) {
     toast({
@@ -482,13 +510,39 @@ const [cardFromParams, setCardFromParams] = useState<Card | null>(null)
 };
 
 
-  const handleSellSuccess = () => {
+  const handleSellSuccess = async () => {
     toast({
       title: "Card Listed",
       description: "Your card has been listed on the marketplace",
     })
-    // Refresh the page to update the card quantities
-    window.location.reload()
+    
+    // Refresh card data instead of reloading the page
+    if (user && card) {
+      try {
+        const supabase = getSupabaseBrowserClient();
+        if (!supabase) return;
+
+        const { data: updatedUserCardsData, error: userCardsError } = await supabase
+          .from("user_cards")
+          .select("*")
+          .eq("user_id", user.username)
+          .eq("card_id", card.id);
+
+        if (!userCardsError && updatedUserCardsData) {
+          const validUserCards = toUserCards(updatedUserCardsData);
+          setAllUserCards(validUserCards);
+
+          // Find the highest level card to display
+          const highestLevelCard = validUserCards.reduce((a, b) => (a.level! > b.level! ? a : b));
+          setUserCard(highestLevelCard);
+          setFavorite(Boolean(highestLevelCard.favorite));
+        }
+      } catch (refreshError) {
+        console.error("Error refreshing card data after sell:", refreshError);
+        // Fallback to page reload if refresh fails
+        window.location.reload();
+      }
+    }
   }
 
   const goBack = () => {

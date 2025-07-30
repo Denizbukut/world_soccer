@@ -7,6 +7,7 @@ import { MiniKit, Tokens, tokenToDecimals } from "@worldcoin/minikit-js";
 import Link from "next/link";
 import { useAuth } from "@/contexts/auth-context";
 import { getSupabaseBrowserClient } from "@/lib/supabase/supabase-browser";
+import { useWldPrice } from "@/contexts/WldPriceContext";
 
 const benefitList = [
   {
@@ -46,11 +47,16 @@ const featureList = [
 
 export default function XpBoosterPage() {
   const { user } = useAuth();
+  const { price } = useWldPrice();
   const [buying, setBuying] = useState(false);
   const [success, setSuccess] = useState(false);
   const [hasXpPass, setHasXpPass] = useState(false);
   const [xpPassExpiryDate, setXpPassExpiryDate] = useState<Date | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Calculate WLD amount based on fixed $1.50 USD price
+  const fixedUsdPrice = 1.50;
+  const wldAmount = price ? fixedUsdPrice / price : 1; // Fallback to 1 WLD if price not available
 
   // Load XP pass status on component mount
   useEffect(() => {
@@ -123,7 +129,6 @@ export default function XpBoosterPage() {
 
     setBuying(true);
     try {
-      const wldAmount = 1;
       const recipient = "0x9311788aa11127F325b76986f0031714082F016B";
       const reference = `xp_pass_${Date.now()}`.slice(0, 36);
       const payload = {
@@ -223,8 +228,6 @@ export default function XpBoosterPage() {
             </div>
           </div>
 
-
-
           {/* Purchase Section */}
           <div className="w-full max-w-md">
             {loading ? (
@@ -259,6 +262,14 @@ export default function XpBoosterPage() {
               </div>
             ) : (
               <div className="text-center">
+                <div className="mb-4">
+                  <div className="text-lg font-bold text-blue-700">
+                    {wldAmount.toFixed(3)} WLD
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    (~${fixedUsdPrice.toFixed(2)} USD)
+                  </div>
+                </div>
                 <Button
                   onClick={handleBuy}
                   disabled={buying}
@@ -270,7 +281,7 @@ export default function XpBoosterPage() {
                       Processing...
                     </span>
                   ) : (
-                    <span>Buy XP Pass (1 WLD)</span>
+                    <span>Buy XP Pass</span>
                   )}
                 </Button>
               </div>

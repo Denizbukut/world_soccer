@@ -507,8 +507,17 @@ const [copied, setCopied] = useState(false)
   }, [user?.username, user])
 
   useEffect(() => {
-  if (user?.username) {
-    getReferredUsers(user.username).then(setReferredUsers)
+    if (user?.username) {
+      const loadReferrals = async () => {
+        try {
+          const referrals = await getReferredUsers(user.username)
+          setReferredUsers(referrals)
+        } catch (error) {
+          console.error("Error loading referrals:", error)
+          setReferredUsers([])
+        }
+      }
+      loadReferrals()
     }
   }, [user?.username])
 
@@ -2150,32 +2159,45 @@ const [copied, setCopied] = useState(false)
                 <CheckCircle className="h-4 w-4 text-green-500" />
               ) : ref.level >= 5 ? (
                 <Button
-  size="sm"
-  className="text-xs"
-  onClick={async () => {
-  if (!user?.username) return
-  const res = await claimReferralRewardForUser(user.username, ref.username)
-  if (res.success) {
-    setShowClaimAnimation(true)
-                              if (
-                                typeof res.newTicketCount === "number" ||
-                                typeof res.newLegendaryTicketCount === "number"
-                              ) {
-      await updateUserTickets(res.newTicketCount, res.newLegendaryTicketCount)
-      setTickets(res.newTicketCount)
-      setEliteTickets(res.newLegendaryTicketCount)
-    }
-    setReferredUsers((prev) =>
-                                prev.map((r) => (r.username === ref.username ? { ...r, reward_claimed: true } : r)),
-      )
-    setTimeout(() => setShowClaimAnimation(false), 1500)
-  } else {
-    toast({ title: "Error", description: res.error, variant: "destructive" })
-  }
-}}
->
-  Claim
-</Button>
+                  size="sm"
+                  className="text-xs"
+                  onClick={async () => {
+                    if (!user?.username) return
+                    try {
+                      const res = await claimReferralRewardForUser(user.username, ref.username)
+                      if (res.success) {
+                        setShowClaimAnimation(true)
+                        if (
+                          typeof res.newTicketCount === "number" ||
+                          typeof res.newLegendaryTicketCount === "number"
+                        ) {
+                          await updateUserTickets(res.newTicketCount, res.newLegendaryTicketCount)
+                          setTickets(res.newTicketCount)
+                          setEliteTickets(res.newLegendaryTicketCount)
+                        }
+                        setReferredUsers((prev) =>
+                          prev.map((r) => (r.username === ref.username ? { ...r, reward_claimed: true } : r))
+                        )
+                        setTimeout(() => setShowClaimAnimation(false), 1500)
+                        toast({
+                          title: "Success!",
+                          description: "Referral reward claimed successfully!",
+                        })
+                      } else {
+                        toast({ title: "Error", description: res.error, variant: "destructive" })
+                      }
+                    } catch (error) {
+                      console.error("Error claiming referral reward:", error)
+                      toast({ 
+                        title: "Error", 
+                        description: "Failed to claim referral reward. Please try again.", 
+                        variant: "destructive" 
+                      })
+                    }
+                  }}
+                >
+                  Claim
+                </Button>
               ) : (
                 <span className="text-xs text-gray-400">Waiting...</span>
               )}

@@ -32,7 +32,7 @@ type Card = {
   name: string
   character: string
   image_url?: string
-  rarity: "common" | "rare" | "epic" | "legendary"
+  rarity: "basic" | "rare" | "elite" | "ultimate" | "goat"
 }
 
 type MarketListingWithDetails = MarketListing & {
@@ -47,18 +47,20 @@ const MAX_USER_LISTINGS = 3
 const DEFAULT_PAGE_SIZE = 20
 
 // Card rarity type
-type CardRarity = "common" | "rare" | "epic" | "legendary"
+type CardRarity = "basic" | "rare" | "elite" | "ultimate" | "goat"
 
 // Function to calculate score based on card rarity
 function getScoreForRarity(rarity: CardRarity): number {
   switch (rarity) {
-    case "legendary":
+    case "goat":
+      return 200
+    case "ultimate":
       return 100
-    case "epic":
+    case "elite":
       return 40
     case "rare":
       return 25
-    case "common":
+    case "basic":
       return 5
     default:
       return 0

@@ -61,7 +61,7 @@ type Card = {
   name: string
   character: string
   image_url?: string
-  rarity: "common" | "rare" | "epic" | "legendary" | "godlike"
+  rarity: "basic" | "rare" | "elite" | "ultimate" | "goat"
 }
 
 type MarketListing = {
@@ -715,12 +715,12 @@ export default function TradePage() {
                         <SelectValue placeholder="Rarity" />
                       </SelectTrigger>
                       <SelectContent className="bg-black/90 text-yellow-300 border border-yellow-400">
-                        <SelectItem value="all">All Rarities</SelectItem>
-                        <SelectItem value="common">Basic</SelectItem>
-                        <SelectItem value="rare">Rare</SelectItem>
-                        <SelectItem value="epic">Elite</SelectItem>
-                        <SelectItem value="legendary">Ultimate</SelectItem>
-                        <SelectItem value="goat">GOAT</SelectItem>
+                                                    <SelectItem value="all">All Rarities</SelectItem>
+                            <SelectItem value="basic">Basic</SelectItem>
+                            <SelectItem value="rare">Rare</SelectItem>
+                            <SelectItem value="elite">Elite</SelectItem>
+                            <SelectItem value="ultimate">Ultimate</SelectItem>
+                            <SelectItem value="goat">GOAT</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -1196,11 +1196,11 @@ export default function TradePage() {
                     <div className="flex items-center mt-1">
                       <Badge
                         className={`
-                        ${selectedListing.card.rarity === "common" ? "bg-gray-500" : ""}
+                        ${selectedListing.card.rarity === "basic" ? "bg-gray-500" : ""}
                         ${selectedListing.card.rarity === "rare" ? "bg-blue-500" : ""}
-                        ${selectedListing.card.rarity === "epic" ? "bg-purple-500" : ""}
-                        ${selectedListing.card.rarity === "legendary" ? "bg-amber-500" : ""}
-                        ${selectedListing.card.rarity === "godlike" ? "bg-red-500" : ""}
+                        ${selectedListing.card.rarity === "elite" ? "bg-purple-500" : ""}
+                        ${selectedListing.card.rarity === "ultimate" ? "bg-amber-500" : ""}
+                        ${selectedListing.card.rarity === "goat" ? "bg-red-500" : ""}
                       `}
                       >
                         {selectedListing.card.rarity}
@@ -1343,7 +1343,7 @@ function MarketplaceCard({
 
   // Map rarity to color styles
   const rarityStyles = {
-    common: {
+    basic: {
       border: "border-gray-400",
       text: "text-gray-600",
       badge: "bg-gray-500",
@@ -1353,24 +1353,24 @@ function MarketplaceCard({
       text: "text-blue-600",
       badge: "bg-blue-500",
     },
-    epic: {
+    elite: {
       border: "border-purple-500",
       text: "text-purple-600",
       badge: "bg-purple-500",
     },
-    legendary: {
+    ultimate: {
       border: "border-yellow-500",
       text: "text-yellow-600",
       badge: "bg-amber-500",
     },
-    godlike: {
+    goat: {
       border: "border-red-500",
       text: "text-red-600",
       badge: "bg-red-500",
     },
   }
 
-  const rarityStyle = rarityStyles[listing.card.rarity as keyof typeof rarityStyles] || rarityStyles.common
+  const rarityStyle = rarityStyles[listing.card.rarity as keyof typeof rarityStyles] || rarityStyles.basic
 
   // Format date
   const formatDate = (dateString: string) => {
@@ -1443,7 +1443,7 @@ function MyListingCard({
 }) {
   // Map rarity to color styles
   const rarityStyles = {
-    common: {
+    basic: {
       border: "border-gray-400",
       text: "text-gray-600",
       badge: "bg-gray-500",
@@ -1453,24 +1453,24 @@ function MyListingCard({
       text: "text-blue-600",
       badge: "bg-blue-500",
     },
-    epic: {
+    elite: {
       border: "border-purple-500",
       text: "text-purple-600",
       badge: "bg-purple-500",
     },
-    legendary: {
+    ultimate: {
       border: "border-yellow-500",
       text: "text-yellow-600",
       badge: "bg-amber-500",
     },
-    godlike: {
+    goat: {
       border: "border-red-500",
       text: "text-red-600",
       badge: "bg-red-500",
     },
   }
 
-  const rarityStyle = rarityStyles[listing.card.rarity as keyof typeof rarityStyles] || rarityStyles.common
+  const rarityStyle = rarityStyles[listing.card.rarity as keyof typeof rarityStyles] || rarityStyles.basic
 
   // Format date
   const formatDate = (dateString: string) => {
@@ -1580,7 +1580,7 @@ function MyListingCard({
 function TransactionCard({ transaction }: { transaction: Transaction }) {
   // Map rarity to color styles
   const rarityStyles = {
-    common: {
+    basic: {
       border: "border-gray-400",
       text: "text-gray-600",
       badge: "bg-gray-500",
@@ -1590,24 +1590,24 @@ function TransactionCard({ transaction }: { transaction: Transaction }) {
       text: "text-blue-600",
       badge: "bg-blue-500",
     },
-    epic: {
+    elite: {
       border: "border-purple-500",
       text: "text-purple-600",
       badge: "bg-purple-500",
     },
-    legendary: {
+    ultimate: {
       border: "border-yellow-500",
       text: "text-yellow-600",
       badge: "bg-amber-500",
     },
-    godlike: {
+    goat: {
       border: "border-red-500",
       text: "text-red-600",
       badge: "bg-red-500",
     },
   }
 
-  const rarityStyle = rarityStyles[transaction.card.rarity as keyof typeof rarityStyles] || rarityStyles.common
+  const rarityStyle = rarityStyles[transaction.card.rarity as keyof typeof rarityStyles] || rarityStyles.basic
 
   // Format date
   const formatDate = (dateString: string) => {
@@ -1694,7 +1694,7 @@ function TransactionCard({ transaction }: { transaction: Transaction }) {
 function RecentSaleCard({ sale }: { sale: RecentSale }) {
   // Map rarity to color styles
   const rarityStyles = {
-    common: {
+    basic: {
       border: "border-gray-400",
       text: "text-gray-600",
       badge: "bg-gray-500",
@@ -1704,24 +1704,24 @@ function RecentSaleCard({ sale }: { sale: RecentSale }) {
       text: "text-blue-600",
       badge: "bg-blue-500",
     },
-    epic: {
+    elite: {
       border: "border-purple-500",
       text: "text-purple-600",
       badge: "bg-purple-500",
     },
-    legendary: {
+    ultimate: {
       border: "border-yellow-500",
       text: "text-yellow-600",
       badge: "bg-amber-500",
     },
-    godlike: {
+    goat: {
       border: "border-red-500",
       text: "text-red-600",
       badge: "bg-red-500",
     },
   }
 
-  const rarityStyle = rarityStyles[sale.card.rarity as keyof typeof rarityStyles] || rarityStyles.common
+  const rarityStyle = rarityStyles[sale.card.rarity as keyof typeof rarityStyles] || rarityStyles.basic
 
   // Format date
   const formatDate = (dateString: string) => {

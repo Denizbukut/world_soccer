@@ -719,7 +719,7 @@ export default function TradePage() {
                         <SelectItem value="common">Basic</SelectItem>
                         <SelectItem value="rare">Rare</SelectItem>
                         <SelectItem value="epic">Elite</SelectItem>
-                        <SelectItem value="legendary">Legendary</SelectItem>
+                        <SelectItem value="legendary">Ultimate</SelectItem>
                         <SelectItem value="goat">GOAT</SelectItem>
                       </SelectContent>
                     </Select>

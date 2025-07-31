@@ -399,32 +399,32 @@ export async function drawCards(username: string, packType: string, count = 1) {
         // Neue Draw Rates für Elite Packs (nur Backend, nicht im UI anzeigen)
         // 75–79: 10%
         // 80–84: 22%
-        // 85: 20%
+        // 85: 21%
         // 86: 17,5%
-        // 87: 15%
-        // 88: 10,5%
-        // 89: 3%
-        // 90: 1,5%
-        // 91: 0,5%
+        // 87: 16%
+        // 88: 10,75%
+        // 89: 2%
+        // 90: 0,5%
+        // 91: 0,25%
         // 92+: 0.000000000000000000000444444
         let rating = 0;
         if (random < 10) {
           rating = Math.floor(Math.random() * 5) + 75; // 75–79
         } else if (random < 10 + 22) {
           rating = Math.floor(Math.random() * 5) + 80; // 80–84
-        } else if (random < 10 + 22 + 20) {
+        } else if (random < 10 + 22 + 21) {
           rating = 85;
-        } else if (random < 10 + 22 + 20 + 17.5) {
+        } else if (random < 10 + 22 + 21 + 17.5) {
           rating = 86;
-        } else if (random < 10 + 22 + 20 + 17.5 + 15) {
+        } else if (random < 10 + 22 + 21 + 17.5 + 16) {
           rating = 87;
-        } else if (random < 10 + 22 + 20 + 17.5 + 15 + 10.5) {
+        } else if (random < 10 + 22 + 21 + 17.5 + 16 + 10.75) {
           rating = 88;
-        } else if (random < 10 + 22 + 20 + 17.5 + 15 + 10.5 + 3) {
+        } else if (random < 10 + 22 + 21 + 17.5 + 16 + 10.75 + 2) {
           rating = 89;
-        } else if (random < 10 + 22 + 20 + 17.5 + 15 + 10.5 + 3 + 1.5) {
+        } else if (random < 10 + 22 + 21 + 17.5 + 16 + 10.75 + 2 + 0.5) {
           rating = 90;
-        } else if (random < 10 + 22 + 20 + 17.5 + 15 + 10.5 + 3 + 1.5 + 0.5) {
+        } else if (random < 10 + 22 + 21 + 17.5 + 16 + 10.75 + 2 + 0.5 + 0.25) {
           rating = 91;
         } else {
           rating = 92;

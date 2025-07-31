@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { useAuth } from "@/contexts/auth-context"
 import { claimDailyBonus } from "@/app/actions"
-import { getReferredUsers, claimReferralRewardForUser } from "@/app/actions/referrals"
+import { getReferredUsers } from "@/app/actions/referrals"
 import { getDailyDeal, getSpecialDeal } from "@/app/actions/deals" // Import getSpecialDeal
 import ProtectedRoute from "@/components/protected-route"
 import MobileNav from "@/components/mobile-nav"
@@ -43,7 +43,7 @@ import { getSupabaseBrowserClient } from "@/lib/supabase"
 import DealOfTheDayDialog from "@/components/deal-of-the-day-dialog"
 import { MiniKit, Tokens, tokenToDecimals, type PayCommandInput } from "@worldcoin/minikit-js"
 import { useWldPrice } from "@/contexts/WldPriceContext"
-
+import { claimReferralRewardForUser } from "@/app/actions/referrals"
 import { Progress } from "@/components/ui/progress" // Import Progress component
 import { renderStars } from "@/utils/card-stars"
 
@@ -510,13 +510,10 @@ const [copied, setCopied] = useState(false)
     if (user?.username) {
       const loadReferrals = async () => {
         try {
-          console.log("🔄 Loading referrals for user:", user.username)
-          
           const referrals = await getReferredUsers(user.username)
-          console.log("📊 Received referrals:", referrals)
-          setReferredUsers(referrals || [])
+          setReferredUsers(referrals)
         } catch (error) {
-          console.error("❌ Error loading referrals:", error)
+          console.error("Error loading referrals:", error)
           setReferredUsers([])
         }
       }

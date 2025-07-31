@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/auth-context"
 import ProtectedRoute from "@/components/protected-route"
 import MobileNav from "@/components/mobile-nav"
 import { Button } from "@/components/ui/button"
-import { Ticket, Info, Check, Crown } from "lucide-react"
+import { Ticket, Info, Check, Crown, Clock } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
 import { motion } from "framer-motion"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -16,6 +16,7 @@ import { getSupabaseBrowserClient } from "@/lib/supabase"
 import { MiniKit, tokenToDecimals, Tokens, type PayCommandInput } from "@worldcoin/minikit-js"
 import { useEffect } from "react"
 import { useWldPrice } from "@/contexts/WldPriceContext"
+import { getActiveTimeDiscount } from "@/app/actions/time-discount"
 
 
 export default function ShopPage() {
@@ -28,6 +29,15 @@ export default function ShopPage() {
   const [iconTickets, setIconTickets] = useState<number>(user?.icon_tickets ? Number(user.icon_tickets) : 0)
   const [userClanRole, setUserClanRole] = useState<string | null>(null)
   const [clanMemberCount, setClanMemberCount] = useState<number>(0)
+
+  // Time-based discount state
+  const [timeDiscount, setTimeDiscount] = useState<{
+    name: string
+    value: number
+    isActive: boolean
+    endTime?: string
+  } | null>(null)
+  const [discountTimeLeft, setDiscountTimeLeft] = useState<string>("")
 
   const { price } = useWldPrice()
 
@@ -93,16 +103,79 @@ export default function ShopPage() {
     }
   }, [user])
 
+  // Fetch time-based discount
+  useEffect(() => {
+    const fetchTimeDiscount = async () => {
+      try {
+        const result = await getActiveTimeDiscount()
+        if (result.success && result.data) {
+          setTimeDiscount({
+            name: String(result.data.name || ""),
+            value: Number(result.data.value) || 0,
+            isActive: Boolean(result.data.is_active),
+            endTime: result.data.end_time ? new Date(String(result.data.end_time)).toISOString() : undefined
+          })
+        }
+      } catch (error) {
+        console.error("Error fetching time discount:", error)
+      }
+    }
+
+    fetchTimeDiscount()
+    // Check every 30 seconds for updates
+    const interval = setInterval(fetchTimeDiscount, 30000)
+    return () => clearInterval(interval)
+  }, [])
+
+  // Update discount countdown timer
+  useEffect(() => {
+    if (!timeDiscount?.endTime) return
+
+    const updateTimer = () => {
+      const now = new Date().getTime()
+      const endTime = new Date(timeDiscount.endTime!).getTime()
+      const timeLeft = endTime - now
+
+      if (timeLeft <= 0) {
+        setDiscountTimeLeft("")
+        setTimeDiscount(null)
+        return
+      }
+
+      const hours = Math.floor(timeLeft / (1000 * 60 * 60))
+      const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60))
+      const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000)
+
+      setDiscountTimeLeft(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`)
+    }
+
+    updateTimer()
+    const interval = setInterval(updateTimer, 1000)
+
+    return () => clearInterval(interval)
+  }, [timeDiscount?.endTime])
+
 
  const getDiscountedPrice = (originalPrice: number) => {
-  // Rabatt, wenn:
-  // - cheap_hustler oder
-  // - leader + mindestens 30 Clan-Member
-  const qualifiesForDiscount =
+  let finalPrice = originalPrice
+  let discountApplied = false
+
+  // Zeitbasierter Rabatt (höchste Priorität)
+  if (timeDiscount?.isActive && timeDiscount.value > 0) {
+    finalPrice = originalPrice * (1 - timeDiscount.value)
+    discountApplied = true
+  }
+  
+  // Bestehende Rabatte (niedrigere Priorität)
+  const qualifiesForExistingDiscount =
     userClanRole === "cheap_hustler" ||
     (userClanRole === "leader" && clanMemberCount >= 30)
 
-  return qualifiesForDiscount ? originalPrice * 0.9 : originalPrice
+  if (qualifiesForExistingDiscount && !discountApplied) {
+    finalPrice = originalPrice * 0.9
+  }
+
+  return finalPrice
 }
 
   const sendPayment = async (
@@ -232,7 +305,9 @@ export default function ShopPage() {
       const qualifiesForCheapHustler = userClanRole === "cheap_hustler"
       const qualifiesForLeaderDiscount = userClanRole === "leader" && clanMemberCount >= 30
 
-      const discountMessage = qualifiesForCheapHustler
+      const discountMessage = timeDiscount?.isActive
+        ? ` (${Math.round(timeDiscount.value * 100)}% limited time discount applied!)`
+        : qualifiesForCheapHustler
         ? " (10% Cheap Hustler discount applied!)"
         : qualifiesForLeaderDiscount
         ? " (10% Leader discount applied!)"
@@ -318,8 +393,29 @@ await supabase.from("ticket_purchases").insert({
         </div>
 
         <main className="p-4 space-y-6 max-w-lg mx-auto">
-          {/* Discount Banner */}
-          {(userClanRole === "cheap_hustler" || (userClanRole === "leader" && clanMemberCount >= 30)) && (
+          {/* Time-based Discount Banner */}
+          {timeDiscount?.isActive && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-gradient-to-r from-red-600/80 to-red-800/80 text-white rounded-xl p-3 text-center shadow-lg border border-red-400/30 backdrop-blur-md"
+            >
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <Clock className="h-4 w-4 text-red-200" />
+                <p className="font-bold text-sm tracking-wide">🔥 LIMITED TIME OFFER!</p>
+              </div>
+              <p className="text-xs opacity-90 mb-2">
+                {Math.round(timeDiscount.value * 100)}% off all tickets!
+              </p>
+              <div className="flex items-center justify-center gap-1">
+                <span className="text-xs opacity-75">Ends in:</span>
+                <span className="font-mono font-bold text-sm text-red-200">{discountTimeLeft}</span>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Existing Discount Banner */}
+          {(userClanRole === "cheap_hustler" || (userClanRole === "leader" && clanMemberCount >= 30)) && !timeDiscount?.isActive && (
   <motion.div
     initial={{ opacity: 0, y: -10 }}
     animate={{ opacity: 1, y: 0 }}
@@ -384,8 +480,8 @@ await supabase.from("ticket_purchases").insert({
                   transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
                 />
                 {hasDiscount && (
-                  <div className="absolute top-2 right-2 bg-gradient-to-r from-yellow-400 to-yellow-600 text-white text-xs font-bold px-2 py-1 rounded-full shadow">
-                    -10%
+                  <div className="absolute top-0 right-0 bg-gradient-to-r from-yellow-400 to-yellow-600 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg z-10">
+                    -{Math.round((1 - discountedPrice / originalPrice) * 100)}%
                   </div>
                 )}
                 <CardHeader className="p-2 pb-1 space-y-0">
@@ -461,8 +557,8 @@ await supabase.from("ticket_purchases").insert({
                   transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
                 />
                 {hasDiscount && (
-                  <div className="absolute top-2 right-2 bg-gradient-to-r from-yellow-400 to-yellow-600 text-white text-xs font-bold px-2 py-1 rounded-full shadow">
-                    -10%
+                  <div className="absolute top-0 right-0 bg-gradient-to-r from-yellow-400 to-yellow-600 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg z-10">
+                    -{Math.round((1 - discountedPrice / originalPrice) * 100)}%
                   </div>
                 )}
                 <CardHeader className="p-2 pb-1 space-y-0">
@@ -536,8 +632,8 @@ await supabase.from("ticket_purchases").insert({
                   transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
                 />
                 {hasDiscount && (
-                  <div className="absolute top-2 right-2 bg-gradient-to-r from-yellow-400 to-yellow-600 text-white text-xs font-bold px-2 py-1 rounded-full shadow">
-                    -10%
+                  <div className="absolute top-0 right-0 bg-gradient-to-r from-yellow-400 to-yellow-600 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg z-10">
+                    -{Math.round((1 - discountedPrice / originalPrice) * 100)}%
                   </div>
                 )}
                 <CardHeader className="p-2 pb-1 space-y-0">

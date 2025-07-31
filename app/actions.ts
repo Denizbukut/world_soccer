@@ -486,33 +486,33 @@ export async function drawCards(username: string, packType: string, count = 1) {
       } else if (isIcon) {
         // Neue Draw Rates für Icon Packs (nur Backend, nicht im UI anzeigen)
         // 75–78: 5%
-        // 79–84: 17%
+        // 79–84: 19,75%
         // 85: 22%
         // 86: 19%
         // 87: 16,5%
         // 88: 10,5%
-        // 89: 5%
-        // 90: 2,5%
-        // 91: 1,5%
+        // 89: 4%
+        // 90: 1,5%
+        // 91: 0,75%
         // 92+: 0.000000000000000000000444444
         let rating = 0;
         if (random < 5) {
           rating = Math.floor(Math.random() * 4) + 75; // 75–78
-        } else if (random < 5 + 17) {
+        } else if (random < 5 + 19.75) {
           rating = Math.floor(Math.random() * 6) + 79; // 79–84
-        } else if (random < 5 + 17 + 22) {
+        } else if (random < 5 + 19.75 + 22) {
           rating = 85;
-        } else if (random < 5 + 17 + 22 + 19) {
+        } else if (random < 5 + 19.75 + 22 + 19) {
           rating = 86;
-        } else if (random < 5 + 17 + 22 + 19 + 16.5) {
+        } else if (random < 5 + 19.75 + 22 + 19 + 16.5) {
           rating = 87;
-        } else if (random < 5 + 17 + 22 + 19 + 16.5 + 10.5) {
+        } else if (random < 5 + 19.75 + 22 + 19 + 16.5 + 10.5) {
           rating = 88;
-        } else if (random < 5 + 17 + 22 + 19 + 16.5 + 10.5 + 5) {
+        } else if (random < 5 + 19.75 + 22 + 19 + 16.5 + 10.5 + 4) {
           rating = 89;
-        } else if (random < 5 + 17 + 22 + 19 + 16.5 + 10.5 + 5 + 2.5) {
+        } else if (random < 5 + 19.75 + 22 + 19 + 16.5 + 10.5 + 4 + 1.5) {
           rating = 90;
-        } else if (random < 5 + 17 + 22 + 19 + 16.5 + 10.5 + 5 + 2.5 + 1.5) {
+        } else if (random < 5 + 19.75 + 22 + 19 + 16.5 + 10.5 + 4 + 1.5 + 0.75) {
           rating = 91;
         } else {
           rating = 92;

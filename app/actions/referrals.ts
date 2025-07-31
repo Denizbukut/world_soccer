@@ -11,6 +11,34 @@ function createSupabaseServer() {
   })
 }
 
+// Debug function to check referrals table
+export async function debugReferralsTable() {
+  try {
+    const supabase = createSupabaseServer()
+    
+    console.log("🔍 Debugging referrals table...")
+    
+    // Check if table exists and get all data
+    const { data, error } = await supabase
+      .from("referrals")
+      .select("*")
+    
+    if (error) {
+      console.error("❌ Error accessing referrals table:", error)
+      return { success: false, error: error.message }
+    }
+    
+    console.log("✅ Referrals table accessible")
+    console.log("📊 Total referrals:", data?.length || 0)
+    console.log("📋 All referrals data:", data)
+    
+    return { success: true, data }
+  } catch (error) {
+    console.error("❌ Unexpected error in debugReferralsTable:", error)
+    return { success: false, error: String(error) }
+  }
+}
+
 export async function claimReferralRewardForUser(referrerUsername: string, referredUsername: string) {
   try {
     const supabase = createSupabaseServer()
@@ -102,61 +130,69 @@ export async function claimReferralRewardForUser(referrerUsername: string, refer
 
 export async function getReferredUsers(referrerUsername: string) {
   try {
+    console.log("🔍 getReferredUsers called for:", referrerUsername)
     const supabase = createSupabaseServer()
+    
+    // Get referrals for this specific user
     const { data, error } = await supabase
       .from("referrals")
-      .select("id, referred_username, reward_claimed")
+      .select("id, referred_username, reward_claimed, created_at")
       .eq("referrer_username", referrerUsername)
 
+    console.log("🔍 Query for referrer_username:", referrerUsername)
+    console.log("📊 Found referrals:", data?.length || 0)
+    console.log("📋 Referrals data:", data)
+
     if (error) {
-      console.error("Error fetching referrals:", error)
+      console.error("❌ Error fetching referrals:", error)
       return []
     }
 
     if (!data || data.length === 0) {
+      console.log("⚠️ No referrals found for user:", referrerUsername)
       return []
     }
 
-    const detailed = await Promise.all(
-      data.map(async (ref) => {
-        try {
-          const { data: userData, error: userError } = await supabase
-            .from("users")
-            .select("level")
-            .eq("username", ref.referred_username)
-            .single()
+    console.log("🔄 Processing", data.length, "referrals...")
 
-          if (userError) {
-            console.error(`Error fetching user level for ${ref.referred_username}:`, userError)
-            return {
-              id: ref.id,
-              username: ref.referred_username,
-              level: 1, // Fallback level
-              reward_claimed: ref.reward_claimed ?? false,
-            }
-          }
+    // Get user levels in a single query for better performance
+    const referredUsernames = data.map(ref => ref.referred_username)
+    const { data: userLevels, error: userLevelsError } = await supabase
+      .from("users")
+      .select("username, level")
+      .in("username", referredUsernames)
 
-          return {
-            id: ref.id,
-            username: ref.referred_username,
-            level: userData?.level ?? 1,
-            reward_claimed: ref.reward_claimed ?? false,
-          }
-        } catch (error) {
-          console.error(`Error processing referral ${ref.referred_username}:`, error)
-          return {
-            id: ref.id,
-            username: ref.referred_username,
-            level: 1, // Fallback level
-            reward_claimed: ref.reward_claimed ?? false,
-          }
-        }
+    if (userLevelsError) {
+      console.error("❌ Error fetching user levels:", userLevelsError)
+    } else {
+      console.log("📊 User levels fetched:", userLevels)
+    }
+
+    // Create a map for quick lookup
+    const levelMap = new Map()
+    if (userLevels) {
+      userLevels.forEach(user => {
+        levelMap.set(user.username, user.level)
       })
-    )
+    }
 
+    const detailed = data.map((ref) => {
+      const level = levelMap.get(ref.referred_username) || 1
+      console.log(`✅ User ${ref.referred_username} level:`, level)
+      
+      return {
+        id: ref.id,
+        username: ref.referred_username,
+        level: level,
+        reward_claimed: ref.reward_claimed ?? false,
+        created_at: ref.created_at
+      }
+    })
+
+    console.log("✅ Final detailed referrals:", detailed)
     return detailed
   } catch (error) {
-    console.error("Unexpected error in getReferredUsers:", error)
+    console.error("❌ Unexpected error in getReferredUsers:", error)
     return []
   }
 }

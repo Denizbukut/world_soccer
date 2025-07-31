@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from "react";
-import { Crown, Clock, Home, Ticket, ArrowRight, Check } from "lucide-react";
+import { Crown, Clock, Home, Ticket, ArrowRight, Check, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
@@ -12,6 +12,14 @@ interface LevelReward {
   level: number
   iconClaimed: boolean
   isSpecialLevel?: boolean
+}
+
+interface IconPassData {
+  id: string
+  user_id: string
+  active: boolean
+  purchased_at: string
+  expires_at: string
 }
 
 export default function IconPassPage() {
@@ -37,6 +45,9 @@ export default function IconPassPage() {
   const [claimingIcon, setClaimingIcon] = useState(false);
   const [nextClaimTime, setNextClaimTime] = useState<string>('');
   const [hasIconPass, setHasIconPass] = useState(false);
+  const [iconPassData, setIconPassData] = useState<IconPassData | null>(null);
+  const [remainingTime, setRemainingTime] = useState<string>('');
+  const [isExpired, setIsExpired] = useState(false);
   const [levelRewards, setLevelRewards] = useState<LevelReward[]>([]);
   const [isClaimingReward, setIsClaimingReward] = useState(false);
   const [unclaimedRewards, setUnclaimedRewards] = useState(0);
@@ -64,20 +75,91 @@ export default function IconPassPage() {
         
         if (!error && data) {
           setHasIconPass(true)
+          setIconPassData(data)
           setSuccess(true) // Set success to true if pass is already active
           console.log('✅ Icon Pass is already active!')
         } else {
           setHasIconPass(false)
+          setIconPassData(null)
           console.log('❌ No active Icon Pass found')
         }
       } catch (error) {
         console.error('❌ Error checking Icon Pass:', error)
         setHasIconPass(false)
+        setIconPassData(null)
       }
     }
 
     checkIconPass()
   }, [user?.username]);
+
+  // Calculate remaining time for Icon Pass
+  useEffect(() => {
+    const calculateRemainingTime = () => {
+      if (!iconPassData?.expires_at) {
+        setRemainingTime('');
+        setIsExpired(false);
+        return;
+      }
+
+      const now = new Date();
+      const expiryDate = new Date(iconPassData.expires_at);
+      const diff = expiryDate.getTime() - now.getTime();
+
+      if (diff <= 0) {
+        // Pass has expired
+        setIsExpired(true);
+        setHasIconPass(false);
+        setSuccess(false);
+        setRemainingTime('');
+        
+        // Update database to mark pass as inactive
+        const updatePassStatus = async () => {
+          try {
+            const { createClient } = await import('@supabase/supabase-js');
+            const supabase = createClient(
+              process.env.NEXT_PUBLIC_SUPABASE_URL!,
+              process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+            );
+
+            await supabase
+              .from('icon_passes')
+              .update({ active: false })
+              .eq('id', iconPassData.id);
+          } catch (error) {
+            console.error('Error updating expired pass:', error);
+          }
+        };
+        
+        updatePassStatus();
+        return;
+      }
+
+      // Calculate remaining time
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+      let timeString = '';
+      if (days > 0) {
+        timeString = `${days}d ${hours}h ${minutes}m`;
+      } else if (hours > 0) {
+        timeString = `${hours}h ${minutes}m`;
+      } else {
+        timeString = `${minutes}m`;
+      }
+
+      setRemainingTime(timeString);
+      setIsExpired(false);
+    };
+
+    calculateRemainingTime();
+    
+    // Update every minute
+    const interval = setInterval(calculateRemainingTime, 60000);
+    
+    return () => clearInterval(interval);
+  }, [iconPassData]);
 
   // Check claimed status on page load
   useEffect(() => {
@@ -229,14 +311,20 @@ export default function IconPassPage() {
           process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
         );
 
-        const { error: insertError } = await supabase
+        console.log('Attempting to save icon pass for user:', user.username);
+        
+        const { data: insertData, error: insertError } = await supabase
           .from('icon_passes')
           .insert({
             user_id: user.username,
             active: true,
             purchased_at: new Date().toISOString(),
             expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
-          });
+          })
+          .select()
+          .single();
+
+        console.log('Insert result:', { insertData, insertError });
 
         if (insertError) {
           console.error('Error saving icon pass:', insertError);
@@ -248,6 +336,19 @@ export default function IconPassPage() {
         } else {
           setSuccess(true);
           setHasIconPass(true);
+          setIsExpired(false);
+          // Refresh the pass data
+          const { data: newPassData } = await supabase
+            .from('icon_passes')
+            .select('*')
+            .eq('user_id', user.username)
+            .eq('active', true)
+            .single();
+          
+          if (newPassData) {
+            setIconPassData(newPassData);
+          }
+          
           toast({ 
             title: 'Success!', 
             description: 'Icon Pass purchased and activated successfully!' 
@@ -542,10 +643,24 @@ export default function IconPassPage() {
             <h1 className="text-3xl font-bold text-yellow-500">Icon Pass</h1>
           </div>
           
-          {success ? (
+          {success && !isExpired ? (
             <div className="text-center">
               <div className="text-2xl font-bold text-green-600 mb-2">Icon Pass ACTIVE!</div>
-              <div className="text-yellow-700 mb-4">Your Icon Pass is now active and you can claim daily rewards!</div>
+              <div className="text-yellow-700 mb-2">Your Icon Pass is now active and you can claim daily rewards!</div>
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <Clock className="h-4 w-4 text-yellow-600" />
+                <span className="text-sm font-medium text-yellow-700">
+                  Remaining time: <span className="font-bold text-yellow-800">{remainingTime}</span>
+                </span>
+              </div>
+              {remainingTime && remainingTime.includes('h') && parseInt(remainingTime.split('h')[0]) < 24 && (
+                <div className="flex items-center justify-center gap-2 mb-4 p-2 bg-orange-100 border border-orange-300 rounded-lg">
+                  <AlertTriangle className="h-4 w-4 text-orange-600" />
+                  <span className="text-sm font-medium text-orange-700">
+                    Your Icon Pass expires soon! Consider renewing to keep your benefits.
+                  </span>
+                </div>
+              )}
               
               {/* Daily Icon Ticket Claim */}
               <div className="bg-gradient-to-r from-yellow-100 to-yellow-200 rounded-lg p-4 border border-yellow-300 mb-4">
@@ -565,13 +680,38 @@ export default function IconPassPage() {
                   </div>
                   <Button
                     onClick={handleClaim}
-                    disabled={claiming || claimedToday}
-                    className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg"
+                    disabled={claiming || claimedToday || isExpired}
+                    className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg disabled:opacity-50"
                   >
-                    {claiming ? 'Claiming...' : claimedToday ? 'Claimed' : 'Claim'}
+                    {claiming ? 'Claiming...' : claimedToday ? 'Claimed' : isExpired ? 'Pass Expired' : 'Claim'}
                   </Button>
                 </div>
               </div>
+            </div>
+          ) : isExpired ? (
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <AlertTriangle className="h-6 w-6 text-red-500" />
+                <div className="text-2xl font-bold text-red-600">Icon Pass EXPIRED!</div>
+              </div>
+              <div className="text-yellow-700 mb-6">Your Icon Pass has expired. Purchase a new one to continue enjoying the benefits!</div>
+              <Button
+                onClick={handleBuy}
+                disabled={buying}
+                className="bg-yellow-500 hover:bg-yellow-600 text-white px-8 py-3 rounded-lg text-lg font-semibold"
+              >
+                {buying ? 'Processing...' : (
+                  <div className="flex flex-col items-center">
+                    <span>Buy New Icon Pass</span>
+                    <span className="text-sm">
+                      {price 
+                        ? `${(3 / price).toFixed(3)} WLD (~$3.00)`
+                        : '3.000 WLD (~$3.00)'
+                      }
+                    </span>
+                  </div>
+                )}
+              </Button>
             </div>
           ) : (
             <div className="text-center">
@@ -700,12 +840,12 @@ export default function IconPassPage() {
       </div>
 
       {/* Icon Pass Rewards */}
-      {success && (
+      {success && !isExpired && (
         <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-2xl shadow-xl border border-yellow-300 p-6 flex flex-col items-center max-w-4xl w-full animate-fade-in mt-6">
           <div className="w-full">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-yellow-800">Pass Rewards</h3>
-              {unclaimedRewards > 0 && (
+              {unclaimedRewards > 0 && !isExpired && (
                 <Button
                   onClick={handleClaimAllRewards}
                   disabled={isClaimingReward}

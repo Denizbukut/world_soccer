@@ -32,6 +32,16 @@ export interface XpPass {
   purchased_at: string
   expires_at: string
 }
+
+export interface IconPass {
+  id: string
+  user_id: string
+  active: boolean
+  purchased_at: string
+  expires_at: string
+  created_at?: string
+  updated_at?: string
+}
   
   export interface ClaimedReward {
     id: string
@@ -39,6 +49,7 @@ export interface XpPass {
     level: number
     standard_claimed: boolean
     premium_claimed: boolean
+    icon_claimed?: boolean
     claimed_at: string
   }
   

@@ -20,6 +20,7 @@ import { MiniKit, Tokens, type PayCommandInput, tokenToDecimals } from "@worldco
 import { useWldPrice } from "@/contexts/WldPriceContext"
 import { Info } from "lucide-react"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
+import { isUserBanned } from "@/lib/banned-users"
 
 
 // Rarität definieren - UPDATED: Added godlike
@@ -265,6 +266,22 @@ const [showInfo, setShowInfo] = useState(false)
 
   // Payment function for God Pack
   const sendPayment = async () => {
+    // Check if user is banned before allowing payment
+    if (!user) {
+      toast({ title: "Error", description: "You must be logged in.", variant: "destructive" })
+      return
+    }
+
+    // Check if user is banned
+    if (isUserBanned(user.username)) {
+      toast({ 
+        title: "Access Denied", 
+        description: "You are banned from drawing packs.", 
+        variant: "destructive" 
+      })
+      return
+    }
+
     const dollarAmount = 0.8
     const fallbackWldAmount = 0.8
     const wldAmount = price ? dollarAmount / price : fallbackWldAmount
@@ -474,6 +491,17 @@ const [showInfo, setShowInfo] = useState(false)
         toast({ title: "Error", description: "You must be logged in.", variant: "destructive" })
         return
       }
+
+      // Check if user is banned
+      if (isUserBanned(user.username)) {
+        toast({ 
+          title: "Access Denied", 
+          description: "You are banned from drawing packs.", 
+          variant: "destructive" 
+        })
+        return
+      }
+
       console.log("looking for pack")
 
       // God pack doesn't require tickets, only payment

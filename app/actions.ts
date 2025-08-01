@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { createClient } from "@supabase/supabase-js"
 import {  incrementMission } from "@/app/actions/missions"
-
+import { isUserBanned } from "@/lib/banned-users"
 
 // Card rarity types
 type CardRarity = "common" | "rare" | "epic" | "legendary" | "basic" | "elite" | "ultimate" | "goat"
@@ -184,6 +184,11 @@ function getScoreForRarity(rarity: CardRarity): number {
 export async function drawCards(username: string, packType: string, count = 1) {
   try {
     const supabase = createSupabaseServer()
+
+    // Check if user is banned
+    if (isUserBanned(username)) {
+      return { success: false, error: "You are banned from drawing packs." }
+    }
 
     // Remove cards with quantity 0
     console.log(`Removing cards with quantity 0 for user ${username}...`)
@@ -999,6 +1004,11 @@ export async function cleanupZeroQuantityCards(username: string, action: 'remove
 export async function drawGodPacks(username: string, count = 1) {
   try {
     const supabase = createSupabaseServer()
+
+    // Check if user is banned
+    if (isUserBanned(username)) {
+      return { success: false, error: "You are banned from drawing packs." }
+    }
 
     // Remove cards with quantity 0
     await supabase.from("user_cards").delete().eq("user_id", username).eq("quantity", 0)

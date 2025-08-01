@@ -380,30 +380,70 @@ const [cardFromParams, setCardFromParams] = useState<Card | null>(null)
   const supabase = getSupabaseBrowserClient();
   if (!supabase) return;
 
-  if ((uc.quantity || 0) < 2) {
-    toast({
-      title: "Level up failed",
-      description: "You need at least 2 cards of the same type and level",
-      variant: "destructive",
-    });
-    return;
-  }
+  // Prevent multiple simultaneous level up attempts
+  if (levelUpLoading) return;
 
-  const currentLevel = uc.level || 1;
-  const nextLevel = currentLevel + 1;
-  setNewLevel(nextLevel);
   setLevelUpLoading(true);
 
+  // SECURITY: This function now checks the database state before proceeding
+  // to prevent users from spamming the level up button and seeing higher levels
+  // without sufficient resources. Each level up operation validates the current
+  // quantity in the database before proceeding.
+
   try {
-    // Reduziere aktuelle Karte
-    const { error: updateError } = await supabase
+    // First, check the current database state to ensure we have enough cards
+    const { data: currentCardData, error: fetchError } = await supabase
       .from("user_cards")
-      .update({ quantity: uc.quantity - 2 })
-      .eq("id", uc.id);
+      .select("quantity, level")
+      .eq("id", uc.id)
+      .single();
 
-    if (updateError) throw updateError;
+    if (fetchError || !currentCardData) {
+      toast({
+        title: "Level up failed",
+        description: "Could not verify card data. Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    // Prüfe ob Karte auf nächstem Level existiert
+    // Safely extract quantity and level with proper type checking
+    const currentQuantity = typeof currentCardData.quantity === 'number' ? currentCardData.quantity : 0;
+    const currentLevel = typeof currentCardData.level === 'number' ? currentCardData.level : 1;
+
+    // Check if we still have enough cards for level up
+    if (currentQuantity < 2) {
+      toast({
+        title: "Level up failed",
+        description: "You need at least 2 cards of the same type and level",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const nextLevel = currentLevel + 1;
+    setNewLevel(nextLevel);
+
+    // Use a transaction-like approach to ensure data consistency
+    // First, try to update the current card quantity atomically
+    const { data: updateResult, error: updateError } = await supabase
+      .from("user_cards")
+      .update({ quantity: currentQuantity - 2 })
+      .eq("id", uc.id)
+      .eq("quantity", currentQuantity) // Only update if quantity hasn't changed
+      .select()
+      .single();
+
+    if (updateError || !updateResult) {
+      toast({
+        title: "Level up failed",
+        description: "Card quantity has changed. Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check if a card at the next level already exists
     const { data: existingCardsData } = await supabase
       .from("user_cards")
       .select("*")
@@ -412,15 +452,27 @@ const [cardFromParams, setCardFromParams] = useState<Card | null>(null)
       .eq("level", nextLevel);
 
     if (existingCardsData && existingCardsData.length > 0) {
+      // Update existing higher level card
       const existingCard = toUserCard(existingCardsData[0]);
       if (existingCard) {
-        await supabase
+        const { error: incrementError } = await supabase
           .from("user_cards")
           .update({ quantity: existingCard.quantity + 1 })
           .eq("id", existingCard.id);
+
+                 if (incrementError) {
+           // Rollback the previous update if this fails
+           await supabase
+             .from("user_cards")
+             .update({ quantity: currentQuantity })
+             .eq("id", uc.id);
+           
+           throw incrementError;
+         }
       }
     } else {
-      await supabase.from("user_cards").insert({
+      // Create new higher level card
+      const { error: insertError } = await supabase.from("user_cards").insert({
         user_id: user.username,
         card_id: card.id,
         level: nextLevel,
@@ -428,6 +480,16 @@ const [cardFromParams, setCardFromParams] = useState<Card | null>(null)
         favorite: false,
         obtained_at: new Date().toISOString().split("T")[0],
       });
+
+             if (insertError) {
+         // Rollback the previous update if this fails
+         await supabase
+           .from("user_cards")
+           .update({ quantity: currentQuantity })
+           .eq("id", uc.id);
+         
+         throw insertError;
+       }
     }
 
     setShowLevelUpAnimation(true);
@@ -464,9 +526,10 @@ const [cardFromParams, setCardFromParams] = useState<Card | null>(null)
       }
     }, 1000);
   } catch (error) {
+    console.error("Level up error:", error);
     toast({
       title: "Level Up Failed",
-      description: "Something went wrong during the level up.",
+      description: "Something went wrong during the level up. Please try again.",
       variant: "destructive",
     });
   } finally {
@@ -1088,6 +1151,7 @@ const [cardFromParams, setCardFromParams] = useState<Card | null>(null)
                         }`}
                         onClick={handleLevelUp}
                         disabled={levelUpLoading || showLevelUpAnimation}
+                        title={levelUpLoading ? "Processing level up..." : "Level up card"}
                       >
                         {levelUpLoading ? (
                           <div className="flex items-center">

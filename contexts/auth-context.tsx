@@ -65,13 +65,23 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const loadUserDataFromDatabase = async (username: string) => {
     try {
       const supabase = getSupabaseBrowserClient()
-      if (!supabase) return null
+      if (!supabase) {
+        console.error("Failed to initialize Supabase client")
+        return null
+      }
 
-      const { data, error } = await supabase
+      // Add timeout to prevent infinite loading
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Database request timeout')), 10000); // 10 seconds timeout
+      });
+
+      const dataPromise = supabase
         .from("users")
         .select("username, tickets, legendary_tickets, icon_tickets, elite_tickets, coins, level, world_id, experience, next_level_exp, has_premium, score, clan_id, avatar_id")
         .eq("username", username)
-        .single()
+        .single();
+
+      const { data, error } = await Promise.race([dataPromise, timeoutPromise]) as any;
 
       // Add a type assertion for data to include icon_tickets
       const typedData = data as (typeof data & { icon_tickets?: number })

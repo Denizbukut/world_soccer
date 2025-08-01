@@ -23,7 +23,7 @@ interface IconPassData {
 }
 
 export default function IconPassPage() {
-  const { user, updateUserTickets, refreshUserData } = useAuth();
+  const { user, updateUserTickets, refreshUserData, loading: authLoading } = useAuth();
   const { price } = useWldPrice();
   const [buying, setBuying] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -51,25 +51,38 @@ export default function IconPassPage() {
   const [levelRewards, setLevelRewards] = useState<LevelReward[]>([]);
   const [isClaimingReward, setIsClaimingReward] = useState(false);
   const [unclaimedRewards, setUnclaimedRewards] = useState(0);
+  const [dataLoading, setDataLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Check if user has active Icon Pass
   useEffect(() => {
     const checkIconPass = async () => {
-      if (!user?.username) return
+      if (!user?.username) {
+        setDataLoading(false);
+        return;
+      }
       
       try {
+        setError(null);
         const { createClient } = await import('@supabase/supabase-js');
         const supabase = createClient(
           process.env.NEXT_PUBLIC_SUPABASE_URL!,
           process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
         );
 
-        const { data, error } = await supabase
+        // Add timeout to prevent infinite loading
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Database request timeout')), 8000); // 8 seconds timeout
+        });
+
+        const dataPromise = supabase
           .from('icon_passes')
           .select('*')
           .eq('user_id', user.username)
           .eq('active', true)
-          .single()
+          .single();
+
+        const { data, error } = await Promise.race([dataPromise, timeoutPromise]) as any;
 
         console.log('Icon Pass check in icon-pass page:', { data, error, username: user.username })
         
@@ -85,13 +98,22 @@ export default function IconPassPage() {
         }
       } catch (error) {
         console.error('❌ Error checking Icon Pass:', error)
+        if (error instanceof Error && error.message.includes('timeout')) {
+          setError('Database connection timeout. Please check your internet connection and try again.');
+        } else {
+          setError('Failed to load Icon Pass data. Please refresh the page.');
+        }
         setHasIconPass(false)
         setIconPassData(null)
+      } finally {
+        setDataLoading(false);
       }
     }
 
-    checkIconPass()
-  }, [user?.username]);
+    if (!authLoading) {
+      checkIconPass()
+    }
+  }, [user?.username, authLoading]);
 
   // Calculate remaining time for Icon Pass
   useEffect(() => {
@@ -231,11 +253,14 @@ export default function IconPassPage() {
         setUnclaimedRewards(unclaimed);
       } catch (error) {
         console.error("Error in fetchClaimedLevels:", error);
+        // Don't set error state here as it's not critical for the main functionality
       }
     };
 
-    fetchClaimedLevels();
-  }, [user?.username, user?.level]);
+    if (!authLoading && user?.username) {
+      fetchClaimedLevels();
+    }
+  }, [user?.username, user?.level, authLoading]);
 
   // Calculate next claim time
   const calculateNextClaimTime = () => {
@@ -275,9 +300,9 @@ export default function IconPassPage() {
     setBuying(true);
     
     try {
-      // Calculate WLD amount based on $3 USD price
-      const dollarPrice = 3;
-      const fallbackWldAmount = 3; // Fallback if price is not available
+      // Calculate WLD amount based on $1 USD price
+      const dollarPrice =3
+      const fallbackWldAmount =3; // Fallback if price is not available
       const wldAmount = price ? dollarPrice / price : fallbackWldAmount;
       const roundedWldAmount = Number.parseFloat(wldAmount.toFixed(3));
       
@@ -303,57 +328,7 @@ export default function IconPassPage() {
 
       if (finalPayload.status === "success") {
         console.log("success sending icon pass payment");
-        
-        // Icon Pass in Datenbank speichern
-        const { createClient } = await import('@supabase/supabase-js');
-        const supabase = createClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-        );
-
-        console.log('Attempting to save icon pass for user:', user.username);
-        
-        const { data: insertData, error: insertError } = await supabase
-          .from('icon_passes')
-          .insert({
-            user_id: user.username,
-            active: true,
-            purchased_at: new Date().toISOString(),
-            expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
-          })
-          .select()
-          .single();
-
-        console.log('Insert result:', { insertData, insertError });
-
-        if (insertError) {
-          console.error('Error saving icon pass:', insertError);
-          toast({ 
-            title: 'Error', 
-            description: 'Payment successful but failed to activate pass. Please contact support.', 
-            variant: 'destructive' 
-          });
-        } else {
-          setSuccess(true);
-          setHasIconPass(true);
-          setIsExpired(false);
-          // Refresh the pass data
-          const { data: newPassData } = await supabase
-            .from('icon_passes')
-            .select('*')
-            .eq('user_id', user.username)
-            .eq('active', true)
-            .single();
-          
-          if (newPassData) {
-            setIconPassData(newPassData);
-          }
-          
-          toast({ 
-            title: 'Success!', 
-            description: 'Icon Pass purchased and activated successfully!' 
-          });
-        }
+        await handlePurchaseIconPass();
       } else {
         toast({ 
           title: 'Error', 
@@ -370,6 +345,119 @@ export default function IconPassPage() {
       });
     } finally {
       setBuying(false);
+    }
+  };
+
+  // Handle purchasing icon pass - same logic as premium pass
+  const handlePurchaseIconPass = async () => {
+    const { createClient } = await import('@supabase/supabase-js');
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    
+    if (!supabase || !user?.username) return;
+
+    try {
+      console.log('Starting icon pass purchase for user:', user.username);
+      
+      // Calculate expiry date (7 days from now)
+      const expiryDate = new Date();
+      expiryDate.setDate(expiryDate.getDate() + 7);
+
+      // Check if user already has an icon pass record
+      const { data: existingPass, error: checkError } = await supabase
+        .from("icon_passes")
+        .select("*")
+        .eq("user_id", user.username)
+        .single();
+
+      console.log('Check result:', { existingPass, checkError });
+
+      if (checkError && checkError.code !== "PGRST116") {
+        console.error("Error checking existing icon pass:", checkError);
+        toast({
+          title: "Error",
+          description: `Failed to check icon pass status: ${checkError.message}`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      let error;
+      let result;
+
+      if (existingPass) {
+        console.log('Updating existing icon pass:', existingPass.id);
+        // Update existing icon pass
+        const { data: updateData, error: updateError } = await supabase
+          .from("icon_passes")
+          .update({
+            active: true,
+            purchased_at: new Date().toISOString(),
+            expires_at: expiryDate.toISOString(),
+          })
+          .eq("user_id", user.username)
+          .select()
+          .single();
+
+        error = updateError;
+        result = updateData;
+        console.log('Update result:', { updateData, updateError });
+      } else {
+        console.log('Creating new icon pass');
+        // Create new icon pass record
+        const { data: insertData, error: insertError } = await supabase
+          .from("icon_passes")
+          .insert({
+            user_id: user.username,
+            active: true,
+            purchased_at: new Date().toISOString(),
+            expires_at: expiryDate.toISOString(),
+          })
+          .select()
+          .single();
+
+        error = insertError;
+        result = insertData;
+        console.log('Insert result:', { insertData, insertError });
+      }
+
+      if (error) {
+        console.error("Error purchasing icon pass:", error);
+        toast({
+          title: "Error",
+          description: `Failed to purchase icon pass: ${error.message}`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Update local state
+      setSuccess(true);
+      setHasIconPass(true);
+      setIsExpired(false);
+      setIconPassData({
+        id: result?.id || existingPass?.id || 'new',
+        user_id: user.username,
+        active: true,
+        purchased_at: new Date().toISOString(),
+        expires_at: expiryDate.toISOString(),
+      });
+
+      toast({
+        title: "Success!",
+        description: existingPass
+          ? "You've renewed your Icon Pass for 7 days!"
+          : "You've purchased the Icon Pass for 7 days!",
+      });
+    } catch (error) {
+      console.error("Error in handlePurchaseIconPass:", error);
+      toast({
+        title: "Error",
+        description: `An unexpected error occurred: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive",
+      });
     }
   };
 
@@ -605,6 +693,55 @@ export default function IconPassPage() {
       setIsClaimingReward(false);
     }
   };
+
+  // Show loading state while auth is loading or data is loading
+  if (authLoading || dataLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-yellow-100 to-yellow-200 p-4 flex flex-col items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-600 mx-auto mb-4"></div>
+          <p className="text-yellow-800 font-medium">Loading Icon Pass...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show login prompt if user is not authenticated
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-yellow-100 to-yellow-200 p-4 flex flex-col items-center justify-center">
+        <div className="text-center max-w-md">
+          <Crown className="h-16 w-16 text-yellow-600 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-yellow-800 mb-4">Login Required</h2>
+          <p className="text-yellow-700 mb-6">Please log in to access the Icon Pass features.</p>
+          <Link href="/login">
+            <Button className="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-3">
+              Go to Login
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-yellow-100 to-yellow-200 p-4 flex flex-col items-center justify-center">
+        <div className="text-center max-w-md">
+          <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-red-600 mb-2">Error Loading Page</h2>
+          <p className="text-yellow-800 mb-4">{error}</p>
+          <Button 
+            onClick={() => window.location.reload()} 
+            className="bg-yellow-500 hover:bg-yellow-600 text-white"
+          >
+            Refresh Page
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-yellow-100 to-yellow-200 p-4 flex flex-col items-center">

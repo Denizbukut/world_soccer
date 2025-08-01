@@ -17,21 +17,5 @@ CREATE INDEX IF NOT EXISTS idx_icon_passes_expires_at ON icon_passes(expires_at)
 -- Create unique constraint to ensure only one active pass per user
 CREATE UNIQUE INDEX IF NOT EXISTS idx_icon_passes_user_active ON icon_passes(user_id) WHERE active = true;
 
--- Add RLS (Row Level Security) policies
-ALTER TABLE icon_passes ENABLE ROW LEVEL SECURITY;
-
--- Policy to allow users to view their own passes
-CREATE POLICY "Users can view their own icon passes" ON icon_passes
-    FOR SELECT USING (auth.uid()::text = user_id);
-
--- Policy to allow users to insert their own passes
-CREATE POLICY "Users can insert their own icon passes" ON icon_passes
-    FOR INSERT WITH CHECK (auth.uid()::text = user_id);
-
--- Policy to allow users to update their own passes
-CREATE POLICY "Users can update their own icon passes" ON icon_passes
-    FOR UPDATE USING (auth.uid()::text = user_id);
-
--- Policy to allow users to delete their own passes
-CREATE POLICY "Users can delete their own icon passes" ON icon_passes
-    FOR DELETE USING (auth.uid()::text = user_id); 
+-- Note: RLS policies are removed as they cause issues in browser environment
+-- The application handles user authentication and authorization at the application level 

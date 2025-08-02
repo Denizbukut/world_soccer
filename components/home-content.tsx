@@ -1750,11 +1750,9 @@ const [copied, setCopied] = useState(false)
                   <Gift className="h-5 w-5 text-white" />
                 </div>
                 <div className="text-sm font-bold text-yellow-100">Referrals</div>
-                {referredUsers.some((u) => u.level >= 5 && !u.reward_claimed) && (
-                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow">
-                    NEW
-                  </span>
-                )}
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow">
+                  NEW BONUS
+                </span>
               </button>
             </div>
             {/* Deals nebeneinander im Grid */}
@@ -2139,62 +2137,81 @@ const [copied, setCopied] = useState(false)
 
         {/* Referrals Dialog */}
 <Dialog open={showReferralDialog} onOpenChange={setShowReferralDialog}>
-  <DialogContent>
-    <DialogTitle className="text-lg font-bold">🎁 Invite Friends & Earn Rewards</DialogTitle>
-    <DialogDescription className="text-sm text-gray-600">
-      Share your referral link and earn bonus tickets when they reach level 5!
+  <DialogContent className="bg-gradient-to-br from-[#232526] to-[#414345] border-2 border-yellow-400 text-white">
+    <DialogTitle className="text-xl font-bold text-yellow-100 flex items-center gap-2">
+      <div className="w-8 h-8 rounded-full bg-yellow-400 flex items-center justify-center border border-yellow-300">
+        <Gift className="h-5 w-5 text-white" />
+      </div>
+      Invite Friends & Earn Rewards
+    </DialogTitle>
+    <DialogDescription className="text-sm text-yellow-200">
+      Share your referral link and earn bonus tickets when they reach level 5!<br />
+      <span className="text-xs text-red-400 font-semibold">Note: Only enter the username in the field, not the complete link!</span>
     </DialogDescription>
     {/* Your referral link */}
-    <div className="mt-4">
-      <div className="text-sm font-semibold text-gray-800 mb-1">Your Code:</div>
-      <div className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded px-3 py-2">
-                <span className="truncate text-sm font-mono text-gray-700">{user?.username}</span>
+    <div className="mt-6">
+      <div className="text-sm font-semibold text-yellow-100 mb-2">Your Code:</div>
+      <div className="flex items-center justify-between bg-gradient-to-r from-[#232526] to-[#414345] border-2 border-yellow-400 rounded-lg px-4 py-3 shadow-lg">
+        <span className="truncate text-sm font-mono text-yellow-200 font-bold">{user?.username}</span>
         <Button
-      size="sm"
-      onClick={() => {
-                    const link = `https://worldcoin.org/mini-app?app_id=app_81194a47953b441d325cb47c8e632c95&ref=${user?.username}`
-        navigator.clipboard.writeText(link)
-                    setCopied(true)
-                    setTimeout(() => setCopied(false), 2000)
-      }}
-    >
-      {copied ? "Copied!" : "Copy link"}
-    </Button>
+          size="sm"
+          className="bg-yellow-400 hover:bg-yellow-500 text-white font-bold border-2 border-yellow-300 shadow-lg"
+          onClick={() => {
+            const link = `https://worldcoin.org/mini-app?app_id=app_81194a47953b441d325cb47c8e632c95&ref=${user?.username}`
+            navigator.clipboard.writeText(link)
+            setCopied(true)
+            setTimeout(() => setCopied(false), 2000)
+          }}
+        >
+          {copied ? "Copied!" : "Copy link"}
+        </Button>
       </div>
     </div>
     {/* Rewards overview */}
-    <div className="mt-6 bg-amber-50 border border-amber-200 rounded-lg p-3">
-      <h4 className="text-sm font-semibold text-amber-700 mb-1">What you get:</h4>
-      <ul className="text-sm text-amber-800 list-disc list-inside space-y-1">
-                <li>
-                  <strong>+5</strong> Classic Tickets
-                </li>
-                <li>
-                  <strong>+3</strong> Elite Tickets
-                </li>
-                <li>
-                  Once your friend reaches <strong>Level 5</strong>
-                </li>
+    <div className="mt-6 bg-gradient-to-br from-yellow-400/20 to-yellow-600/20 border-2 border-yellow-400 rounded-lg p-4 shadow-lg">
+      <h4 className="text-sm font-bold text-yellow-100 mb-3 flex items-center gap-2">
+        <span className="text-yellow-400">🎁</span>
+        What you get:
+      </h4>
+      <ul className="text-sm text-yellow-200 space-y-2">
+        <li className="flex items-center gap-2">
+          <span className="w-2 h-2 bg-yellow-400 rounded-full"></span>
+          <strong className="text-yellow-100">+10</strong> Classic Tickets
+        </li>
+        <li className="flex items-center gap-2">
+          <span className="w-2 h-2 bg-yellow-400 rounded-full"></span>
+          <strong className="text-yellow-100">+10</strong> Elite Tickets
+        </li>
+        <li className="flex items-center gap-2">
+          <span className="w-2 h-2 bg-yellow-400 rounded-full"></span>
+          Once your friend reaches <strong className="text-yellow-100">Level 5</strong>
+        </li>
       </ul>
     </div>
     {/* Referred users list */}
     <div className="mt-6">
-      <h4 className="text-sm font-semibold text-gray-800 mb-2">Your Referrals</h4>
+      <h4 className="text-sm font-bold text-yellow-100 mb-3 flex items-center gap-2">
+        <span className="text-yellow-400">👥</span>
+        Your Referrals
+      </h4>
       {referredUsers.length === 0 ? (
-        <p className="text-xs text-gray-500">No referrals yet.</p>
+        <div className="bg-gradient-to-r from-[#232526]/50 to-[#414345]/50 border border-yellow-400/30 rounded-lg p-4 text-center">
+          <p className="text-sm text-yellow-200/70">No referrals yet.</p>
+        </div>
       ) : (
-        <div className="space-y-2 max-h-48 overflow-y-auto">
+        <div className="space-y-2 max-h-48 overflow-y-auto bg-gradient-to-r from-[#232526]/30 to-[#414345]/30 border border-yellow-400/30 rounded-lg p-3">
           {referredUsers.map((ref) => (
-            <div key={ref.username} className="flex justify-between items-center border-b pb-1">
-              <span className="text-sm">
-                        @{ref.username.length > 10 ? ref.username.slice(0, 10) + "…" : ref.username} <span className="text-gray-500 text-xs">(Lvl {ref.level})</span>
+            <div key={ref.username} className="flex justify-between items-center border-b border-yellow-400/20 pb-2 last:border-b-0">
+              <span className="text-sm text-yellow-200">
+                @{ref.username.length > 10 ? ref.username.slice(0, 10) + "…" : ref.username} 
+                <span className="text-yellow-400/70 text-xs ml-1">(Lvl {ref.level})</span>
               </span>
               {ref.reward_claimed ? (
-                <CheckCircle className="h-4 w-4 text-green-500" />
+                <CheckCircle className="h-4 w-4 text-green-400" />
               ) : ref.level >= 5 ? (
                 <Button
                   size="sm"
-                  className="text-xs"
+                  className="bg-green-500 hover:bg-green-600 text-white font-bold text-xs border border-green-400"
                   onClick={async () => {
                     if (!user?.username) return
                     try {
@@ -2233,7 +2250,7 @@ const [copied, setCopied] = useState(false)
                   Claim
                 </Button>
               ) : (
-                <span className="text-xs text-gray-400">Waiting...</span>
+                <span className="text-xs text-yellow-400/50">Waiting...</span>
               )}
             </div>
           ))}

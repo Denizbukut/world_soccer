@@ -88,8 +88,8 @@ export async function claimReferralRewardForUser(referrerUsername: string, refer
       return { success: false, error: "Failed to fetch user data." }
     }
 
-    const newTicketCount = (userData?.tickets ?? 0) + 5
-    const newLegendaryTicketCount = (userData?.legendary_tickets ?? 0) + 3
+    const newTicketCount = (userData?.tickets ?? 0) + 10
+    const newLegendaryTicketCount = (userData?.legendary_tickets ?? 0) + 10
 
     // Update tickets
     const { error: updateError } = await supabase

@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/auth-context"
 import { claimDailyBonus } from "@/app/actions"
 import { getReferredUsers } from "@/app/actions/referrals"
 import { getDailyDeal, getSpecialDeal } from "@/app/actions/deals" // Import getSpecialDeal
+import { getActiveTimeDiscount } from "@/app/actions/time-discount" // Import time discount function
 import ProtectedRoute from "@/components/protected-route"
 import MobileNav from "@/components/mobile-nav"
 import { Button } from "@/components/ui/button"
@@ -309,6 +310,7 @@ const [copied, setCopied] = useState(false)
   const [timeLeft, setTimeLeft] = useState<{ days: number; hours: number; minutes: number; seconds: number } | null>(
     null,
   )
+  const [hasActiveDiscount, setHasActiveDiscount] = useState(false)
 
   const handleCopy = () => {
     setCopied(true)
@@ -591,6 +593,11 @@ const [copied, setCopied] = useState(false)
     }
   }, [user?.username])
 
+  // Check discount status on page load
+  useEffect(() => {
+    checkDiscountStatus()
+  }, [])
+
 
   // Check for daily deal
   const checkDailyDeal = async () => {
@@ -612,6 +619,16 @@ const [copied, setCopied] = useState(false)
     } catch (error) {
     } finally {
       setDailyDealLoading(false)
+    }
+  }
+
+  // Check discount status
+  const checkDiscountStatus = async () => {
+    try {
+      const result = await getActiveTimeDiscount()
+      setHasActiveDiscount(result.success && result.data !== null)
+    } catch (error) {
+      console.error("Error checking discount status:", error)
     }
   }
 
@@ -1686,20 +1703,37 @@ const [copied, setCopied] = useState(false)
                 <div className="text-sm font-bold text-yellow-100">$ANI</div>
               </div>
             </div>
-            <div className="col-span-2">
+            <div className="col-span-2 relative">
+              {hasActiveDiscount && (
+                <div className="absolute -top-2 -right-2 bg-white text-red-600 text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow z-10">
+                  -15%
+                </div>
+              )}
               <Link href="/shop" className="block w-full h-full">
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2, duration: 0.4 }}
-                  whileHover={{ scale: 1.04, boxShadow: '0 0 32px 0 rgba(255, 215, 0, 0.25)' }}
-                  className="relative bg-gradient-to-br from-[#232526] to-[#414345] rounded-2xl p-3 shadow-2xl flex flex-col items-center justify-center min-h-[70px] h-full text-center border-2 border-yellow-400 transition overflow-hidden"
+                  whileHover={{ scale: 1.04, boxShadow: hasActiveDiscount ? '0 0 32px 0 rgba(239, 68, 68, 0.4)' : '0 0 32px 0 rgba(255, 215, 0, 0.25)' }}
+                  className={`relative rounded-2xl p-3 shadow-2xl flex flex-col items-center justify-center min-h-[70px] h-full text-center border-2 transition overflow-hidden ${
+                    hasActiveDiscount 
+                      ? 'bg-gradient-to-br from-red-600 to-red-800 border-red-400 animate-pulse' 
+                      : 'bg-gradient-to-br from-[#232526] to-[#414345] border-yellow-400'
+                  }`}
                 >
-                  <div className="w-8 h-8 rounded-full bg-yellow-400 flex items-center justify-center mb-1 shadow-[0_0_8px_2px_rgba(251,191,36,0.18)] border border-yellow-300">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center mb-1 border ${
+                    hasActiveDiscount 
+                      ? 'bg-red-400 shadow-[0_0_8px_2px_rgba(239,68,68,0.3)] border-red-300' 
+                      : 'bg-yellow-400 shadow-[0_0_8px_2px_rgba(251,191,36,0.18)] border-yellow-300'
+                  }`}>
                     <ShoppingCart className="h-5 w-5 text-white drop-shadow-lg" />
                   </div>
-                  <div className="text-sm font-extrabold text-yellow-100 drop-shadow-sm tracking-wide">Shop</div>
-                  <div className="text-xs text-sky-400 font-semibold mt-0.5">Exklusive Packs</div>
+                  <div className={`text-sm font-extrabold drop-shadow-sm tracking-wide ${
+                    hasActiveDiscount ? 'text-red-100' : 'text-yellow-100'
+                  }`}>Shop</div>
+                  <div className={`text-xs font-semibold mt-0.5 ${
+                    hasActiveDiscount ? 'text-red-200' : 'text-sky-400'
+                  }`}>Exklusive Packs</div>
                 </motion.div>
               </Link>
             </div>

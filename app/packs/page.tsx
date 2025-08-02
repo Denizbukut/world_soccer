@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { getSupabaseBrowserClient } from "@/lib/supabase"
 import { useAuth } from "@/contexts/auth-context"
-import { drawCardPack } from "@/app/actions"
+import { drawCards } from "@/app/actions"
 import ProtectedRoute from "@/components/protected-route"
 import MobileNav from "@/components/mobile-nav"
 import CardItem from "@/components/card-item"
@@ -81,14 +81,14 @@ export default function PacksPage() {
 
     setIsDrawing(true)
     try {
-      const result = await drawCardPack(user.username, packType)
+      const result = await drawCards(user.username, packType)
 
       if (result.success) {
         // Update user tickets in context
         await updateUserTickets(result.newTicketCount)
 
         // Show drawn cards
-        setDrawnCards(result.drawnCards)
+        setDrawnCards(result.drawnCards || [])
         setCurrentPackType(packType as "basic" | "premium" | "ultimate")
         setShowAnimation(true)
       } else {
@@ -237,65 +237,7 @@ export default function PacksPage() {
                 
 
                 
-                {/* Improved Drop Rates for Icon Pass Users */}
-                {hasIconPass && (
-                  <div className="mt-4 bg-gradient-to-r from-blue-100 to-blue-200 rounded-lg p-3 border border-blue-300">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Crown className="h-4 w-4 text-blue-600" />
-                      <div className="font-semibold text-blue-800 text-xs">PASS ACTIVE - Improved Drop Rates</div>
-                    </div>
-                    
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full bg-gray-500"></div>
-                          <span className="text-xs text-blue-800">Basic</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <span className="text-xs text-blue-700">10%</span>
-                          <ArrowRight className="h-2 w-2 text-blue-500" />
-                          <span className="text-xs text-blue-700">7%</span>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                          <span className="text-xs text-blue-800">Rare</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <span className="text-xs text-blue-700">40%</span>
-                          <ArrowRight className="h-2 w-2 text-blue-500" />
-                          <span className="text-xs text-blue-700">35%</span>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full bg-purple-500"></div>
-                          <span className="text-xs text-blue-800">Elite</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <span className="text-xs text-blue-700">35%</span>
-                          <ArrowRight className="h-2 w-2 text-blue-500" />
-                          <span className="text-xs text-blue-700">40%</span>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
-                          <span className="text-xs text-blue-800">Ultimate</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <span className="text-xs text-blue-700">15%</span>
-                          <ArrowRight className="h-2 w-2 text-blue-500" />
-                          <span className="text-xs text-blue-700">18%</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
+
               </CardContent>
             </Card>
 
@@ -385,6 +327,7 @@ export default function PacksPage() {
                   character={card.character}
                   imageUrl={card.image_url}
                   rarity={card.rarity}
+                  epoch={card.epoch || 1}
                 />
               ))}
             </div>

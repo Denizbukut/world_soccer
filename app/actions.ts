@@ -430,73 +430,41 @@ export async function drawCards(username: string, packType: string, count = 1) {
       }
 
       if (isLegendary) {
-        // Neue Draw Rates für Elite Packs (nur Backend, nicht im UI anzeigen)
-        // Standard rates:
-        // 75–79: 10%
-        // 80–84: 22%
-        // 85: 21%
-        // 86: 17,5%
-        // 87: 16%
-        // 88: 10,75%
-        // 89: 2%
-        // 90: 0,5%
-        // 91: 0,25%
-        // 92+: 0.000000000000000000000444444
-        
-        // Icon Pass improved rates - adjusts rating distribution to favor higher ratings
-        // This shifts the distribution to reduce lower ratings and increase higher ratings
-        // which corresponds to reducing Basic/Rare and increasing Elite/Ultimate cards
+        // Neue Draw Rates für Icon Packs (Elite Packs)
+        // Rating 75-79: 10.35%
+        // Rating 80-84: 24%
+        // Rating 85: 21%
+        // Rating 86: 17.5%
+        // Rating 87: 16%
+        // Rating 88: 8.75%
+        // Rating 89: 2%
+        // Rating 90: 0.25%
+        // Rating 91: 0.15%
+        // Rating 92+: 0.000000000000000000000444444%
         
         let rating = 0;
-        if (hasIconPass) {
-          console.log(`🎯 Using Icon Pass improved rates for user ${username}`)
-          // Icon Pass improved rates - shifts distribution to favor higher ratings
-          // Reduces lower ratings (75-79, 80-84) and increases higher ratings (85+)
-          if (random < 7) {
-            rating = Math.floor(Math.random() * 5) + 75; // 75–79 (reduced from 10%)
-          } else if (random < 7 + 20) {
-            rating = Math.floor(Math.random() * 5) + 80; // 80–84 (reduced from 22%)
-          } else if (random < 7 + 20 + 23) {
-            rating = 85; // 85 (increased from 21%)
-          } else if (random < 7 + 20 + 23 + 18) {
-            rating = 86; // 86 (increased from 17.5%)
-          } else if (random < 7 + 20 + 23 + 18 + 17) {
-            rating = 87; // 87 (increased from 16%)
-          } else if (random < 7 + 20 + 23 + 18 + 17 + 11) {
-            rating = 88; // 88 (increased from 10.75%)
-          } else if (random < 7 + 20 + 23 + 18 + 17 + 11 + 2.5) {
-            rating = 89; // 89 (increased from 2%)
-          } else if (random < 7 + 20 + 23 + 18 + 17 + 11 + 2.5 + 0.75) {
-            rating = 90; // 90 (increased from 0.5%)
-          } else if (random < 7 + 20 + 23 + 18 + 17 + 11 + 2.5 + 0.75 + 0.5) {
-            rating = 91; // 91 (increased from 0.25%)
-          } else {
-            rating = 92; // 92+ (same)
-          }
+        console.log(`📊 Using Icon Pack rates for user ${username}`)
+        
+        if (random < 10.35) {
+          rating = Math.floor(Math.random() * 5) + 75; // 75–79
+        } else if (random < 10.35 + 24) {
+          rating = Math.floor(Math.random() * 5) + 80; // 80–84
+        } else if (random < 10.35 + 24 + 21) {
+          rating = 85;
+        } else if (random < 10.35 + 24 + 21 + 17.5) {
+          rating = 86;
+        } else if (random < 10.35 + 24 + 21 + 17.5 + 16) {
+          rating = 87;
+        } else if (random < 10.35 + 24 + 21 + 17.5 + 16 + 8.75) {
+          rating = 88;
+        } else if (random < 10.35 + 24 + 21 + 17.5 + 16 + 8.75 + 2) {
+          rating = 89;
+        } else if (random < 10.35 + 24 + 21 + 17.5 + 16 + 8.75 + 2 + 0.25) {
+          rating = 90;
+        } else if (random < 10.35 + 24 + 21 + 17.5 + 16 + 8.75 + 2 + 0.25 + 0.15) {
+          rating = 91;
         } else {
-          console.log(`📊 Using standard Elite Pack rates for user ${username}`)
-          // Standard rates
-          if (random < 10) {
-            rating = Math.floor(Math.random() * 5) + 75; // 75–79
-          } else if (random < 10 + 22) {
-            rating = Math.floor(Math.random() * 5) + 80; // 80–84
-          } else if (random < 10 + 22 + 21) {
-            rating = 85;
-          } else if (random < 10 + 22 + 21 + 17.5) {
-            rating = 86;
-          } else if (random < 10 + 22 + 21 + 17.5 + 16) {
-            rating = 87;
-          } else if (random < 10 + 22 + 21 + 17.5 + 16 + 10.75) {
-            rating = 88;
-          } else if (random < 10 + 22 + 21 + 17.5 + 16 + 10.75 + 2) {
-            rating = 89;
-          } else if (random < 10 + 22 + 21 + 17.5 + 16 + 10.75 + 2 + 0.5) {
-            rating = 90;
-          } else if (random < 10 + 22 + 21 + 17.5 + 16 + 10.75 + 2 + 0.5 + 0.25) {
-            rating = 91;
-          } else {
-            rating = 92;
-          }
+          rating = 92;
         }
         // Filter cards nach overall_rating
         let cardPool = availableCards.filter(card => card.overall_rating == rating);

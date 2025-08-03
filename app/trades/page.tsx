@@ -155,6 +155,24 @@ export default function TradesPage() {
       return
     }
 
+    // Preisvalidierung für Ultimate-Karten
+    const parsedPrice = Number(price)
+    const minWldPrice = 
+      selectedCard.cards.rarity === "ultimate"
+        ? 1.5
+        : selectedCard.cards.rarity === "legendary"
+        ? 1
+        : 0.15
+
+    if (parsedPrice < minWldPrice) {
+      toast({
+        title: "Price too low",
+        description: `Ultimate cards must be listed for at least ${minWldPrice} WLD`,
+        variant: "destructive",
+      })
+      return
+    }
+
     setLoadingAction(true)
     try {
       const result = await listCardForSale(user!.id, selectedCard.cards.id, Number(price))
@@ -564,7 +582,17 @@ export default function TradesPage() {
                       className={`p-2 border rounded-md cursor-pointer ${
                         selectedCard?.id === card.id ? "border-orange-600 bg-orange-50" : ""
                       }`}
-                      onClick={() => setSelectedCard(card)}
+                      onClick={() => {
+                        setSelectedCard(card)
+                        // Setze Standardpreis basierend auf Rarity
+                        const defaultPrice = 
+                          card.cards.rarity === "ultimate"
+                            ? "1.5"
+                            : card.cards.rarity === "legendary"
+                            ? "1"
+                            : "0.15"
+                        setPrice(defaultPrice)
+                      }}
                     >
                       <div className="flex gap-2">
                         <div className="relative w-12 h-16 overflow-hidden rounded-md">
@@ -596,16 +624,27 @@ export default function TradesPage() {
 
                 <div className="space-y-2">
                   <label htmlFor="price" className="text-sm font-medium">
-                    Price (coins)
+                    Price (WLD)
                   </label>
                   <Input
                     id="price"
                     type="number"
-                    min="1"
-                    placeholder="Enter price in coins"
+                    step="0.001"
+                    min="0.001"
+                    placeholder="Enter price in WLD"
                     value={price}
                     onChange={(e) => setPrice(e.target.value)}
                   />
+                  {selectedCard && (
+                    <p className="text-xs text-gray-500">
+                      {selectedCard.cards.rarity === "ultimate" 
+                        ? "Ultimate cards must be listed for at least 1.5 WLD"
+                        : selectedCard.cards.rarity === "legendary"
+                        ? "Legendary cards must be listed for at least 1 WLD"
+                        : "Minimum price: 0.15 WLD"
+                      }
+                    </p>
+                  )}
                 </div>
 
                 <DialogFooter>

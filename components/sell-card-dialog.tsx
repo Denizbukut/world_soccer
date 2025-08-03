@@ -121,18 +121,14 @@ export default function SellCardDialog({ isOpen, onClose, card, username, onSucc
   // Setze den Preis korrekt, wenn sich die Karte ändert oder der Dialog geöffnet wird
   useEffect(() => {
     if (isOpen && card) {
-      console.log("Setting price for card:", card.name, "rarity:", card.rarity, "level:", card.level)
       const defaultPrice = getDefaultPrice(card.rarity, card.level)
-      console.log("Default price calculated:", defaultPrice)
       setPrice(defaultPrice.toString())
     }
   }, [isOpen, card])
   // Standardpreise basierend auf Seltenheit und Level
   function getDefaultPrice(rarity: string, level: number): number {
-    console.log("getDefaultPrice called with rarity:", rarity, "level:", level)
     // Für Ultimate-Karten direkt 1.5 WLD als Starting Price
     if (rarity === "ultimate") {
-      console.log("Card is ultimate, returning 1.5")
       return 1.5
     }
 
@@ -163,7 +159,7 @@ export default function SellCardDialog({ isOpen, onClose, card, username, onSucc
       ? 1
       : 0.15
 
-  console.log("Price validation - card rarity:", card.rarity, "parsedPrice:", parsedPrice, "minWldPrice:", minWldPrice, "isValid:", !isNaN(parsedPrice) && parsedPrice >= minWldPrice)
+
 
   const isValidPrice = !isNaN(parsedPrice) && parsedPrice >= minWldPrice
 

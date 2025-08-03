@@ -23,7 +23,7 @@ type UserCard = {
   name: string
   character: string
   image_url?: string
-  rarity: "common" | "rare" | "epic" | "legendary" | "godlike"
+  rarity: "common" | "rare" | "epic" | "legendary" | "ultimate"
   level: number
   quantity: number
 }
@@ -37,7 +37,7 @@ interface SellCardDialogProps {
 }
 
 export default function SellCardDialog({ isOpen, onClose, card, username, onSuccess }: SellCardDialogProps) {
-  const [price, setPrice] = useState<string>(getDefaultPrice(card.rarity, card.level).toString())
+  const [price, setPrice] = useState<string>("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showSuccess, setShowSuccess] = useState(false)
@@ -117,8 +117,25 @@ export default function SellCardDialog({ isOpen, onClose, card, username, onSucc
 
     fetchPrice()
   }, [])
+
+  // Setze den Preis korrekt, wenn sich die Karte ändert oder der Dialog geöffnet wird
+  useEffect(() => {
+    if (isOpen && card) {
+      console.log("Setting price for card:", card.name, "rarity:", card.rarity, "level:", card.level)
+      const defaultPrice = getDefaultPrice(card.rarity, card.level)
+      console.log("Default price calculated:", defaultPrice)
+      setPrice(defaultPrice.toString())
+    }
+  }, [isOpen, card])
   // Standardpreise basierend auf Seltenheit und Level
   function getDefaultPrice(rarity: string, level: number): number {
+    console.log("getDefaultPrice called with rarity:", rarity, "level:", level)
+    // Für Ultimate-Karten direkt 1.5 WLD als Starting Price
+    if (rarity === "ultimate") {
+      console.log("Card is ultimate, returning 1.5")
+      return 1.5
+    }
+
     const basePrice =
       {
         common: 50,
@@ -137,13 +154,16 @@ export default function SellCardDialog({ isOpen, onClose, card, username, onSucc
 
   // Validiere den Preis
   const parsedPrice = Number.parseFloat(price.replace(",", "."))
-  const minWldPrice = priceUsdPerWLD
-    ? card.rarity === "legendary"
-      ? 1 / priceUsdPerWLD
-      : 0.15 / priceUsdPerWLD
-    : card.rarity === "legendary"
+  
+  // Feste Mindestpreise in WLD (unabhängig vom USD-Preis)
+  const minWldPrice = 
+    card.rarity === "ultimate"
+      ? 1.5
+      : card.rarity === "legendary"
       ? 1
-      : 0.3
+      : 0.15
+
+  console.log("Price validation - card rarity:", card.rarity, "parsedPrice:", parsedPrice, "minWldPrice:", minWldPrice, "isValid:", !isNaN(parsedPrice) && parsedPrice >= minWldPrice)
 
   const isValidPrice = !isNaN(parsedPrice) && parsedPrice >= minWldPrice
 
@@ -232,7 +252,7 @@ export default function SellCardDialog({ isOpen, onClose, card, username, onSucc
       text: "text-yellow-600",
       badge: "bg-amber-500 text-white font-semibold",
     },
-    godlike: {
+    ultimate: {
       border: "border-red-500",
       text: "text-red-600",
       badge: "bg-red-500 text-white font-semibold",

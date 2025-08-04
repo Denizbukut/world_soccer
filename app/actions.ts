@@ -341,34 +341,34 @@ export async function drawCards(username: string, packType: string, count = 1) {
       if (!isLegendary && !isIcon) {
         await incrementMission(username, "open_regular_pack")
         // Neue Draw Rates für Classic Packs (nur Backend, nicht im UI anzeigen)
-        // 75–79: 50.90%
+        // 75–79: 58.3%
         // 80–84: 25.08%
-        // 85: 14.72%
-        // 86: 5.00%
+        // 85: 9.72%
+        // 86: 3.00%
         // 87: 2.00%
         // 88: 1.00%
-        // 89: 0.50%
-        // 90: 0.25%
+        // 89: 0.25%
+        // 90: 0.1%
         // 91: 0.0000000005555%
         // 92+: 0.000000000000000000000444444%
         let rating = 0;
-        if (random < 50.90) {
+        if (random < 58.3) {
           rating = Math.floor(Math.random() * 5) + 75; // 75–79
-        } else if (random < 50.90 + 25.08) {
+        } else if (random < 58.3 + 25.08) {
           rating = Math.floor(Math.random() * 5) + 80; // 80–84
-        } else if (random < 50.90 + 25.08 + 14.72) {
+        } else if (random < 58.3 + 25.08 + 9.72) {
           rating = 85;
-        } else if (random < 50.90 + 25.08 + 14.72 + 5.00) {
+        } else if (random < 58.3 + 25.08 + 9.72 + 3.00) {
           rating = 86;
-        } else if (random < 50.90 + 25.08 + 14.72 + 5.00 + 2.00) {
+        } else if (random < 58.3 + 25.08 + 9.72 + 3.00 + 2.00) {
           rating = 87;
-        } else if (random < 50.90 + 25.08 + 14.72 + 5.00 + 2.00 + 1.00) {
+        } else if (random < 58.3 + 25.08 + 9.72 + 3.00 + 2.00 + 1.00) {
           rating = 88;
-        } else if (random < 50.90 + 25.08 + 14.72 + 5.00 + 2.00 + 1.00 + 0.50) {
+        } else if (random < 58.3 + 25.08 + 9.72 + 3.00 + 2.00 + 1.00 + 0.25) {
           rating = 89;
-        } else if (random < 50.90 + 25.08 + 14.72 + 5.00 + 2.00 + 1.00 + 0.50 + 0.25) {
+        } else if (random < 58.3 + 25.08 + 9.72 + 3.00 + 2.00 + 1.00 + 0.25 + 0.1) {
           rating = 90;
-        } else if (random < 50.90 + 25.08 + 14.72 + 5.00 + 2.00 + 1.00 + 0.50 + 0.25 + 0.0000000005555) {
+        } else if (random < 58.3 + 25.08 + 9.72 + 3.00 + 2.00 + 1.00 + 0.25 + 0.1 + 0.0000000005555) {
           rating = 91;
         } else {
           rating = 92;

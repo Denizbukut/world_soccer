@@ -431,12 +431,12 @@ export async function drawCards(username: string, packType: string, count = 1) {
 
       if (isLegendary) {
         // Neue Draw Rates für Icon Packs (Elite Packs)
-        // Rating 75-79: 15.35%
+        // Rating 75-79: 31.35%
         // Rating 80-84: 26%
-        // Rating 85: 21%
-        // Rating 86: 15.5%
-        // Rating 87: 14%
-        // Rating 88: 6.75%
+        // Rating 85: 14%
+        // Rating 86: 11.5%
+        // Rating 87: 10%
+        // Rating 88: 5.75%
         // Rating 89: 1%
         // Rating 90: 0.25%
         // Rating 91: 0.15%
@@ -445,23 +445,23 @@ export async function drawCards(username: string, packType: string, count = 1) {
         let rating = 0;
         console.log(`📊 Using Icon Pack rates for user ${username}`)
         
-        if (random < 15.35) {
+        if (random < 31.35) {
           rating = Math.floor(Math.random() * 5) + 75; // 75–79
-        } else if (random < 15.35 + 26) {
+        } else if (random < 31.35 + 26) {
           rating = Math.floor(Math.random() * 5) + 80; // 80–84
-        } else if (random < 15.35 + 26 + 21) {
+        } else if (random < 31.35 + 26 + 14) {
           rating = 85;
-        } else if (random < 15.35 + 26 + 21 + 15.5) {
+        } else if (random < 31.35 + 26 + 14 + 11.5) {
           rating = 86;
-        } else if (random < 15.35 + 26 + 21 + 15.5 + 14) {
+        } else if (random < 31.35 + 26 + 14 + 11.5 + 10) {
           rating = 87;
-        } else if (random < 15.35 + 26 + 21 + 15.5 + 14 + 6.75) {
+        } else if (random < 31.35 + 26 + 14 + 11.5 + 10 + 5.75) {
           rating = 88;
-        } else if (random < 15.35 + 26 + 21 + 15.5 + 14 + 6.75 + 1) {
+        } else if (random < 31.35 + 26 + 14 + 11.5 + 10 + 5.75 + 1) {
           rating = 89;
-        } else if (random < 15.35 + 26 + 21 + 15.5 + 14 + 6.75 + 1 + 0.25) {
+        } else if (random < 31.35 + 26 + 14 + 11.5 + 10 + 5.75 + 1 + 0.25) {
           rating = 90;
-        } else if (random < 15.35 + 26 + 21 + 15.5 + 14 + 6.75 + 1 + 0.25 + 0.15) {
+        } else if (random < 31.35 + 26 + 14 + 11.5 + 10 + 5.75 + 1 + 0.25 + 0.15) {
           rating = 91;
         } else {
           rating = 92;

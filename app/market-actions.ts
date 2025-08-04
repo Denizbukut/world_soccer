@@ -1,11 +1,23 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import { getSupabaseServerClient } from "@/lib/supabase"
+import { createClient } from "@supabase/supabase-js"
+
+function createSupabaseServer() {
+  return createClient(
+    process.env.SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+      auth: {
+        persistSession: false,
+      },
+    }
+  )
+}
 
 export async function listCardForSale(userId: string, cardId: string, price: number) {
   try {
-    const supabase = getSupabaseServerClient()
+    const supabase = createSupabaseServer()
 
     // Check if user owns the card
     const { data: userCard, error: userCardError } = await supabase
@@ -22,6 +34,33 @@ export async function listCardForSale(userId: string, cardId: string, price: num
 
     if (userCard.quantity < 1) {
       return { success: false, error: "You don't have enough copies of this card" }
+    }
+
+    // Hole die Karten-Details für die Preisvalidierung
+    const { data: cardDetails, error: cardDetailsError } = await supabase
+      .from("cards")
+      .select("rarity")
+      .eq("id", cardId)
+      .single()
+
+    if (cardDetailsError || !cardDetails) {
+      console.error("Error fetching card details:", cardDetailsError)
+      return { success: false, error: "Failed to fetch card details" }
+    }
+
+    // Preisvalidierung für Ultimate-Karten
+    const minWldPrice = 
+      cardDetails.rarity === "ultimate"
+        ? 1.5
+        : cardDetails.rarity === "legendary"
+        ? 1
+        : 0.15
+
+    if (price < minWldPrice) {
+      return {
+        success: false,
+        error: `Ultimate cards must be listed for at least ${minWldPrice} WLD`
+      }
     }
 
     // Check if card is already listed
@@ -63,7 +102,7 @@ export async function listCardForSale(userId: string, cardId: string, price: num
 
 export async function cancelListing(userId: string, listingId: string) {
   try {
-    const supabase = getSupabaseServerClient()
+    const supabase = createSupabaseServer()
 
     // Check if listing exists and belongs to user
     const { data: listing, error: listingError } = await supabase
@@ -99,7 +138,7 @@ export async function cancelListing(userId: string, listingId: string) {
 
 export async function buyCard(userId: string, listingId: string) {
   try {
-    const supabase = getSupabaseServerClient()
+    const supabase = createSupabaseServer()
 
     // Get the listing
     const { data: listing, error: listingError } = await supabase
@@ -228,7 +267,7 @@ export async function buyCard(userId: string, listingId: string) {
 
 export async function getMarketListings() {
   try {
-    const supabase = getSupabaseServerClient()
+    const supabase = createSupabaseServer()
 
     const { data: listings, error } = await supabase
       .from("market_listings")
@@ -276,7 +315,7 @@ export async function getMarketListings() {
 
 export async function getUserListings(userId: string) {
   try {
-    const supabase = getSupabaseServerClient()
+    const supabase = createSupabaseServer()
 
     const { data: listings, error } = await supabase
       .from("market_listings")
@@ -302,7 +341,7 @@ export async function getUserListings(userId: string) {
 
 export async function getUserPurchaseHistory(userId: string) {
   try {
-    const supabase = getSupabaseServerClient()
+    const supabase = createSupabaseServer()
 
     const { data: purchases, error } = await supabase
       .from("market_listings")
@@ -329,7 +368,7 @@ export async function getUserPurchaseHistory(userId: string) {
 
 export async function getUserSaleHistory(userId: string) {
   try {
-    const supabase = getSupabaseServerClient()
+    const supabase = createSupabaseServer()
 
     const { data: sales, error } = await supabase
       .from("market_listings")

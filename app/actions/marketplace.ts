@@ -602,6 +602,21 @@ export async function createListing(
       return { success: false, error: "Failed to fetch card details" }
     }
 
+    // Preisvalidierung für Ultimate-Karten
+    const minWldPrice = 
+      cardDetails.rarity === "ultimate"
+        ? 1.5
+        : cardDetails.rarity === "legendary"
+        ? 1
+        : 0.15
+
+    if (price < minWldPrice) {
+      return {
+        success: false,
+        error: `Ultimate cards must be listed for at least ${minWldPrice} WLD`
+      }
+    }
+
     // Calculate score based on card rarity
     const scoreForCard = getScoreForRarity(cardDetails.rarity as CardRarity)
 
@@ -1073,7 +1088,34 @@ export async function updateListingPrice(username: string, listingId: string, ne
       return { success: false, error: "Listing not found or already sold" }
     }
 
-    // Validiere den neuen Preis
+    // Hole die Karten-Details für die Preisvalidierung
+    const { data: cardDetails, error: cardDetailsError } = await supabase
+      .from("cards")
+      .select("rarity")
+      .eq("id", listing.card_id)
+      .single()
+
+    if (cardDetailsError || !cardDetails) {
+      console.error("Error fetching card details:", cardDetailsError)
+      return { success: false, error: "Failed to fetch card details" }
+    }
+
+    // Preisvalidierung für Ultimate-Karten
+    const minWldPrice = 
+      cardDetails.rarity === "ultimate"
+        ? 1.5
+        : cardDetails.rarity === "legendary"
+        ? 1
+        : 0.15
+
+    if (newPrice < minWldPrice) {
+      return {
+        success: false,
+        error: `Ultimate cards must be listed for at least ${minWldPrice} WLD`
+      }
+    }
+
+    // Allgemeine Preisvalidierung
     if (newPrice <= 0 || newPrice > 500) {
       return { success: false, error: "Invalid price. Price must be between 0.1 and 500 WLD" }
     }

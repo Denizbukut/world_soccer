@@ -53,8 +53,10 @@ useEffect(() => {
   // Validiere den Preis
   const parsedPrice = Number.parseFloat(price.replace(",", "."))
   const minWldPrice = priceUsdPerWLD
-  ? (cardRarity === "legendary" ? 1 / priceUsdPerWLD : 0.15 / priceUsdPerWLD)
-  : cardRarity === "legendary"
+  ? (cardRarity === "ultimate" ? 1.5 : cardRarity === "legendary" ? 1 / priceUsdPerWLD : 0.15 / priceUsdPerWLD)
+  : cardRarity === "ultimate"
+    ? 1.5
+    : cardRarity === "legendary"
     ? 1
     : 0.3
 

@@ -280,8 +280,14 @@ export default function TradeMenu() {
       minUsdPrice = 1.5
       console.log("Rating 88+ detected, setting min price to $1.50")
     } else if (selectedCard.cards.overall_rating >= 87) {
-      minUsdPrice = 1.0
-      console.log("Rating 87+ detected, setting min price to $1.00")
+      minUsdPrice = 0.75
+      console.log("Rating 87+ detected, setting min price to $0.75")
+    } else if (selectedCard.cards.overall_rating >= 86) {
+      minUsdPrice = 0.65
+      console.log("Rating 86+ detected, setting min price to $0.65")
+    } else if (selectedCard.cards.overall_rating >= 85) {
+      minUsdPrice = 0.55
+      console.log("Rating 85+ detected, setting min price to $0.55")
     } else {
       // Rarity-basierte Preise (nur wenn Rating niedriger ist)
       if (selectedCard.cards.rarity === "ultimate") {
@@ -310,6 +316,10 @@ export default function TradeMenu() {
         cardType = `Rating ${selectedCard.cards.overall_rating} cards`
       } else if (selectedCard.cards.overall_rating >= 87) {
         cardType = `Rating ${selectedCard.cards.overall_rating} cards`
+      } else if (selectedCard.cards.overall_rating >= 86) {
+        cardType = `Rating ${selectedCard.cards.overall_rating} cards`
+      } else if (selectedCard.cards.overall_rating >= 85) {
+        cardType = `Rating ${selectedCard.cards.overall_rating} cards`
       } else {
         cardType = selectedCard.cards.rarity === "ultimate" ? "Ultimate" : 
                   selectedCard.cards.rarity === "legendary" ? "Legendary" : 
@@ -317,7 +327,7 @@ export default function TradeMenu() {
       }
       toast({
         title: "Price too low",
-        description: `${cardType} must be listed for at least $${minUsdPrice.toFixed(2)} (~${minWldPrice.toFixed(3)} WLD)`,
+        description: `${cardType} must be listed for at least ${minWldPrice.toFixed(3)} WLD ($${minUsdPrice.toFixed(2)})`,
         variant: "destructive",
       })
       return

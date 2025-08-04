@@ -62,6 +62,7 @@ type Card = {
   character: string
   image_url?: string
   rarity: "basic" | "rare" | "elite" | "ultimate" | "goat"
+  overall_rating?: number
 }
 
 type MarketListing = {
@@ -1271,6 +1272,7 @@ export default function TradePage() {
             username={user?.username || ""}
             onSuccess={handlePriceUpdateSuccess}
             cardRarity={selectedListing.card.rarity}
+            overallRating={selectedListing.card.overall_rating}
           />
         )}
 

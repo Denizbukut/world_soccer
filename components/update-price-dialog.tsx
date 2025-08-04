@@ -18,6 +18,7 @@ interface UpdatePriceDialogProps {
   username: string
   onSuccess?: () => void
   cardRarity: string
+  overallRating?: number
 }
 
 export default function UpdatePriceDialog({
@@ -28,6 +29,7 @@ export default function UpdatePriceDialog({
   username,
   onSuccess,
   cardRarity,
+  overallRating,
 }: UpdatePriceDialogProps) {
   const [price, setPrice] = useState<string>(currentPrice.toString())
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -52,15 +54,37 @@ useEffect(() => {
 
   // Validiere den Preis
   const parsedPrice = Number.parseFloat(price.replace(",", "."))
-  const minWldPrice = priceUsdPerWLD
-  ? (cardRarity === "ultimate" ? 1.5 / priceUsdPerWLD : cardRarity === "legendary" ? 1 / priceUsdPerWLD : cardRarity === "elite" ? 0.5 / priceUsdPerWLD : 0.15 / priceUsdPerWLD)
-  : cardRarity === "ultimate"
-    ? 1.5
-    : cardRarity === "legendary"
-    ? 1
-    : cardRarity === "elite"
-    ? 0.5
-    : 0.3
+  
+  // Mindestpreise in USD, umgerechnet zu WLD (basierend auf Rating und Rarity)
+  let minUsdPrice = 0.15 // Standard-Mindestpreis
+  
+  // Rating-basierte Preise (höhere Priorität als Rarity)
+  if (overallRating && overallRating >= 91) {
+    minUsdPrice = 3.5
+  } else if (overallRating && overallRating >= 90) {
+    minUsdPrice = 2.5
+  } else if (overallRating && overallRating >= 89) {
+    minUsdPrice = 2.0
+  } else if (overallRating && overallRating >= 88) {
+    minUsdPrice = 1.5
+  } else if (overallRating && overallRating >= 87) {
+    minUsdPrice = 0.75
+  } else if (overallRating && overallRating >= 86) {
+    minUsdPrice = 0.65
+  } else if (overallRating && overallRating >= 85) {
+    minUsdPrice = 0.55
+  } else {
+    // Rarity-basierte Preise (nur wenn Rating niedriger ist)
+    if (cardRarity === "ultimate") {
+      minUsdPrice = 1.5
+    } else if (cardRarity === "legendary") {
+      minUsdPrice = 1.0
+    } else if (cardRarity === "elite") {
+      minUsdPrice = 0.5
+    }
+  }
+  
+  const minWldPrice = priceUsdPerWLD ? minUsdPrice / priceUsdPerWLD : minUsdPrice
 
 
   const isValidPrice =
@@ -137,18 +161,31 @@ useEffect(() => {
               />
             </div>
             {!isValidPrice && (
-                <p className="text-red-500 text-sm">
-  {cardRarity === "ultimate" 
-    ? `Ultimate cards must be listed for at least $1.50 (~${minWldPrice.toFixed(3)} WLD)`
-    : cardRarity === "legendary"
-    ? `Legendary cards must be listed for at least $1.00 (~${minWldPrice.toFixed(3)} WLD)`
-    : cardRarity === "elite"
-    ? `Elite cards must be listed for at least $0.50 (~${minWldPrice.toFixed(3)} WLD)`
-    : `Starting price is ${minWldPrice.toFixed(3)} WLD (~$${(minWldPrice * (priceUsdPerWLD || 1)).toFixed(2)})`
-  }
-</p>
-
-              )}
+              <p className="text-red-500 text-sm">
+                {overallRating && overallRating >= 91
+                  ? `Rating ${overallRating} cards must be listed for at least ${minWldPrice.toFixed(3)} WLD ($${3.50.toFixed(2)})`
+                  : overallRating && overallRating >= 90
+                  ? `Rating ${overallRating} cards must be listed for at least ${minWldPrice.toFixed(3)} WLD ($${2.50.toFixed(2)})`
+                  : overallRating && overallRating >= 89
+                  ? `Rating ${overallRating} cards must be listed for at least ${minWldPrice.toFixed(3)} WLD ($${2.00.toFixed(2)})`
+                  : overallRating && overallRating >= 88
+                  ? `Rating ${overallRating} cards must be listed for at least ${minWldPrice.toFixed(3)} WLD ($${1.50.toFixed(2)})`
+                  : overallRating && overallRating >= 87
+                  ? `Rating ${overallRating} cards must be listed for at least ${minWldPrice.toFixed(3)} WLD ($${0.75.toFixed(2)})`
+                  : overallRating && overallRating >= 86
+                  ? `Rating ${overallRating} cards must be listed for at least ${minWldPrice.toFixed(3)} WLD ($${0.65.toFixed(2)})`
+                  : overallRating && overallRating >= 85
+                  ? `Rating ${overallRating} cards must be listed for at least ${minWldPrice.toFixed(3)} WLD ($${0.55.toFixed(2)})`
+                  : cardRarity === "ultimate"
+                  ? `Ultimate cards must be listed for at least ${minWldPrice.toFixed(3)} WLD ($${1.50.toFixed(2)})`
+                  : cardRarity === "legendary"
+                  ? `Legendary cards must be listed for at least ${minWldPrice.toFixed(3)} WLD ($${1.00.toFixed(2)})`
+                  : cardRarity === "elite"
+                  ? `Elite cards must be listed for at least ${minWldPrice.toFixed(3)} WLD ($${0.50.toFixed(2)})`
+                  : `Starting price is ${minWldPrice.toFixed(3)} WLD ($${(minWldPrice * (priceUsdPerWLD || 1)).toFixed(2)})`
+                }
+              </p>
+            )}
           </div>
 
           {/* Error Message */}

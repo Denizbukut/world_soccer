@@ -33,6 +33,7 @@ type Card = {
   character: string
   image_url?: string
   rarity: "basic" | "rare" | "elite" | "ultimate" | "goat"
+  overall_rating?: number
 }
 
 type MarketListingWithDetails = MarketListing & {
@@ -260,7 +261,7 @@ export async function getMarketListings(page = 1, pageSize = DEFAULT_PAGE_SIZE, 
     // 2. Fetch card details in a single query
     const { data: cards, error: cardsError } = await supabase
       .from("cards")
-      .select("id, name, character, image_url, rarity")
+      .select("id, name, character, image_url, rarity, overall_rating")
       .in("id", cardIds)
 
     if (cardsError) {
@@ -393,7 +394,7 @@ export async function getUserListings(username: string, page = 1, pageSize = DEF
 
     const { data: cards, error: cardsError } = await supabase
       .from("cards")
-      .select("id, name, character, image_url, rarity")
+      .select("id, name, character, image_url, rarity, overall_rating")
       .in("id", cardIds)
 
     if (cardsError) {
@@ -629,7 +630,11 @@ export async function createListing(
     } else if (cardDetails.overall_rating >= 88) {
       minUsdPrice = 1.5
     } else if (cardDetails.overall_rating >= 87) {
-      minUsdPrice = 1.0
+      minUsdPrice = 0.75
+    } else if (cardDetails.overall_rating >= 86) {
+      minUsdPrice = 0.65
+    } else if (cardDetails.overall_rating >= 85) {
+      minUsdPrice = 0.55
     } else {
       // Rarity-basierte Preise (nur wenn Rating niedriger ist)
       if (cardDetails.rarity === "ultimate") {
@@ -654,6 +659,10 @@ export async function createListing(
       } else if (cardDetails.overall_rating >= 88) {
         cardType = `Rating ${cardDetails.overall_rating} cards`
       } else if (cardDetails.overall_rating >= 87) {
+        cardType = `Rating ${cardDetails.overall_rating} cards`
+      } else if (cardDetails.overall_rating >= 86) {
+        cardType = `Rating ${cardDetails.overall_rating} cards`
+      } else if (cardDetails.overall_rating >= 85) {
         cardType = `Rating ${cardDetails.overall_rating} cards`
       } else {
         cardType = cardDetails.rarity === "ultimate" ? "Ultimate" : 
@@ -1141,7 +1150,7 @@ export async function updateListingPrice(username: string, listingId: string, ne
     // Hole die Karten-Details für die Preisvalidierung
     const { data: cardDetails, error: cardDetailsError } = await supabase
       .from("cards")
-      .select("rarity")
+      .select("rarity, overall_rating")
       .eq("id", listing.card_id)
       .single()
 
@@ -1177,7 +1186,11 @@ export async function updateListingPrice(username: string, listingId: string, ne
     } else if (cardDetails.overall_rating >= 88) {
       minUsdPrice = 1.5
     } else if (cardDetails.overall_rating >= 87) {
-      minUsdPrice = 1.0
+      minUsdPrice = 0.75
+    } else if (cardDetails.overall_rating >= 86) {
+      minUsdPrice = 0.65
+    } else if (cardDetails.overall_rating >= 85) {
+      minUsdPrice = 0.55
     } else {
       // Rarity-basierte Preise (nur wenn Rating niedriger ist)
       if (cardDetails.rarity === "ultimate") {
@@ -1202,6 +1215,10 @@ export async function updateListingPrice(username: string, listingId: string, ne
       } else if (cardDetails.overall_rating >= 88) {
         cardType = `Rating ${cardDetails.overall_rating} cards`
       } else if (cardDetails.overall_rating >= 87) {
+        cardType = `Rating ${cardDetails.overall_rating} cards`
+      } else if (cardDetails.overall_rating >= 86) {
+        cardType = `Rating ${cardDetails.overall_rating} cards`
+      } else if (cardDetails.overall_rating >= 85) {
         cardType = `Rating ${cardDetails.overall_rating} cards`
       } else {
         cardType = cardDetails.rarity === "ultimate" ? "Ultimate" : 

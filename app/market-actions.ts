@@ -75,7 +75,11 @@ export async function listCardForSale(userId: string, cardId: string, price: num
     } else if (cardDetails.overall_rating >= 88) {
       minUsdPrice = 1.5
     } else if (cardDetails.overall_rating >= 87) {
-      minUsdPrice = 1.0
+      minUsdPrice = 0.75
+    } else if (cardDetails.overall_rating >= 86) {
+      minUsdPrice = 0.65
+    } else if (cardDetails.overall_rating >= 85) {
+      minUsdPrice = 0.55
     } else {
       // Rarity-basierte Preise (nur wenn Rating niedriger ist)
       if (cardDetails.rarity === "ultimate") {
@@ -101,6 +105,10 @@ export async function listCardForSale(userId: string, cardId: string, price: num
         cardType = `Rating ${cardDetails.overall_rating} cards`
       } else if (cardDetails.overall_rating >= 87) {
         cardType = `Rating ${cardDetails.overall_rating} cards`
+      } else if (cardDetails.overall_rating >= 86) {
+        cardType = `Rating ${cardDetails.overall_rating} cards`
+      } else if (cardDetails.overall_rating >= 85) {
+        cardType = `Rating ${cardDetails.overall_rating} cards`
       } else {
         cardType = cardDetails.rarity === "ultimate" ? "Ultimate" : 
                   cardDetails.rarity === "legendary" ? "Legendary" : 
@@ -109,7 +117,7 @@ export async function listCardForSale(userId: string, cardId: string, price: num
       
       return {
         success: false,
-        error: `${cardType} must be listed for at least $${minUsdPrice.toFixed(2)} (~${minWldPrice.toFixed(3)} WLD)`
+        error: `${cardType} must be listed for at least ${minWldPrice.toFixed(3)} WLD ($${minUsdPrice.toFixed(2)})`
       }
     }
 

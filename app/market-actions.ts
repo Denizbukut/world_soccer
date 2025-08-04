@@ -39,7 +39,7 @@ export async function listCardForSale(userId: string, cardId: string, price: num
     // Hole die Karten-Details für die Preisvalidierung
     const { data: cardDetails, error: cardDetailsError } = await supabase
       .from("cards")
-      .select("rarity")
+      .select("rarity, overall_rating")
       .eq("id", cardId)
       .single()
 
@@ -48,23 +48,68 @@ export async function listCardForSale(userId: string, cardId: string, price: num
       return { success: false, error: "Failed to fetch card details" }
     }
 
-    // Preisvalidierung für Ultimate-Karten
-    const minWldPrice = 
-      cardDetails.rarity === "ultimate"
-        ? 1.5
-        : cardDetails.rarity === "legendary"
-        ? 1
-        : cardDetails.rarity === "elite"
-        ? 0.5
-        : 0.15
+    // WLD-Preis abrufen für USD-zu-WLD Umrechnung
+    let priceUsdPerWLD = null
+    try {
+      const res = await fetch("https://app-backend.worldcoin.dev/public/v1/miniapps/prices?cryptoCurrencies=WLD&fiatCurrencies=USD")
+      const json = await res.json()
+      const amountStr = json?.result?.prices?.WLD?.USD?.amount
+      const decimals = json?.result?.prices?.WLD?.USD?.decimals
+      if (amountStr && typeof decimals === "number") {
+        priceUsdPerWLD = parseFloat(amountStr) / 10 ** decimals
+      }
+    } catch (error) {
+      console.error("Error fetching WLD price:", error)
+    }
+
+    // Preisvalidierung basierend auf Rating und Rarity (USD umgerechnet zu WLD)
+    let minUsdPrice = 0.15 // Standard-Mindestpreis
+    
+    // Rating-basierte Preise (höhere Priorität als Rarity)
+    if (cardDetails.overall_rating >= 91) {
+      minUsdPrice = 3.5
+    } else if (cardDetails.overall_rating >= 90) {
+      minUsdPrice = 2.5
+    } else if (cardDetails.overall_rating >= 89) {
+      minUsdPrice = 2.0
+    } else if (cardDetails.overall_rating >= 88) {
+      minUsdPrice = 1.5
+    } else if (cardDetails.overall_rating >= 87) {
+      minUsdPrice = 1.0
+    } else {
+      // Rarity-basierte Preise (nur wenn Rating niedriger ist)
+      if (cardDetails.rarity === "ultimate") {
+        minUsdPrice = 1.5
+      } else if (cardDetails.rarity === "legendary") {
+        minUsdPrice = 1.0
+      } else if (cardDetails.rarity === "elite") {
+        minUsdPrice = 0.5
+      }
+    }
+
+    const minWldPrice = priceUsdPerWLD ? minUsdPrice / priceUsdPerWLD : minUsdPrice
 
     if (price < minWldPrice) {
-      const cardType = cardDetails.rarity === "ultimate" ? "Ultimate" : 
-                      cardDetails.rarity === "legendary" ? "Legendary" : 
-                      cardDetails.rarity === "elite" ? "Elite" : "cards"
+      let cardType = "cards"
+      if (cardDetails.overall_rating >= 91) {
+        cardType = `Rating ${cardDetails.overall_rating} cards`
+      } else if (cardDetails.overall_rating >= 90) {
+        cardType = `Rating ${cardDetails.overall_rating} cards`
+      } else if (cardDetails.overall_rating >= 89) {
+        cardType = `Rating ${cardDetails.overall_rating} cards`
+      } else if (cardDetails.overall_rating >= 88) {
+        cardType = `Rating ${cardDetails.overall_rating} cards`
+      } else if (cardDetails.overall_rating >= 87) {
+        cardType = `Rating ${cardDetails.overall_rating} cards`
+      } else {
+        cardType = cardDetails.rarity === "ultimate" ? "Ultimate" : 
+                  cardDetails.rarity === "legendary" ? "Legendary" : 
+                  cardDetails.rarity === "elite" ? "Elite" : "cards"
+      }
+      
       return {
         success: false,
-        error: `${cardType} cards must be listed for at least ${minWldPrice} WLD`
+        error: `${cardType} must be listed for at least $${minUsdPrice.toFixed(2)} (~${minWldPrice.toFixed(3)} WLD)`
       }
     }
 

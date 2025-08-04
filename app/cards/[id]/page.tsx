@@ -35,6 +35,7 @@ interface Card {
   rarity: string
   type?: string
   description?: string
+  overall_rating?: number
 }
 
 // Helper functions to safely convert data to our types
@@ -54,7 +55,7 @@ function toCard(data: unknown): Card | null {
     return null
   }
 
-  return {
+  const result = {
     id: obj.id,
     name: obj.name,
     character: obj.character,
@@ -62,7 +63,14 @@ function toCard(data: unknown): Card | null {
     image_url: typeof obj.image_url === "string" ? obj.image_url : undefined,
     type: typeof obj.type === "string" ? obj.type : undefined,
     description: typeof obj.description === "string" ? obj.description : undefined,
+    overall_rating: typeof obj.overall_rating === "number" ? obj.overall_rating : undefined,
   }
+  
+  console.log("toCard function - input:", obj);
+  console.log("toCard function - output:", result);
+  console.log("toCard function - overall_rating type:", typeof obj.overall_rating, "value:", obj.overall_rating);
+  
+  return result
 }
 
 // Update the toUserCard function to be more lenient and add better logging
@@ -171,7 +179,7 @@ const [cardFromParams, setCardFromParams] = useState<Card | null>(null)
     const searchParams = new URLSearchParams(window.location.search);
     const hasClientData = searchParams.has("name") && searchParams.has("character");
 
-    // 🚫 Card wurde aus der Collection geöffnet → kein Supabase-Request
+    // 🚫 Card wurde aus der Collection geöffnet → lade overall_rating aus der DB
     if (hasClientData) {
       setReadonlyView(true);
 
@@ -183,13 +191,56 @@ const [cardFromParams, setCardFromParams] = useState<Card | null>(null)
       const level = parseInt(searchParams.get("level") || "1", 10);
       const quantity = parseInt(searchParams.get("quantity") || "1", 10);
 
-      setCard({
-        id,
-        name,
-        character,
-        image_url: imageUrl,
-        rarity,
-      });
+      // Lade overall_rating aus der Datenbank
+      const supabase = getSupabaseBrowserClient();
+      if (supabase) {
+        try {
+          const { data: cardData, error: cardError } = await supabase
+            .from("cards")
+            .select("overall_rating")
+            .eq("id", id)
+            .single();
+
+          if (!cardError && cardData) {
+            console.log("Collection card - overall_rating from DB:", cardData.overall_rating);
+            
+            setCard({
+              id,
+              name,
+              character,
+              image_url: imageUrl,
+              rarity,
+              overall_rating: cardData.overall_rating,
+            });
+          } else {
+            console.log("Collection card - no overall_rating found, using default");
+            setCard({
+              id,
+              name,
+              character,
+              image_url: imageUrl,
+              rarity,
+            });
+          }
+        } catch (error) {
+          console.error("Error loading overall_rating for collection card:", error);
+          setCard({
+            id,
+            name,
+            character,
+            image_url: imageUrl,
+            rarity,
+          });
+        }
+      } else {
+        setCard({
+          id,
+          name,
+          character,
+          image_url: imageUrl,
+          rarity,
+        });
+      }
 
       setUserCard({
         id: "virtual",
@@ -226,7 +277,7 @@ const [cardFromParams, setCardFromParams] = useState<Card | null>(null)
       // Card-Daten laden
       const { data: cardData, error: cardError } = await supabase
         .from("cards")
-        .select("*")
+        .select("*, overall_rating")
         .eq("id", actualCardId)
         .single();
 
@@ -242,6 +293,7 @@ const [cardFromParams, setCardFromParams] = useState<Card | null>(null)
 
       // Debug: Log card data
       console.log("Card data from database:", cardData);
+      console.log("Overall rating from database:", cardData?.overall_rating);
 
       const validCard = toCard(cardData);
       if (!validCard) {
@@ -1216,7 +1268,8 @@ const [cardFromParams, setCardFromParams] = useState<Card | null>(null)
             name: card.name,
             character: card.character,
             image_url: card.image_url,
-            rarity: card.rarity as "common" | "rare" | "epic" | "legendary" | "godlike",
+            rarity: card.rarity as "common" | "rare" | "epic" | "elite" | "legendary" | "ultimate",
+            overall_rating: card.overall_rating,
             level: selectedUserCard.level || 1,
             quantity: selectedUserCard.quantity,
           }}

@@ -53,7 +53,7 @@ useEffect(() => {
   // Validiere den Preis
   const parsedPrice = Number.parseFloat(price.replace(",", "."))
   const minWldPrice = priceUsdPerWLD
-  ? (cardRarity === "ultimate" ? 1.5 : cardRarity === "legendary" ? 1 / priceUsdPerWLD : cardRarity === "elite" ? 0.5 / priceUsdPerWLD : 0.15 / priceUsdPerWLD)
+  ? (cardRarity === "ultimate" ? 1.5 / priceUsdPerWLD : cardRarity === "legendary" ? 1 / priceUsdPerWLD : cardRarity === "elite" ? 0.5 / priceUsdPerWLD : 0.15 / priceUsdPerWLD)
   : cardRarity === "ultimate"
     ? 1.5
     : cardRarity === "legendary"
@@ -138,7 +138,14 @@ useEffect(() => {
             </div>
             {!isValidPrice && (
                 <p className="text-red-500 text-sm">
-  {`Starting price is ${minWldPrice.toFixed(3)} WLD (~$${(minWldPrice * (priceUsdPerWLD || 1)).toFixed(2)})`}
+  {cardRarity === "ultimate" 
+    ? `Ultimate cards must be listed for at least $1.50 (~${minWldPrice.toFixed(3)} WLD)`
+    : cardRarity === "legendary"
+    ? `Legendary cards must be listed for at least $1.00 (~${minWldPrice.toFixed(3)} WLD)`
+    : cardRarity === "elite"
+    ? `Elite cards must be listed for at least $0.50 (~${minWldPrice.toFixed(3)} WLD)`
+    : `Starting price is ${minWldPrice.toFixed(3)} WLD (~$${(minWldPrice * (priceUsdPerWLD || 1)).toFixed(2)})`
+  }
 </p>
 
               )}

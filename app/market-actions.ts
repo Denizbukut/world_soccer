@@ -54,12 +54,17 @@ export async function listCardForSale(userId: string, cardId: string, price: num
         ? 1.5
         : cardDetails.rarity === "legendary"
         ? 1
+        : cardDetails.rarity === "elite"
+        ? 0.5
         : 0.15
 
     if (price < minWldPrice) {
+      const cardType = cardDetails.rarity === "ultimate" ? "Ultimate" : 
+                      cardDetails.rarity === "legendary" ? "Legendary" : 
+                      cardDetails.rarity === "elite" ? "Elite" : "cards"
       return {
         success: false,
-        error: `Ultimate cards must be listed for at least ${minWldPrice} WLD`
+        error: `${cardType} cards must be listed for at least ${minWldPrice} WLD`
       }
     }
 

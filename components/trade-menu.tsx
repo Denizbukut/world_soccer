@@ -244,12 +244,17 @@ export default function TradeMenu() {
         ? 1.5
         : selectedCard.cards.rarity === "legendary"
         ? 1
+        : selectedCard.cards.rarity === "elite"
+        ? 0.5
         : 0.15
 
     if (parsedPrice < minWldPrice) {
+      const cardType = selectedCard.cards.rarity === "ultimate" ? "Ultimate" : 
+                      selectedCard.cards.rarity === "legendary" ? "Legendary" : 
+                      selectedCard.cards.rarity === "elite" ? "Elite" : "cards"
       toast({
         title: "Price too low",
-        description: `Ultimate cards must be listed for at least ${minWldPrice} WLD`,
+        description: `${cardType} cards must be listed for at least ${minWldPrice} WLD`,
         variant: "destructive",
       })
       return
@@ -811,17 +816,19 @@ export default function TradeMenu() {
                     className={`p-2 border rounded-md cursor-pointer ${
                       selectedCard?.id === card.id ? "border-orange-600 bg-orange-50" : ""
                     }`}
-                    onClick={() => {
-                      setSelectedCard(card)
-                      // Setze Standardpreis basierend auf Rarity
-                      const defaultPrice = 
-                        card.cards.rarity === "ultimate"
-                          ? "1.5"
-                          : card.cards.rarity === "legendary"
-                          ? "1"
-                          : "0.15"
-                      setPrice(defaultPrice)
-                    }}
+                                         onClick={() => {
+                       setSelectedCard(card)
+                       // Setze Standardpreis basierend auf Rarity
+                       const defaultPrice = 
+                         card.cards.rarity === "ultimate"
+                           ? "1.5"
+                           : card.cards.rarity === "legendary"
+                           ? "1"
+                           : card.cards.rarity === "elite"
+                           ? "0.5"
+                           : "0.15"
+                       setPrice(defaultPrice)
+                     }}
                   >
                     <div className="flex gap-2">
                       <div className="relative w-12 h-16 overflow-hidden rounded-md">
@@ -868,6 +875,8 @@ export default function TradeMenu() {
                       ? "Ultimate cards must be listed for at least 1.5 WLD"
                       : selectedCard.cards.rarity === "legendary"
                       ? "Legendary cards must be listed for at least 1 WLD"
+                      : selectedCard.cards.rarity === "elite"
+                      ? "Elite cards must be listed for at least 0.5 WLD"
                       : "Minimum price: 0.15 WLD"
                     }
                   </p>

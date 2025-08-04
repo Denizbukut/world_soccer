@@ -23,7 +23,7 @@ type UserCard = {
   name: string
   character: string
   image_url?: string
-  rarity: "common" | "rare" | "epic" | "legendary" | "ultimate"
+  rarity: "common" | "rare" | "epic" | "elite" | "legendary" | "ultimate"
   level: number
   quantity: number
 }
@@ -132,6 +132,11 @@ export default function SellCardDialog({ isOpen, onClose, card, username, onSucc
       return 1.5
     }
 
+    // Für Elite-Karten direkt 0.5 WLD als Starting Price
+    if (rarity === "elite") {
+      return 0.5
+    }
+
     const basePrice =
       {
         common: 50,
@@ -157,6 +162,8 @@ export default function SellCardDialog({ isOpen, onClose, card, username, onSucc
       ? 1.5
       : card.rarity === "legendary"
       ? 1
+      : card.rarity === "elite"
+      ? 0.5
       : 0.15
 
 

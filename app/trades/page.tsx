@@ -162,12 +162,17 @@ export default function TradesPage() {
         ? 1.5
         : selectedCard.cards.rarity === "legendary"
         ? 1
+        : selectedCard.cards.rarity === "elite"
+        ? 0.5
         : 0.15
 
     if (parsedPrice < minWldPrice) {
+      const cardType = selectedCard.cards.rarity === "ultimate" ? "Ultimate" : 
+                      selectedCard.cards.rarity === "legendary" ? "Legendary" : 
+                      selectedCard.cards.rarity === "elite" ? "Elite" : "cards"
       toast({
         title: "Price too low",
-        description: `Ultimate cards must be listed for at least ${minWldPrice} WLD`,
+        description: `${cardType} cards must be listed for at least ${minWldPrice} WLD`,
         variant: "destructive",
       })
       return

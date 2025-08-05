@@ -210,7 +210,7 @@ const [cardFromParams, setCardFromParams] = useState<Card | null>(null)
               character,
               image_url: imageUrl,
               rarity,
-              overall_rating: cardData.overall_rating,
+              overall_rating: typeof cardData.overall_rating === 'number' ? cardData.overall_rating : undefined,
             });
           } else {
             console.log("Collection card - no overall_rating found, using default");
@@ -246,8 +246,8 @@ const [cardFromParams, setCardFromParams] = useState<Card | null>(null)
         id: "virtual",
         user_id: user.username,
         card_id: id,
-        quantity,
-        level,
+        quantity: typeof quantity === 'number' ? quantity : 1,
+        level: typeof level === 'number' ? level : 1,
         favorite: false,
       });
 
@@ -390,40 +390,60 @@ const [cardFromParams, setCardFromParams] = useState<Card | null>(null)
   }
 
   // Aktualisiere die handleLevelUp-Funktion, um das maximale Level zu berücksichtigen
-  const handleLevelUp = async () => {
+    const handleLevelUp = async () => {
   if (!user || !card || !userCard) return;
 
-  if (userCard.id === "virtual") {
-    const supabase = getSupabaseBrowserClient();
-    if (!supabase) return;
+  // Prevent multiple simultaneous level up attempts
+  if (levelUpLoading) return;
 
-    const { data, error } = await supabase
-      .from("user_cards")
-      .select("*")
-      .eq("user_id", user.username)
-      .eq("card_id", card.id)
-      .eq("level", Number(userCard.level))
-      .limit(1)
-      .single();
+  // Set loading state immediately to prevent spamming
+  setLevelUpLoading(true);
 
-    if (error || !data) {
-      toast({
-        title: "Level up failed",
-        description: "Could not find this card in your collection.",
-        variant: "destructive",
-      });
+  try {
+    // Wenn es eine "virtual" Karte ist (aus der Collection), lade die echte Karte
+    if (userCard.id === "virtual") {
+      const supabase = getSupabaseBrowserClient();
+      if (!supabase) return;
+
+      const { data, error } = await supabase
+        .from("user_cards")
+        .select("*")
+        .eq("user_id", user.username)
+        .eq("card_id", card.id)
+        .eq("level", Number(userCard.level))
+        .limit(1)
+        .single();
+
+      if (error || !data) {
+        toast({
+          title: "Level up failed",
+          description: "Could not find this card in your collection.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const realCard = toUserCard(data);
+      if (!realCard) return;
+
+      // Verwende die echte Karte für das Level Up
+      await doLevelUp(realCard);
       return;
     }
 
-    const realCard = toUserCard(data);
-    if (!realCard) return;
-
-    setUserCard(realCard);
-    await doLevelUp(realCard); // 👉 Direkt starten
-    return;
+    // Verwende die normale Karte für das Level Up
+    await doLevelUp(userCard);
+  } catch (error) {
+    console.error("Level up error in handleLevelUp:", error);
+    toast({
+      title: "Level Up Failed",
+      description: "Something went wrong during the level up. Please try again.",
+      variant: "destructive",
+    });
+  } finally {
+    // Reset loading state
+    setLevelUpLoading(false);
   }
-
-  await doLevelUp(userCard);
 };
 
   const doLevelUp = async (uc: UserCard) => {
@@ -431,11 +451,6 @@ const [cardFromParams, setCardFromParams] = useState<Card | null>(null)
 
   const supabase = getSupabaseBrowserClient();
   if (!supabase) return;
-
-  // Prevent multiple simultaneous level up attempts
-  if (levelUpLoading) return;
-
-  setLevelUpLoading(true);
 
   // SECURITY: This function now checks the database state before proceeding
   // to prevent users from spamming the level up button and seeing higher levels
@@ -584,8 +599,7 @@ const [cardFromParams, setCardFromParams] = useState<Card | null>(null)
       description: "Something went wrong during the level up. Please try again.",
       variant: "destructive",
     });
-  } finally {
-    setLevelUpLoading(false);
+    throw error; // Re-throw to be caught by handleLevelUp
   }
 };
 
@@ -1191,20 +1205,20 @@ const [cardFromParams, setCardFromParams] = useState<Card | null>(null)
                         </AlertDescription>
                       </Alert>
 
-                      <Button
-                        className={`w-full ${
-                          card.rarity === "godlike"
-  ? "bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600":
-                          card.rarity === "legendary"
-                            ? "bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600"
-                            : card.rarity === "epic"
-                              ? "bg-gradient-to-r from-purple-500 to-fuchsia-500 hover:from-purple-600 hover:to-fuchsia-600"
-                              : "bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600"
-                        }`}
-                        onClick={handleLevelUp}
-                        disabled={levelUpLoading || showLevelUpAnimation}
-                        title={levelUpLoading ? "Processing level up..." : "Level up card"}
-                      >
+                                             <Button
+                         className={`w-full ${
+                           card.rarity === "godlike"
+   ? "bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600":
+                           card.rarity === "legendary"
+                             ? "bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600"
+                             : card.rarity === "epic"
+                               ? "bg-gradient-to-r from-purple-500 to-fuchsia-500 hover:from-purple-600 hover:to-fuchsia-600"
+                               : "bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600"
+                         }`}
+                         onClick={handleLevelUp}
+                         disabled={levelUpLoading || showLevelUpAnimation}
+                         title={levelUpLoading ? "Verarbeite Level Up..." : "Karte aufleveln"}
+                       >
                         {levelUpLoading ? (
                           <div className="flex items-center">
                             <div className="h-4 w-4 border-2 border-t-transparent border-white rounded-full animate-spin mr-2"></div>

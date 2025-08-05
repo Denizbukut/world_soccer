@@ -431,13 +431,13 @@ export async function drawCards(username: string, packType: string, count = 1) {
 
       if (isLegendary) {
         // Neue Draw Rates für Icon Packs (Elite Packs)
-        // Rating 75-79: 31.35%
-        // Rating 80-84: 26%
-        // Rating 85: 14%
-        // Rating 86: 11.5%
+        // Rating 75-79: 24.35%
+        // Rating 80-84: 28%
+        // Rating 85: 16%
+        // Rating 86: 12.5%
         // Rating 87: 10%
-        // Rating 88: 5.75%
-        // Rating 89: 1%
+        // Rating 88: 6.75%
+        // Rating 89: 2%
         // Rating 90: 0.25%
         // Rating 91: 0.15%
         // Rating 92+: 0.000000000000000000000444444%

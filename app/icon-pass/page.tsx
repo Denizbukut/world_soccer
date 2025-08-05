@@ -939,7 +939,7 @@ export default function IconPassPage() {
                 <span className="text-xs text-yellow-800">Rare</span>
               </div>
               <div className="flex items-center gap-1">
-                <span className="text-xs text-yellow-700">40%</span>
+                <span className="text-xs text-yellow-700">45%</span>
                 <ArrowRight className="h-3 w-3 text-yellow-500" />
                 <span className="text-xs text-yellow-700">35%</span>
               </div>
@@ -963,7 +963,7 @@ export default function IconPassPage() {
                 <span className="text-xs text-yellow-800">Ultimate</span>
               </div>
               <div className="flex items-center gap-1">
-                <span className="text-xs text-yellow-700">15%</span>
+                <span className="text-xs text-yellow-700">10%</span>
                 <ArrowRight className="h-3 w-3 text-yellow-500" />
                 <span className="text-xs text-yellow-700">18%</span>
               </div>

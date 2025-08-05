@@ -1148,7 +1148,7 @@ const [showInfo, setShowInfo] = useState(false)
                               </div>
                               <div className="flex justify-between items-center text-sm">
                                 <span className="text-blue-500">Rare</span>
-                                <span className="text-blue-500">{hasIconPass ? "35%" : "40%"}</span>
+                                <span className="text-blue-500">{hasIconPass ? "35%" : "45%"}</span>
                               </div>
                               <div className="flex justify-between items-center text-sm">
                                 <span className="text-purple-500">Elite</span>
@@ -1156,7 +1156,7 @@ const [showInfo, setShowInfo] = useState(false)
                               </div>
                               <div className="flex justify-between items-center text-sm">
                                 <span className="text-amber-500">Ultimate</span>
-                                <span className="text-amber-500">{hasIconPass ? "18%" : "15%"}</span>
+                                <span className="text-amber-500">{hasIconPass ? "18%" : "10%"}</span>
                               </div>
                             </div>
                           </div>

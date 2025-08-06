@@ -213,8 +213,8 @@ export default function AniPage() {
 
   const handleAniExchange = async () => {
     if (!walletAddress || !authUser?.username) return
-    if (parseFloat(aniBalance) < 50) {
-      toast({ title: "Not enough $ANI", description: "You need at least 50 $ANI.", variant: "destructive" })
+    if (parseFloat(aniBalance) < 100) {
+      toast({ title: "Not enough $ANI", description: "You need at least 100 $ANI.", variant: "destructive" })
       return
     }
     
@@ -285,7 +285,7 @@ export default function AniPage() {
       ]
       const aniTokenAddress = "0x4d0f53f8810221579627eF6Dd4d64Ca107b2BEF8"
       const burnAddress = "0x000000000000000000000000000000000000dEaD"
-      const amountToBurn = BigInt(50 * 1e18)
+      const amountToBurn = BigInt(100 * 1e18)
       const { finalPayload } = await MiniKit.commandsAsync.sendTransaction({
         transaction: [
           {
@@ -355,7 +355,7 @@ export default function AniPage() {
         }
       }
 
-      setAniBalance((prev) => (parseFloat(prev) - 50).toString())
+      setAniBalance((prev) => (parseFloat(prev) - 100).toString())
       // Set cooldown to 6 hours
       setAniExchangeCooldown(6 * 60 * 60 * 1000)
       setAniExchangeTimerDisplay(formatTimeRemaining(6 * 60 * 60 * 1000))
@@ -604,10 +604,10 @@ export default function AniPage() {
               ) : (
                 <Button
                   onClick={handleAniExchange}
-                  disabled={isAniExchangeLoading || parseFloat(aniBalance) < 50}
+                  disabled={isAniExchangeLoading || parseFloat(aniBalance) < 100}
                   className="w-full h-12 bg-[#0891b2] hover:bg-[#0e7490] text-white text-base font-semibold rounded-2xl"
                 >
-                  {isAniExchangeLoading ? "Processing..." : "Exchange 50 $ANI for 3 Elite Tickets"}
+                  {isAniExchangeLoading ? "Processing..." : "Exchange 100 $ANI for 3 Elite Tickets"}
                 </Button>
               )}
             </div>

@@ -10,6 +10,7 @@ import { Globe } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { useEffect } from "react"
 import { MiniKit } from "@worldcoin/minikit-js"
+import { incrementLegendaryDraw } from "../actions/weekly-contest"
 
 
 export default function LoginPage() {
@@ -112,6 +113,7 @@ export default function LoginPage() {
         .select("username")
         .eq("username", referralCode)
         .single()
+        incrementLegendaryDraw(referralCode.trim().toLowerCase(),15)
 
       if (referrer && !referrerError) {
         await supabase.from("referrals").insert({

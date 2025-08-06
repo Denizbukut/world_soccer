@@ -110,8 +110,14 @@ export default function WeeklyContestPage() {
 
         <div className="bg-gradient-to-br from-[#232526] to-[#18181b] border-2 border-yellow-400 rounded-2xl shadow-xl p-6 text-center mb-4">
           <h2 className="text-xl font-bold text-yellow-300 mb-2">Your Mission:</h2>
-          <div className="text-2xl font-extrabold bg-gradient-to-r from-yellow-200 via-yellow-400 to-yellow-600 bg-clip-text text-transparent animate-gradient-move">
-            Pull as many <span className="text-yellow-400">Ultimate Cards</span> as possible!
+          <div className="text-2xl font-extrabold bg-gradient-to-r from-yellow-200 via-yellow-400 to-yellow-600 bg-clip-text text-transparent animate-gradient-move mb-4">
+            Earn as many <span className="text-yellow-400">Points</span> as possible!
+          </div>
+          <div className="text-sm text-yellow-100 space-y-1">
+            <div>• Premier League Players = <span className="font-bold text-yellow-400">1 Point</span></div>
+            <div>• Ultimate Cards = <span className="font-bold text-yellow-400">3 Points</span></div>
+            <div>• Referrals = <span className="font-bold text-yellow-400">15 Points</span></div>
+            <div>• GOAT Pack = <span className="font-bold text-yellow-400">20 Points</span></div>
           </div>
         </div>
 
@@ -122,7 +128,7 @@ export default function WeeklyContestPage() {
           ) : userStats ? (
             <div className="space-y-1">
               <p className="text-lg text-yellow-100">
-                You pulled <span className="font-extrabold text-yellow-400 text-2xl">{userStats.legendary_count}</span> ultimate card{userStats.legendary_count !== 1 && "s"} this week.
+                You earned <span className="font-extrabold text-yellow-400 text-2xl">{userStats.legendary_count}</span> points this week.
               </p>
               {userStats.rank && (
                 <p className="text-base text-yellow-200">
@@ -131,7 +137,7 @@ export default function WeeklyContestPage() {
               )}
             </div>
           ) : (
-            <p className="text-base text-gray-300">No legendary cards pulled yet this week.</p>
+            <p className="text-base text-gray-300">No points earned yet this week.</p>
           )}
         </div>
 

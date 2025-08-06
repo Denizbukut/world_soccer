@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
 import { motion } from "framer-motion"
 import { createClient } from "@supabase/supabase-js"
-import Image from "next/image"
+// Removed Next.js Image import - using regular img tags
 import { Globe } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { useEffect } from "react"
@@ -178,12 +178,10 @@ export default function LoginPage() {
       
       {/* Full screen background image using Next.js Image component for better optimization */}
       <div className="absolute inset-0 z-0">
-        <Image
+        <img
           src="https://ani-labs.xyz/world_soccer_login.jpg"
           alt="Login background"
-          fill
-          className="object-cover"
-          priority
+          className="absolute inset-0 w-full h-full object-cover"
         />
       </div>
 

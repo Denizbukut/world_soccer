@@ -1,6 +1,6 @@
 "use client"
 import { motion, AnimatePresence } from "framer-motion"
-import Image from "next/image"
+// Removed Next.js Image import - using regular img tags
 import { useState, useEffect } from "react"
 import confetti from "canvas-confetti"
 import type { Card } from "@/types/card"
@@ -247,13 +247,13 @@ export default function EpicCardReveal({
           <div
             className={`p-1 bg-gradient-to-br ${glowColor} rounded-2xl shadow-[0_0_40px_10px_rgba(255,255,255,0.2)]`}
           >
-            <Image
+            <img
               src={card.image_url || "/placeholder.svg"}
               alt={card.name}
               width={320}
               height={480}
               className="rounded-xl shadow-2xl"
-              onError={(e) => {
+              onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
                 // Fallback to placeholder on error
                 ;(e.target as HTMLImageElement).src = "/vibrant-city-explorer.png"
               }}

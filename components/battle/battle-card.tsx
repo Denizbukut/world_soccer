@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { motion } from "framer-motion"
 import { Heart } from "lucide-react"
-import Image from "next/image"
+// Removed Next.js Image import - using regular img tags
 
 type BattleCardProps = {
   card: any
@@ -80,13 +80,10 @@ export default function BattleCard({ card, isSelected, isTarget, isAnimating, an
     >
       <Card className="overflow-hidden border-0 rounded-xl card-shine">
         <div className="relative aspect-[2/3]">
-          <Image
+          <img
             src={imageSrc || "/placeholder.svg"}
             alt={card.name || "Card"}
-            fill
-            className="object-cover"
-            sizes="(max-width: 768px) 33vw, 150px"
-            priority={false}
+            className="absolute inset-0 w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
 

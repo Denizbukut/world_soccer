@@ -20,7 +20,7 @@ import {
 import { toast } from "@/components/ui/use-toast"
 import { motion } from "framer-motion"
 import { Coins, Tag, ShoppingCart, AlertCircle, Search, Filter, ArrowUpDown, X } from "lucide-react"
-import Image from "next/image"
+// Removed Next.js Image import - using regular img tags
 import { getSupabaseBrowserClient } from "@/lib/supabase"
 import { listCardForSale, getMarketListings, getUserListings, cancelListing, buyCard } from "@/app/market-actions"
 
@@ -725,15 +725,13 @@ export default function TradeMenu() {
                     >
                       <Card className="overflow-hidden border-0 shadow-md">
                         <div className="relative h-40 bg-gradient-to-br from-gray-100 to-gray-200">
-                          <Image
+                          <img
                             src={
                               listing.cards.image_url ||
                               `/placeholder.svg?height=400&width=300&query=${encodeURIComponent(listing.cards.character) || "anime"}%20character`
                             }
                             alt={listing.cards.name}
-                            fill
-                            className="object-cover"
-                            sizes="(max-width: 768px) 100vw, 33vw"
+                            className="absolute inset-0 w-full h-full object-cover"
                           />
                           <div className="absolute top-2 right-2">
                             <Badge className={getRarityColor(listing.cards.rarity)}>{listing.cards.rarity}</Badge>
@@ -811,15 +809,13 @@ export default function TradeMenu() {
                       >
                         <Card className="overflow-hidden border-0 shadow-md">
                           <div className="relative h-40 bg-gradient-to-br from-gray-100 to-gray-200">
-                            <Image
+                            <img
                               src={
                                 listing.cards.image_url ||
                                 `/placeholder.svg?height=400&width=300&query=${encodeURIComponent(listing.cards.character) || "anime"}%20character`
                               }
                               alt={listing.cards.name}
-                              fill
-                              className="object-cover"
-                              sizes="(max-width: 768px) 100vw, 33vw"
+                              className="absolute inset-0 w-full h-full object-cover"
                             />
                             <div className="absolute top-2 right-2">
                               <Badge className={getRarityColor(listing.cards.rarity)}>{listing.cards.rarity}</Badge>
@@ -924,15 +920,13 @@ export default function TradeMenu() {
                   >
                     <div className="flex gap-2">
                       <div className="relative w-12 h-16 overflow-hidden rounded-md">
-                        <Image
+                        <img
                           src={
                             card.cards.image_url ||
                             `/placeholder.svg?height=400&width=300&query=${encodeURIComponent(card.cards.character) || "anime"}%20character`
                           }
                           alt={card.cards.name}
-                          fill
-                          className="object-cover"
-                          sizes="48px"
+                          className="absolute inset-0 w-full h-full object-cover"
                         />
                       </div>
                       <div className="flex-1">
@@ -1014,15 +1008,13 @@ export default function TradeMenu() {
             <>
               <div className="flex gap-4">
                 <div className="relative w-24 h-32 overflow-hidden rounded-md">
-                  <Image
+                  <img
                     src={
                       selectedListing.cards.image_url ||
                       `/placeholder.svg?height=400&width=300&query=${encodeURIComponent(selectedListing.cards.character) || "anime"}%20character`
                     }
                     alt={selectedListing.cards.name}
-                    fill
-                    className="object-cover"
-                    sizes="96px"
+                    className="absolute inset-0 w-full h-full object-cover"
                   />
                 </div>
                 <div>

@@ -3,7 +3,7 @@
 import type React from "react"
 import { useState } from "react"
 import { motion } from "framer-motion"
-import Image from "next/image"
+// Removed Next.js Image import - using regular img tags
 
 interface PokemonStyleCardProps {
   id: string
@@ -89,12 +89,10 @@ export function PokemonStyleCard({
         <div className="relative bg-white rounded-lg overflow-hidden">
           {/* Card image */}
           <div className="relative aspect-[3/4] w-full overflow-hidden">
-            <Image
+            <img
               src={cardImageUrl || "/placeholder.svg"}
               alt={`${name} - ${character}`}
-              fill
-              className="object-cover"
-              priority={false}
+              className="absolute inset-0 w-full h-full object-cover"
               onError={() => setImageError(true)}
             />
 

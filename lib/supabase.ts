@@ -24,3 +24,20 @@ export function getSupabaseBrowserClient() {
 
   return browserClient
 }
+
+// Server-side client function
+export function getSupabaseServerClient() {
+  const supabaseUrl = process.env.SUPABASE_URL
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+  if (!supabaseUrl || !supabaseServiceKey) {
+    console.error("Supabase URL or Service Role Key is missing")
+    throw new Error("Supabase configuration is missing")
+  }
+
+  return createClient(supabaseUrl, supabaseServiceKey, {
+    auth: {
+      persistSession: false,
+    },
+  })
+}

@@ -10,7 +10,7 @@ import { Ticket, Gift, Sparkles, Crown, Clock, ArrowRightLeft, X as LucideX, Sen
 import { toast } from "@/components/ui/use-toast"
 import Link from "next/link"
 import { motion } from "framer-motion"
-import Image from "next/image"
+// Removed Next.js Image import - using regular img tags
 import { XLogo } from "@/components/x-logo"
 
 export default function HomePage() {

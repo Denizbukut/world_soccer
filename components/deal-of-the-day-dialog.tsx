@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { ShoppingBag, X, Ticket, Sparkles, Crown } from "lucide-react"
-import Image from "next/image"
+// Removed Next.js Image import - using regular img tags
 import { Badge } from "@/components/ui/badge"
 import { toast } from "@/components/ui/use-toast"
 import { markDealAsDismissed, markDealAsSeen, purchaseDeal } from "@/app/actions/deals"
@@ -305,14 +305,13 @@ export default function DealOfTheDayDialog({
                     <div
                       className={`absolute inset-0 rounded-lg ${rarityStyle.border} border-2 overflow-hidden transform transition-transform duration-500 hover:scale-105`}
                     >
-                      <Image
+                      <img
                         src={
                           getCloudflareImageUrl(deal.card_image_url) ||
                           `/placeholder.svg?height=400&width=300&query=${encodeURIComponent(deal.card_name || "anime character")}`
                         }
                         alt={deal.card_name || "Card"}
-                        fill
-                        className="object-cover"
+                        className="absolute inset-0 w-full h-full object-cover"
                       />
                     </div>
                     <div className="absolute -bottom-1 left-0 right-0 flex justify-center">

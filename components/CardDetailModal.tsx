@@ -2,7 +2,7 @@
 
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { renderStars } from "@/utils/card-stars";
-import Image from "next/image";
+// Removed Next.js Image import - using regular img tags
 import { Badge } from "@/components/ui/badge";
 
 interface CardDetailModalProps {
@@ -35,11 +35,10 @@ export default function CardDetailModal({ open, onClose, card }: CardDetailModal
       <DialogContent className="sm:max-w-[400px]">
         <div className="flex flex-col items-center">
           <div className="relative w-40 aspect-[3/4] mb-4 rounded-xl overflow-hidden border-2 border-gray-300">
-            <Image
+            <img
               src={imageUrl || "/placeholder.svg"}
               alt={`${name} - ${character}`}
-              fill
-              className="object-cover"
+              className="absolute inset-0 w-full h-full object-cover"
             />
             <div className="absolute bottom-1 left-1 right-1 flex justify-center">
               {renderStars(level, "xs")}

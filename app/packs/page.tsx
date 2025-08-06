@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Ticket, Package, PackageOpen, Sparkles, Crown, ArrowRight } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
 import { PackOpeningAnimation } from "@/components/pack-opening-animation"
-import Image from "next/image"
+// Removed Next.js Image import - using regular img tags
 import { motion } from "framer-motion"
 
 export default function PacksPage() {
@@ -177,7 +177,7 @@ export default function PacksPage() {
                   animate="animate"
                   style={{ filter: "drop-shadow(0 0 8px rgba(34, 197, 94, 0.5))" }}
                 >
-                  <Image src="/regular-summon-pack.png" alt="Basic Pack" fill className="object-cover" />
+                  <img src="/regular-summon-pack.png" alt="Basic Pack" className="absolute inset-0 w-full h-full object-cover" />
                 </motion.div>
               </div>
               <CardContent>
@@ -217,7 +217,7 @@ export default function PacksPage() {
                   animate="animate"
                   style={{ filter: "drop-shadow(0 0 8px rgba(59, 130, 246, 0.5))" }}
                 >
-                  <Image src="/regular-summon-pack.png" alt="Premium Pack" fill className="object-cover" />
+                  <img src="/regular-summon-pack.png" alt="Premium Pack" className="absolute inset-0 w-full h-full object-cover" />
                 </motion.div>
               </div>
               <CardContent>
@@ -261,7 +261,7 @@ export default function PacksPage() {
                     transition: { rotate: { duration: 0.5, repeat: Number.POSITIVE_INFINITY } },
                   }}
                 >
-                  <Image src="/anime-world-legendary-pack.png" alt="Ultimate Pack" fill className="object-cover" />
+                  <img src="/anime-world-legendary-pack.png" alt="Ultimate Pack" className="absolute inset-0 w-full h-full object-cover" />
                 </motion.div>
               </div>
               <CardContent>

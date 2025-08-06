@@ -28,7 +28,7 @@ import { Input } from "@/components/ui/input"
 import { toast } from "@/components/ui/use-toast"
 import { Coins, ShoppingCart, Tag, AlertCircle } from "lucide-react"
 import { motion } from "framer-motion"
-import Image from "next/image"
+// Removed Next.js Image import - using regular img tags
 import Link from "next/link"
 import { listCardForSale } from "../market-actions"
 import { getSupabaseBrowserClient } from "@/lib/supabase"
@@ -353,15 +353,13 @@ export default function TradesPage() {
                           <CardContent className="pb-2">
                             <div className="flex gap-4">
                               <div className="relative w-20 h-28 overflow-hidden rounded-md">
-                                <Image
+                                <img
                                   src={
                                     listing.cards.image_url ||
                                     `/placeholder.svg?height=400&width=300&query=${encodeURIComponent(listing.cards.character) || "/placeholder.svg"}%20anime%20character`
                                   }
                                   alt={listing.cards.name}
-                                  fill
-                                  className="object-cover"
-                                  sizes="80px"
+                                  className="absolute inset-0 w-full h-full object-cover"
                                 />
                               </div>
                               <div className="flex-1">
@@ -440,15 +438,13 @@ export default function TradesPage() {
                             <CardContent className="pb-2">
                               <div className="flex gap-4">
                                 <div className="relative w-20 h-28 overflow-hidden rounded-md">
-                                  <Image
+                                  <img
                                     src={
                                       listing.cards.image_url ||
                                       `/placeholder.svg?height=400&width=300&query=${encodeURIComponent(listing.cards.character) || "/placeholder.svg"}%20anime%20character`
                                     }
                                     alt={listing.cards.name}
-                                    fill
-                                    className="object-cover"
-                                    sizes="80px"
+                                    className="absolute inset-0 w-full h-full object-cover"
                                   />
                                 </div>
                                 <div className="flex-1">
@@ -602,15 +598,13 @@ export default function TradesPage() {
                     >
                       <div className="flex gap-2">
                         <div className="relative w-12 h-16 overflow-hidden rounded-md">
-                          <Image
+                          <img
                             src={
                               card.cards.image_url ||
                               `/placeholder.svg?height=400&width=300&query=${encodeURIComponent(card.cards.character) || "/placeholder.svg"}%20anime%20character`
                             }
                             alt={card.cards.name}
-                            fill
-                            className="object-cover"
-                            sizes="48px"
+                            className="absolute inset-0 w-full h-full object-cover"
                           />
                         </div>
                         <div className="flex-1">
@@ -682,15 +676,13 @@ export default function TradesPage() {
               <>
                 <div className="flex gap-4">
                   <div className="relative w-24 h-32 overflow-hidden rounded-md">
-                    <Image
+                    <img
                       src={
                         selectedListing.cards.image_url ||
                         `/placeholder.svg?height=400&width=300&query=${encodeURIComponent(selectedListing.cards.character) || "/placeholder.svg"}%20anime%20character`
                       }
                       alt={selectedListing.cards.name}
-                      fill
-                      className="object-cover"
-                      sizes="96px"
+                      className="absolute inset-0 w-full h-full object-cover"
                     />
                   </div>
                   <div>

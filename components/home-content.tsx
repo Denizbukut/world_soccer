@@ -16,7 +16,7 @@ import { useRouter } from "next/navigation"
 import { MessageCircle, X } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { formatDistanceToNow } from "date-fns"
-import Image from "next/image"
+// Removed Next.js Image import - using regular img tags
 import {
   Ticket,
   Gift,
@@ -293,7 +293,7 @@ export default function Home() {
   const hasCheckedSpecialDeal = useRef(false) // New ref for special deal
 
   const [showReferralDialog, setShowReferralDialog] = useState(false)
-  // const [currentSlide, setCurrentSlide] = useState(0) // State for slide navigation
+  const [currentSlide, setCurrentSlide] = useState(0) // State for slide navigation
   const [isLoading, setIsLoading] = useState<Record<string, boolean>>({})
   const [buyingBigPack, setBuyingBigPack] = useState(false)
   const [chatExpanded, setChatExpanded] = useState(false)
@@ -861,14 +861,14 @@ const [copied, setCopied] = useState(false)
     }
   }, [user?.username, user?.level, hasPremium])
 
-  // Auto-advance slide effect (commented out - slide functionality disabled)
-  // useEffect(() => {
-  //   const slideInterval = setInterval(() => {
-  //     setCurrentSlide((prev) => (prev === 0 ? 1 : 0))
-  //   }, 5000) // Change slide every 5 seconds
+  // Auto-advance slide effect
+  useEffect(() => {
+    const slideInterval = setInterval(() => {
+      setCurrentSlide((prev) => (prev === 0 ? 1 : 0))
+    }, 5000) // Change slide every 5 seconds
 
-  //   return () => clearInterval(slideInterval)
-  // }, [])
+    return () => clearInterval(slideInterval)
+  }, [])
 
   
 
@@ -1748,96 +1748,24 @@ const [copied, setCopied] = useState(false)
               </Link>
             </div>
             <div className="col-span-2 relative">
-              {/* Referrals Card (Slide functionality commented out) */}
-              <button
-                onClick={() => {
-                  setShowReferralDialog(true);
-                }}
-                className="w-full h-full rounded-xl bg-gradient-to-br from-[#232526] to-[#414345] p-2 shadow-lg flex flex-col items-center justify-center min-h-[70px] text-center font-bold transition border-2 border-yellow-400 relative"
-                type="button"
-              >
-                <div className="w-8 h-8 rounded-full bg-yellow-400 flex items-center justify-center mb-1 border border-yellow-300">
-                  <Gift className="h-5 w-5 text-white" />
-                </div>
-                <div className="text-sm font-bold text-yellow-100">Referrals</div>
-                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow">
-                  NEW BONUS
-                </span>
-              </button>
-              
-              {/* SBC Slide functionality commented out - will be re-enabled later */}
-              {/* 
+              {/* Referrals Slide Only - SBC Disabled */}
               <div className="relative w-full h-full rounded-xl overflow-hidden">
-                <div className="relative w-full h-full">
-                  <motion.div
-                    initial={{ opacity: 1, x: 0 }}
-                    animate={{ opacity: currentSlide === 0 ? 1 : 0, x: currentSlide === 0 ? 0 : -100 }}
-                    transition={{ duration: 0.3 }}
-                    className="absolute inset-0"
-                  >
-                    <button
-                      onClick={() => {
-                        setShowReferralDialog(true);
-                      }}
-                      className="w-full h-full rounded-xl bg-gradient-to-br from-[#232526] to-[#414345] p-2 shadow-lg flex flex-col items-center justify-center min-h-[70px] text-center font-bold transition border-2 border-yellow-400 relative"
-                      type="button"
-                    >
-                      <div className="w-8 h-8 rounded-full bg-yellow-400 flex items-center justify-center mb-1 border border-yellow-300">
-                        <Gift className="h-5 w-5 text-white" />
-                      </div>
-                      <div className="text-sm font-bold text-yellow-100">Referrals</div>
-                      <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow">
-                        NEW BONUS
-                      </span>
-                    </button>
-                  </motion.div>
-
-                  <motion.div
-                    initial={{ opacity: 0, x: 100 }}
-                    animate={{ opacity: currentSlide === 1 ? 1 : 0, x: currentSlide === 1 ? 0 : 100 }}
-                    transition={{ duration: 0.3 }}
-                    className="absolute inset-0"
-                  >
-                    <Link href="/sbc" className="block w-full h-full">
-                      <div className="w-full h-full rounded-xl bg-gradient-to-br from-[#232526] to-[#414345] p-2 shadow-lg flex flex-col items-center justify-center min-h-[70px] text-center font-bold transition border-2 border-purple-400 hover:border-purple-300 relative">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center mb-1 border border-purple-300">
-                          <img src="/sbc-logo.svg" alt="SBC Logo" className="w-5 h-5" />
-                        </div>
-                        <div className="text-sm font-bold text-purple-100">SBC</div>
-                        <span className="absolute -top-2 -right-2 bg-purple-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow">
-                          NEW
-                        </span>
-                      </div>
-                    </Link>
-                  </motion.div>
-                </div>
-
-                <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 flex gap-1">
-                  <button
-                    onClick={() => setCurrentSlide(0)}
-                    className={`w-2 h-2 rounded-full transition-colors ${
-                      currentSlide === 0 ? 'bg-yellow-400' : 'bg-yellow-400/30'
-                    }`}
-                  />
-                  <button
-                    onClick={() => setCurrentSlide(1)}
-                    className={`w-2 h-2 rounded-full transition-colors ${
-                      currentSlide === 1 ? 'bg-purple-400' : 'bg-purple-400/30'
-                    }`}
-                  />
-                </div>
-
-                <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/20">
-                  <motion.div
-                    key={currentSlide}
-                    className="h-full bg-gradient-to-r from-yellow-400 to-purple-400"
-                    initial={{ width: "0%" }}
-                    animate={{ width: "100%" }}
-                    transition={{ duration: 5, ease: "linear" }}
-                  />
-                </div>
+                <button
+                  onClick={() => {
+                    setShowReferralDialog(true);
+                  }}
+                  className="w-full h-full rounded-xl bg-gradient-to-br from-[#232526] to-[#414345] p-2 shadow-lg flex flex-col items-center justify-center min-h-[70px] text-center font-bold transition border-2 border-yellow-400 relative"
+                  type="button"
+                >
+                  <div className="w-8 h-8 rounded-full bg-yellow-400 flex items-center justify-center mb-1 border border-yellow-300">
+                    <Gift className="h-5 w-5 text-white" />
+                  </div>
+                  <div className="text-sm font-bold text-yellow-100">Referrals</div>
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow">
+                    NEW BONUS
+                  </span>
+                </button>
               </div>
-              */}
             </div>
             {/* Deals nebeneinander im Grid */}
             <div className="col-span-6 flex gap-0 w-full">

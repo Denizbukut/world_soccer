@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useRef, useState } from "react"
 import { motion, useMotionValue, useTransform } from "framer-motion"
-import Image from "next/image"
+// Removed Next.js Image import - using regular img tags
 import { renderStars } from "@/utils/card-stars"
 
 interface TiltableCardProps {

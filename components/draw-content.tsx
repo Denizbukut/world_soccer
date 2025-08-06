@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Ticket, Crown, Star, Sword, Zap, X, ArrowUp } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
 import { motion, AnimatePresence, useAnimation, useMotionValue, useTransform } from "framer-motion"
-import Image from "next/image"
+// Removed Next.js Image import - using regular img tags
 import { incrementMission } from "@/app/actions/missions"
 import { incrementLegendaryDraw } from "@/app/actions/weekly-contest"
 import { getSupabaseBrowserClient } from "@/lib/supabase"
@@ -1071,7 +1071,7 @@ const [showInfo, setShowInfo] = useState(false)
                           repeatType: "loop",
                         }}
                       >
-                        <Image
+                        <img
                           src={
                             activeTab === "god"
                               ? "/godpack-removebg-preview.png"
@@ -1082,8 +1082,7 @@ const [showInfo, setShowInfo] = useState(false)
                                   : "/classic_pack.png"
                           }
                           alt="Card Pack"
-                          fill
-                          className="object-contain"
+                          className="absolute inset-0 w-full h-full object-contain"
                         />
                       </motion.div>
 
@@ -1548,7 +1547,7 @@ const [showInfo, setShowInfo] = useState(false)
                           ease: "easeInOut",
                         }}
                       >
-                        <Image
+                        <img
                           src={
                             activeTab === "god"
                               ? "/godpack-removebg-preview.png"
@@ -1559,8 +1558,7 @@ const [showInfo, setShowInfo] = useState(false)
                                   : "/classic_pack.png"
                           }
                           alt="Card Pack"
-                          fill
-                          className="object-contain opacity-80"
+                          className="absolute inset-0 w-full h-full object-contain opacity-80"
                         />
                       </motion.div>
                     ))}
@@ -1726,11 +1724,10 @@ const [showInfo, setShowInfo] = useState(false)
                             src={getCloudflareImageUrl(selectedBulkCard.image_url)}
                           />
                         ) : (
-                          <Image
+                          <img
                             src={getCloudflareImageUrl(selectedBulkCard.image_url)}
                             alt={selectedBulkCard.name}
-                            fill
-                            className="object-cover"
+                            className="absolute inset-0 w-full h-full object-cover"
                           />
                         )}
                       </div>
@@ -1856,7 +1853,7 @@ const [showInfo, setShowInfo] = useState(false)
                       },
                     }}
                   >
-                    <Image
+                    <img
                       src={
                         activeTab === "god"
                           ? "/godpack-removebg-preview.png"
@@ -1867,8 +1864,7 @@ const [showInfo, setShowInfo] = useState(false)
                               : "/classic_pack.png"
                       }
                       alt="Card Pack"
-                      fill
-                      className="object-contain"
+                      className="absolute inset-0 w-full h-full object-contain"
                     />
 
                     {!packOpened && (
@@ -2076,12 +2072,11 @@ const [showInfo, setShowInfo] = useState(false)
                                   src={getCloudflareImageUrl(card.image_url)}
                                 />
                               ) : (
-                                <Image
+                                <img
                                   src={getCloudflareImageUrl(card?.image_url) || "/placeholder.svg?height=400&width=80"}
                                   alt={card?.name || "Card"}
-                                  fill
-                                  className="object-cover object-center"
-                                  onError={(e) => {
+                                  className="absolute inset-0 w-full h-full object-cover object-center"
+                                  onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
                                     ;(e.target as HTMLImageElement).src = "/placeholder.svg?height=400&width=80"
                                   }}
                                 />
@@ -2186,12 +2181,11 @@ const [showInfo, setShowInfo] = useState(false)
                                   src={getCloudflareImageUrl(getCurrentCard()?.image_url)}
                                 />
                               ) : (
-                                <Image
+                                <img
                                   src={getCloudflareImageUrl(getCurrentCard()?.image_url) || "/placeholder.svg?height=300&width=200"}
                                   alt={getCurrentCard()?.name}
-                                  fill
-                                  className="object-cover"
-                                  onError={(e) => {
+                                  className="absolute inset-0 w-full h-full object-cover"
+                                  onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
                                     ;(e.target as HTMLImageElement).src = "/placeholder.svg?height=300&width=200"
                                   }}
                                 />
@@ -2337,11 +2331,10 @@ const [showInfo, setShowInfo] = useState(false)
                               src={getCloudflareImageUrl(getSelectedCard()?.image_url)}
                             />
                           ) : (
-                            <Image
+                            <img
                               src={getCloudflareImageUrl(getSelectedCard()?.image_url) || "/placeholder.svg?height=400&width=300"}
                               alt={getSelectedCard()?.name || "Card"}
-                              fill
-                              className="object-cover object-center rounded-xl"
+                              className="absolute inset-0 w-full h-full object-cover object-center rounded-xl"
                             />
                           )}
                         </motion.div>

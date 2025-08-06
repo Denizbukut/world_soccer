@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input"
 import { renderStars } from "@/utils/card-stars"
 import { LevelSystemInfoDialog } from "@/components/level-system-info-dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import Image from "next/image"
+// Removed Next.js Image import - using regular img tags
 import SquadCardMenu from "@/components/squad-card-menu"
 
 export default function CollectionPage() {

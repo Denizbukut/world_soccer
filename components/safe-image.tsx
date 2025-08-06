@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import Image from "next/image"
+// Removed Next.js Image import - using regular img tags
 import { Skeleton } from "@/components/ui/skeleton"
 
 type SafeImageProps = {
@@ -72,18 +72,14 @@ export function SafeImage({
   return (
     <>
       {loading && <Skeleton className={`${fill ? "absolute inset-0" : "w-full h-full"} ${className}`} />}
-      <Image
+      <img
         src={imgSrc || "/placeholder.svg"}
         alt={alt}
-        fill={fill}
         width={!fill ? width || 300 : undefined}
         height={!fill ? height || 400 : undefined}
-        className={`${className} ${loading ? "opacity-0" : "opacity-100"} transition-opacity duration-300`}
-        sizes={sizes || "(max-width: 768px) 20vw, (max-width: 1200px) 25vw, 33vw"}
-        priority={priority}
+        className={`${fill ? "absolute inset-0 w-full h-full" : ""} ${className} ${loading ? "opacity-0" : "opacity-100"} transition-opacity duration-300`}
         onError={handleError}
         onLoad={handleLoad}
-        unoptimized={imgSrc.startsWith("/anime-images/")} // Don't optimize local images
       />
     </>
   )

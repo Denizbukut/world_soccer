@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import Image from "next/image"
+// Removed Next.js Image import - using regular img tags
 import { Card } from "@/components/ui/card"
 import { getSupabaseBrowserClient } from "@/lib/supabase"
 
@@ -69,11 +69,10 @@ export default function ImageDebug() {
 
                 <div className="relative h-60 mb-2 bg-gray-100 rounded">
                   {card.image_url && (
-                    <Image
+                    <img
                       src={card.image_url || "/placeholder.svg"}
                       alt={card.name}
-                      fill
-                      className="object-contain"
+                      className="absolute inset-0 w-full h-full object-contain"
                       onLoad={() => handleImageLoad(card.id)}
                       onError={() => handleImageError(card.id)}
                     />
@@ -98,7 +97,7 @@ export default function ImageDebug() {
           <div className="mt-8 p-4 bg-gray-100 rounded">
             <h2 className="text-lg font-bold mb-2">Test Placeholder Image</h2>
             <div className="relative h-60 mb-2 bg-gray-200 rounded">
-              <Image src="/determined-ninja.png" alt="Test placeholder" fill className="object-contain" />
+              <img src="/determined-ninja.png" alt="Test placeholder" className="absolute inset-0 w-full h-full object-contain" />
             </div>
           </div>
         </div>

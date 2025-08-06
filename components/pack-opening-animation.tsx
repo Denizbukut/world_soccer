@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
-import Image from "next/image"
+// Removed Next.js Image import - using regular img tags
 import { Button } from "@/components/ui/button"
 import { Sparkles } from "lucide-react"
 import confetti from "canvas-confetti"
@@ -150,11 +150,10 @@ export function PackOpeningAnimation({ isOpen, onClose, packType, cards }: PackO
                 onClick={handleSwipeToOpen}
               >
                 <div className="w-48 h-64 relative rounded-xl overflow-hidden shadow-lg">
-                  <Image
+                  <img
                     src={getPackImage()}
                     alt={`${packType} Pack`}
-                    fill
-                    className="object-cover"
+                    className="absolute inset-0 w-full h-full object-cover"
                   />
                 </div>
                 <motion.div
@@ -205,11 +204,10 @@ export function PackOpeningAnimation({ isOpen, onClose, packType, cards }: PackO
                               transition={{ duration: 0.3, delay: 0.3 }}
                             >
                               <div className="relative w-full h-full">
-                                <Image
+                                <img
                                   src={card.image_url || "/placeholder.svg"}
                                   alt={card.name}
-                                  fill
-                                  className="object-cover"
+                                  className="absolute inset-0 w-full h-full object-cover"
                                 />
                                 <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-60 p-1">
                                   <div className="text-xs text-white font-medium truncate">{card.name}</div>

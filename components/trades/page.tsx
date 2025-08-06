@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
-import Image from "next/image"
+// Removed Next.js Image import - using regular img tags
 import { toast } from "react-hot-toast"
 
 import { api } from "~/trpc/react"
@@ -104,16 +104,14 @@ export default function TradesPage() {
           listings?.map((listing) => (
             <div key={listing.id} className="flex flex-col items-center justify-center rounded-md border p-2">
               <div className="relative h-32 w-24">
-                <Image
+                <img
                   src={
                     listing.cards.image_url && listing.cards.image_url.trim() !== ""
                       ? listing.cards.image_url
                       : `/placeholder.svg?height=400&width=300&query=${encodeURIComponent(listing.cards.character || "anime")}%20character`
                   }
                   alt={listing.cards.name || "Card"}
-                  fill
-                  className="object-cover"
-                  sizes="80px"
+                  className="absolute inset-0 w-full h-full object-cover"
                 />
               </div>
               <p className="text-sm font-bold">{listing.cards.name}</p>
@@ -139,16 +137,14 @@ export default function TradesPage() {
             <div className="flex flex-col gap-4 py-4">
               <div className="flex items-center space-x-2">
                 <div className="relative h-24 w-24">
-                  <Image
+                  <img
                     src={
                       selectedListing.cards.image_url && selectedListing.cards.image_url.trim() !== ""
                         ? selectedListing.cards.image_url
                         : `/placeholder.svg?height=400&width=300&query=${encodeURIComponent(selectedListing.cards.character || "anime")}%20character`
                     }
                     alt={selectedListing.cards.name || "Card"}
-                    fill
-                    className="object-cover"
-                    sizes="96px"
+                    className="absolute inset-0 w-full h-full object-cover"
                   />
                 </div>
                 <div>

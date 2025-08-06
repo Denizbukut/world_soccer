@@ -1,6 +1,6 @@
 "use client"
 import { motion, AnimatePresence } from "framer-motion"
-import Image from "next/image"
+// Removed Next.js Image import - using regular img tags
 import { useState, useEffect } from "react"
 import confetti from "canvas-confetti"
 import type { Card } from "@/types/card"
@@ -258,15 +258,14 @@ export default function CardRevealAnimation({
           <div className="relative w-64 h-96">
             {!isRevealed && (
               <div className="absolute inset-0 rounded-xl overflow-hidden">
-                <Image src="/anime-world-card-back.png" alt="Card Back" fill className="object-cover" sizes="320px" />
+                <img src="/anime-world-card-back.png" alt="Card Back" className="absolute inset-0 w-full h-full object-cover" />
               </div>
             )}
-            <Image
+            <img
               src={card.image_url || "/placeholder.svg"}
               alt={card.name}
-              fill
-              className="object-cover rounded-2xl shadow-2xl"
-              onError={(e) => {
+              className="absolute inset-0 w-full h-full object-cover rounded-2xl shadow-2xl"
+              onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
                 // Fallback to placeholder on error
                 ;(e.target as HTMLImageElement).src = "/vibrant-city-explorer.png"
               }}

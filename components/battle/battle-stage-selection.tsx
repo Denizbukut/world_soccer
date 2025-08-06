@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Coins, Star, Lock, Trophy } from "lucide-react"
 import { motion } from "framer-motion"
-import Image from "next/image"
+// Removed Next.js Image import - using regular img tags
 import { toast } from "@/components/ui/use-toast"
 
 type BattleStageSelectionProps = {
@@ -143,7 +143,7 @@ export default function BattleStageSelection({ stages, loading, onStageSelect, u
                             <CardContent className="py-2">
                               <div className="flex gap-3">
                                 <div className="relative w-16 h-16 overflow-hidden rounded-md">
-                                  <Image
+                                  <img
                                     src={
                                       level.enemy_avatar ||
                                       "/placeholder.svg?height=200&width=200&query=anime%20character" ||
@@ -151,9 +151,7 @@ export default function BattleStageSelection({ stages, loading, onStageSelect, u
                                       "/placeholder.svg"
                                     }
                                     alt={level.enemy_name}
-                                    fill
-                                    className="object-cover"
-                                    sizes="64px"
+                                    className="absolute inset-0 w-full h-full object-cover"
                                   />
                                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
                                 </div>

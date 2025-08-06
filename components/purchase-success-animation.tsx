@@ -1,7 +1,7 @@
 "use client"
 
 import { motion, AnimatePresence } from "framer-motion"
-import Image from "next/image"
+// Removed Next.js Image import - using regular img tags
 import { CheckCircle } from "lucide-react"
 import confetti from "canvas-confetti"
 import { useEffect, useRef } from "react"
@@ -129,11 +129,10 @@ export default function PurchaseSuccessAnimation({
                 transition={{ delay: 1.1, type: "spring" }}
                 className="relative w-40 h-56 mx-auto mb-6 rounded-lg overflow-hidden border-4 border-indigo-500 shadow-lg"
               >
-                <Image
+                <img
                   src={getCloudflareImageUrl(cardImageUrl) || `/placeholder.svg?height=400&width=300&query=${encodeURIComponent(cardName)}`}
                   alt={cardName}
-                  fill
-                  className="object-cover"
+                  className="absolute inset-0 w-full h-full object-cover"
                 />
                 <motion.div
                   initial={{ opacity: 0 }}

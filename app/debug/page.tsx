@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { getSupabaseBrowserClient } from "@/lib/supabase"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import Image from "next/image"
+// Removed Next.js Image import - using regular img tags
 import SafeImage from "@/components/safe-image"
 
 export default function DebugPage() {
@@ -57,7 +57,7 @@ export default function DebugPage() {
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             <div className="relative h-40 w-full">
-              <Image src="/abstract-test.png" alt="Test Placeholder" fill className="object-contain" />
+              <img src="/abstract-test.png" alt="Test Placeholder" className="absolute inset-0 w-full h-full object-contain" />
             </div>
             <p className="text-sm">URL: /placeholder.svg?height=400&width=300&query=test%20character</p>
           </CardContent>

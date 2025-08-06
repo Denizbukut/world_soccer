@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tag, X, AlertCircle, AlertTriangle } from "lucide-react"
-import Image from "next/image"
+// Removed Next.js Image import - using regular img tags
 import { Badge } from "@/components/ui/badge"
 import { toast } from "@/components/ui/use-toast"
 import { createListing } from "@/app/actions/marketplace"
@@ -390,14 +390,13 @@ export default function SellCardDialog({ isOpen, onClose, card, username, onSucc
                             className="absolute inset-0 w-full h-full object-cover"
                             src={getCloudflareImageUrl(card?.image_url)}
                           />
-                  ) : ( <Image
+                  ) : ( <img
                     src={
                       getCloudflareImageUrl(card?.image_url) ||
                       `/placeholder.svg?height=400&width=300&query=${encodeURIComponent(card?.character || "anime character")}`
                     }
                     alt={card?.name || "Card"}
-                    fill
-                    className="object-cover"
+                    className="absolute inset-0 w-full h-full object-cover"
                   />)}
                  
                   <div className="absolute bottom-0 left-0 right-0 flex justify-center">

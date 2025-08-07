@@ -73,9 +73,19 @@ export default function TiltableCard({
   }
   const getCardImageUrl = (imageUrl?: string) => {
     if (!imageUrl) return "/placeholder.svg";
-    // Entferne /world_soccer/ am Anfang!
-    let cleaned = imageUrl.replace(/^\/?world_soccer\//, "");
-    return `https://ani-labs.xyz/${cleaned}`;
+    
+    // Wenn schon http, dann direkt zurückgeben
+    if (imageUrl.startsWith("http")) {
+      return imageUrl
+    }
+    
+    // Remove leading slash and any world_soccer/world-soccer prefix
+    let cleaned = imageUrl.replace(/^\/?(world[-_]soccer\/)/i, "")
+    
+    // Remove any leading slashes to avoid double slashes
+    cleaned = cleaned.replace(/^\/+/, "")
+    
+    return `https://ani-labs.xyz/${encodeURIComponent(cleaned)}`;
   }
 
   const rarityStyle = rarityStyles[rarity as keyof typeof rarityStyles] || rarityStyles.common

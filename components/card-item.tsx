@@ -16,15 +16,16 @@ const getCloudflareImageUrl = (imagePath?: string) => {
     return "/placeholder.svg"
   }
   
-  
-  // Remove leading slash and any world_soccer/world-soccer prefix
-  let cleaned = imagePath.replace(/^\/?(world[-_])?soccer\//i, "")
-  
   // Wenn schon http, dann direkt zurückgeben
-  if (cleaned.startsWith("http")) {
-    return cleaned
+  if (imagePath.startsWith("http")) {
+    return imagePath
   }
   
+  // Remove leading slash and any world_soccer/world-soccer prefix
+  let cleaned = imagePath.replace(/^\/?(world[-_]soccer\/)/i, "")
+  
+  // Remove any leading slashes to avoid double slashes
+  cleaned = cleaned.replace(/^\/+/, "")
   
   // Pub-URL verwenden, KEIN world-soccer/ mehr anhängen!
   const finalUrl = `https://ani-labs.xyz/${encodeURIComponent(cleaned)}`
@@ -207,7 +208,7 @@ const handleCardClick = () => {
             />
           ) : (
             <img
-              src={getCloudflareImageUrl(cardImageUrl)}
+              src={cardImageUrl}
               alt="Card"
               className="w-full h-full object-cover"
               loading={forceEager ? "eager" : "lazy"}

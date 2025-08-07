@@ -106,21 +106,21 @@ type PaginationInfo = {
   pageSize: number
   totalPages: number
 }
-const getCloudflareImageUrl = (imageId?: string) => {
-  if (!imageId) return "/placeholder.svg"
-
-  // Entfernt führenden Slash und "anime-images/" Prefix
-  const cleaned = imageId.replace(/^\/?world_soccer\//, "")
-  console.log(cleaned)
-
+const getCloudflareImageUrl = (imagePath?: string) => {
+  if (!imagePath) {
+    return "/placeholder.svg"
+  }
+  
+  // Remove leading slash and any world_soccer/world-soccer prefix
+  let cleaned = imagePath.replace(/^\/?(world[-_])?soccer\//i, "")
   return `https://ani-labs.xyz/${cleaned}`
 }
 
 // Neue Bild-URL-Logik global für alle Card-Boxen
 const getCardImageUrl = (imageUrl?: string) => {
   if (!imageUrl) return "/placeholder.svg";
-  // Entferne /world_soccer/ am Anfang!
-  let cleaned = imageUrl.replace(/^\/?world_soccer\//, "");
+  // Remove leading slash and any world_soccer/world-soccer prefix
+  let cleaned = imageUrl.replace(/^\/?(world[-_])?soccer\//i, "");
   return `https://ani-labs.xyz/${cleaned}`;
 }
 

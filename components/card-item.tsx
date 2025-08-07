@@ -135,7 +135,7 @@ export function CardItem({
   const router = useRouter()
   const [modalOpen, setModalOpen] = useState(false);
 
-  console.log('CardItem Debug:', { id, name, imageUrl, cardImageUrl, rarity })
+  console.log('CardItem Debug:', { id, name, imageUrl, cardImageUrl, rarity, compact, isCollection })
 
 
 const handleCardClick = () => {

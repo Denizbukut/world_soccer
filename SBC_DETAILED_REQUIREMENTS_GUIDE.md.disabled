@@ -1,0 +1,307 @@
+# SBC Detailed Requirements System
+
+## Overview
+
+The SBC (Squad Building Challenges) system has been enhanced to support detailed requirements that specify exact counts and minimum levels for different card rarities, in addition to overall team rating requirements.
+
+## New Features
+
+### 1. Detailed Rarity and Level Requirements
+
+The system now supports `requirements_rarity_level_counts` which allows specifying:
+- Exact number of cards required for each rarity
+- Minimum level requirement for each rarity
+- Multiple rarity types in a single challenge
+
+### 2. Enhanced Validation
+
+The validation system now checks:
+- Total card count
+- Minimum level requirements per rarity
+- Team rating (average level of all cards)
+- Specific rarity requirements
+
+## Database Schema Changes
+
+### New Column in `sbc_challenges`
+
+```sql
+ALTER TABLE sbc_challenges
+ADD COLUMN requirements_rarity_level_counts JSONB;
+```
+
+This column stores detailed requirements in JSONB format:
+
+```json
+{
+  "Basic": {"count": 7, "min_level": 2},
+  "Rare": {"count": 3, "min_level": 1},
+  "Elite": {"count": 1, "min_level": 1}
+}
+```
+
+## Example: Starter Squad Challenge
+
+The "Starter Squad" challenge now has these specific requirements:
+
+- **Total Players**: 11
+- **Basic Cards**: 7 cards, minimum level 2
+- **Rare Cards**: 3 cards, minimum level 1  
+- **Elite Cards**: 1 card, minimum level 1
+- **Team Rating**: 77+ (average level of all cards)
+
+## Implementation Details
+
+### 1. Database Function: `check_sbc_requirements`
+
+The enhanced validation function now:
+
+```sql
+CREATE OR REPLACE FUNCTION check_sbc_requirements(
+  p_user_id UUID,
+  p_challenge_id INTEGER,
+  p_card_ids TEXT[]
+)
+RETURNS JSONB AS $$
+DECLARE
+  -- ... variables
+  rarity_level_counts JSONB;
+  detailed_requirements JSONB;
+BEGIN
+  -- Get detailed card analysis
+  SELECT jsonb_object_agg(
+    uc.rarity,
+    jsonb_build_object(
+      'count', COUNT(*),
+      'min_level', MIN(uc.level),
+      'max_level', MAX(uc.level),
+      'avg_level', AVG(uc.level)::integer
+    )
+  ) INTO rarity_level_counts
+  FROM user_cards uc
+  WHERE uc.user_id = p_user_id
+    AND uc.card_id = ANY(p_card_ids);
+
+  -- Check detailed requirements
+  IF challenge_record.requirements_rarity_level_counts IS NOT NULL THEN
+    detailed_requirements := challenge_record.requirements_rarity_level_counts;
+    
+    FOR requirement_key, requirement_value IN SELECT * FROM jsonb_each(detailed_requirements)
+    LOOP
+      required_count := (requirement_value->>'count')::integer;
+      required_min_level := (requirement_value->>'min_level')::integer;
+      
+      -- Validate count and minimum level for each rarity
+      -- ... validation logic
+    END LOOP;
+  END IF;
+  
+  RETURN jsonb_build_object(
+    'valid', true,
+    'rarity_counts', rarity_counts,
+    'team_rating', team_rating,
+    'rarity_level_counts', rarity_level_counts
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+```
+
+### 2. TypeScript Interface Updates
+
+```typescript
+export interface SBCChallenge {
+  id: number
+  name: string
+  description: string | null
+  requirements_total_cards: number
+  requirements_min_level: number
+  requirements_specific_rarities?: string[]
+  requirements_team_rating?: number
+  requirements_rarity_level_counts?: Record<string, { 
+    count: number; 
+    min_level: number 
+  }>
+  reward_type?: string
+  reward_amount?: number
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+```
+
+### 3. Frontend Display
+
+The frontend now shows detailed requirements:
+
+```tsx
+const renderDetailedRequirements = (challenge: SBCChallenge) => {
+  if (!challenge.requirements_rarity_level_counts) return null
+
+  return (
+    <div className="space-y-2">
+      <h4 className="font-semibold text-sm text-gray-700">Detailed Requirements:</h4>
+      {Object.entries(challenge.requirements_rarity_level_counts).map(([rarity, requirements]) => (
+        <div key={rarity} className="flex items-center justify-between text-sm">
+          <span className="font-medium">{rarity}:</span>
+          <span>{requirements.count} cards, min level {requirements.min_level}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+```
+
+## Usage Examples
+
+### Creating a New Challenge with Detailed Requirements
+
+```sql
+INSERT INTO sbc_challenges (
+  name, 
+  description, 
+  requirements_total_cards, 
+  requirements_min_level, 
+  requirements_team_rating,
+  requirements_rarity_level_counts,
+  reward_type,
+  reward_amount
+) VALUES (
+  'Balanced Elite Squad',
+  'Build a balanced team with specific elite requirements',
+  11,
+  4,
+  86,
+  '{
+    "Ultimate": {"count": 5, "min_level": 3},
+    "Elite": {"count": 3, "min_level": 6},
+    "Rare": {"count": 3, "min_level": 4}
+  }'::jsonb,
+  'tokens',
+  500
+);
+```
+
+### Validation Response
+
+When validating a squad, the system returns detailed information:
+
+```json
+{
+  "valid": true,
+  "rarity_counts": {
+    "Basic": 7,
+    "Rare": 3,
+    "Elite": 1
+  },
+  "team_rating": 78,
+  "required_rating": 77,
+  "rarity_level_counts": {
+    "Basic": {
+      "count": 7,
+      "min_level": 2,
+      "max_level": 5,
+      "avg_level": 3
+    },
+    "Rare": {
+      "count": 3,
+      "min_level": 1,
+      "max_level": 4,
+      "avg_level": 2
+    },
+    "Elite": {
+      "count": 1,
+      "min_level": 1,
+      "max_level": 1,
+      "avg_level": 1
+    }
+  }
+}
+```
+
+## Migration Scripts
+
+### 1. Update Existing Challenges
+
+```sql
+-- Update Starter Squad with detailed requirements
+UPDATE sbc_challenges 
+SET 
+  requirements_total_cards = 11,
+  requirements_min_level = 1,
+  requirements_team_rating = 77,
+  requirements_rarity_level_counts = '{
+    "Basic": {"count": 7, "min_level": 2},
+    "Rare": {"count": 3, "min_level": 1},
+    "Elite": {"count": 1, "min_level": 1}
+  }'::jsonb
+WHERE name = 'Starter Squad';
+```
+
+### 2. Add New Column to Existing Database
+
+```sql
+-- Add the new column if it doesn't exist
+ALTER TABLE sbc_challenges
+ADD COLUMN IF NOT EXISTS requirements_rarity_level_counts JSONB;
+```
+
+## Best Practices
+
+### 1. Challenge Design
+
+- **Balance Requirements**: Ensure requirements are achievable for the target player level
+- **Clear Descriptions**: Provide clear descriptions of what's required
+- **Progressive Difficulty**: Increase complexity gradually across challenges
+
+### 2. Validation Logic
+
+- **Comprehensive Checks**: Always validate all requirements
+- **Clear Error Messages**: Provide specific feedback on what's missing
+- **Performance**: Use efficient database queries for validation
+
+### 3. Frontend Display
+
+- **Visual Hierarchy**: Use clear visual hierarchy to show requirements
+- **Progress Indicators**: Show progress towards meeting requirements
+- **Helpful Hints**: Provide guidance on how to meet requirements
+
+## Error Handling
+
+The system provides specific error messages for different validation failures:
+
+- **Insufficient Cards**: "Insufficient Basic cards. Required: 7, Provided: 5"
+- **Level Too Low**: "Basic cards do not meet minimum level requirement. Required: 2, Current min: 1"
+- **Team Rating**: "Team rating too low. Required: 77, Current: 75"
+
+## Future Enhancements
+
+### Potential Extensions
+
+1. **Position Requirements**: Add specific position requirements (e.g., 3 defenders, 4 midfielders)
+2. **Chemistry Requirements**: Add team chemistry requirements
+3. **League Requirements**: Add specific league or club requirements
+4. **Dynamic Requirements**: Requirements that change based on user level or progress
+
+### Performance Optimizations
+
+1. **Caching**: Cache validation results for frequently checked squads
+2. **Indexing**: Add database indexes for common query patterns
+3. **Batch Validation**: Validate multiple challenges simultaneously
+
+## Troubleshooting
+
+### Common Issues
+
+1. **JSONB Format Errors**: Ensure proper JSONB syntax in database updates
+2. **Type Mismatches**: Verify TypeScript interfaces match database schema
+3. **Validation Failures**: Check that all requirements are properly defined
+
+### Debug Tools
+
+1. **Squad Analysis Function**: Use `analyze_squad_composition` for detailed squad breakdown
+2. **Enhanced Validation**: Use `check_enhanced_sbc_requirements` for detailed validation results
+3. **Database Logs**: Monitor database logs for validation errors
+
+## Conclusion
+
+The enhanced SBC system now provides granular control over challenge requirements while maintaining backward compatibility. The detailed requirements system allows for more engaging and challenging squad building experiences while providing clear feedback to users about their progress. 

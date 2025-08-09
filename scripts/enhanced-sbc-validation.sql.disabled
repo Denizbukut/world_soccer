@@ -1,0 +1,121 @@
+-- Enhanced SBC validation function with specific level requirements for rarities
+CREATE OR REPLACE FUNCTION check_enhanced_sbc_requirements(
+  p_user_id UUID,
+  p_challenge_id INTEGER,
+  p_card_ids TEXT[]
+)
+RETURNS JSONB AS $$
+DECLARE
+  challenge_record RECORD;
+  user_level INTEGER;
+  card_count INTEGER;
+  rarity_counts JSONB;
+  team_rating INTEGER;
+  rarity_level_checks JSONB;
+  result JSONB;
+BEGIN
+  -- Get challenge requirements
+  SELECT * INTO challenge_record 
+  FROM sbc_challenges 
+  WHERE id = p_challenge_id AND is_active = true;
+  
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('valid', false, 'error', 'Challenge not found');
+  END IF;
+  
+  -- Get user level
+  SELECT level INTO user_level FROM users WHERE id = p_user_id;
+  
+  -- Check user level requirement
+  IF user_level < challenge_record.requirements_min_level THEN
+    RETURN jsonb_build_object('valid', false, 'error', 'User level too low');
+  END IF;
+  
+  -- Check card count
+  IF array_length(p_card_ids, 1) != challenge_record.requirements_total_cards THEN
+    RETURN jsonb_build_object('valid', false, 'error', 'Wrong number of cards');
+  END IF;
+  
+  -- Get detailed card information including levels and rarities
+  SELECT 
+    jsonb_object_agg(uc.rarity, COUNT(*)),
+    AVG(uc.level)::integer,
+    jsonb_object_agg(
+      uc.rarity, 
+      jsonb_build_object(
+        'count', COUNT(*),
+        'min_level', MIN(uc.level),
+        'max_level', MAX(uc.level),
+        'avg_level', AVG(uc.level)::integer
+      )
+    )
+  INTO rarity_counts, team_rating, rarity_level_checks
+  FROM user_cards uc
+  WHERE uc.user_id = p_user_id 
+    AND uc.card_id = ANY(p_card_ids);
+  
+  -- Check specific rarity requirements
+  IF challenge_record.requirements_specific_rarities IS NOT NULL THEN
+    FOR i IN 1..array_length(challenge_record.requirements_specific_rarities, 1) LOOP
+      IF (rarity_counts->>challenge_record.requirements_specific_rarities[i])::integer < 1 THEN
+        RETURN jsonb_build_object('valid', false, 'error', 'Missing required rarity: ' || challenge_record.requirements_specific_rarities[i]);
+      END IF;
+    END LOOP;
+  END IF;
+  
+  -- Check team rating requirement
+  IF challenge_record.requirements_team_rating IS NOT NULL THEN
+    IF team_rating < challenge_record.requirements_team_rating THEN
+      RETURN jsonb_build_object(
+        'valid', false, 
+        'error', 'Team rating too low. Required: ' || challenge_record.requirements_team_rating || ', Current: ' || team_rating,
+        'team_rating', team_rating,
+        'required_rating', challenge_record.requirements_team_rating
+      );
+    END IF;
+  END IF;
+  
+  RETURN jsonb_build_object(
+    'valid', true, 
+    'rarity_counts', rarity_counts, 
+    'team_rating', team_rating,
+    'required_rating', challenge_record.requirements_team_rating,
+    'rarity_level_checks', rarity_level_checks
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Function to get detailed squad analysis
+CREATE OR REPLACE FUNCTION analyze_squad_composition(
+  p_user_id UUID,
+  p_card_ids TEXT[]
+)
+RETURNS JSONB AS $$
+DECLARE
+  squad_analysis JSONB;
+BEGIN
+  SELECT jsonb_build_object(
+    'total_cards', COUNT(*),
+    'team_rating', AVG(level)::integer,
+    'total_level', SUM(level),
+    'rarity_breakdown', jsonb_object_agg(
+      rarity, 
+      jsonb_build_object(
+        'count', COUNT(*),
+        'min_level', MIN(level),
+        'max_level', MAX(level),
+        'avg_level', AVG(level)::integer
+      )
+    ),
+    'level_distribution', jsonb_object_agg(
+      level::text, COUNT(*)
+    )
+  )
+  INTO squad_analysis
+  FROM user_cards uc
+  WHERE uc.user_id = p_user_id 
+    AND uc.card_id = ANY(p_card_ids);
+  
+  RETURN squad_analysis;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER; 

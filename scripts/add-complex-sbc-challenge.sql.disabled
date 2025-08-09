@@ -1,0 +1,53 @@
+-- Add a complex SBC challenge with specific team rating requirements
+INSERT INTO sbc_challenges (
+  name, 
+  description, 
+  difficulty, 
+  rewards_tickets, 
+  rewards_elite_tickets, 
+  rewards_icon_tickets, 
+  special_reward, 
+  requirements_total_cards, 
+  requirements_min_level, 
+  requirements_specific_rarities, 
+  requirements_team_rating
+) VALUES (
+  'Balanced Elite Squad',
+  'Build a balanced team with 5 Level 3 Ultimate cards, 3 Level 6 Elite cards, and 3 Level 4 Rare cards. Total team rating must be 86+',
+  'Hard',
+  300,
+  75,
+  20,
+  'Premium Elite Pack + Exclusive Title',
+  11,
+  4,
+  ARRAY['Ultimate', 'Elite', 'Rare'],
+  86
+);
+
+-- Add another example challenge
+INSERT INTO sbc_challenges (
+  name, 
+  description, 
+  difficulty, 
+  rewards_tickets, 
+  rewards_elite_tickets, 
+  rewards_icon_tickets, 
+  special_reward, 
+  requirements_total_cards, 
+  requirements_min_level, 
+  requirements_specific_rarities, 
+  requirements_team_rating
+) VALUES (
+  'Legendary Powerhouse',
+  'Create a legendary squad with 7 Level 5+ Legendary cards and 4 Level 3+ Elite cards. Team rating must be 92+',
+  'Legendary',
+  800,
+  150,
+  75,
+  'Legendary Pack + Exclusive Avatar + Special Badge',
+  11,
+  6,
+  ARRAY['Legendary', 'Elite'],
+  92
+); 

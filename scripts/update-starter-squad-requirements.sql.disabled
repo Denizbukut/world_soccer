@@ -1,0 +1,42 @@
+-- Update the Starter Squad challenge with detailed requirements
+-- 11 players total, 7 Basic level 2+, 3 Rare level 1+, 1 Elite level 1+, team rating 77
+
+UPDATE sbc_challenges 
+SET 
+  requirements_total_cards = 11,
+  requirements_min_level = 1,
+  requirements_team_rating = 77,
+  requirements_rarity_level_counts = '{
+    "Basic": {"count": 7, "min_level": 2},
+    "Rare": {"count": 3, "min_level": 1},
+    "Elite": {"count": 1, "min_level": 1}
+  }'::jsonb,
+  description = 'Build a balanced team with specific rarity requirements: 7 Basic cards (level 2+), 3 Rare cards (level 1+), 1 Elite card (level 1+), and overall team rating of 77+',
+  reward_type = 'tokens',
+  reward_amount = 100
+WHERE name = 'Starter Squad';
+
+-- Also update the other challenges to have proper team ratings
+UPDATE sbc_challenges 
+SET 
+  requirements_team_rating = 82,
+  description = 'Create an elite team with high-level cards and team rating of 82+',
+  reward_type = 'tokens',
+  reward_amount = 250
+WHERE name = 'Elite Formation';
+
+UPDATE sbc_challenges 
+SET 
+  requirements_team_rating = 88,
+  description = 'Assemble a legendary squad with team rating of 88+',
+  reward_type = 'tokens',
+  reward_amount = 500
+WHERE name = 'Legendary Lineup';
+
+UPDATE sbc_challenges 
+SET 
+  requirements_team_rating = 95,
+  description = 'The ultimate challenge for master collectors with team rating of 95+',
+  reward_type = 'tokens',
+  reward_amount = 1000
+WHERE name = 'Iconic Masters'; 

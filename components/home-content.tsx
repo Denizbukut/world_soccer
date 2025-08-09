@@ -7,6 +7,7 @@ import { claimDailyBonus } from "@/app/actions"
 import { getReferredUsers } from "@/app/actions/referrals"
 import { getDailyDeal, getSpecialDeal } from "@/app/actions/deals" // Import getSpecialDeal
 import { getActiveTimeDiscount } from "@/app/actions/time-discount" // Import time discount function
+import { getSBCChallenges, getUserSBCProgress, type SBCChallenge, type SBCUserProgress } from "@/app/actions/sbc"
 import ProtectedRoute from "@/components/protected-route"
 import MobileNav from "@/components/mobile-nav"
 import { Button } from "@/components/ui/button"
@@ -16,7 +17,7 @@ import { useRouter } from "next/navigation"
 import { MessageCircle, X } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { formatDistanceToNow } from "date-fns"
-// Removed Next.js Image import - using regular img tags
+import Image from "next/image"
 import {
   Ticket,
   Gift,
@@ -36,6 +37,8 @@ import {
   Sparkles,
   ChevronLeft,
   ShoppingBag,
+  Target,
+  Star,
 } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
 import Link from "next/link"
@@ -189,6 +192,69 @@ export default function Home() {
   const [currentAvatarId, setCurrentAvatarId] = useState(1)
   const [currentXpColor, setCurrentXpColor] = useState("pink")
   const [iconTickets, setIconTickets] = useState(0)
+  
+  // SBC State variables
+  const [sbcChallenges, setSbcChallenges] = useState<SBCChallenge[]>([])
+  const [sbcUserProgress, setSbcUserProgress] = useState<SBCUserProgress[]>([])
+  const [sbcLoading, setSbcLoading] = useState(false)
+  
+  // Referrals/SBC Slide system
+  const [referralSbcIndex, setReferralSbcIndex] = useState<number>(1)
+  
+  // SBC Helper functions
+  const isChallengeCompleted = (challengeId: number) => {
+    return sbcUserProgress.some(progress => progress.challenge_id === challengeId && progress.is_completed)
+  }
+
+  const getDifficultyColor = (challenge: SBCChallenge) => {
+    if (challenge.requirements_team_rating) {
+      if (challenge.requirements_team_rating >= 90) return 'bg-red-500'
+      if (challenge.requirements_team_rating >= 80) return 'bg-orange-500'
+      if (challenge.requirements_team_rating >= 70) return 'bg-yellow-500'
+      return 'bg-green-500'
+    }
+    return 'bg-blue-500'
+  }
+
+  const getDifficultyText = (challenge: SBCChallenge) => {
+    if (challenge.requirements_team_rating) {
+      if (challenge.requirements_team_rating >= 90) return 'Legendary'
+      if (challenge.requirements_team_rating >= 80) return 'Hard'
+      if (challenge.requirements_team_rating >= 70) return 'Medium'
+      return 'Easy'
+    }
+    return 'Easy'
+  }
+  
+  const referralSbcSlides = [
+    {
+      key: 'referrals',
+      title: 'Referrals',
+      icon: <Gift className="h-8 w-8 text-yellow-600" />,
+      bg: 'from-[#232526] to-[#414345]',
+      border: 'border-yellow-400',
+      text: 'Invite friends & earn rewards!',
+      action: () => setShowReferralDialog(true),
+      color: 'text-yellow-100',
+      dot: 'bg-yellow-500',
+      badge: 'NEW BONUS',
+    },
+    {
+      key: 'sbc',
+      title: 'WBC',
+      icon: <img src="/sbc-logo.svg" alt="WBC Logo" className="h-8 w-8" />,
+      bg: 'from-purple-600 to-purple-800',
+      border: 'border-purple-400',
+      text: 'Complete squad challenges!',
+      action: () => router.push('/sbc'),
+      color: 'text-purple-100',
+      dot: 'bg-purple-500',
+      progress: sbcLoading ? 'Loading...' : `${sbcChallenges.filter(c => isChallengeCompleted(c.id)).length}/${sbcChallenges.length}`,
+    },
+  ]
+  const handleReferralSbcPrev = () => setReferralSbcIndex((prev) => (prev === 0 ? referralSbcSlides.length - 1 : prev - 1))
+  const handleReferralSbcNext = () => setReferralSbcIndex((prev) => (prev === referralSbcSlides.length - 1 ? 0 : prev + 1))
+
   useEffect(() => {
     if (user?.username) {
       loadUserAvatar()
@@ -521,6 +587,30 @@ const [copied, setCopied] = useState(false)
         }
       }
       loadReferrals()
+    }
+  }, [user?.username])
+
+  // Load SBC data
+  useEffect(() => {
+    if (user?.username) {
+      const loadSBCData = async () => {
+        setSbcLoading(true)
+        try {
+          const [challengesData, progressData] = await Promise.all([
+            getSBCChallenges(),
+            getUserSBCProgress(user.username)
+          ])
+          setSbcChallenges(challengesData)
+          setSbcUserProgress(progressData)
+        } catch (error) {
+          console.error('Error loading SBC data:', error)
+          setSbcChallenges([])
+          setSbcUserProgress([])
+        } finally {
+          setSbcLoading(false)
+        }
+      }
+      loadSBCData()
     }
   }, [user?.username])
 
@@ -1748,23 +1838,68 @@ const [copied, setCopied] = useState(false)
               </Link>
             </div>
             <div className="col-span-2 relative">
-              {/* Referrals Slide Only - SBC Disabled */}
+              {/* Referrals/SBC Slide System */}
               <div className="relative w-full h-full rounded-xl overflow-hidden">
-                <button
-                  onClick={() => {
-                    setShowReferralDialog(true);
-                  }}
-                  className="w-full h-full rounded-xl bg-gradient-to-br from-[#232526] to-[#414345] p-2 shadow-lg flex flex-col items-center justify-center min-h-[70px] text-center font-bold transition border-2 border-yellow-400 relative"
-                  type="button"
-                >
-                  <div className="w-8 h-8 rounded-full bg-yellow-400 flex items-center justify-center mb-1 border border-yellow-300">
-                    <Gift className="h-5 w-5 text-white" />
-                  </div>
-                  <div className="text-sm font-bold text-yellow-100">Referrals</div>
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow">
-                    NEW BONUS
-                  </span>
-                </button>
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={referralSbcSlides[referralSbcIndex].key}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.3 }}
+                    className={`w-full h-full rounded-xl bg-gradient-to-br ${referralSbcSlides[referralSbcIndex].bg} p-2 shadow-lg flex flex-col items-center justify-center min-h-[70px] text-center font-bold border-2 ${referralSbcSlides[referralSbcIndex].border} relative cursor-pointer`}
+                    onClick={referralSbcSlides[referralSbcIndex].action}
+                  >
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center mb-1 border`}>
+                      {referralSbcSlides[referralSbcIndex].icon}
+                    </div>
+                    <div className={`text-sm font-bold ${referralSbcSlides[referralSbcIndex].color}`}>
+                      {referralSbcSlides[referralSbcIndex].title}
+                    </div>
+                    {referralSbcSlides[referralSbcIndex].progress && (
+                      <div className="text-xs text-purple-200 mt-1">
+                        {referralSbcSlides[referralSbcIndex].progress}
+                      </div>
+                    )}
+                    {referralSbcSlides[referralSbcIndex].badge && (
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow">
+                        {referralSbcSlides[referralSbcIndex].badge}
+                      </span>
+                    )}
+                    
+                    {/* Navigation arrows */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleReferralSbcPrev()
+                      }}
+                      className="absolute top-1 left-1 w-4 h-4 bg-white/20 rounded-full flex items-center justify-center text-white text-xs hover:bg-white/30 transition"
+                    >
+                      ‹
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleReferralSbcNext()
+                      }}
+                      className="absolute top-1 right-1 w-4 h-4 bg-white/20 rounded-full flex items-center justify-center text-white text-xs hover:bg-white/30 transition"
+                    >
+                      ›
+                    </button>
+                    
+                    {/* Slide indicators */}
+                    <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 flex space-x-1">
+                      {referralSbcSlides.map((_, index) => (
+                        <div
+                          key={index}
+                          className={`w-1.5 h-1.5 rounded-full transition-colors ${
+                            index === referralSbcIndex ? 'bg-white' : 'bg-white/30'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </motion.div>
+                </AnimatePresence>
               </div>
             </div>
             {/* Deals nebeneinander im Grid */}

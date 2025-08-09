@@ -1,0 +1,98 @@
+-- Update SBC Challenges table to add team rating requirement
+ALTER TABLE sbc_challenges 
+ADD COLUMN IF NOT EXISTS requirements_team_rating INTEGER;
+
+-- Update SBC User Squads table to add team rating
+ALTER TABLE sbc_user_squads 
+ADD COLUMN IF NOT EXISTS team_rating INTEGER NOT NULL DEFAULT 0;
+
+-- Update existing challenges with team rating requirements
+UPDATE sbc_challenges 
+SET requirements_team_rating = 75 
+WHERE name = 'Starter Squad';
+
+UPDATE sbc_challenges 
+SET requirements_team_rating = 82 
+WHERE name = 'Elite Formation';
+
+UPDATE sbc_challenges 
+SET requirements_team_rating = 88 
+WHERE name = 'Legendary Lineup';
+
+UPDATE sbc_challenges 
+SET requirements_team_rating = 95 
+WHERE name = 'Iconic Masters';
+
+-- Update the check_sbc_requirements function
+CREATE OR REPLACE FUNCTION check_sbc_requirements(
+  p_user_id UUID,
+  p_challenge_id INTEGER,
+  p_card_ids TEXT[]
+)
+RETURNS JSONB AS $$
+DECLARE
+  challenge_record RECORD;
+  user_level INTEGER;
+  card_count INTEGER;
+  rarity_counts JSONB;
+  team_rating INTEGER;
+  result JSONB;
+BEGIN
+  -- Get challenge requirements
+  SELECT * INTO challenge_record 
+  FROM sbc_challenges 
+  WHERE id = p_challenge_id AND is_active = true;
+  
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('valid', false, 'error', 'Challenge not found');
+  END IF;
+  
+  -- Get user level
+  SELECT level INTO user_level FROM users WHERE id = p_user_id;
+  
+  -- Check user level requirement
+  IF user_level < challenge_record.requirements_min_level THEN
+    RETURN jsonb_build_object('valid', false, 'error', 'User level too low');
+  END IF;
+  
+  -- Check card count
+  IF array_length(p_card_ids, 1) != challenge_record.requirements_total_cards THEN
+    RETURN jsonb_build_object('valid', false, 'error', 'Wrong number of cards');
+  END IF;
+  
+  -- Get rarity counts and calculate team rating from user cards
+  SELECT 
+    jsonb_object_agg(uc.rarity, COUNT(*)),
+    AVG(uc.level)::integer
+  INTO rarity_counts, team_rating
+  FROM user_cards uc
+  WHERE uc.user_id = p_user_id 
+    AND uc.card_id = ANY(p_card_ids);
+  
+  -- Check specific rarity requirements
+  IF challenge_record.requirements_specific_rarities IS NOT NULL THEN
+    FOR i IN 1..array_length(challenge_record.requirements_specific_rarities, 1) LOOP
+      IF (rarity_counts->>challenge_record.requirements_specific_rarities[i])::integer < 1 THEN
+        RETURN jsonb_build_object('valid', false, 'error', 'Missing required rarity: ' || challenge_record.requirements_specific_rarities[i]);
+      END IF;
+    END LOOP;
+  END IF;
+  
+  -- Check team rating requirement
+  IF challenge_record.requirements_team_rating IS NOT NULL THEN
+    IF team_rating < challenge_record.requirements_team_rating THEN
+      RETURN jsonb_build_object(
+        'valid', false, 
+        'error', 'Team rating too low. Required: ' || challenge_record.requirements_team_rating || ', Current: ' || team_rating
+      );
+    END IF;
+  END IF;
+  
+  RETURN jsonb_build_object(
+    'valid', true, 
+    'rarity_counts', rarity_counts, 
+    'team_rating', team_rating,
+    'required_rating', challenge_record.requirements_team_rating
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER; 

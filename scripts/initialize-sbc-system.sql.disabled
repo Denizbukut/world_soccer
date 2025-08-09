@@ -1,0 +1,273 @@
+-- Initialize SBC (Squad Building Challenges) System
+-- This script creates all necessary tables, functions, and initial data
+
+-- Create SBC Challenges table
+CREATE TABLE IF NOT EXISTS sbc_challenges (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  description TEXT,
+  requirements_total_cards INTEGER NOT NULL,
+  requirements_min_level INTEGER NOT NULL,
+  requirements_specific_rarities TEXT[],
+  requirements_team_rating INTEGER,
+  requirements_rarity_level_counts JSONB, -- Added for detailed requirements
+  reward_type VARCHAR(50),
+  reward_amount INTEGER,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create SBC User Progress table
+CREATE TABLE IF NOT EXISTS sbc_user_progress (
+  id SERIAL PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  challenge_id INTEGER REFERENCES sbc_challenges(id) ON DELETE CASCADE,
+  is_completed BOOLEAN DEFAULT false,
+  completed_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(user_id, challenge_id)
+);
+
+-- Create SBC User Squads table
+CREATE TABLE IF NOT EXISTS sbc_user_squads (
+  id SERIAL PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  challenge_id INTEGER REFERENCES sbc_challenges(id) ON DELETE CASCADE,
+  squad_name VARCHAR(255),
+  card_ids TEXT[] NOT NULL,
+  total_level INTEGER NOT NULL DEFAULT 0,
+  team_rating INTEGER NOT NULL DEFAULT 0,
+  total_rarity_count JSONB,
+  is_valid BOOLEAN DEFAULT false,
+  submitted_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Enable Row Level Security (RLS)
+ALTER TABLE sbc_challenges ENABLE ROW LEVEL SECURITY;
+ALTER TABLE sbc_user_progress ENABLE ROW LEVEL SECURITY;
+ALTER TABLE sbc_user_squads ENABLE ROW LEVEL SECURITY;
+
+-- Create RLS policies
+-- SBC Challenges: Readable by all authenticated users
+CREATE POLICY "SBC Challenges are viewable by authenticated users" ON sbc_challenges
+  FOR SELECT USING (auth.role() = 'authenticated');
+
+-- SBC User Progress: Users can only see their own progress
+CREATE POLICY "Users can view their own SBC progress" ON sbc_user_progress
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own SBC progress" ON sbc_user_progress
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own SBC progress" ON sbc_user_progress
+  FOR UPDATE USING (auth.uid() = user_id);
+
+-- SBC User Squads: Users can only see their own squads
+CREATE POLICY "Users can view their own SBC squads" ON sbc_user_squads
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own SBC squads" ON sbc_user_squads
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own SBC squads" ON sbc_user_squads
+  FOR UPDATE USING (auth.uid() = user_id);
+
+-- Function to check SBC requirements
+CREATE OR REPLACE FUNCTION check_sbc_requirements(
+  p_user_id UUID,
+  p_challenge_id INTEGER,
+  p_card_ids TEXT[]
+)
+RETURNS JSONB AS $$
+DECLARE
+  challenge_record RECORD;
+  rarity_counts JSONB;
+  team_rating INTEGER;
+  rarity_level_counts JSONB;
+  detailed_requirements JSONB;
+  requirement_key TEXT;
+  requirement_value JSONB;
+  required_count INTEGER;
+  required_min_level INTEGER;
+  actual_count INTEGER;
+  actual_min_level INTEGER;
+BEGIN
+  -- Get challenge details
+  SELECT * INTO challenge_record
+  FROM sbc_challenges
+  WHERE id = p_challenge_id AND is_active = true;
+  
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('valid', false, 'error', 'Challenge not found');
+  END IF;
+  
+  -- Check total cards
+  IF array_length(p_card_ids, 1) != challenge_record.requirements_total_cards THEN
+    RETURN jsonb_build_object(
+      'valid', false,
+      'error', 'Incorrect number of cards. Required: ' || challenge_record.requirements_total_cards || ', Provided: ' || array_length(p_card_ids, 1)
+    );
+  END IF;
+  
+  -- Get card details and calculate team rating
+  SELECT
+    jsonb_object_agg(uc.rarity, COUNT(*)),
+    AVG(uc.level)::integer,
+    jsonb_object_agg(
+      uc.rarity,
+      jsonb_build_object(
+        'count', COUNT(*),
+        'min_level', MIN(uc.level),
+        'max_level', MAX(uc.level),
+        'avg_level', AVG(uc.level)::integer
+      )
+    )
+  INTO rarity_counts, team_rating, rarity_level_counts
+  FROM user_cards uc
+  WHERE uc.user_id = p_user_id
+    AND uc.card_id = ANY(p_card_ids);
+  
+  -- Check minimum level requirement
+  IF EXISTS (
+    SELECT 1 FROM user_cards uc
+    WHERE uc.user_id = p_user_id
+      AND uc.card_id = ANY(p_card_ids)
+      AND uc.level < challenge_record.requirements_min_level
+  ) THEN
+    RETURN jsonb_build_object(
+      'valid', false,
+      'error', 'Some cards do not meet minimum level requirement of ' || challenge_record.requirements_min_level
+    );
+  END IF;
+  
+  -- Check specific rarities if specified
+  IF challenge_record.requirements_specific_rarities IS NOT NULL THEN
+    IF NOT (
+      SELECT bool_and(rarity = ANY(challenge_record.requirements_specific_rarities))
+      FROM user_cards uc
+      WHERE uc.user_id = p_user_id
+        AND uc.card_id = ANY(p_card_ids)
+    ) THEN
+      RETURN jsonb_build_object(
+        'valid', false,
+        'error', 'All cards must be of specified rarities: ' || array_to_string(challenge_record.requirements_specific_rarities, ', ')
+      );
+    END IF;
+  END IF;
+  
+  -- Check team rating requirement
+  IF challenge_record.requirements_team_rating IS NOT NULL THEN
+    IF team_rating < challenge_record.requirements_team_rating THEN
+      RETURN jsonb_build_object(
+        'valid', false,
+        'error', 'Team rating too low. Required: ' || challenge_record.requirements_team_rating || ', Current: ' || team_rating
+      );
+    END IF;
+  END IF;
+  
+  -- Check detailed rarity and level requirements
+  IF challenge_record.requirements_rarity_level_counts IS NOT NULL THEN
+    detailed_requirements := challenge_record.requirements_rarity_level_counts;
+    
+    FOR requirement_key, requirement_value IN SELECT * FROM jsonb_each(detailed_requirements)
+    LOOP
+      required_count := (requirement_value->>'count')::integer;
+      required_min_level := (requirement_value->>'min_level')::integer;
+      
+      -- Get actual count and min level for this rarity
+      SELECT 
+        (rarity_level_counts->requirement_key->>'count')::integer,
+        (rarity_level_counts->requirement_key->>'min_level')::integer
+      INTO actual_count, actual_min_level
+      FROM jsonb_each(rarity_level_counts) AS rlc(key, value)
+      WHERE key = requirement_key;
+      
+      -- Check count
+      IF actual_count IS NULL OR actual_count < required_count THEN
+        RETURN jsonb_build_object(
+          'valid', false,
+          'error', 'Insufficient ' || requirement_key || ' cards. Required: ' || required_count || ', Provided: ' || COALESCE(actual_count, 0)
+        );
+      END IF;
+      
+      -- Check minimum level
+      IF actual_min_level IS NULL OR actual_min_level < required_min_level THEN
+        RETURN jsonb_build_object(
+          'valid', false,
+          'error', requirement_key || ' cards do not meet minimum level requirement. Required: ' || required_min_level || ', Current min: ' || COALESCE(actual_min_level, 0)
+        );
+      END IF;
+    END LOOP;
+  END IF;
+  
+  RETURN jsonb_build_object(
+    'valid', true,
+    'rarity_counts', rarity_counts,
+    'team_rating', team_rating,
+    'required_rating', challenge_record.requirements_team_rating,
+    'rarity_level_counts', rarity_level_counts
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Function to analyze squad composition
+CREATE OR REPLACE FUNCTION analyze_squad_composition(
+  p_user_id UUID,
+  p_card_ids TEXT[]
+)
+RETURNS JSONB AS $$
+DECLARE
+  total_cards INTEGER;
+  team_rating INTEGER;
+  total_level INTEGER;
+  rarity_breakdown JSONB;
+  level_distribution JSONB;
+BEGIN
+  -- Get squad analysis
+  SELECT
+    COUNT(*),
+    AVG(uc.level)::integer,
+    SUM(uc.level),
+    jsonb_object_agg(uc.rarity, COUNT(*)),
+    jsonb_object_agg(uc.level, COUNT(*))
+  INTO total_cards, team_rating, total_level, rarity_breakdown, level_distribution
+  FROM user_cards uc
+  WHERE uc.user_id = p_user_id
+    AND uc.card_id = ANY(p_card_ids);
+  
+  RETURN jsonb_build_object(
+    'total_cards', total_cards,
+    'team_rating', team_rating,
+    'total_level', total_level,
+    'rarity_breakdown', rarity_breakdown,
+    'level_distribution', level_distribution
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Insert initial challenges with detailed requirements
+INSERT INTO sbc_challenges (name, description, requirements_total_cards, requirements_min_level, requirements_team_rating, requirements_rarity_level_counts, reward_type, reward_amount) VALUES
+('Starter Squad', 'Build a balanced team with specific rarity requirements: 7 Basic cards (level 2+), 3 Rare cards (level 1+), 1 Elite card (level 1+), and overall team rating of 77+', 11, 1, 77, 
+ '{"Basic": {"count": 7, "min_level": 2}, "Rare": {"count": 3, "min_level": 1}, "Elite": {"count": 1, "min_level": 1}}', 
+ 'tokens', 100),
+('Elite Formation', 'Create an elite team with high-level cards and team rating of 82+', 11, 4, 82, NULL, 'tokens', 250),
+('Legendary Lineup', 'Assemble a legendary squad with team rating of 88+', 11, 6, 88, NULL, 'tokens', 500),
+('Iconic Masters', 'The ultimate challenge for master collectors with team rating of 95+', 11, 8, 95, NULL, 'tokens', 1000)
+ON CONFLICT (name) DO UPDATE SET
+  description = EXCLUDED.description,
+  requirements_total_cards = EXCLUDED.requirements_total_cards,
+  requirements_min_level = EXCLUDED.requirements_min_level,
+  requirements_team_rating = EXCLUDED.requirements_team_rating,
+  requirements_rarity_level_counts = EXCLUDED.requirements_rarity_level_counts,
+  reward_type = EXCLUDED.reward_type,
+  reward_amount = EXCLUDED.reward_amount,
+  updated_at = NOW();
+
+-- Create indexes for better performance
+CREATE INDEX IF NOT EXISTS idx_sbc_user_progress_user_id ON sbc_user_progress(user_id);
+CREATE INDEX IF NOT EXISTS idx_sbc_user_progress_challenge_id ON sbc_user_progress(challenge_id);
+CREATE INDEX IF NOT EXISTS idx_sbc_user_squads_user_id ON sbc_user_squads(user_id);
+CREATE INDEX IF NOT EXISTS idx_sbc_user_squads_challenge_id ON sbc_user_squads(challenge_id);
+CREATE INDEX IF NOT EXISTS idx_sbc_challenges_active ON sbc_challenges(is_active); 

@@ -1,0 +1,157 @@
+# SBC Team Rating System Guide
+
+## Übersicht
+
+Das SBC (Squad Building Challenge) System wurde um Team-Rating-Anforderungen erweitert. Jetzt können Challenges nicht nur spezifische Kartenanzahl und Raritäten verlangen, sondern auch ein bestimmtes Gesamt-Rating des Teams.
+
+## Wie funktioniert das Team-Rating?
+
+### Berechnung
+- **Team-Rating = Durchschnittliche Level aller Karten im Squad**
+- Beispiel: 5 Karten mit Level 3, 3 Karten mit Level 6, 3 Karten mit Level 4
+- Gesamt-Level: (5×3) + (3×6) + (3×4) = 15 + 18 + 12 = 45
+- Team-Rating: 45 ÷ 11 = 4.09 → **4** (abgerundet)
+
+### Beispiel-Challenge
+```
+Name: "Balanced Elite Squad"
+Anforderungen:
+- 11 Karten total
+- 5 Level 3 Ultimate Karten
+- 3 Level 6 Elite Karten  
+- 3 Level 4 Rare Karten
+- Team-Rating: 86+
+```
+
+## Datenbank-Änderungen
+
+### Neue Spalten
+1. **sbc_challenges.requirements_team_rating** (INTEGER)
+   - Speichert das erforderliche Team-Rating
+   - NULL = Keine Rating-Anforderung
+
+2. **sbc_user_squads.team_rating** (INTEGER)
+   - Speichert das tatsächliche Team-Rating der Submission
+
+### Erweiterte Funktionen
+1. **check_sbc_requirements()** - Prüft Team-Rating-Anforderungen
+2. **check_enhanced_sbc_requirements()** - Erweiterte Validierung mit detaillierten Raritäts-Level-Checks
+3. **analyze_squad_composition()** - Detaillierte Squad-Analyse
+
+## Frontend-Integration
+
+### Anzeige der Anforderungen
+- Team-Rating wird in der Requirements-Sektion angezeigt
+- Format: "Team Rating: 86+"
+- Icon: Target-Symbol
+
+### Validierung
+- Echtzeit-Prüfung beim Squad-Building
+- Fehlermeldung bei zu niedrigem Rating
+- Anzeige von aktuellem vs. erforderlichem Rating
+
+## SQL-Scripts
+
+### 1. Basis-Update
+```sql
+-- Führe aus: scripts/update-sbc-team-rating.sql
+```
+
+### 2. Neue Challenges hinzufügen
+```sql
+-- Führe aus: scripts/add-complex-sbc-challenge.sql
+```
+
+### 3. Erweiterte Funktionen
+```sql
+-- Führe aus: scripts/enhanced-sbc-validation.sql
+```
+
+## Beispiel-Implementierung
+
+### Challenge erstellen
+```sql
+INSERT INTO sbc_challenges (
+  name, 
+  description, 
+  difficulty, 
+  requirements_total_cards, 
+  requirements_min_level, 
+  requirements_specific_rarities, 
+  requirements_team_rating
+) VALUES (
+  'Ultimate Power Squad',
+  'Build a team with 5 Ultimate, 3 Elite, 3 Rare cards. Rating: 86+',
+  'Hard',
+  11,
+  4,
+  ARRAY['Ultimate', 'Elite', 'Rare'],
+  86
+);
+```
+
+### Squad validieren
+```sql
+SELECT check_sbc_requirements(
+  'user-uuid-here',
+  1, -- challenge_id
+  ARRAY['card1', 'card2', 'card3', ...]
+);
+```
+
+## Typische Team-Rating-Werte
+
+| Schwierigkeit | Typisches Rating | Beschreibung |
+|---------------|------------------|--------------|
+| Easy | 75-80 | Basis-Karten, Level 1-3 |
+| Medium | 80-85 | Mix aus Common/Rare, Level 2-4 |
+| Hard | 85-90 | Elite-Karten, Level 3-6 |
+| Legendary | 90-95 | Legendary/Icon-Karten, Level 5+ |
+
+## Best Practices
+
+### Challenge-Design
+1. **Realistische Rating-Anforderungen** setzen
+2. **Kombination aus Rarität und Level** verwenden
+3. **Progressive Schwierigkeit** implementieren
+4. **Klare Beschreibungen** schreiben
+
+### Validierung
+1. **Echtzeit-Feedback** beim Squad-Building
+2. **Detaillierte Fehlermeldungen** anzeigen
+3. **Squad-Analyse-Tools** bereitstellen
+4. **Progress-Tracking** implementieren
+
+## Troubleshooting
+
+### Häufige Probleme
+1. **Rating zu niedrig**: Karten mit höherem Level verwenden
+2. **Falsche Raritäten**: Prüfe die erforderlichen Raritäten
+3. **Zu viele/wenige Karten**: Prüfe die Gesamtanzahl
+
+### Debugging
+```sql
+-- Squad-Analyse anzeigen
+SELECT analyze_squad_composition('user-uuid', ARRAY['card1', 'card2', ...]);
+
+-- Challenge-Anforderungen prüfen
+SELECT * FROM sbc_challenges WHERE id = 1;
+```
+
+## Zukünftige Erweiterungen
+
+### Geplante Features
+1. **Spezifische Level-Anforderungen** pro Rarität
+2. **Chemie-System** zwischen Karten
+3. **Position-spezifische Anforderungen**
+4. **Dynamische Rating-Berechnung** basierend auf Karten-Eigenschaften
+
+### Beispiel für erweiterte Anforderungen
+```sql
+-- Spezifische Level-Anforderungen pro Rarität
+requirements_rarity_levels JSONB = {
+  "Ultimate": {"min_level": 3, "count": 5},
+  "Elite": {"min_level": 6, "count": 3},
+  "Rare": {"min_level": 4, "count": 3}
+}
+``` 

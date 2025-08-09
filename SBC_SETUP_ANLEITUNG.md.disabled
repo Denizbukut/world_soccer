@@ -1,0 +1,113 @@
+# SBC-System Setup Anleitung
+
+## Problem
+Der Fehler "Error loading SBC data" tritt auf, weil die SBC-Tabellen und Funktionen noch nicht in der Datenbank existieren. Außerdem gibt es einen Fehler mit bereits existierenden RLS-Policies.
+
+## Lösung
+
+### 1. Sicheres Datenbank-Setup ausführen
+
+**Verwende das neue sichere SQL-Script** `scripts/initialize-sbc-system-safe.sql`:
+
+1. **Gehe zu deinem Supabase Dashboard**
+2. **Navigiere zu "SQL Editor"**
+3. **Kopiere den Inhalt von `scripts/initialize-sbc-system-safe.sql`**
+4. **Führe das Script aus**
+
+### 2. Warum das neue Script sicherer ist
+
+Das neue Script:
+- ✅ **Prüft auf existierende Policies** bevor es neue erstellt
+- ✅ **Verwendet `IF NOT EXISTS`** für alle Tabellen und Indizes
+- ✅ **Kann mehrfach ausgeführt werden** ohne Fehler
+- ✅ **Aktualisiert bestehende Challenges** mit den neuen Anforderungen
+
+### 3. Was das Script macht
+
+Das Script erstellt nur die fehlenden Komponenten:
+
+- **Tabellen** (falls nicht vorhanden):
+  - `sbc_challenges` - Speichert die Challenge-Definitionen
+  - `sbc_user_progress` - Speichert den Fortschritt der Benutzer
+  - `sbc_user_squads` - Speichert die eingereichten Teams
+
+- **RLS-Policies** (nur falls nicht vorhanden):
+  - Prüft zuerst, ob Policies bereits existieren
+  - Erstellt nur fehlende Policies
+
+- **Funktionen** (werden aktualisiert):
+  - `check_sbc_requirements` - Validiert Teams gegen Challenge-Anforderungen
+  - `analyze_squad_composition` - Analysiert Team-Zusammensetzung
+
+- **Initiale Daten**:
+  - 4 vordefinierte Challenges mit detaillierten Anforderungen
+
+### 4. Starter Squad Challenge Details
+
+Die "Starter Squad" Challenge hat jetzt diese spezifischen Anforderungen:
+
+- **11 Spieler insgesamt**
+- **7 Basic-Karten, mindestens Level 2**
+- **3 Rare-Karten, mindestens Level 1**
+- **1 Elite-Karte, mindestens Level 1**
+- **Team-Rating muss 77+ sein**
+
+### 5. Überprüfung
+
+Nach dem Ausführen des Scripts solltest du:
+
+1. **Die SBC-Seite neu laden**
+2. **4 Challenges sehen** (Starter Squad, Elite Formation, Legendary Lineup, Iconic Masters)
+3. **Keine Fehler mehr in der Konsole**
+4. **Detaillierte Anforderungen** für die Starter Squad Challenge sehen
+
+### 6. Fehlerbehebung
+
+Falls weiterhin Probleme auftreten:
+
+1. **Überprüfe die Supabase-Logs** im Dashboard
+2. **Stelle sicher, dass RLS aktiviert ist**
+3. **Überprüfe, ob die Funktionen korrekt erstellt wurden**
+4. **Führe das Script erneut aus** - es ist sicher für mehrfache Ausführung
+
+### 7. Nächste Schritte
+
+Nach dem Setup kannst du:
+
+- **Challenges anzeigen** und ihre Anforderungen sehen
+- **Teams erstellen** und validieren lassen
+- **Fortschritt verfolgen** und Belohnungen erhalten
+
+## Technische Details
+
+### Datenbank-Schema
+
+```sql
+-- Challenges mit detaillierten Anforderungen
+sbc_challenges.requirements_rarity_level_counts JSONB
+-- Beispiel: {"Basic": {"count": 7, "min_level": 2}}
+
+-- Benutzer-Fortschritt
+sbc_user_progress.is_completed BOOLEAN
+
+-- Eingereichte Teams
+sbc_user_squads.team_rating INTEGER
+```
+
+### Validierung
+
+Das System prüft automatisch:
+- Korrekte Anzahl von Karten
+- Mindest-Level-Anforderungen pro Seltenheit
+- Gesamt-Team-Rating
+- Spezifische Seltenheits-Anforderungen
+
+### Sicherheit
+
+- Jeder Benutzer sieht nur seine eigenen Daten
+- Alle Datenbank-Operationen sind durch RLS geschützt
+- Funktionen laufen mit `SECURITY DEFINER`
+
+## Wichtiger Hinweis
+
+**Verwende das sichere Script** `scripts/initialize-sbc-system-safe.sql` anstelle des ursprünglichen Scripts, um Konflikte mit bereits existierenden Policies zu vermeiden. 

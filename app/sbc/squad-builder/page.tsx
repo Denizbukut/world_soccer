@@ -49,7 +49,7 @@ export default function SquadBuilderPage({ params }: { params?: { challengeId?: 
     setLoading(true)
     try {
       // Load challenges
-      const challengesData = await getSBCChallenges()
+      const challengesData = await getSBCChallenges(user?.username)
       setChallenges(challengesData)
 
       // Load user cards

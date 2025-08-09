@@ -48,7 +48,7 @@ const MAX_USER_LISTINGS = 3
 const DEFAULT_PAGE_SIZE = 20
 
 // Card rarity type
-type CardRarity = "basic" | "rare" | "elite" | "ultimate" | "goat"
+type CardRarity = "basic" | "rare" | "elite" | "ultimate" | "goat" | "wbc"
 
 // Function to calculate score based on card rarity
 function getScoreForRarity(rarity: CardRarity): number {
@@ -63,6 +63,8 @@ function getScoreForRarity(rarity: CardRarity): number {
       return 25
     case "basic":
       return 5
+    case "wbc":
+      return 250 // WBC-Karten sind sehr wertvoll
     default:
       return 0
   }

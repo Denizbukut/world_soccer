@@ -69,6 +69,13 @@ html {
     animation: godlikePulse 1.8s ease-in-out infinite;
   }
 
+  /* ✅ WBC-Karten mit grünem Rand und Glow */
+  .card-border-wbc {
+    @apply border-[4px] border-emerald-500 rounded-2xl;
+    box-shadow: 0 0 12px rgba(16, 185, 129, 0.6);
+    animation: wbcPulse 2s ease-in-out infinite;
+  }
+
   .anime-text {
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
   }
@@ -80,6 +87,15 @@ html {
   }
   50% {
     box-shadow: 0 0 24px rgba(239, 68, 68, 0.9);
+  }
+}
+
+@keyframes wbcPulse {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 18px rgba(16, 185, 129, 0.8);
   }
 }
 

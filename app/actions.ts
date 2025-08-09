@@ -176,6 +176,8 @@ function getScoreForRarity(rarity: CardRarity): number {
       return 25 // Geändert von 20 auf 25
     case "common":
       return 5 // Unverändert
+    case "wbc":
+      return 250 // WBC-Karten sind sehr wertvoll
     default:
       return 0
   }

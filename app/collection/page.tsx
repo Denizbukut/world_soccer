@@ -199,7 +199,8 @@ export default function CollectionPage() {
       (activeTab === "epic" && (card.rarity?.toLowerCase() === "epic" || card.rarity?.toLowerCase() === "elite")) ||
       (activeTab === "rare" && card.rarity?.toLowerCase() === "rare") ||
       (activeTab === "common" && (card.rarity?.toLowerCase() === "common" || card.rarity?.toLowerCase() === "basic")) ||
-      (activeTab === "goat" && card.rarity?.toLowerCase() === "goat")
+      (activeTab === "goat" && card.rarity?.toLowerCase() === "goat") ||
+      (activeTab === "wbc" && card.rarity?.toLowerCase() === "wbc")
 
     const matchesEpoch = selectedEpoch === "all" || card.epoch === selectedEpoch
 
@@ -670,7 +671,7 @@ export default function CollectionPage() {
           )}
 
           <Tabs defaultValue="all" className="w-full" onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-6 bg-black/80 border-yellow-500 h-9">
+            <TabsList className="grid w-full grid-cols-7 bg-black/80 border-yellow-500 h-9">
               <TabsTrigger value="all" className="text-xs h-7 text-yellow-300 data-[state=active]:bg-yellow-500 data-[state=active]:text-black">
                 All
               </TabsTrigger>
@@ -688,6 +689,9 @@ export default function CollectionPage() {
               </TabsTrigger>
               <TabsTrigger value="common" className="text-xs h-7 text-yellow-300 data-[state=active]:bg-yellow-500 data-[state=active]:text-black">
                 Basic
+              </TabsTrigger>
+              <TabsTrigger value="wbc" className="text-xs h-7 text-yellow-300 data-[state=active]:bg-yellow-500 data-[state=active]:text-black">
+                WBC
               </TabsTrigger>
             </TabsList>
           </Tabs>

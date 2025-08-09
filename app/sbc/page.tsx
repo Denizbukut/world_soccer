@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 import { Target, Users, Star, Trophy, CheckCircle, XCircle, Plus, X, Ticket, Crown, ArrowLeft, Sparkles, Gift, Home } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { getSBCChallenges, getUserSBCProgress, submitSBCSquad, type SBCChallenge, type SBCUserProgress } from '@/app/actions/sbc'
@@ -60,6 +61,7 @@ export default function SBCPage() {
   const [selectedRarityFilter, setSelectedRarityFilter] = useState<string>('all') // Add rarity filter state
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
+  const [showExchangeConfirm, setShowExchangeConfirm] = useState(false)
 
   useEffect(() => {
     loadSBCData()
@@ -70,11 +72,13 @@ export default function SBCPage() {
     
     try {
       setLoading(true)
+      console.log('DEBUG: Loading SBC data for user:', user.username)
       const [challengesData, progressData] = await Promise.all([
-        getSBCChallenges(),
+        getSBCChallenges(user.username),
         getUserSBCProgress(user.id || user.username)
       ])
       
+      console.log('DEBUG: Challenges loaded:', challengesData)
       setChallenges(challengesData)
       setUserProgress(progressData)
     } catch (error) {
@@ -393,6 +397,8 @@ export default function SBCPage() {
         return `${amount} Icon Tickets`
       case 'pack':
         return `${amount}x Pack`
+      case 'wbc_card':
+        return `${amount}x WBC Card`
       default:
         return `${amount} ${rewardType}`
     }
@@ -410,6 +416,8 @@ export default function SBCPage() {
         return <Star className="h-5 w-5 text-yellow-400" />
       case 'pack':
         return <Gift className="h-5 w-5 text-green-500" />
+      case 'wbc_card':
+        return <Crown className="h-5 w-5 text-emerald-500" />
       default:
         return <Gift className="h-5 w-5 text-gray-400" />
     }
@@ -734,7 +742,7 @@ export default function SBCPage() {
                   alt="SBC Logo" 
                   className="w-8 h-8"
                 />
-                <h1 className="text-2xl font-bold text-white">{selectedChallenge.name}</h1>
+                <h1 className="text-lg font-bold text-white">{selectedChallenge.name}</h1>
               </div>
             </div>
           </div>
@@ -940,42 +948,67 @@ export default function SBCPage() {
 
               {/* Action Buttons */}
               <div className="space-y-3">
-                <div 
-                  onClick={() => {
-                    if (submitting) return // Verhindert Spam-Klicks
-                    
-                    // PRÜFE REQUIREMENTS VOR DEM KLICK
-                    if (!selectedChallenge || !isAllRequirementsFulfilled(selectedChallenge)) {
-                      console.log('❌ REQUIREMENTS NICHT ERFÜLLT!')
-                      toast.error('Requirements not fulfilled!')
-                      return
-                    }
-                    
-                    console.log('🔘 EXCHANGE BUTTON GEKLICKT!')
-                    console.log('Exchange Button ist geklickt worden!')
-                    console.log('selectedChallenge:', selectedChallenge)
-                    console.log('user:', user)
-                    console.log('selectedCards length:', selectedCards.filter(card => card !== undefined).length)
-                    console.log('isAllRequirementsFulfilled:', isAllRequirementsFulfilled(selectedChallenge!))
-                    handleExchangeSquad()
-                  }}
-                  className={`w-full p-4 text-white text-center border rounded transition-all duration-200 ${
-                    submitting 
-                      ? 'bg-gray-600 border-gray-500 cursor-not-allowed opacity-50' 
-                      : selectedChallenge && isAllRequirementsFulfilled(selectedChallenge)
-                        ? 'bg-green-600 border-green-500 cursor-pointer hover:bg-green-700'
-                        : 'bg-gray-600 border-gray-500 cursor-not-allowed opacity-50'
-                  }`}
-                >
-                  {submitting ? (
-                    <div className="flex items-center justify-center">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Processing...
+                                <AlertDialog open={showExchangeConfirm} onOpenChange={setShowExchangeConfirm}>
+                  <AlertDialogTrigger asChild>
+                    <div
+                      onClick={() => {
+                        if (submitting) return // Verhindert Spam-Klicks
+                        
+                        // PRÜFE REQUIREMENTS VOR DEM KLICK
+                        if (!selectedChallenge || !isAllRequirementsFulfilled(selectedChallenge)) {
+                          console.log('❌ REQUIREMENTS NICHT ERFÜLLT!')
+                          toast.error('Requirements not fulfilled!')
+                          return
+                        }
+                        
+                        console.log('🔘 EXCHANGE BUTTON GEKLICKT!')
+                        setShowExchangeConfirm(true)
+                      }}
+                      className={`w-full p-4 text-white text-center border rounded transition-all duration-200 ${
+                        submitting 
+                          ? 'bg-gray-600 border-gray-500 cursor-not-allowed opacity-50' 
+                          : selectedChallenge && isAllRequirementsFulfilled(selectedChallenge)
+                            ? 'bg-green-600 border-green-500 cursor-pointer hover:bg-green-700'
+                            : 'bg-gray-600 border-gray-500 cursor-not-allowed opacity-50'
+                      }`}
+                    >
+                      {submitting ? (
+                        <div className="flex items-center justify-center">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Processing...
+                        </div>
+                      ) : (
+                        'EXCHANGE SQUAD'
+                      )}
                     </div>
-                  ) : (
-                    'EXCHANGE SQUAD'
-                  )}
-                </div>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Exchange Squad?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to exchange your 11 selected cards for this Squad Building Challenge? 
+                        <br /><br />
+                        <strong>⚠️ This action cannot be undone!</strong>
+                        <br /><br />
+                        <strong>You will receive:</strong> {selectedChallenge?.special_reward || 'Challenge rewards'}
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel onClick={() => setShowExchangeConfirm(false)}>
+                        Cancel
+                      </AlertDialogCancel>
+                      <AlertDialogAction 
+                        onClick={() => {
+                          setShowExchangeConfirm(false)
+                          handleExchangeSquad()
+                        }}
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        Yes, exchange squad!
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
                 <Button
                   onClick={() => setSelectedCards(new Array(11).fill(undefined))}
                   className="w-full bg-gray-600 hover:bg-gray-500 text-white border border-gray-500"

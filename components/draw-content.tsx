@@ -128,6 +128,13 @@ const RARITY_COLORS = {
     gradient: "from-red-300/30 to-red-100/30",
     bg: "bg-red-100",
   },
+  wbc: {
+    border: "card-border-wbc",
+    glow: "shadow-emerald-500/50",
+    text: "text-emerald-600",
+    gradient: "from-emerald-500/30 to-emerald-300/30",
+    bg: "bg-emerald-100",
+  },
 }
 
 // Add the Cloudflare URL function

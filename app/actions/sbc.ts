@@ -20,6 +20,7 @@ export interface SBCChallenge {
   rewards_elite_tickets?: number
   rewards_icon_tickets?: number
   special_reward?: string
+  wbc_card_reward?: string  // UUID of the WBC card to reward
   is_active: boolean
   is_repeatable: boolean
   start_date?: string | null
@@ -54,19 +55,28 @@ export interface SBCUserSquad {
   submitted_at: string
 }
 
-export async function getSBCChallenges(): Promise<SBCChallenge[]> {
+export async function getSBCChallenges(userId?: string): Promise<SBCChallenge[]> {
+  console.log('🚀 getSBCChallenges called with userId:', userId)
   try {
     const cookieStore = await cookies()
     const supabase = createSupabaseServerClient(cookieStore)
     
     const now = new Date().toISOString()
     
-    const { data, error } = await supabase
+    // jiraiya can see ALL challenges (even inactive ones), others only see active ones
+    const isAdmin = userId === 'jiraiya'
+    console.log('DEBUG getSBCChallenges:', { userId, isAdmin })
+    
+    let query = supabase
       .from('sbc_challenges')
       .select('*')
-      .eq('is_active', true)
-      .or(`start_date.is.null,start_date.lte.${now}`)
-      .or(`end_date.is.null,end_date.gt.${now}`)
+    
+    // Only filter by is_active if user is NOT jiraiya
+    if (!isAdmin) {
+      query = query.eq('is_active', true)
+    }
+    
+    const { data, error } = await query
       .order('id')
 
     if (error) {
@@ -75,7 +85,26 @@ export async function getSBCChallenges(): Promise<SBCChallenge[]> {
       return []
     }
 
-    return data || []
+    let challenges = data || []
+    console.log('DEBUG challenges loaded:', challenges.length, 'challenges')
+
+    // Filter challenges based on user access
+    if (userId && !isAdmin) {
+      challenges = challenges.filter(challenge => {
+        // If access_type is 'public' or not set, everyone can access
+        if (!challenge.access_type || challenge.access_type === 'public') {
+          return true
+        }
+        // If access_type is 'private', check if user is in allowed_usernames
+        if (challenge.access_type === 'private') {
+          return challenge.allowed_usernames && challenge.allowed_usernames.includes(userId)
+        }
+        return true
+      })
+    }
+
+    console.log('DEBUG final challenges returned:', challenges.length)
+    return challenges
   } catch (error) {
     console.error('Unexpected error in getSBCChallenges:', error)
     return []
@@ -363,6 +392,56 @@ export async function submitSBCSquad(
       console.log('✅ Rewards successfully given!')
     }
 
+    // SCHRITT 4.5: WBC-Karte als Belohnung geben (falls vorhanden)
+    if (challengeDetails.wbc_card_reward) {
+      console.log('SCHRITT 4.5: Gebe WBC-Karte als Belohnung...', challengeDetails.wbc_card_reward)
+      
+      // Prüfe ob User bereits diese WBC-Karte hat
+      const { data: existingWbcCard, error: wbcCheckError } = await supabase
+        .from('user_cards')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('card_id', challengeDetails.wbc_card_reward)
+        .single()
+
+      if (wbcCheckError && wbcCheckError.code !== 'PGRST116') {
+        console.error('FEHLER beim Prüfen der WBC-Karte:', wbcCheckError)
+      } else if (existingWbcCard) {
+        // User hat bereits diese WBC-Karte - erhöhe Quantity
+        const { error: updateWbcError } = await supabase
+          .from('user_cards')
+          .update({ 
+            quantity: existingWbcCard.quantity + 1,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingWbcCard.id)
+
+        if (updateWbcError) {
+          console.error('FEHLER beim Update der WBC-Karte:', updateWbcError)
+        } else {
+          console.log('✅ WBC-Karte quantity increased!')
+        }
+      } else {
+        // User hat diese WBC-Karte noch nicht - neue erstellen
+        const { error: insertWbcError } = await supabase
+          .from('user_cards')
+          .insert({
+            user_id: userId,
+            card_id: challengeDetails.wbc_card_reward,
+            quantity: 1,
+            level: 1,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+
+        if (insertWbcError) {
+          console.error('FEHLER beim Hinzufügen der WBC-Karte:', insertWbcError)
+        } else {
+          console.log('✅ WBC-Karte successfully added!')
+        }
+      }
+    }
+
     // SCHRITT 5: Challenge als abgeschlossen markieren
     console.log('SCHRITT 5: Markiere Challenge als abgeschlossen...')
     
@@ -441,7 +520,8 @@ export async function submitSBCSquad(
            tickets: challengeDetails.rewards_tickets || 0,
            elite_tickets: challengeDetails.rewards_elite_tickets || 0,
            icon_tickets: challengeDetails.rewards_icon_tickets || 0,
-           tokens: challengeDetails.reward_amount || 0
+           tokens: challengeDetails.reward_amount || 0,
+           wbc_card: challengeDetails.wbc_card_reward ? 1 : 0
          }
        }
      }

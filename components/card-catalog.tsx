@@ -19,7 +19,8 @@ const rarityMapping: Record<string, string> = {
   ultimate: "U",
   elite: "E",
   rare: "R",
-  basic: "B"
+  basic: "B",
+  wbc: "WBC"
 };
 
 // Map display categories back to database rarities
@@ -28,7 +29,8 @@ const categoryToRarities: Record<string, string[]> = {
   U: ["ultimate"],
   E: ["elite"],
   R: ["rare"],
-  B: ["basic"]
+  B: ["basic"],
+  WBC: ["wbc"]
 };
 
 export default function CardCatalog({ username, searchTerm = "" }: CardCatalogProps) {
@@ -36,23 +38,57 @@ export default function CardCatalog({ username, searchTerm = "" }: CardCatalogPr
   const [userCards, setUserCards] = useState<Record<string, boolean>>({})
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState("all")
+  const [debugInfo, setDebugInfo] = useState<string>("🚀 Component loaded, waiting for data...")
+
+  // EMERGENCY TEST: Add WBC card manually
+  useEffect(() => {
+    const testWbcCard = {
+      id: 'emergency-wbc-test',
+      name: 'TEST WBC CARD',
+      character: 'TEST WBC CARD',
+      image_url: '/world-soccer/Douewbc.webp',
+      rarity: 'wbc',
+      epoch: 1
+    }
+    setAllCards([testWbcCard])
+    setDebugInfo("🔥 EMERGENCY TEST: Added manual WBC card!")
+    setLoading(false)
+  }, [])
 
   useEffect(() => {
     async function fetchCards() {
       setLoading(true)
       const supabase = getSupabaseBrowserClient()
 
-      // Fetch all cards
-      if(!supabase) return
+      setDebugInfo("🔍 Starting to fetch cards...")
+
+      // Fetch all cards without any filters
+      if(!supabase) {
+        setDebugInfo("❌ ERROR: No Supabase client!")
+        return
+      }
+      
       const { data: cards, error: cardsError } = await supabase
         .from("cards")
-        .select("id, name, character, image_url, rarity, type")
-        .order("rarity", { ascending: false })
+        .select("id, name, character, image_url, rarity, epoch, obtainable")
 
       if (cardsError) {
         console.error("Error fetching cards:", cardsError)
+        setDebugInfo(`❌ ERROR: ${cardsError.message}`)
         setAllCards([])
       } else {
+        // Debug: Check if WBC card is loaded
+        const totalCards = cards?.length || 0
+        const wbcCard = cards?.find(card => card.name === 'doue' && card.rarity === 'wbc')
+        const ibrahimovic = cards?.find(card => card.name?.toLowerCase().includes('ibrahimovic'))
+        const allDoueCards = cards?.filter(card => card.name === 'doue')
+        
+        setDebugInfo(`✅ Total: ${totalCards} | WBC doue: ${wbcCard ? 'FOUND' : 'NOT FOUND'} | Ibrahimovic: ${ibrahimovic ? 'FOUND' : 'NOT FOUND'} | All doue cards: ${allDoueCards?.length} | Obtainable false cards: ${cards?.filter(c => c.obtainable === false).length}`)
+        
+        console.log("WBC Card details:", wbcCard)
+        console.log("All doue cards:", allDoueCards)
+        console.log("Cards with obtainable=false:", cards?.filter(c => c.obtainable === false))
+        
         setAllCards(cards || [])
       }
 
@@ -84,9 +120,12 @@ export default function CardCatalog({ username, searchTerm = "" }: CardCatalogPr
   // Filter cards based on search term
   const filteredCards = allCards.filter(
     (card) =>
+      searchTerm === "" ||
       card.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       card.character.toLowerCase().includes(searchTerm.toLowerCase()),
   )
+
+
 
   const filterCardsByCategory = (category: string) => {
     if (category === "all") return filteredCards
@@ -120,8 +159,8 @@ export default function CardCatalog({ username, searchTerm = "" }: CardCatalogPr
     return acc
   }, {})
 
-  // Sort categories in order: G, U, E, R, B
-  const sortedCategories = ["G", "U", "E", "R", "B"].filter(
+  // Sort categories in order: G, U, E, R, B, WBC
+  const sortedCategories = ["G", "U", "E", "R", "B", "WBC"].filter(
     (category) => cardsByRarity[category] && cardsByRarity[category].length > 0,
   )
 
@@ -138,8 +177,15 @@ export default function CardCatalog({ username, searchTerm = "" }: CardCatalogPr
   }
 
   return (
-    <Tabs defaultValue="all" className="w-full text-black" onValueChange={setActiveTab}>
-      <TabsList className="grid w-full grid-cols-6 bg-white text-black">
+    <div className="w-full">
+      {debugInfo && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded mb-4">
+          <strong>Debug:</strong> {debugInfo}
+        </div>
+      )}
+      
+      <Tabs defaultValue="all" className="w-full text-black" onValueChange={setActiveTab}>
+      <TabsList className="grid w-full grid-cols-7 bg-white text-black">
         <TabsTrigger value="all" className="text-black data-[state=active]:bg-gray-200 data-[state=active]:text-black">
           All
         </TabsTrigger>
@@ -157,6 +203,9 @@ export default function CardCatalog({ username, searchTerm = "" }: CardCatalogPr
         </TabsTrigger>
         <TabsTrigger value="B" className="text-black data-[state=active]:bg-gray-200 data-[state=active]:text-black">
           Basic
+        </TabsTrigger>
+        <TabsTrigger value="WBC" className="text-black data-[state=active]:bg-gray-200 data-[state=active]:text-black">
+          WBC
         </TabsTrigger>
       </TabsList>
 
@@ -178,6 +227,8 @@ export default function CardCatalog({ username, searchTerm = "" }: CardCatalogPr
                   ? "Rare"
                   : category === "B"
                   ? "Basic"
+                  : category === "WBC"
+                  ? "WBC"
                   : category}
               </h3>
               <span className="ml-2 text-sm text-gray-700">({cardsByRarity[category].length} cards)</span>
@@ -211,7 +262,7 @@ export default function CardCatalog({ username, searchTerm = "" }: CardCatalogPr
         ))}
       </TabsContent>
 
-      {["G", "U", "E", "R", "B"].map((category) => (
+      {["G", "U", "E", "R", "B", "WBC"].map((category) => (
         <TabsContent key={category} value={category} className="mt-4 text-black">
           <motion.div
             className="grid grid-cols-5 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-2"

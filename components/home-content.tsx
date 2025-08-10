@@ -1528,7 +1528,7 @@ const [copied, setCopied] = useState(false)
                   </svg>
       </a>
       <a
-        href="https://t.me/+bIQV3seW_oo0YTAy"
+        href="https://t.me/c/2551554609/13381"
         target="_blank"
         rel="noopener noreferrer"
                   className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center transition-transform hover:scale-105 shadow border-2 border-white"

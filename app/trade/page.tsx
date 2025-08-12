@@ -61,7 +61,7 @@ type Card = {
   name: string
   character: string
   image_url?: string
-  rarity: "basic" | "rare" | "elite" | "ultimate" | "goat"
+  rarity: "basic" | "rare" | "elite" | "ultimate" | "goat" | "wbc"
   overall_rating?: number
 }
 
@@ -722,6 +722,7 @@ export default function TradePage() {
                             <SelectItem value="elite">Elite</SelectItem>
                             <SelectItem value="ultimate">Ultimate</SelectItem>
                             <SelectItem value="goat">GOAT</SelectItem>
+                            <SelectItem value="wbc">WBC</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -1369,6 +1370,11 @@ function MarketplaceCard({
       border: "border-red-500",
       text: "text-red-600",
       badge: "bg-red-500",
+    },
+    wbc: {
+      border: "border-red-800",
+      text: "text-red-700",
+      badge: "bg-red-800",
     },
   }
 

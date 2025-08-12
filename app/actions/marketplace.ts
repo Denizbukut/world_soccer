@@ -32,7 +32,7 @@ type Card = {
   name: string
   character: string
   image_url?: string
-  rarity: "basic" | "rare" | "elite" | "ultimate" | "goat"
+  rarity: "basic" | "rare" | "elite" | "ultimate" | "goat" | "wbc"
   overall_rating?: number
 }
 
@@ -761,8 +761,8 @@ export async function createListing(
     console.log("Card quantity updated successfully")
     console.log("=== CREATE LISTING COMPLETE ===")
 
+    // Nur Trade-Seite neu laden, Collection wird über onSuccess callback aktualisiert
     revalidatePath("/trade")
-    revalidatePath("/collection")
     return { success: true, listing }
   } catch (error) {
     console.error("Unexpected error in createListing:", error)

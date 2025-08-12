@@ -443,6 +443,8 @@ export default function TradeMenu() {
         return "bg-gradient-to-r from-blue-400 to-blue-600 border-0"
       case "uncommon":
         return "bg-gradient-to-r from-green-400 to-green-600 border-0"
+      case "wbc":
+        return "bg-gradient-to-r from-red-500 to-red-700 border-0"
       default:
         return "bg-gradient-to-r from-slate-400 to-slate-600 border-0"
     }
@@ -606,6 +608,15 @@ export default function TradeMenu() {
                             }}
                           >
                             Rare
+                          </button>
+                          <button
+                            className={`w-full text-left px-3 py-1.5 text-sm rounded-md ${filterRarity === "wbc" ? "bg-orange-100 text-orange-700" : "hover:bg-gray-100"}`}
+                            onClick={() => {
+                              setFilterRarity("wbc")
+                              document.getElementById("filter-dropdown")?.classList.add("hidden")
+                            }}
+                          >
+                            WBC
                           </button>
                         </div>
                       </div>

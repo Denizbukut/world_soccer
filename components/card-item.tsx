@@ -123,6 +123,12 @@ export function CardItem({
     text: "text-red-600",
     gradient: "from-red-500/30 to-red-100/30",
   },
+  wbc: {
+    border: "border-4 border-red-800",
+    glow: "shadow-red-500",
+    text: "text-red-700",
+    gradient: "from-red-600/30 to-red-200/30",
+  },
 }
 
 

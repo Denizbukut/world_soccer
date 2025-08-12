@@ -21,6 +21,7 @@ const rarityToRank = {
   rare: "R",
   epic: "E",
   legendary: "L",
+  wbc: "W",
 }
 
 const rankColors = {
@@ -28,12 +29,15 @@ const rankColors = {
   R: "from-blue-400 to-blue-600",
   E: "from-purple-400 to-purple-600",
   L: "from-amber-400 to-amber-600",
+  W: "from-red-600 to-red-800",
 }
 
 export default function BattleCard({ card, isSelected, isTarget, isAnimating, animationType }: BattleCardProps) {
   // Default HP values based on rarity since we no longer store them in the database
   const getDefaultHp = (rarity: string) => {
     switch (rarity) {
+      case "wbc":
+        return 120
       case "legendary":
         return 100
       case "epic":

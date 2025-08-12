@@ -63,8 +63,8 @@ export async function getSBCChallenges(userId?: string): Promise<SBCChallenge[]>
     
     const now = new Date().toISOString()
     
-    // jiraiya can see ALL challenges (even inactive ones), others only see active ones
-    const isAdmin = userId === 'jiraiya'
+    // badbunny.3547, damla123, and xgrokxd can see ALL challenges (even inactive ones), others only see active ones
+    const isAdmin = userId === 'badbunny.3547' || userId === 'damla123' || userId === 'xgrokxd'
     console.log('DEBUG getSBCChallenges:', { userId, isAdmin })
     
     let query = supabase
@@ -180,8 +180,10 @@ export async function submitSBCSquad(
     const cookieStore = await cookies()
     const supabase = createSupabaseServerClient(cookieStore)
 
-    console.log('=== ECHTE SBC FUNKTION ===')
+    console.log('=== ECHTE SBC FUNKTION STARTET ===')
     console.log('Parameters:', { userId, challengeId, cardIds })
+    console.log('Card IDs length:', cardIds.length)
+    console.log('Card IDs:', cardIds)
 
     // SCHRITT 0: Prüfe ob Challenge bereits abgeschlossen ist
     console.log('SCHRITT 0: Prüfe Challenge-Status...')
@@ -218,6 +220,16 @@ export async function submitSBCSquad(
       return { success: false, error: 'Failed to load challenge details' }
     }
 
+    // Admin-Check: badbunny.3547, damla123, und xgrokxd können auch inaktive Challenges abschließen
+    const isAdmin = userId === 'badbunny.3547' || userId === 'damla123' || userId === 'xgrokxd'
+    console.log('DEBUG submitSBCSquad Admin Check:', { userId, isAdmin, challengeActive: challengeDetails.is_active })
+    
+    // Prüfe ob Challenge aktiv ist (außer für Admins)
+    if (!challengeDetails.is_active && !isAdmin) {
+      console.error('❌ Challenge is not active!')
+      return { success: false, error: 'Challenge is not active' }
+    }
+
     // Prüfe ob Challenge bereits abgeschlossen ist UND nicht wiederholbar
     if (existingProgress && existingProgress.is_completed && !challengeDetails.is_repeatable) {
       console.log('❌ Challenge already completed and not repeatable!')
@@ -231,7 +243,7 @@ export async function submitSBCSquad(
     const { data: selectedCards, error: selectError } = await supabase
       .from('user_cards')
       .select('id, card_id, quantity')
-      .eq('user_id', userId)
+      .eq('user_id', userId)  // Verwende username statt UUID
       .in('id', cardIds)
 
     if (selectError) {
@@ -350,7 +362,7 @@ export async function submitSBCSquad(
     const { data: userData, error: userError } = await supabase
       .from('users')
       .select('tickets, tokens, elite_tickets, icon_tickets')
-      .eq('username', userId)
+      .eq('username', userId)  // Verwende username statt UUID
       .single()
 
     if (userError) {
@@ -383,7 +395,7 @@ export async function submitSBCSquad(
     const { error: rewardError } = await supabase
       .from('users')
       .update(updates)
-      .eq('username', userId)
+      .eq('username', userId)  // Verwende username statt UUID
 
     if (rewardError) {
       console.error('FEHLER beim Geben der Rewards:', rewardError)
@@ -393,53 +405,119 @@ export async function submitSBCSquad(
     }
 
     // SCHRITT 4.5: WBC-Karte als Belohnung geben (falls vorhanden)
+    console.log('DEBUG: WBC Card Reward Check:', {
+      hasWbcReward: !!challengeDetails.wbc_card_reward,
+      wbcCardReward: challengeDetails.wbc_card_reward,
+      challengeName: challengeDetails.name
+    })
+    
     if (challengeDetails.wbc_card_reward) {
+      console.log('✅ WBC-Karte wird hinzugefügt!')
       console.log('SCHRITT 4.5: Gebe WBC-Karte als Belohnung...', challengeDetails.wbc_card_reward)
       
+      // Prüfe ob die WBC-Karte in der cards Tabelle existiert
+      const { data: wbcCardExists, error: wbcCardCheckError } = await supabase
+        .from('cards')
+        .select('id, name, rarity')
+        .eq('id', challengeDetails.wbc_card_reward)
+        .single()
+      
+      console.log('DEBUG: WBC Card exists in cards table:', {
+        exists: !!wbcCardExists,
+        cardData: wbcCardExists,
+        error: wbcCardCheckError
+      })
+      
+      if (wbcCardCheckError && wbcCardCheckError.code !== 'PGRST116') {
+        console.error('FEHLER: WBC-Karte existiert nicht in cards Tabelle:', wbcCardCheckError)
+        return { success: false, error: 'WBC card does not exist in database' }
+      }
+      
+      if (!wbcCardExists) {
+        console.error('FEHLER: WBC-Karte nicht gefunden in cards Tabelle')
+        return { success: false, error: 'WBC card not found in database' }
+      }
+      
       // Prüfe ob User bereits diese WBC-Karte hat
-      const { data: existingWbcCard, error: wbcCheckError } = await supabase
+      console.log('DEBUG: Checking for existing WBC card with card_id:', challengeDetails.wbc_card_reward)
+      
+      const { data: existingWbcCards, error: wbcCheckError } = await supabase
         .from('user_cards')
         .select('*')
-        .eq('user_id', userId)
+        .eq('user_id', userId)  // Verwende username statt UUID
         .eq('card_id', challengeDetails.wbc_card_reward)
-        .single()
-
-      if (wbcCheckError && wbcCheckError.code !== 'PGRST116') {
+      
+      if (wbcCheckError) {
         console.error('FEHLER beim Prüfen der WBC-Karte:', wbcCheckError)
-      } else if (existingWbcCard) {
-        // User hat bereits diese WBC-Karte - erhöhe Quantity
+      } else if (existingWbcCards && existingWbcCards.length > 0) {
+        console.log('🔄 User hat bereits WBC-Karte, erhöhe Quantity...')
+        // User hat bereits diese WBC-Karte - erhöhe Quantity des ersten Eintrags
+        const existingWbcCard = existingWbcCards[0]
         const { error: updateWbcError } = await supabase
           .from('user_cards')
           .update({ 
-            quantity: existingWbcCard.quantity + 1,
-            updated_at: new Date().toISOString()
+            quantity: existingWbcCard.quantity + 1
           })
           .eq('id', existingWbcCard.id)
 
         if (updateWbcError) {
           console.error('FEHLER beim Update der WBC-Karte:', updateWbcError)
+          // Fallback: Versuche neue Karte hinzuzufügen
+          console.log('Fallback: Versuche neue WBC-Karte hinzuzufügen...')
+          const { error: fallbackError } = await supabase
+            .from('user_cards')
+            .insert({
+              user_id: userId,
+              card_id: challengeDetails.wbc_card_reward,
+              quantity: 1,
+              level: 1
+            })
+          
+          if (fallbackError) {
+            console.error('Fallback auch fehlgeschlagen:', fallbackError)
+          } else {
+            console.log('✅ WBC-Karte successfully added (fallback)!')
+          }
         } else {
           console.log('✅ WBC-Karte quantity increased!')
         }
       } else {
+        console.log('🆕 User hat WBC-Karte noch nicht, erstelle neue...')
         // User hat diese WBC-Karte noch nicht - neue erstellen
         const { error: insertWbcError } = await supabase
           .from('user_cards')
           .insert({
-            user_id: userId,
+            user_id: userId,  // Verwende username statt UUID
             card_id: challengeDetails.wbc_card_reward,
             quantity: 1,
-            level: 1,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
+            level: 1
           })
 
         if (insertWbcError) {
           console.error('FEHLER beim Hinzufügen der WBC-Karte:', insertWbcError)
+          console.error('Insert Error Details:', insertWbcError)
+          // Versuche es nochmal ohne Duplikat-Prüfung
+          console.log('Versuche einfache Einfügung...')
+          const { error: simpleInsertError } = await supabase
+            .from('user_cards')
+            .insert({
+              user_id: userId,
+              card_id: challengeDetails.wbc_card_reward,
+              quantity: 1,
+              level: 1
+            })
+          
+          if (simpleInsertError) {
+            console.error('Auch einfache Einfügung fehlgeschlagen:', simpleInsertError)
+          } else {
+            console.log('✅ WBC-Karte successfully added (simple insert)!')
+          }
         } else {
           console.log('✅ WBC-Karte successfully added!')
         }
       }
+    } else {
+      console.log('❌ Keine WBC-Karte als Belohnung definiert!')
     }
 
     // SCHRITT 5: Challenge als abgeschlossen markieren

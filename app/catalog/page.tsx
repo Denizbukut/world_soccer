@@ -59,6 +59,10 @@ export default function CatalogPage() {
         
         setAllCards(processedCards)
 
+        // Debug: Check for WBC cards
+        const wbcCards = processedCards?.filter((card: any) => card.rarity === 'wbc' || card.rarity === 'WBC')
+        console.log('WBC cards found:', wbcCards?.length || 0, wbcCards)
+
         // Get available epochs
         const epochs = [...new Set(processedCards?.map((card: any) => card.epoch).filter(Boolean))] as number[]
         setAvailableEpochs(epochs.sort((a, b) => b - a)) // Sort newest first
@@ -111,7 +115,11 @@ export default function CatalogPage() {
   const filterCardsByCategory = (category: string) => {
     if (category === "all") return filteredCards
 
-    return filteredCards.filter((card) => card.rarity === category.toLowerCase())
+    return filteredCards.filter((card) => {
+      const cardRarity = card.rarity?.toLowerCase()
+      const categoryLower = category.toLowerCase()
+      return cardRarity === categoryLower
+    })
   }
 
   const container = {
@@ -139,8 +147,8 @@ export default function CatalogPage() {
     return acc
   }, {})
 
-  // Sort categories in order: goat, ultimate, elite, rare, basic
-  const sortedCategories = ["goat", "ultimate", "elite", "rare", "basic"].filter(
+  // Sort categories in order: goat, ultimate, elite, rare, basic, wbc
+  const sortedCategories = ["goat", "ultimate", "elite", "rare", "basic", "wbc"].filter(
     (category) => cardsByRarity[category] && cardsByRarity[category].length > 0,
   )
 

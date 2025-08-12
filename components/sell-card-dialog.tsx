@@ -22,7 +22,7 @@ type UserCard = {
   name: string
   character: string
   image_url?: string
-  rarity: "common" | "rare" | "epic" | "elite" | "legendary" | "ultimate"
+  rarity: "common" | "rare" | "epic" | "elite" | "legendary" | "ultimate" | "goat" | "wbc"
   overall_rating?: number
   level: number
   quantity: number
@@ -144,6 +144,11 @@ export default function SellCardDialog({ isOpen, onClose, card, username, onSucc
       return priceUsdPerWLD ? 0.55 / priceUsdPerWLD : 0.55
     }
 
+    // Für WBC-Karten direkt 5.0 USD als Starting Price (umgerechnet zu WLD)
+    if (rarity === "wbc") {
+      return priceUsdPerWLD ? 5.0 / priceUsdPerWLD : 5.0
+    }
+
     // Für Ultimate-Karten direkt 1.5 USD als Starting Price (umgerechnet zu WLD)
     if (rarity === "ultimate") {
       return priceUsdPerWLD ? 1.5 / priceUsdPerWLD : 1.5
@@ -161,6 +166,7 @@ export default function SellCardDialog({ isOpen, onClose, card, username, onSucc
         epic: 500,
         legendary: 2000,
         godlike: 10000,
+        wbc: 15000,
       }[rarity] || 50
 
     // Erhöhe den Preis basierend auf dem Level
@@ -208,7 +214,10 @@ export default function SellCardDialog({ isOpen, onClose, card, username, onSucc
         console.log("Rating 85+ detected, setting min price to $0.55")
       } else {
         // Rarity-basierte Preise (nur wenn Rating niedriger ist)
-        if (card.rarity === "ultimate") {
+        if (card.rarity === "wbc") {
+          minUsdPrice = 5.0
+          console.log("WBC rarity detected, setting min price to $5.00")
+        } else if (card.rarity === "ultimate") {
           minUsdPrice = 1.5
           console.log("Ultimate rarity detected, setting min price to $1.50")
         } else if (card.rarity === "legendary") {
@@ -261,12 +270,11 @@ export default function SellCardDialog({ isOpen, onClose, card, username, onSucc
       if (result.success) {
         setShowSuccess(true)
 
-        // Zeige die Erfolgsmeldung für 1.5 Sekunden an, dann leite weiter
+        // Zeige die Erfolgsmeldung für 1.5 Sekunden an, dann schließe Dialog
         setTimeout(() => {
           onSuccess?.()
           onClose()
-          // Seite neu laden, um das Squad zu aktualisieren
-          window.location.reload()
+          // Keine Weiterleitung - Collection wird über onSuccess aktualisiert
         }, 1500)
       } else {
         console.error("Error from createListing:", result.error)

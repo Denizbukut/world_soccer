@@ -62,6 +62,7 @@ export default function SBCPage() {
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
   const [showExchangeConfirm, setShowExchangeConfirm] = useState(false)
+  const [allCards, setAllCards] = useState<any[]>([])
 
   useEffect(() => {
     loadSBCData()
@@ -73,14 +74,20 @@ export default function SBCPage() {
     try {
       setLoading(true)
       console.log('DEBUG: Loading SBC data for user:', user.username)
-      const [challengesData, progressData] = await Promise.all([
+      
+      const supabase = getSupabaseBrowserClient()
+      if (!supabase) return
+      
+      const [challengesData, progressData, allCardsData] = await Promise.all([
         getSBCChallenges(user.username),
-        getUserSBCProgress(user.id || user.username)
+        getUserSBCProgress(user.id || user.username),
+        supabase.from('cards').select('*')
       ])
       
       console.log('DEBUG: Challenges loaded:', challengesData)
       setChallenges(challengesData)
       setUserProgress(progressData)
+      setAllCards(allCardsData.data || [])
     } catch (error) {
       console.error('Error loading SBC data:', error)
       toast.error('Error loading SBC data')
@@ -218,7 +225,8 @@ export default function SBCPage() {
   const getRarityCounts = (cards: UserCard[]) => {
     const counts: Record<string, number> = {}
     cards.forEach(card => {
-      counts[card.rarity] = (counts[card.rarity] || 0) + 1
+      const cleanRarity = card.rarity.replace(/["""►]/g, '').replace(/\s+/g, '').trim().toLowerCase()
+      counts[cleanRarity] = (counts[cleanRarity] || 0) + 1
     })
     return counts
   }
@@ -238,13 +246,18 @@ export default function SBCPage() {
       const requirements = challenge.requirements_rarity_level_counts
       
       for (const [rarity, requirement] of Object.entries(requirements)) {
-        const count = rarityCounts[rarity] || 0
+        const cleanRarity = rarity.replace(/["""►]/g, '').replace(/\s+/g, '').trim().toLowerCase()
+        const count = rarityCounts[cleanRarity] || 0
+        console.log(`DEBUG validateSquad: ${rarity} -> ${cleanRarity}, count: ${count}, required: ${requirement.count}`)
         if (count < requirement.count) {
           return { valid: false, message: `${requirement.count} ${rarity} cards required (current: ${count})` }
         }
         
         // Check minimum level for this rarity
-        const cardsOfRarity = cards.filter(card => card.rarity === rarity)
+        const cardsOfRarity = cards.filter(card => {
+          const cleanCardRarity = card.rarity.replace(/["""►]/g, '').replace(/\s+/g, '').trim().toLowerCase()
+          return cleanCardRarity === cleanRarity
+        })
         const minLevel = Math.min(...cardsOfRarity.map(card => card.level))
         if (minLevel < requirement.min_level) {
           return { valid: false, message: `${rarity} cards minimum Level ${requirement.min_level} required` }
@@ -382,6 +395,20 @@ export default function SBCPage() {
       })
     }
     
+    // WBC Card reward
+    if (challenge.wbc_card_reward) {
+      // Find the WBC card details from allCards
+      const wbcCard = allCards.find(card => card.id === challenge.wbc_card_reward)
+      const cardName = wbcCard ? wbcCard.name : 'WBC Card'
+      
+      rewards.push({
+        type: 'wbc_card',
+        amount: 1,
+        text: `${cardName} (WBC)`,
+        icon: getRewardIcon('wbc_card')
+      })
+    }
+    
     return rewards
   }
 
@@ -463,21 +490,58 @@ export default function SBCPage() {
   }
 
   const handleExchangeSquad = async () => {
-    // EINFACHE DEBUGGING - SCHREIBE IN CONSOLE
     console.log('=== EXCHANGE SQUAD STARTET ===')
     
     if (!selectedChallenge || !user) {
       console.log('❌ FEHLER: Keine Challenge oder User!')
+      toast.error('No challenge or user selected')
       return
     }
 
     const validCards = selectedCards.filter(card => card !== undefined)
     console.log(`📊 Karten gefunden: ${validCards.length}`)
     
+    // DEBUG: Zeige alle Karten mit Details
+    console.log('=== ALLE KARTEN IM SQUAD ===')
+    validCards.forEach((card, index) => {
+      console.log(`Karte ${index + 1}:`, {
+        name: card!.name,
+        rarity: card!.rarity,
+        level: card!.level,
+        overall_rating: card!.overall_rating,
+        cleanRarity: card!.rarity.replace(/["""►]/g, '').replace(/\s+/g, '').trim().toLowerCase()
+      })
+    })
+    console.log('=== ENDE ALLE KARTEN ===')
+    
+    // DEBUG: Zeige Challenge-Anforderungen
+    console.log('=== CHALLENGE ANFORDERUNGEN ===')
+    console.log('Challenge:', selectedChallenge.name)
+    console.log('Total Cards Required:', selectedChallenge.requirements_total_cards)
+    console.log('Min Level Required:', selectedChallenge.requirements_min_level)
+    console.log('Team Rating Required:', selectedChallenge.requirements_team_rating)
+    console.log('Rarity Level Counts:', selectedChallenge.requirements_rarity_level_counts)
+    console.log('Specific Rarities:', selectedChallenge.requirements_specific_rarities)
+    console.log('=== ENDE ANFORDERUNGEN ===')
+    
     if (validCards.length !== 11) {
       console.log(`❌ FEHLER: Nur ${validCards.length} Karten!`)
+      toast.error(`Need exactly 11 cards, got ${validCards.length}`)
       return
     }
+
+    // DEBUG: Prüfe Anforderungen vor dem Submit
+    console.log('=== PRÜFE ANFORDERUNGEN ===')
+    const requirementsFulfilled = isAllRequirementsFulfilled(selectedChallenge)
+    console.log('Requirements Fulfilled:', requirementsFulfilled)
+    
+    if (!requirementsFulfilled) {
+      console.log('❌ ANFORDERUNGEN NICHT ERFÜLLT!')
+      toast.error('Challenge requirements not fulfilled!')
+      return
+    }
+    
+    console.log('✅ ANFORDERUNGEN ERFÜLLT!')
 
     try {
       setSubmitting(true)
@@ -486,28 +550,44 @@ export default function SBCPage() {
       const cardIds = validCards.map(card => card!.id)
       console.log(`🆔 Card IDs: ${cardIds.join(', ')}`)
       
+      // Direkter Aufruf ohne Timeout
       console.log('📞 RUFE submitSBCSquad AUF...')
+      console.log('User:', user.username)
+      console.log('Challenge ID:', selectedChallenge.id)
+      console.log('Card IDs:', cardIds)
       
-      // TIMEOUT für submitSBCSquad
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('TIMEOUT: submitSBCSquad hat zu lange gedauert')), 10000)
+      console.log('🚀 RUFE submitSBCSquad AUF...')
+      console.log('Parameters:', {
+        userId: user.username,
+        challengeId: selectedChallenge.id,
+        cardIds: cardIds
       })
       
-      let result
-      try {
-        result = await Promise.race([
-          submitSBCSquad(user.username, selectedChallenge.id, cardIds),
-          timeoutPromise
-        ])
-        
-        console.log(`📋 RESULT:`, result)
-      } catch (timeoutError) {
-        console.log(`⏰ TIMEOUT ERROR:`, timeoutError)
-        throw timeoutError
-      }
+      const result = await submitSBCSquad(user.username, selectedChallenge.id, cardIds)
+      
+      console.log(`📋 RESULT:`, result)
+      console.log(`📋 RESULT TYPE:`, typeof result)
+      console.log(`📋 RESULT SUCCESS:`, (result as any)?.success)
+      console.log(`📋 RESULT ERROR:`, (result as any)?.error)
+      console.log(`📋 RESULT VALIDATION:`, (result as any)?.validation)
 
-      if (result && result.success) {
+      if (result && (result as any).success) {
         console.log('✅ ERFOLG! Squad eingetauscht!')
+        
+        // SUCCESS TOAST ANZEIGEN
+        const rewards = (result as any)?.validation?.rewardsGiven || {}
+        let rewardText = '🎉 Squad successfully exchanged!'
+        
+        if (rewards.tickets > 0) rewardText += `\n+${rewards.tickets} Classic Tickets`
+        if (rewards.elite_tickets > 0) rewardText += `\n+${rewards.elite_tickets} Elite Tickets`
+        if (rewards.icon_tickets > 0) rewardText += `\n+${rewards.icon_tickets} Icon Tickets`
+        if (rewards.tokens > 0) rewardText += `\n+${rewards.tokens} Tokens`
+        if (rewards.wbc_card > 0) rewardText += `\n+1 WBC Card`
+        
+        toast.success(rewardText, {
+          duration: 5000,
+          description: 'Your rewards have been added to your account!'
+        })
         
         // SOFORTIGES TEAM-RESET
         setSelectedCards(new Array(11).fill(undefined))
@@ -523,10 +603,12 @@ export default function SBCPage() {
         // CHALLENGE ZURÜCKSETZEN
         setSelectedChallenge(null)
       } else {
-        console.log(`❌ FEHLER: ${result?.error}`)
+        console.log(`❌ FEHLER: ${(result as any)?.error}`)
+        toast.error(`Failed to exchange squad: ${(result as any)?.error || 'Unknown error'}`)
       }
     } catch (error) {
       console.log(`💥 EXCEPTION:`, error)
+      toast.error(`Exception occurred: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
       setSubmitting(false)
     }
@@ -573,7 +655,7 @@ export default function SBCPage() {
       status.push({
         requirement: `Team Rating: ${challenge.requirements_team_rating}+`,
         fulfilled: ratingFulfilled,
-        current: `${stats.teamRating}/${challenge.requirements_team_rating}`
+        current: `${stats.teamRating.toFixed(1)}/${challenge.requirements_team_rating}`
       })
     }
     
@@ -590,12 +672,13 @@ export default function SBCPage() {
           
           // Check if we have enough cards of this rarity with minimum level
           // Clean up rarity strings by removing extra quotes and strange characters
-          const cleanRarity = rarity.replace(/["""►]/g, '').replace(/\s+/g, '').trim()
+          // Also handle case differences: "Rare" vs "rare"
+          const cleanRarity = rarity.replace(/["""►]/g, '').replace(/\s+/g, '').trim().toLowerCase()
           const validCardsOfRarity = selectedCards
             .filter(card => {
               if (card === undefined) return false
               // Clean up card rarity string - remove all extra quotes, strange chars, and spaces
-              const cleanCardRarity = card.rarity.replace(/["""►]/g, '').replace(/\s+/g, '').trim()
+              const cleanCardRarity = card.rarity.replace(/["""►]/g, '').replace(/\s+/g, '').trim().toLowerCase()
               return cleanCardRarity === cleanRarity && card.level >= requiredMinLevel
             }) as UserCard[]
           
@@ -609,19 +692,19 @@ export default function SBCPage() {
             cleanRarity: `"${cleanRarity}"`,
             allCardsOfRarity: selectedCards.filter(card => {
               if (card === undefined) return false
-              const cleanCardRarity = card.rarity.replace(/["""►]/g, '').replace(/\s+/g, '').trim()
+              const cleanCardRarity = card.rarity.replace(/["""►]/g, '').replace(/\s+/g, '').trim().toLowerCase()
               return cleanCardRarity === cleanRarity
             }).map(card => ({ 
               name: card!.name, 
               level: card!.level, 
               originalRarity: `"${card!.rarity}"`,
-              cleanRarity: `"${card!.rarity.replace(/["""►]/g, '').replace(/\s+/g, '').trim()}"`
+              cleanRarity: `"${card!.rarity.replace(/["""►]/g, '').replace(/\s+/g, '').trim().toLowerCase()}"`
             })),
             validCards: validCardsOfRarity.map(card => ({ 
               name: card.name, 
               level: card.level, 
               originalRarity: `"${card.rarity}"`,
-              cleanRarity: `"${card.rarity.replace(/["""]/g, '').trim()}"`
+              cleanRarity: `"${card.rarity.replace(/["""►]/g, '').replace(/\s+/g, '').trim().toLowerCase()}"`
             })),
             validCount: validCardsOfRarity.length,
             fulfilled: rarityFulfilled
@@ -632,7 +715,7 @@ export default function SBCPage() {
             name: card!.name,
             level: card!.level,
             originalRarity: `"${card!.rarity}"`, // Show original string value
-            cleanRarity: `"${card!.rarity.replace(/["""]/g, '').trim()}"`, // Show cleaned string value
+            cleanRarity: `"${card!.rarity.replace(/["""►]/g, '').replace(/\s+/g, '').trim().toLowerCase()}"`, // Show cleaned string value
             rarityLength: card!.rarity.length, // Show string length
             rarityCharCodes: card!.rarity.split('').map(char => char.charCodeAt(0)) // Show character codes
           }))
@@ -644,7 +727,7 @@ export default function SBCPage() {
           console.log('=== END SELECTED CARDS DEBUG ===')
           
           // Debug: Show all unique rarity values (with cleaning)
-          const uniqueRarities = [...new Set(selectedCards.filter(card => card !== undefined).map(card => card!.rarity.replace(/["""►]/g, '').replace(/\s+/g, '').trim()))]
+          const uniqueRarities = [...new Set(selectedCards.filter(card => card !== undefined).map(card => card!.rarity.replace(/["""►]/g, '').replace(/\s+/g, '').trim().toLowerCase()))]
           const uniqueRaritiesDebug = uniqueRarities.map(rarity => ({
             rarity: `"${rarity}"`,
             length: rarity.length,
@@ -971,6 +1054,9 @@ export default function SBCPage() {
                             ? 'bg-green-600 border-green-500 cursor-pointer hover:bg-green-700'
                             : 'bg-gray-600 border-gray-500 cursor-not-allowed opacity-50'
                       }`}
+                      style={{
+                        pointerEvents: submitting || !selectedChallenge || !isAllRequirementsFulfilled(selectedChallenge) ? 'none' : 'auto'
+                      }}
                     >
                       {submitting ? (
                         <div className="flex items-center justify-center">
@@ -1217,72 +1303,92 @@ export default function SBCPage() {
                 </CardHeader>
                 
                 <CardContent className="pt-0">
-                  <div className="space-y-3">
-                    {/* Requirements Preview */}
-                    <div className="space-y-1">
-                      <h4 className="font-semibold text-white text-sm">Requirements:</h4>
-                      <div className="text-xs text-purple-200 space-y-1">
-                        {renderRequirements(challenge).map((requirement, index) => (
-                          <div key={index}>• {requirement}</div>
-                        ))}
+                  <div className="flex gap-6">
+                    {/* Left side - Requirements and Rewards */}
+                    <div className="flex-1 space-y-3">
+                      {/* Requirements Preview */}
+                      <div className="space-y-1">
+                        <h4 className="font-semibold text-white text-sm">Requirements:</h4>
+                        <div className="text-xs text-purple-200 space-y-1">
+                          {renderRequirements(challenge).map((requirement, index) => (
+                            <div key={index}>• {requirement}</div>
+                          ))}
+                        </div>
                       </div>
-                    </div>
 
-                    {/* Rewards Preview */}
-                    <div className="space-y-1">
-                      <h4 className="font-semibold text-white text-sm">Rewards:</h4>
-                      <div className="text-xs text-purple-200 space-y-1">
-                        {renderRewards(challenge).map((reward, index) => (
-                          <div key={index} className="flex items-center gap-1">
-                            {reward.icon}
-                            <span>{reward.text}</span>
-                          </div>
-                        ))}
+                      {/* Rewards Preview */}
+                      <div className="space-y-1">
+                        <h4 className="font-semibold text-white text-sm">Rewards:</h4>
+                        <div className="text-xs text-purple-200 space-y-1">
+                          {renderRewards(challenge).map((reward, index) => (
+                            <div key={index} className="flex items-center gap-1">
+                              {reward.icon}
+                              <span>{reward.text}</span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    </div>
 
-                    {/* Progress */}
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-purple-200">Status</span>
-                        <span className="text-white">
-                          {isChallengeCompleted(challenge.id) ? 'Completed' : 'Open'}
-                        </span>
+                      {/* Progress */}
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-purple-200">Status</span>
+                          <span className="text-white">
+                            {isChallengeCompleted(challenge.id) ? 'Completed' : 'Open'}
+                          </span>
+                        </div>
+                        <Progress 
+                          value={isChallengeCompleted(challenge.id) ? 100 : 0} 
+                          className="h-1"
+                        />
                       </div>
-                      <Progress 
-                        value={isChallengeCompleted(challenge.id) ? 100 : 0} 
-                        className="h-1"
-                      />
-                    </div>
 
-                    {/* Action Button */}
-                    <Button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleSelectChallenge(challenge)
-                      }}
-                      disabled={!isChallengeSelectable(challenge)}
-                      className="w-full bg-purple-600 hover:bg-purple-700 text-white text-sm"
-                    >
-                      {isChallengeCompleted(challenge.id) ? (
-                        canChallengeBeRepeated(challenge) ? (
-                          <>
-                            <Target className="h-3 w-3 mr-1" />
-                            Build Again
-                          </>
+                      {/* Action Button */}
+                      <Button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleSelectChallenge(challenge)
+                        }}
+                        disabled={!isChallengeSelectable(challenge)}
+                        className="w-full bg-purple-600 hover:bg-purple-700 text-white text-sm"
+                      >
+                        {isChallengeCompleted(challenge.id) ? (
+                          canChallengeBeRepeated(challenge) ? (
+                            <>
+                              <Target className="h-3 w-3 mr-1" />
+                              Build Again
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Completed
+                            </>
+                          )
                         ) : (
                           <>
-                            <CheckCircle className="h-3 w-3 mr-1" />
-                            Completed
+                            <Target className="h-3 w-3 mr-1" />
+                            Build Squad
                           </>
-                        )
-                      ) : (
-                        <>
-                          <Target className="h-3 w-3 mr-1" />
-                          Build Squad
-                        </>
-                      )}
-                    </Button>
+                        )}
+                      </Button>
+                    </div>
+
+                    {/* Right side - WBC Card (in the green circle area) */}
+                    {challenge.wbc_card_reward && (
+                      <div className="flex flex-col items-center justify-center">
+                        <div className="w-20 h-28 bg-gray-800 rounded-lg border-2 border-emerald-400 overflow-hidden shadow-lg">
+                          <img
+                            src={getCloudflareImageUrl(allCards.find(card => card.id === challenge.wbc_card_reward)?.image_url)}
+                            alt="WBC Card"
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.src = '/placeholder.svg'
+                            }}
+                          />
+                        </div>
+                        <span className="text-xs text-emerald-300 mt-2 font-semibold">doue</span>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>

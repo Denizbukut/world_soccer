@@ -82,14 +82,25 @@ export default function CollectionPage() {
   // Fetch user's cards
   useEffect(() => {
     async function fetchUserCards() {
-      if (!user?.username) return
+      if (!user?.username) {
+        console.log("No user found, redirecting to login")
+        // Sanftere Weiterleitung statt sofortiger Redirect
+        setTimeout(() => {
+          router.push('/login')
+        }, 100)
+        return
+      }
 
       setLoading(true)
       const supabase = getSupabaseBrowserClient()
 
       try {
         // 1. First get user's cards - only one entry per card_id
-        if (!supabase) return
+        if (!supabase) {
+          console.log("No Supabase client available")
+          setLoading(false)
+          return
+        }
         const { data: userCardsData, error: userCardsError } = await supabase
           .from("user_cards")
           .select(`id, card_id, quantity, level`)
@@ -110,10 +121,13 @@ export default function CollectionPage() {
         }
 
         if (!userCardsData || userCardsData.length === 0) {
+          console.log("No user cards found for:", user.username)
           setUserCards([])
           setLoading(false)
           return
         }
+
+        console.log("Found user cards:", userCardsData.length, "for user:", user.username)
 
         // 2. Deduplicate user cards by card_id - keep only one entry per card
         const uniqueUserCards = userCardsData.reduce((acc, current) => {
@@ -492,13 +506,13 @@ export default function CollectionPage() {
               <div className="bg-black/90 border border-yellow-500 rounded-xl p-6 max-w-sm w-full shadow-lg text-white">
                 <h2 className="text-lg font-bold mb-4 text-yellow-300">Select Card for {selectingPosition}</h2>
                 <div className="max-h-64 overflow-y-auto space-y-2">
-                  {sortedUserCards.map(card => {
+                  {sortedUserCards.map((card, index) => {
                     // Prüfen, ob die Karte schon in einer anderen Position ist
                     const alreadyInSquad = Object.entries(squad).some(
                       ([slot, c]) => c && c.cardId === card.cardId && slot !== selectingPosition
                     );
-                    // Key eindeutig machen:
-                    const uniqueKey = card.cardId + '-' + selectingPosition;
+                    // Key eindeutig machen mit Index um Duplikate zu vermeiden:
+                    const uniqueKey = card.cardId + '-' + selectingPosition + '-' + index;
                     return (
                       <button
                         key={uniqueKey}

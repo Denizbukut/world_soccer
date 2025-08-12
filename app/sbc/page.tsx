@@ -80,7 +80,7 @@ export default function SBCPage() {
       
       const [challengesData, progressData, allCardsData] = await Promise.all([
         getSBCChallenges(user.username),
-        getUserSBCProgress(user.id || user.username),
+        getUserSBCProgress(user.username),
         supabase.from('cards').select('*')
       ])
       
@@ -424,6 +424,14 @@ export default function SBCPage() {
       // Find the WBC card details from allCards
       const wbcCard = allCards.find(card => card.id === challenge.wbc_card_reward)
       const cardName = wbcCard ? wbcCard.name : 'WBC Card'
+      
+      console.log('DEBUG WBC Card:', {
+        challengeName: challenge.name,
+        wbcCardReward: challenge.wbc_card_reward,
+        allCardsLength: allCards.length,
+        wbcCard: wbcCard,
+        cardName: cardName
+      })
       
       rewards.push({
         type: 'wbc_card',
@@ -1410,7 +1418,9 @@ export default function SBCPage() {
                             }}
                           />
                         </div>
-                        <span className="text-xs text-emerald-300 mt-2 font-semibold">doue</span>
+                        <span className="text-xs text-emerald-300 mt-2 font-semibold">
+                          {allCards.find(card => card.id === challenge.wbc_card_reward)?.name || 'WBC Card'}
+                        </span>
                       </div>
                     )}
                   </div>

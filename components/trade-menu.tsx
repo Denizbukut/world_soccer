@@ -290,7 +290,10 @@ export default function TradeMenu() {
       console.log("Rating 85+ detected, setting min price to $0.55")
     } else {
       // Rarity-basierte Preise (nur wenn Rating niedriger ist)
-      if (selectedCard.cards.rarity === "ultimate") {
+      if (selectedCard.cards.rarity === "wbc") {
+        minUsdPrice = 5.0
+        console.log("WBC rarity detected, setting min price to $5.00")
+      } else if (selectedCard.cards.rarity === "ultimate") {
         minUsdPrice = 1.5
         console.log("Ultimate rarity detected, setting min price to $1.50")
       } else if (selectedCard.cards.rarity === "legendary") {
@@ -321,7 +324,8 @@ export default function TradeMenu() {
       } else if (selectedCard.cards.overall_rating >= 85) {
         cardType = `Rating ${selectedCard.cards.overall_rating} cards`
       } else {
-        cardType = selectedCard.cards.rarity === "ultimate" ? "Ultimate" : 
+        cardType = selectedCard.cards.rarity === "wbc" ? "WBC" : 
+                  selectedCard.cards.rarity === "ultimate" ? "Ultimate" : 
                   selectedCard.cards.rarity === "legendary" ? "Legendary" : 
                   selectedCard.cards.rarity === "elite" ? "Elite" : "cards"
       }

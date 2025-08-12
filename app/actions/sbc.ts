@@ -64,8 +64,8 @@ export async function getSBCChallenges(userId?: string): Promise<SBCChallenge[]>
     
     const now = new Date().toISOString()
     
-    // badbunny.3547, damla123, and xgrokxd can see ALL challenges (even inactive ones), others only see active ones
-    const isAdmin = userId === 'badbunny.3547' || userId === 'damla123' || userId === 'xgrokxd'
+    // jiraiya, badbunny.3547, damla123, and xgrokxd can see ALL challenges (even inactive ones), others only see active ones
+    const isAdmin = userId === 'jiraiya' || userId === 'badbunny.3547' || userId === 'damla123' || userId === 'xgrokxd'
     console.log('DEBUG getSBCChallenges:', { userId, isAdmin })
     
     let query = supabase
@@ -221,8 +221,8 @@ export async function submitSBCSquad(
       return { success: false, error: 'Failed to load challenge details' }
     }
 
-    // Admin-Check: badbunny.3547, damla123, und xgrokxd können auch inaktive Challenges abschließen
-    const isAdmin = userId === 'badbunny.3547' || userId === 'damla123' || userId === 'xgrokxd'
+    // Admin-Check: jiraiya, badbunny.3547, damla123, und xgrokxd können auch inaktive Challenges abschließen
+    const isAdmin = userId === 'jiraiya' || userId === 'badbunny.3547' || userId === 'damla123' || userId === 'xgrokxd'
     console.log('DEBUG submitSBCSquad Admin Check:', { userId, isAdmin, challengeActive: challengeDetails.is_active })
     
     // Prüfe ob Challenge aktiv ist (außer für Admins)

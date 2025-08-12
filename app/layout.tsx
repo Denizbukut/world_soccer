@@ -30,6 +30,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
             <AppProvider><WldPriceProvider>{children}</WldPriceProvider></AppProvider>
           </ThemeProvider>
+          
+          
 
         </body>
       </MiniKitProvider>

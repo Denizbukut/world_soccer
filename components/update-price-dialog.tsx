@@ -75,7 +75,9 @@ useEffect(() => {
     minUsdPrice = 0.55
   } else {
     // Rarity-basierte Preise (nur wenn Rating niedriger ist)
-    if (cardRarity === "ultimate") {
+    if (cardRarity === "wbc") {
+      minUsdPrice = 5.0
+    } else if (cardRarity === "ultimate") {
       minUsdPrice = 1.5
     } else if (cardRarity === "legendary") {
       minUsdPrice = 1.0

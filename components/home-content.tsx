@@ -250,6 +250,7 @@ export default function Home() {
       color: 'text-purple-100',
       dot: 'bg-purple-500',
       progress: sbcLoading ? 'Loading...' : `${sbcChallenges.filter(c => isChallengeCompleted(c.id)).length}/${sbcChallenges.length}`,
+      badge: 'NEW WBC',
     },
   ]
   const handleReferralSbcPrev = () => setReferralSbcIndex((prev) => (prev === 0 ? referralSbcSlides.length - 1 : prev - 1))

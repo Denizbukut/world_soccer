@@ -289,6 +289,18 @@ export default function SBCPage() {
   }
 
   const getDifficultyColor = (challenge: SBCChallenge) => {
+    // Verwende die difficulty aus der Datenbank, falls vorhanden
+    if (challenge.difficulty) {
+      switch (challenge.difficulty.toLowerCase()) {
+        case 'easy': return 'bg-green-500'
+        case 'medium': return 'bg-yellow-500'
+        case 'hard': return 'bg-orange-500'
+        case 'legendary': return 'bg-red-500'
+        default: break
+      }
+    }
+    
+    // Fallback auf Team Rating basierte Berechnung
     if (challenge.requirements_team_rating) {
       if (challenge.requirements_team_rating >= 90) return 'bg-red-500'
       if (challenge.requirements_team_rating >= 80) return 'bg-orange-500'
@@ -299,6 +311,18 @@ export default function SBCPage() {
   }
 
   const getDifficultyText = (challenge: SBCChallenge) => {
+    // Verwende die difficulty aus der Datenbank, falls vorhanden
+    if (challenge.difficulty) {
+      switch (challenge.difficulty.toLowerCase()) {
+        case 'easy': return 'Easy'
+        case 'medium': return 'Medium'
+        case 'hard': return 'Hard'
+        case 'legendary': return 'Legendary'
+        default: break
+      }
+    }
+    
+    // Fallback auf Team Rating basierte Berechnung
     if (challenge.requirements_team_rating) {
       if (challenge.requirements_team_rating >= 90) return 'Legendary'
       if (challenge.requirements_team_rating >= 80) return 'Hard'

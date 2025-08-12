@@ -21,6 +21,7 @@ export interface SBCChallenge {
   rewards_icon_tickets?: number
   special_reward?: string
   wbc_card_reward?: string  // UUID of the WBC card to reward
+  difficulty?: string  // Difficulty level: 'easy', 'medium', 'hard', 'legendary'
   is_active: boolean
   is_repeatable: boolean
   start_date?: string | null

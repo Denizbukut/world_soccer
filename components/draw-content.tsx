@@ -21,6 +21,7 @@ import { useWldPrice } from "@/contexts/WldPriceContext"
 import { Info } from "lucide-react"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 import { isUserBanned } from "@/lib/banned-users"
+import { getActiveGodPackDiscount } from "@/app/actions/god-pack-discount"
 
 
 // Rarität definieren - UPDATED: Added godlike
@@ -156,6 +157,7 @@ export default function DrawPage() {
   const [isBulkDraw, setIsBulkDraw] = useState(false)
   const [showBulkLoading, setShowBulkLoading] = useState(false)
   const [wldPriceEstimate, setWldPriceEstimate] = useState<string>("–")
+  const [normalWldPrice, setNormalWldPrice] = useState<string>("–")
 
   // Animation states
   const [showPackSelection, setShowPackSelection] = useState(true)
@@ -175,6 +177,13 @@ export default function DrawPage() {
   const [availableEpochs, setAvailableEpochs] = useState<number[]>([1])
   const [godPacksLeft, setGodPacksLeft] = useState<number | null>(null)
   const max_godpacks_daily = 200;
+  // God Pack Discount state
+  const [godPackDiscount, setGodPackDiscount] = useState<{
+    isActive: boolean
+    value: number
+    endTime?: string
+  } | null>(null)
+  const [godPackDiscountTimeLeft, setGodPackDiscountTimeLeft] = useState<string>("")
 const [godPackChances, setGodPackChances] = useState<{ godlike: number; epic: number }>({ godlike: 1, epic: 49 })
 const [showInfo, setShowInfo] = useState(false)
   const [iconTickets, setIconTickets] = useState(0)
@@ -238,6 +247,25 @@ const [showInfo, setShowInfo] = useState(false)
     }
   }
 
+  // Fetch God Pack Discount
+  const fetchGodPackDiscount = async () => {
+    try {
+      const result = await getActiveGodPackDiscount()
+      if (result.success && result.data) {
+        setGodPackDiscount({
+          isActive: true,
+          value: result.data.value,
+          endTime: result.data.end_time
+        })
+      } else {
+        setGodPackDiscount(null)
+      }
+    } catch (error) {
+      console.error("Error fetching god pack discount:", error)
+      setGodPackDiscount(null)
+    }
+  }
+
   // Bulk opening states
   const [selectedBulkCard, setSelectedBulkCard] = useState<any | null>(null)
 
@@ -262,7 +290,36 @@ const [showInfo, setShowInfo] = useState(false)
   const { price } = useWldPrice()
   useEffect(() => {
   fetchGodPacksLeft()
+  fetchGodPackDiscount()
 }, [])
+
+  // God Pack Discount countdown
+  useEffect(() => {
+    if (!godPackDiscount?.endTime) return
+
+    const updateCountdown = () => {
+      const now = new Date().getTime()
+      const endTime = new Date(godPackDiscount.endTime!).getTime()
+      const timeLeft = endTime - now
+
+      if (timeLeft <= 0) {
+        setGodPackDiscountTimeLeft("")
+        setGodPackDiscount(null)
+        return
+      }
+
+      const hours = Math.floor(timeLeft / (1000 * 60 * 60))
+      const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60))
+      const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000)
+
+      setGodPackDiscountTimeLeft(`${hours}h ${minutes}m ${seconds}s`)
+    }
+
+    updateCountdown()
+    const interval = setInterval(updateCountdown, 1000)
+
+    return () => clearInterval(interval)
+  }, [godPackDiscount?.endTime])
 
 
   // Payment function for God Pack
@@ -283,8 +340,14 @@ const [showInfo, setShowInfo] = useState(false)
       return
     }
 
-    const dollarAmount = 0.8
-    const fallbackWldAmount = 0.8
+    let dollarAmount = 0.8
+    
+    // Apply God Pack discount if active and user is on god pack tab
+    if (godPackDiscount?.isActive && activeTab === "god") {
+      dollarAmount = dollarAmount * (1 - godPackDiscount.value)
+    }
+    
+    const fallbackWldAmount = dollarAmount
     const wldAmount = price ? dollarAmount / price : fallbackWldAmount
     const wldAmountRounded = Number(wldAmount.toFixed(3))
     setWldPriceEstimate(wldAmountRounded.toFixed(3))
@@ -401,12 +464,22 @@ const [showInfo, setShowInfo] = useState(false)
   }, [user?.username])
 
   useEffect(() => {
-    const dollarAmount = 0.8
-    if (price) {
-      const wld = dollarAmount / price
-      setWldPriceEstimate(wld.toFixed(3))
+    const normalDollarAmount = 0.8
+    let discountedDollarAmount = 0.8
+    
+    // Apply God Pack discount if active and user is on god pack tab
+    if (godPackDiscount?.isActive && activeTab === "god") {
+      discountedDollarAmount = discountedDollarAmount * (1 - godPackDiscount.value)
     }
-  }, [price])
+    
+    if (price) {
+      const normalWld = normalDollarAmount / price
+      const discountedWld = discountedDollarAmount / price
+      
+      setNormalWldPrice(normalWld.toFixed(3))
+      setWldPriceEstimate(discountedWld.toFixed(3))
+    }
+  }, [price, godPackDiscount, activeTab])
 
   useEffect(() => {
     setIsClient(true)
@@ -1037,6 +1110,22 @@ const [showInfo, setShowInfo] = useState(false)
 
                 </div>
                 
+                {/* God Pack Discount Banner */}
+                {godPackDiscount?.isActive && activeTab === "god" && (
+                  <div className="mb-4 text-center text-sm font-medium px-4 py-2 rounded-xl bg-gradient-to-r from-red-500 to-red-600 text-white border border-red-400 animate-pulse">
+                    🔥 {Math.round(godPackDiscount.value * 100)}% OFF GOAT PACKS! 
+                    <div className="flex items-center justify-center gap-2 mt-1 text-xs">
+                      <span className="line-through text-gray-300">{normalWldPrice} WLD</span>
+                      <span className="text-green-300 font-bold">{wldPriceEstimate} WLD</span>
+                    </div>
+                    {godPackDiscountTimeLeft && (
+                      <span className="block text-xs mt-1">
+                        Limited time: {godPackDiscountTimeLeft}
+                      </span>
+                    )}
+                  </div>
+                )}
+                
                 {godPacksLeft !== null && (
                   <div className={`mb-4 text-center text-sm font-medium px-4 py-2 rounded-xl ${
                     godPacksLeft === 0
@@ -1248,7 +1337,17 @@ const [showInfo, setShowInfo] = useState(false)
                             ) : (
                               <div className="flex items-center gap-2">
                                 <Zap className="h-5 w-5" />
-                                <span className="font-bold text-base">{activeTab === "god" ? "Open GOAT Pack" : activeTab === "legendary" ? "Open Elite Pack" : activeTab === "icon" ? "Open ICON Pack" : "Open Basic Pack"} ({wldPriceEstimate} WLD)</span>
+                                <span className="font-bold text-base">
+                                  {activeTab === "god" ? "Open GOAT Pack" : activeTab === "legendary" ? "Open Elite Pack" : activeTab === "icon" ? "Open ICON Pack" : "Open Basic Pack"}
+                                  {activeTab === "god" && godPackDiscount?.isActive ? (
+                                    <span className="block text-sm">
+                                      <span className="line-through text-gray-300">{normalWldPrice} WLD</span>
+                                      <span className="text-green-300 ml-2">{wldPriceEstimate} WLD</span>
+                                    </span>
+                                  ) : (
+                                    <span className="block text-sm">({wldPriceEstimate} WLD)</span>
+                                  )}
+                                </span>
                               </div>
                             )}
                           </Button>

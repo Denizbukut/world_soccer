@@ -379,6 +379,7 @@ const [copied, setCopied] = useState(false)
     null,
   )
   const [hasActiveDiscount, setHasActiveDiscount] = useState(false)
+  const [discountValue, setDiscountValue] = useState(0)
 
   const handleCopy = () => {
     setCopied(true)
@@ -719,6 +720,9 @@ const [copied, setCopied] = useState(false)
     try {
       const result = await getActiveTimeDiscount()
       setHasActiveDiscount(result.success && result.data !== null)
+      if (result.success && result.data) {
+        setDiscountValue(Math.round(result.data.value * 100))
+      }
     } catch (error) {
       console.error("Error checking discount status:", error)
     }
@@ -1812,7 +1816,7 @@ const [copied, setCopied] = useState(false)
             <div className="col-span-2 relative">
               {hasActiveDiscount && (
                 <div className="absolute -top-2 -right-2 bg-white text-red-600 text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow z-10">
-                  -15%
+                  -{discountValue}%
                 </div>
               )}
               <Link href="/shop" className="block w-full h-full">

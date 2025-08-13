@@ -1340,8 +1340,13 @@ const [copied, setCopied] = useState(false)
     if (!specialDeal) return false;
     
     try {
-      const dollarAmount = specialDeal.price;
-      const fallbackWldAmount = specialDeal.price;
+      // Berechne den rabattierten Preis
+      const discountedPrice = specialDeal.discount_percentage && specialDeal.discount_percentage > 0 
+        ? specialDeal.price * (1 - specialDeal.discount_percentage / 100)
+        : specialDeal.price;
+      
+      const dollarAmount = discountedPrice;
+      const fallbackWldAmount = discountedPrice;
       const wldAmount = price ? dollarAmount / price : fallbackWldAmount;
       
       const res = await fetch("/api/initiate-payment", {
@@ -2006,7 +2011,25 @@ const [copied, setCopied] = useState(false)
                         </span>
                       )}
                     </div>
-                    <div className="text-lg font-bold text-center mb-1">{price ? `${(specialDeal.price / price).toFixed(2)} WLD` : `$${specialDeal.price.toFixed(2)} USD`}</div>
+                    <div className="text-lg font-bold text-center mb-1">
+                      {specialDeal.discount_percentage && specialDeal.discount_percentage > 0 ? (
+                        <div className="flex flex-col items-center">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm line-through text-gray-400">
+                              {price ? `${(specialDeal.price / price).toFixed(2)} WLD` : `$${specialDeal.price.toFixed(2)} USD`}
+                            </span>
+                            <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full font-bold">
+                              -{specialDeal.discount_percentage}%
+                            </span>
+                          </div>
+                          <span className="text-green-400">
+                            {price ? `${((specialDeal.price * (1 - specialDeal.discount_percentage / 100)) / price).toFixed(2)} WLD` : `$${(specialDeal.price * (1 - specialDeal.discount_percentage / 100)).toFixed(2)} USD`}
+                          </span>
+                        </div>
+                      ) : (
+                        <span>{price ? `${(specialDeal.price / price).toFixed(2)} WLD` : `$${specialDeal.price.toFixed(2)} USD`}</span>
+                      )}
+                    </div>
                   </>
                 ) : (
                   <div className="flex flex-1 items-center justify-center h-full text-white/70">No Special Deal Today</div>
@@ -2136,7 +2159,15 @@ const [copied, setCopied] = useState(false)
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm text-gray-400">Price:</p>
-                          <p className="text-2xl font-bold text-[#3DAEF5]">{price ? `${(specialDeal.price / price).toFixed(2)} WLD` : `$${specialDeal.price.toFixed(2)} USD`}</p>
+                          {specialDeal.discount_percentage && specialDeal.discount_percentage > 0 ? (
+                            <div>
+                              <p className="text-lg line-through text-gray-500">{price ? `${(specialDeal.price / price).toFixed(2)} WLD` : `$${specialDeal.price.toFixed(2)} USD`}</p>
+                              <p className="text-2xl font-bold text-green-400">{price ? `${((specialDeal.price * (1 - specialDeal.discount_percentage / 100)) / price).toFixed(2)} WLD` : `$${(specialDeal.price * (1 - specialDeal.discount_percentage / 100)).toFixed(2)} USD`}</p>
+                              <p className="text-sm text-red-400 font-bold">-{specialDeal.discount_percentage}% OFF!</p>
+                            </div>
+                          ) : (
+                            <p className="text-2xl font-bold text-[#3DAEF5]">{price ? `${(specialDeal.price / price).toFixed(2)} WLD` : `$${specialDeal.price.toFixed(2)} USD`}</p>
+                          )}
                         </div>
                         <Button
                           onClick={handleBuySpecialDeal}

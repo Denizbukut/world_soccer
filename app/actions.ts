@@ -1066,8 +1066,8 @@ export async function drawGodPacks(username: string, count = 1) {
       userClanRole = memberData?.role || null
     }
 
-    // Give 3 Icon Tickets for GOAT Pack purchase
-    const newIconTicketCount = (Number(userData.icon_tickets) || 0) + 3
+    // Give 3 Icon Tickets per GOAT Pack purchase
+    const newIconTicketCount = (Number(userData.icon_tickets) || 0) + (3 * count)
     //  Speichere neuen Wert in DB
     const { error: updateError } = await supabase
       .from("users")

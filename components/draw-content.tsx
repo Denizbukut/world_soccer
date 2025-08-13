@@ -323,7 +323,7 @@ const [showInfo, setShowInfo] = useState(false)
 
 
   // Payment function for God Pack
-  const sendPayment = async () => {
+  const sendPayment = async (count = 1) => {
     // Check if user is banned before allowing payment
     if (!user) {
       toast({ title: "Error", description: "You must be logged in.", variant: "destructive" })
@@ -340,9 +340,14 @@ const [showInfo, setShowInfo] = useState(false)
       return
     }
 
-    let dollarAmount = 0.8
+    let dollarAmount = 0.91 * count
     
-    // Apply God Pack discount if active and user is on god pack tab
+    // Apply permanent 10% discount for 5 packs
+    if (count === 5) {
+      dollarAmount = dollarAmount * 0.90 // 10% discount
+    }
+    
+    // Apply additional God Pack discount if active and user is on god pack tab
     if (godPackDiscount?.isActive && activeTab === "god") {
       dollarAmount = dollarAmount * (1 - godPackDiscount.value)
     }
@@ -374,14 +379,14 @@ const [showInfo, setShowInfo] = useState(false)
             token_amount: tokenToDecimals(wldAmountRounded, Tokens.WLD).toString(),
           },
         ],
-        description: isGoatPack ? "Goat Pack" : "God Pack",
+        description: isGoatPack ? `Goat Pack x${count}` : `God Pack x${count}`,
       }
 
       const { finalPayload } = await MiniKit.commandsAsync.pay(payload)
 
       if (finalPayload.status == "success") {
         console.log("success sending payment")
-        handleSelectPack(isGoatPack ? "god" : "god")
+        handleSelectPack(isGoatPack ? "god" : "god", count)
       } else {
         toast({
           title: "Payment Failed",
@@ -1320,37 +1325,91 @@ const [showInfo, setShowInfo] = useState(false)
                         )}
                       </div>
 
-                      {/* Pack Buttons - UPDATED: God pack button to red gradient */}
+                      {/* Pack Buttons - UPDATED: God pack buttons to red gradient */}
                       <div className="w-full space-y-3">
                         {activeTab === "god" ? (
-                          // UPDATED: God Pack Payment Button to red gradient
-                          <Button
-                            onClick={sendPayment}
-                            disabled={godPacksLeft === null || godPacksLeft >= max_godpacks_daily}
-                            className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl py-4 shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {isDrawing ? (
-                              <div className="flex items-center justify-center">
-                                <div className="h-4 w-4 border-2 border-t-transparent border-white rounded-full animate-spin mr-2"></div>
-                                <span className="text-sm font-medium">Opening...</span>
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-2">
-                                <Zap className="h-5 w-5" />
-                                <span className="font-bold text-base">
-                                  {activeTab === "god" ? "Open GOAT Pack" : activeTab === "legendary" ? "Open Elite Pack" : activeTab === "icon" ? "Open ICON Pack" : "Open Basic Pack"}
-                                  {activeTab === "god" && godPackDiscount?.isActive ? (
+                          <>
+                            {/* God Pack Buttons */}
+                            <div className="space-y-3">
+                              <Button
+                                onClick={() => sendPayment(1)}
+                                disabled={godPacksLeft === null || godPacksLeft >= max_godpacks_daily}
+                                className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl py-4 shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                {isDrawing ? (
+                                  <div className="flex items-center justify-center">
+                                    <div className="h-4 w-4 border-2 border-t-transparent border-white rounded-full animate-spin mr-2"></div>
+                                    <span className="text-sm font-medium">Opening...</span>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-2">
+                                    <Zap className="h-5 w-5" />
+                                    <span className="font-bold text-base">1 Pack</span>
+                                    {godPackDiscount?.isActive ? (
+                                      <span className="block text-sm">
+                                        <span className="line-through text-gray-300">{(0.91 / (price || 1)).toFixed(3)} WLD</span>
+                                        <span className="text-green-300 ml-2">{((0.91 * (1 - godPackDiscount.value)) / (price || 1)).toFixed(3)} WLD</span>
+                                      </span>
+                                    ) : (
+                                      <span className="block text-sm">{(0.91 / (price || 1)).toFixed(3)} WLD</span>
+                                    )}
+                                  </div>
+                                )}
+                              </Button>
+
+                              <div className="relative">
+                                <Button
+                                  onClick={() => sendPayment(5)}
+                                  disabled={godPacksLeft === null || godPacksLeft >= max_godpacks_daily || (godPacksLeft !== null && godPacksLeft + 5 > max_godpacks_daily)}
+                                  className={
+                                    godPacksLeft === null || godPacksLeft >= max_godpacks_daily || (godPacksLeft !== null && godPacksLeft + 5 > max_godpacks_daily)
+                                      ? "w-full bg-gray-300 text-gray-500 rounded-xl py-4 shadow-sm cursor-not-allowed opacity-60"
+                                      : "w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-xl py-4 shadow-lg hover:shadow-xl transition-all duration-200 border-2 border-red-400 relative overflow-hidden"
+                                  }
+                                >
+                                  {/* Shine effect */}
+                                  <motion.div
+                                    className="absolute inset-0 pointer-events-none"
+                                    style={{
+                                      background: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%)",
+                                      backgroundSize: "200% 100%",
+                                    }}
+                                    animate={{
+                                      backgroundPosition: ["-200% 0%", "200% 0%"],
+                                    }}
+                                    transition={{
+                                      duration: 3,
+                                      repeat: Number.POSITIVE_INFINITY,
+                                      repeatType: "loop",
+                                      ease: "linear",
+                                    }}
+                                  />
+                                {isDrawing ? (
+                                  <div className="flex items-center justify-center">
+                                    <div className="h-4 w-4 border-2 border-t-transparent border-current rounded-full animate-spin mr-2"></div>
+                                    <span className="text-sm font-medium">Opening...</span>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-2">
+                                    <Zap className="h-5 w-5" />
+                                    <span className="font-bold text-base text-white">5 Packs</span>
                                     <span className="block text-sm">
-                                      <span className="line-through text-gray-300">{normalWldPrice} WLD</span>
-                                      <span className="text-green-300 ml-2">{wldPriceEstimate} WLD</span>
+                                      <span className="text-white">
+                                        {godPackDiscount?.isActive 
+                                          ? ((4.55 * 0.90 * (1 - godPackDiscount.value)) / (price || 1)).toFixed(3)
+                                          : ((4.55 * 0.90) / (price || 1)).toFixed(3)
+                                        } WLD
+                                      </span>
                                     </span>
-                                  ) : (
-                                    <span className="block text-sm">({wldPriceEstimate} WLD)</span>
-                                  )}
-                                </span>
+                                  </div>
+                                )}
+                              </Button>
+                              <div className="absolute -top-2 -right-2 bg-orange-500 text-white text-xs px-1.5 py-0.5 rounded-full font-bold">
+                                DISCOUNT (-10%)
                               </div>
-                            )}
-                          </Button>
+                            </div>
+                            </div>
+                          </>
                         ) : (
                           <>
                             {/* Regular/Legendary Pack Buttons */}

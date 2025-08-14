@@ -16,14 +16,14 @@ export default function AniBanner() {
        <div className="relative">
 
         {/* Banner Image */}
-        <Image
-          src="/Banner 1_Eng.png"
-          alt="Holdstation Swap Fest Banner"
-          width={800}
-          height={200}
-          className="w-full h-auto"
-          priority
-        />
+                 <Image
+           src="/Banner_1_Eng.png"
+           alt="Holdstation Swap Fest Banner"
+           width={800}
+           height={200}
+           className="w-full h-auto"
+           priority
+         />
 
         {/* Toggle Button */}
         <button

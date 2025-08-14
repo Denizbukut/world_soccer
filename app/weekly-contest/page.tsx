@@ -114,7 +114,7 @@ export default function WeeklyContestPage() {
             Earn as many <span className="text-yellow-400">Points</span> as possible!
           </div>
           <div className="text-sm text-yellow-100 space-y-1">
-            <div>• Premier League Players = <span className="font-bold text-yellow-400">1 Point</span></div>
+            <div>• La Liga Players = <span className="font-bold text-yellow-400">1 Point</span></div>
             <div>• Ultimate Cards = <span className="font-bold text-yellow-400">3 Points</span></div>
             <div>• Referrals = <span className="font-bold text-yellow-400">15 Points</span></div>
             <div>• GOAT Pack = <span className="font-bold text-yellow-400">20 Points</span></div>

@@ -641,9 +641,9 @@ const [showInfo, setShowInfo] = useState(false)
           await incrementMission(user.username, "draw_legendary_card", legendaryCards.length)
         }
 
-        const premierLeagueCards = result.drawnCards?.filter((card: any) => card.league_id === "3cd1fa22-d6fd-466a-8fe2-ca5c661d015d") || []
-        if (premierLeagueCards.length > 0) {
-          await incrementLegendaryDraw(user.username, premierLeagueCards.length * 1)
+        const laLigaCards = result.drawnCards?.filter((card: any) => card.league_id === "b04c3977-b810-4b2b-8972-a59604efdd10") || []
+        if (laLigaCards.length > 0) {
+          await incrementLegendaryDraw(user.username, laLigaCards.length * 1)
         }
 
         const goatPacks = cardType === "god" ? count : 0;
@@ -686,6 +686,15 @@ const [showInfo, setShowInfo] = useState(false)
 
         if (result.success && result.drawnCards?.length > 0) {
           setDrawnCards(result.drawnCards)
+
+          // Show Epic Avatar Bonus notification for Classic Packs
+          // if (cardType === "regular" && result.epicAvatarBonus) {
+          //   toast({ 
+          //     title: "🎭 Epic Avatar Bonus!", 
+          //     description: "Your Epic Avatar gave you +1% Ultimate drop rate (Rating 88-91)!", 
+          //     variant: "default" 
+          //   })
+          // }
 
           // God pack doesn't affect ticket counts
           if (cardType !== "god") {

@@ -1180,12 +1180,12 @@ const [copied, setCopied] = useState(false)
     const fetchAvatars = async () => {
       const supabase = getSupabaseBrowserClient()
       if (!supabase || !user?.username) return
-      // Lade alle Avatare
+      // Load all avatars
       const { data: avatars } = await supabase.from("avatars").select("id, image_url, rarity, is_free, price_tokens")
-      // Lade freigeschaltete Avatare für den User
+      // Load unlocked avatars for the user
       const { data: unlocked } = await supabase.from("avatars_unlocked").select("avatar_id").eq("username", user.username)
       const unlockedIds = unlocked ? unlocked.map(a => a.avatar_id) : []
-      // Setze is_free für freigeschaltete Avatare
+      // Set is_free for unlocked avatars
       const merged: AvatarOption[] = (avatars ?? []).map(a => ({
         id: Number(a.id),
         image_url: String(a.image_url),
@@ -1199,10 +1199,10 @@ const [copied, setCopied] = useState(false)
     fetchAvatars()
   }, [user?.username])
 
-  // Payment-Status für Avatar-Kauf
+  // Payment status for avatar purchase
   const [buyingAvatar, setBuyingAvatar] = useState(false)
 
-  // Simuliere Payment für Avatar-Kauf
+  // Simulate payment for avatar purchase
   const sendPaymentForAvatar = async (avatar: AvatarOption) => {
     setBuyingAvatar(true)
     try {
@@ -1220,7 +1220,7 @@ const [copied, setCopied] = useState(false)
             token_amount: tokenToDecimals(wldAmount, Tokens.WLD).toString(),
           },
         ],
-        description: `Avatar-Kauf: ${avatar.rarity}`,
+        description: `Avatar Purchase: ${avatar.rarity}`,
       }
       const { finalPayload } = await MiniKit.commandsAsync.pay(payload)
       setBuyingAvatar(false)
@@ -1231,7 +1231,7 @@ const [copied, setCopied] = useState(false)
     }
   }
 
-  // handleBuyAvatar: Payment + DB-Speichern
+  // handleBuyAvatar: Payment + DB storage
   const handleBuyAvatar = async (avatar: AvatarOption) => {
     const paymentSuccess = await sendPaymentForAvatar(avatar)
     if (paymentSuccess) {
@@ -1242,7 +1242,7 @@ const [copied, setCopied] = useState(false)
           avatar_id: avatar.id,
           unlocked_at: new Date().toISOString()
         })
-        // Avatare neu laden
+        // Reload avatars
         const { data: unlocked } = await supabase.from("avatars_unlocked").select("avatar_id").eq("username", user.username)
         const unlockedIds = unlocked ? unlocked.map(a => a.avatar_id) : []
         setAvatarOptions(prev => prev.map(a => unlockedIds.includes(a.id) ? { ...a, is_free: true } : a))
@@ -1250,9 +1250,9 @@ const [copied, setCopied] = useState(false)
       }
       setShowBuyAvatarDialog(false)
       setSelectedAvatarToBuy(null)
-      toast({ title: "Avatar freigeschaltet!", description: "Du kannst diesen Avatar jetzt auswählen." })
+      toast({ title: "Avatar Unlocked!", description: "You can now select this avatar." })
     } else {
-      toast({ title: "Zahlung fehlgeschlagen", description: "Bitte versuche es erneut.", variant: "destructive" })
+      toast({ title: "Payment Failed", description: "Please try again.", variant: "destructive" })
     }
   }
 
@@ -1295,7 +1295,7 @@ const [copied, setCopied] = useState(false)
   // Test-URL (Wikipedia)
   const wikiUrl = 'https://upload.wikimedia.org/wikipedia/commons/4/47/PNG_transparency_demonstration_1.png';
 
-  // Avatar-Auswahl Callback
+  // Avatar selection callback
   const handleAvatarSelect = async (url: string) => {
     setAvatarUrl(url)
     const found = avatarOptions.find(a => a.url === url)
@@ -1310,8 +1310,8 @@ const [copied, setCopied] = useState(false)
         await loadUserAvatar()
       } else {
         toast({ 
-          title: "Avatar nicht verfügbar", 
-          description: "Du musst diesen Avatar erst freischalten.", 
+          title: "Avatar not available", 
+          description: "You need to unlock this avatar first.", 
           variant: "destructive" 
         })
       }
@@ -1319,32 +1319,32 @@ const [copied, setCopied] = useState(false)
     setShowAvatarDialog(false)
   }
 
-  // State für Kauf-Ladezustand
+  // State for purchase loading status
   const [buyingDailyDeal, setBuyingDailyDeal] = useState(false);
   const [buyingSpecialDeal, setBuyingSpecialDeal] = useState(false)
   const [showSpecialDealSuccess, setShowSpecialDealSuccess] = useState(false);
 
-  // Direktkauf-Handler für Daily Deal
+  // Direct purchase handler for Daily Deal
   const handleBuyDailyDeal = async () => {
     if (!user?.username || !dailyDeal) return;
     setBuyingDailyDeal(true);
     try {
-      // Hier die Kauf-Logik für dailyDeal aufrufen (z.B. purchaseDeal API)
+      // Here call the purchase logic for dailyDeal (e.g. purchaseDeal API)
       // await purchaseDeal(dailyDeal.id, user.username);
-      toast({ title: 'Deal gekauft!', description: 'Dein Deal wurde erfolgreich gekauft.' });
-      // Optional: Tickets updaten, Dialog schließen etc.
+      toast({ title: 'Deal purchased!', description: 'Your deal was successfully purchased.' });
+      // Optional: Update tickets, close dialog etc.
     } catch (e) {
-      toast({ title: 'Fehler', description: 'Kauf fehlgeschlagen', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Purchase failed', variant: 'destructive' });
     } finally {
       setBuyingDailyDeal(false);
     }
   };
-  // Payment-Funktion für Special Deal
+  // Payment function for Special Deal
   const sendSpecialDealPayment = async () => {
     if (!specialDeal) return false;
     
     try {
-      // Berechne den rabattierten Preis
+      // Calculate the discounted price
       const discountedPrice = specialDeal.discount_percentage && specialDeal.discount_percentage > 0 
         ? specialDeal.price * (1 - specialDeal.discount_percentage / 100)
         : specialDeal.price;
@@ -1385,16 +1385,16 @@ const [copied, setCopied] = useState(false)
     }
   };
 
-  // Direktkauf-Handler für Special Deal
+  // Direct purchase handler for Special Deal
   const handleBuySpecialDeal = async () => {
     if (!user?.username || !specialDeal) return;
     setBuyingSpecialDeal(true);
     try {
-      // Payment durchführen
+      // Execute payment
       const paymentSuccess = await sendSpecialDealPayment();
       
       if (paymentSuccess) {
-        // Ticket-Aktualisierung und Karten-Hinzufügung für Special Deal
+        // Ticket update and card addition for Special Deal
         try {
           const supabase = getSupabaseBrowserClient();
           if (!supabase) {
@@ -1653,7 +1653,7 @@ const [copied, setCopied] = useState(false)
                           <span className={`mt-1 text-xs font-bold px-2 py-0.5 rounded-full ${avatar.rarity === 'epic' ? 'bg-purple-100 text-purple-700' : avatar.rarity === 'god' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-700'}`}>
                             {avatar.rarity}
                           </span>
-                          {/* Lock/Preis für nicht-freie Avatare */}
+                          {/* Lock/Price for non-free avatars */}
                           {!avatar.is_free && (
                             <span className="absolute top-1 right-1 bg-white/80 rounded-full p-1 border border-gray-200">
                               <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M12 17a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm6-5V9a6 6 0 1 0-12 0v3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2ZM8 9a4 4 0 1 1 8 0v3H8V9Zm10 11H6v-6h12v6Z" fill="#888"/></svg>
@@ -1663,9 +1663,9 @@ const [copied, setCopied] = useState(false)
                         </button>
                       ))}
         </div>
-                    {/* XP-Ring Farbauswahl */}
+                    {/* XP Ring color selection */}
                     <div className="mt-6">
-                      <div className="text-xs font-semibold mb-2">XP-Ring Color:</div>
+                      <div className="text-xs font-semibold mb-2">XP Ring Color:</div>
                       <div className="flex gap-2">
                         {Object.entries(XP_COLORS).map(([color, val]) => (
                           <button
@@ -1725,7 +1725,7 @@ const [copied, setCopied] = useState(false)
                       </div>
                       <div className={`text-lg font-bold ${passSlides[passIndex].color}`}>{passSlides[passIndex].title}</div>
                       <div className="text-xs text-gray-700 font-medium">{passSlides[passIndex].text}</div>
-                      {/* Indikatorpunkte in der Karte */}
+                      {/* Indicator dots in the card */}
                       <div className="flex gap-2 mt-3 justify-center w-full">
                         {passSlides.map((slide, idx) => (
                           <span key={slide.key} className={`w-2 h-2 rounded-full ${passIndex === idx ? slide.dot : 'bg-gray-300'}`}></span>
@@ -1771,7 +1771,7 @@ const [copied, setCopied] = useState(false)
         className="mt-2 text-lg font-bold text-yellow-300 drop-shadow-lg"
         style={{ letterSpacing: 1 }}
       >
-        Win $200 in WLD!
+        Win $250 in WLD!
       </motion.div>
     </motion.div>
     <div>
@@ -2444,10 +2444,10 @@ const [copied, setCopied] = useState(false)
 </Dialog>
 
       
-      {/* Avatar Kauf Dialog */}
+      {/* Avatar Purchase Dialog */}
       <Dialog open={showBuyAvatarDialog} onOpenChange={setShowBuyAvatarDialog}>
         <DialogContent className="sm:max-w-md">
-          <DialogTitle className="text-lg font-bold">Avatar kaufen</DialogTitle>
+          <DialogTitle className="text-lg font-bold">Purchase Avatar</DialogTitle>
           {selectedAvatarToBuy && (
             <>
               <div className="flex items-center gap-4 mb-4">
@@ -2460,7 +2460,7 @@ const [copied, setCopied] = useState(false)
                 </div>
                 <div>
                   <h3 className="font-bold text-lg">{selectedAvatarToBuy.rarity} Avatar</h3>
-                  <p className="text-sm text-gray-600">Exklusiver Avatar</p>
+                  <p className="text-sm text-gray-600">Exclusive Avatar</p>
                   <div className="flex items-center gap-1 mt-2">
                     <span className="text-lg font-bold text-yellow-600">{selectedAvatarToBuy.price} WLD</span>
                   </div>
@@ -2469,7 +2469,7 @@ const [copied, setCopied] = useState(false)
               
               <div className="bg-amber-50 p-3 rounded-lg text-sm mb-4">
                 <p className="text-amber-800">
-                  <span className="font-medium">Preis:</span> {selectedAvatarToBuy.price} WLD
+                  <span className="font-medium">Price:</span> {selectedAvatarToBuy.price} WLD
                 </p>
                 <p className="text-amber-800 mt-1">
                   <span className="font-medium">Rarity:</span> {selectedAvatarToBuy.rarity}
@@ -2478,7 +2478,7 @@ const [copied, setCopied] = useState(false)
               
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={() => setShowBuyAvatarDialog(false)}>
-                  Abbrechen
+                  Cancel
                 </Button>
                 <Button
                   onClick={() => handleBuyAvatar(selectedAvatarToBuy)}
@@ -2488,12 +2488,12 @@ const [copied, setCopied] = useState(false)
                   {buyingAvatar ? (
                     <>
                       <div className="h-4 w-4 border-2 border-t-transparent border-white rounded-full animate-spin mr-2"></div>
-                      Verarbeite...
+                      Processing...
                     </>
                   ) : (
                     <>
                       <ShoppingCart className="h-4 w-4 mr-2" />
-                      Kaufen
+                      Purchase
                     </>
                   )}
                 </Button>

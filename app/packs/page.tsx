@@ -24,11 +24,12 @@ export default function PacksPage() {
   const [drawnCards, setDrawnCards] = useState<any[]>([])
   const [currentPackType, setCurrentPackType] = useState<"basic" | "premium" | "ultimate">("basic")
   const [hasIconPass, setHasIconPass] = useState(false)
+  const [hasEpicAvatar, setHasEpicAvatar] = useState(false)
 
   // Debug: Log user state
   console.log('PacksPage rendered, user:', user?.username, 'hasIconPass:', hasIconPass)
 
-  // Check if user has active Icon Pass
+  // Check if user has active Icon Pass and Epic Avatar
   useEffect(() => {
     console.log('useEffect triggered, user:', user?.username)
     
@@ -36,45 +37,68 @@ export default function PacksPage() {
     console.log('🔧 TEMPORARY: Setting hasIconPass to true for testing')
     setHasIconPass(true)
     
-    const checkIconPass = async () => {
+    const checkUserBonuses = async () => {
       if (!user?.username) {
         console.log('No username found, returning')
         return
       }
       
       try {
-        console.log('Starting Icon Pass check for user:', user.username)
+        console.log('Starting Icon Pass and Epic Avatar check for user:', user.username)
         const supabase = getSupabaseBrowserClient()
         if (!supabase) {
           console.log('No Supabase client found')
           return
         }
 
+        // Check Icon Pass
         console.log('Querying icon_passes table...')
-        const { data, error } = await supabase
+        const { data: iconPassData, error: iconPassError } = await supabase
           .from('icon_passes')
           .select('*')
           .eq('user_id', user.username)
           .eq('active', true)
           .single()
 
-        console.log('Icon Pass check result:', { data, error, username: user.username })
+        console.log('Icon Pass check result:', { data: iconPassData, error: iconPassError, username: user.username })
         
-        if (!error && data) {
+        if (!iconPassError && iconPassData) {
           setHasIconPass(true)
           console.log('✅ Icon Pass is active!')
         } else {
           setHasIconPass(false)
-          console.log('❌ No active Icon Pass found, error:', error)
+          console.log('❌ No active Icon Pass found, error:', iconPassError)
+        }
+
+        // Check Epic Avatar
+        if (user.avatar_id) {
+          console.log('Checking Epic Avatar for avatar_id:', user.avatar_id)
+          const { data: avatarData, error: avatarError } = await supabase
+            .from('avatars')
+            .select('rarity')
+            .eq('id', user.avatar_id)
+            .single()
+          
+          if (!avatarError && avatarData?.rarity === "epic") {
+            setHasEpicAvatar(true)
+            console.log('🎭 Epic Avatar detected!')
+          } else {
+            setHasEpicAvatar(false)
+            console.log('❌ No Epic Avatar found, rarity:', avatarData?.rarity)
+          }
+        } else {
+          setHasEpicAvatar(false)
+          console.log('❌ No avatar_id found for user')
         }
       } catch (error) {
-        console.error('❌ Error checking Icon Pass:', error)
+        console.error('❌ Error checking user bonuses:', error)
         setHasIconPass(false)
+        setHasEpicAvatar(false)
       }
     }
 
-    checkIconPass()
-  }, [user?.username])
+    checkUserBonuses()
+  }, [user?.username, user?.avatar_id])
 
   const handleDrawPack = async (packType: string) => {
     if (!user) return
@@ -167,8 +191,20 @@ export default function PacksPage() {
                 <CardTitle className="flex items-center gap-2">
                   <Package className="h-5 w-5 text-green-500" />
                   Basic Pack
+                  {hasEpicAvatar && (
+                    <div className="bg-gradient-to-r from-purple-400 to-purple-600 text-white text-xs px-2 py-1 rounded-full font-bold">
+                      🎭 EPIC BONUS
+                    </div>
+                  )}
                 </CardTitle>
-                <CardDescription>3 cards with Common to Rare cards</CardDescription>
+                <CardDescription>
+                  3 cards with Common to Rare cards
+                  {hasEpicAvatar && (
+                    <span className="block text-purple-600 font-medium mt-1">
+                      +1% Ultimate drop rate (Rating 88-91) with Epic Avatar!
+                    </span>
+                  )}
+                </CardDescription>
               </CardHeader>
               <div className="px-6 py-2 flex justify-center">
                 <motion.div

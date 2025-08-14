@@ -205,10 +205,10 @@ export async function drawCards(username: string, packType: string, count = 1) {
       console.log(`Successfully removed ${removedCards?.length || 0} cards with quantity 0`)
     }
 
-    // Get user data from database including clan info
+    // Get user data from database including clan info and avatar
     const { data: userData, error: userError } = await supabase
       .from("users")
-      .select("*, clan_id")
+      .select("*, clan_id, avatar_id")
       .eq("username", username)
       .single()
 
@@ -216,6 +216,22 @@ export async function drawCards(username: string, packType: string, count = 1) {
       console.error("Error fetching user data:", userError)
       return { success: false, error: "User not found" }
     }
+
+    // Check if user has Epic Avatar for bonus Ultimate drop rate
+    // let hasEpicAvatar = false
+    // if (userData.avatar_id) {
+    //   const { data: avatarData, error: avatarError } = await supabase
+    //     .from("avatars")
+    //     .select("rarity")
+    //     .eq("id", userData.avatar_id)
+    //     .single()
+      
+    //   if (!avatarError && avatarData?.rarity === "epic") {
+    //     hasEpicAvatar = true
+    //     console.log(`🎭 Epic Avatar detected for user ${username} - Ultimate drop rate bonus active!`)
+    //   }
+    // }
+    let hasEpicAvatar = false
 
     // Get user's clan role if they're in a clan
     let userClanRole = null
@@ -340,16 +356,25 @@ export async function drawCards(username: string, packType: string, count = 1) {
 
       if (!isLegendary && !isIcon) {
         await incrementMission(username, "open_regular_pack")
-        // Neue Draw Rates für Classic Packs (nur Backend, nicht im UI anzeigen)
+        
+        // Epic Avatar Bonus: 1% bessere Ultimate-Karten Drop-Rate (Rating 88-91)
+        // let epicAvatarBonus = 0;
+        // if (hasEpicAvatar) {
+        //   epicAvatarBonus = 1; // 1% Bonus
+        //   console.log(`🎭 Epic Avatar Bonus applied: +${epicAvatarBonus}% Ultimate drop rate (Rating 88-91) for user ${username}`);
+        // }
+        let epicAvatarBonus = 0;
+        
+        // Neue Draw Rates für Classic Packs mit Epic Avatar Bonus
         // 75–79: 58.3%
         // 80–84: 25.08%
         // 85: 9.72%
         // 86: 3.00%
         // 87: 2.00%
-        // 88: 1.00%
-        // 89: 0.25%
-        // 90: 0.1%
-        // 91: 0.0000000005555%
+        // 88: 1.00% + (epicAvatarBonus * 0.25)%
+        // 89: 0.25% + (epicAvatarBonus * 0.25)%
+        // 90: 0.1% + (epicAvatarBonus * 0.25)%
+        // 91: 0.0000000005555% + (epicAvatarBonus * 0.25)%
         // 92+: 0.000000000000000000000444444%
         let rating = 0;
         if (random < 58.3) {
@@ -852,6 +877,7 @@ if (!clanError && clanData) {
         luckystar: userClanRole === "lucky_star",
         founder: userClanRole === "leader",
       },
+      // epicAvatarBonus: hasEpicAvatar, // Add Epic Avatar bonus information
     }
   } catch (error) {
     console.error("Error drawing cards:", error)

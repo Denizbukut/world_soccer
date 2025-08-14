@@ -24,6 +24,7 @@ import { useWldPrice } from "@/contexts/WldPriceContext"
 import { getSupabaseBrowserClient } from "@/lib/supabase"
 import { useAuth } from "@/contexts/auth-context"
 import { toast } from "@/components/ui/use-toast"
+import AniBanner from "@/components/ani-banner"
 
 const discount = false // Set to true to show discounts, false to hide them
 
@@ -531,6 +532,8 @@ export default function AniPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-[#f6f8fa] p-4 pb-24">
       <div className="max-w-2xl mx-auto space-y-8 py-8">
+        {/* Banner Header */}
+        <AniBanner />
        
         {/* Wallet Connection Card */}
         {!walletAddress && (

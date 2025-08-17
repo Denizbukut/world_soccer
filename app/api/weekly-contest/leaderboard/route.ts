@@ -17,6 +17,7 @@ export async function GET() {
       .neq("user_id", "MejaEliana")
       .neq("user_id", "regresosss")
       .neq("user_id", "quispelind")
+      .neq("user_id", "berg2020")
       .order("legendary_count", { ascending: false })
       .limit(20)
 

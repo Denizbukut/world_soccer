@@ -113,11 +113,22 @@ export default function WeeklyContestPage() {
           <div className="text-2xl font-extrabold bg-gradient-to-r from-yellow-200 via-yellow-400 to-yellow-600 bg-clip-text text-transparent animate-gradient-move mb-4">
             Earn as many <span className="text-yellow-400">Points</span> as possible!
           </div>
+          
+          {/* Double Points Today Banner */}
+          <div className="mb-4 p-3 bg-gradient-to-r from-green-500/20 to-green-400/10 border border-green-400 rounded-lg">
+            <div className="flex items-center justify-center gap-2 text-green-300 font-bold">
+              <span className="text-xl">🎉</span>
+              <span>DOUBLE POINTS TODAY!</span>
+              <span className="text-xl">🎉</span>
+            </div>
+            <p className="text-sm text-green-200 mt-1">All points earned today are doubled!</p>
+          </div>
+          
           <div className="text-sm text-yellow-100 space-y-1">
-            <div>• La Liga Players = <span className="font-bold text-yellow-400">1 Point</span></div>
-            <div>• Ultimate Cards = <span className="font-bold text-yellow-400">3 Points</span></div>
-            <div>• Referrals = <span className="font-bold text-yellow-400">15 Points</span></div>
-            <div>• GOAT Pack = <span className="font-bold text-yellow-400">20 Points</span></div>
+            <div>• La Liga Players = <span className="font-bold text-yellow-400">2 Points</span></div>
+            <div>• Ultimate Cards = <span className="font-bold text-yellow-400">6 Points</span></div>
+            <div>• Referrals = <span className="font-bold text-yellow-400">30 Points</span></div>
+            <div>• GOAT Pack = <span className="font-bold text-yellow-400">40 Points</span></div>
           </div>
         </div>
 

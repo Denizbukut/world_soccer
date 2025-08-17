@@ -643,18 +643,18 @@ const [showInfo, setShowInfo] = useState(false)
 
         const laLigaCards = result.drawnCards?.filter((card: any) => card.league_id === "b04c3977-b810-4b2b-8972-a59604efdd10") || []
         if (laLigaCards.length > 0) {
-          await incrementLegendaryDraw(user.username, laLigaCards.length * 1)
+          await incrementLegendaryDraw(user.username, laLigaCards.length * 2)
         }
 
         const goatPacks = cardType === "god" ? count : 0;
         
         if (goatPacks > 0) {
-          await incrementLegendaryDraw(user.username, goatPacks * 20);
+          await incrementLegendaryDraw(user.username, goatPacks * 40);
         }
         
         const ultimateCards = result.drawnCards?.filter((card: any) => card.rarity=== "ultimate") || []
         if (ultimateCards.length > 0) {
-          await incrementLegendaryDraw(user.username, ultimateCards.length * 3)
+          await incrementLegendaryDraw(user.username, ultimateCards.length * 6)
         }
 
 

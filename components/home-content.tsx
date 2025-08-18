@@ -1222,12 +1222,12 @@ const [copied, setCopied] = useState(false)
       const { data: unlocked } = await supabase.from("user_avatar_purchases").select("avatar_id").eq("user_id", user.username)
       const unlockedIds = unlocked ? unlocked.map(a => a.avatar_id) : []
       
-      // Set is_free for unlocked avatars and mark inactive avatars for admins
+      // Set is_free for unlocked avatars - admins see all avatars but respect is_free status
       const merged: AvatarOption[] = (avatars ?? []).map(a => ({
         id: Number(a.id),
         image_url: String(a.image_url),
         rarity: String(a.rarity),
-        is_free: Boolean(a.is_free) || unlockedIds.includes(a.id) || (isAdmin && !a.is_active), // Admins can use inactive avatars
+        is_free: Boolean(a.is_free) || unlockedIds.includes(a.id), // Respect actual is_free status
         price: Number(a.price_tokens),
         url: String(a.image_url),
         is_active: Boolean(a.is_active) // Add this for display purposes
@@ -2530,6 +2530,27 @@ const [copied, setCopied] = useState(false)
                 <p className="text-amber-800 mt-1">
                   <span className="font-medium">Rarity:</span> {selectedAvatarToBuy.rarity}
                 </p>
+                {/* Avatar Bonus Information */}
+                {selectedAvatarToBuy.rarity === "epic" && (
+                  <div className="mt-2 p-2 bg-purple-100 rounded border border-purple-200">
+                    <p className="text-purple-800 text-xs font-medium">
+                      🎭 <span className="font-bold">Epic Avatar Bonus:</span>
+                    </p>
+                    <p className="text-purple-700 text-xs mt-1">
+                      +1% Ultimate-Card Drop-Rate in Classic Packs
+                    </p>
+                  </div>
+                )}
+                {selectedAvatarToBuy.rarity === "god" && (
+                  <div className="mt-2 p-2 bg-yellow-100 rounded border border-yellow-200">
+                    <p className="text-yellow-800 text-xs font-medium">
+                      👑 <span className="font-bold">God Avatar Bonus:</span>
+                    </p>
+                    <p className="text-yellow-700 text-xs mt-1">
+                      +2% Ultimate Card Drop-Rate in Icon Packs
+                    </p>
+                  </div>
+                )}
               </div>
               
               <div className="flex justify-end gap-2">

@@ -1221,20 +1221,35 @@ const [copied, setCopied] = useState(false)
       const { data: unlocked } = await supabase.from("user_avatar_purchases").select("avatar_id").eq("user_id", user.username)
       const unlockedIds = unlocked ? unlocked.map(a => a.avatar_id) : []
       
+      // Calculate dynamic avatar prices based on WLD price
+      const calculateAvatarPrice = (rarity: string) => {
+        if (!price) return 0 // Fallback if WLD price not available
+        
+        let calculatedPrice = 0
+        if (rarity === 'epic') {
+          calculatedPrice = 1.0 / price // $1.00 USD / WLD price
+        } else if (rarity === 'god') {
+          calculatedPrice = 5.0 / price // $5.00 USD / WLD price
+        }
+        
+        // Round to 2 decimal places
+        return Math.round(calculatedPrice * 100) / 100
+      }
+      
       // Set is_free for unlocked avatars - admins see all avatars but respect is_free status
       const merged: AvatarOption[] = (avatars ?? []).map(a => ({
         id: Number(a.id),
         image_url: String(a.image_url),
         rarity: String(a.rarity),
         is_free: Boolean(a.is_free) || unlockedIds.includes(a.id), // Respect actual is_free status
-        price: Number(a.price_tokens),
+        price: calculateAvatarPrice(String(a.rarity)), // Dynamic price calculation
         url: String(a.image_url),
         is_active: Boolean(a.is_active) // Add this for display purposes
       }))
       setAvatarOptions(merged)
     }
     fetchAvatars()
-  }, [user?.username])
+  }, [user?.username, price]) // Re-fetch when WLD price changes
 
 
 

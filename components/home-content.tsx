@@ -251,7 +251,6 @@ export default function Home() {
       color: 'text-purple-100',
       dot: 'bg-purple-500',
       progress: sbcLoading ? 'Loading...' : `${sbcChallenges.filter(c => isChallengeCompleted(c.id)).length}/${sbcChallenges.length}`,
-      badge: 'NEW WBC',
     },
   ]
   const handleReferralSbcPrev = () => setReferralSbcIndex((prev) => (prev === 0 ? referralSbcSlides.length - 1 : prev - 1))
@@ -1620,8 +1619,15 @@ const [copied, setCopied] = useState(false)
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4 }}
-                className="bg-gradient-to-br from-[#232526] to-[#414345] rounded-xl shadow-lg p-2 flex flex-col items-center justify-center min-h-[80px] h-full border-2 border-yellow-400"
+                className="bg-gradient-to-br from-[#232526] to-[#414345] rounded-xl shadow-lg p-2 flex flex-col items-center justify-center min-h-[80px] h-full border-2 border-yellow-400 relative"
               >
+                {/* NEW BONUS Banner - small corner badge */}
+                <div className="absolute -top-1 -right-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full px-2 py-1 text-white shadow-lg z-10">
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs">🎭</span>
+                    <span className="text-xs font-bold">NEW</span>
+                  </div>
+                </div>
                 <button
                   onClick={() => setShowAvatarDialog(true)}
                   className="relative w-20 h-20 rounded-full overflow-visible hover:ring-2 hover:ring-blue-300 transition-all flex-shrink-0 mb-1 -mt-3 flex items-center justify-center"
@@ -1681,6 +1687,34 @@ const [copied, setCopied] = useState(false)
                     <DialogTitle>
                       Choose Avatar & XP-Ring
                     </DialogTitle>
+                    
+                    {/* NEW BONUS Banner */}
+                    <div className="mb-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg p-3 text-white shadow-lg">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="bg-white/20 rounded-full p-1">
+                            <span className="text-lg">🎭</span>
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-sm">NEW BONUS!</h3>
+                            <p className="text-xs opacity-90">Avatar Drop-Rate Bonuses</p>
+                          </div>
+                        </div>
+                        <div className="bg-white/20 rounded-full px-2 py-1 text-xs font-bold">
+                          NEW
+                        </div>
+                      </div>
+                      <div className="mt-2 space-y-1 text-xs">
+                        <div className="flex items-center gap-1">
+                          <span className="text-purple-200">🎭 Epic:</span>
+                          <span className="font-semibold">+1% Ultimate Cards</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span className="text-yellow-200">👑 God:</span>
+                          <span className="font-semibold">+2% Ultimate Cards</span>
+                        </div>
+                      </div>
+                    </div>
                     <div className="grid grid-cols-3 gap-3 mt-4">
                                              {avatarOptions.map((avatar) => {
                          const isAdmin = user?.username === 'jiraiya' || user?.username === 'badbunny.3547' || user?.username === 'damla123' || user?.username === 'xgrokxd'

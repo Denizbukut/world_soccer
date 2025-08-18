@@ -301,11 +301,14 @@ export async function submitSBCSquad(
         const rating = (card.cards as any)?.overall_rating || 0
         return sum + rating
       }, 0)
-      const averageRating = totalRating / cardsWithDetails.length
+      const averageRating = Math.round(totalRating / cardsWithDetails.length)
       
-      if (averageRating < challengeDetails.requirements_team_rating) {
-        console.error(`❌ Team Rating too low: ${averageRating.toFixed(1)}/${challengeDetails.requirements_team_rating}`)
-        return { success: false, error: `Team rating too low: ${averageRating.toFixed(1)}/${challengeDetails.requirements_team_rating}` }
+      const rawAverageRating = totalRating / cardsWithDetails.length
+      const roundedRating = Math.round(rawAverageRating)
+      
+      if (roundedRating < challengeDetails.requirements_team_rating) {
+        console.error(`❌ Team Rating too low: ${rawAverageRating.toFixed(1)}/${challengeDetails.requirements_team_rating}`)
+        return { success: false, error: `Team rating too low: ${rawAverageRating.toFixed(1)}/${challengeDetails.requirements_team_rating}` }
       }
     }
 

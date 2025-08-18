@@ -218,20 +218,25 @@ export async function drawCards(username: string, packType: string, count = 1) {
     }
 
     // Check if user has Epic Avatar for bonus Ultimate drop rate
-    // let hasEpicAvatar = false
-    // if (userData.avatar_id) {
-    //   const { data: avatarData, error: avatarError } = await supabase
-    //     .from("avatars")
-    //     .select("rarity")
-    //     .eq("id", userData.avatar_id)
-    //     .single()
-      
-    //   if (!avatarError && avatarData?.rarity === "epic") {
-    //     hasEpicAvatar = true
-    //     console.log(`🎭 Epic Avatar detected for user ${username} - Ultimate drop rate bonus active!`)
-    //   }
-    // }
     let hasEpicAvatar = false
+    let hasGodAvatar = false
+    if (userData.avatar_id) {
+      const { data: avatarData, error: avatarError } = await supabase
+        .from("avatars")
+        .select("rarity")
+        .eq("id", userData.avatar_id)
+        .single()
+      
+      if (!avatarError && avatarData) {
+        if (avatarData.rarity === "epic") {
+          hasEpicAvatar = true
+          console.log(`🎭 Epic Avatar detected for user ${username} - Ultimate drop rate bonus active!`)
+        } else if (avatarData.rarity === "god") {
+          hasGodAvatar = true
+          console.log(`👑 God Avatar detected for user ${username} - Icon Pack drop rate bonus active!`)
+        }
+      }
+    }
 
     // Get user's clan role if they're in a clan
     let userClanRole = null
@@ -358,12 +363,11 @@ export async function drawCards(username: string, packType: string, count = 1) {
         await incrementMission(username, "open_regular_pack")
         
         // Epic Avatar Bonus: 1% bessere Ultimate-Karten Drop-Rate (Rating 88-91)
-        // let epicAvatarBonus = 0;
-        // if (hasEpicAvatar) {
-        //   epicAvatarBonus = 1; // 1% Bonus
-        //   console.log(`🎭 Epic Avatar Bonus applied: +${epicAvatarBonus}% Ultimate drop rate (Rating 88-91) for user ${username}`);
-        // }
         let epicAvatarBonus = 0;
+        if (hasEpicAvatar) {
+          epicAvatarBonus = 1; // 1% Bonus
+          console.log(`🎭 Epic Avatar Bonus applied: +${epicAvatarBonus}% Ultimate drop rate (Rating 88-91) for user ${username}`);
+        }
         
         // Neue Draw Rates für Classic Packs mit Epic Avatar Bonus
         // 75–79: 58.3%
@@ -371,10 +375,10 @@ export async function drawCards(username: string, packType: string, count = 1) {
         // 85: 9.72%
         // 86: 3.00%
         // 87: 2.00%
-        // 88: 1.00% + (epicAvatarBonus * 0.25)%
-        // 89: 0.25% + (epicAvatarBonus * 0.25)%
-        // 90: 0.1% + (epicAvatarBonus * 0.25)%
-        // 91: 0.0000000005555% + (epicAvatarBonus * 0.25)%
+        // 88: 1.00% + (epicAvatarBonus * 0.5)% (mehr Bonus)
+        // 89: 0.25% + (epicAvatarBonus * 0.3)% (mittlerer Bonus)
+        // 90: 0.1% + (epicAvatarBonus * 0.2)% (weniger Bonus)
+        // 91: 0.0000000005555% (kein Bonus)
         // 92+: 0.000000000000000000000444444%
         let rating = 0;
         if (random < 58.3) {
@@ -387,13 +391,13 @@ export async function drawCards(username: string, packType: string, count = 1) {
           rating = 86;
         } else if (random < 58.3 + 25.08 + 9.72 + 3.00 + 2.00) {
           rating = 87;
-        } else if (random < 58.3 + 25.08 + 9.72 + 3.00 + 2.00 + 1.00) {
+        } else if (random < 58.3 + 25.08 + 9.72 + 3.00 + 2.00 + (1.00 + epicAvatarBonus * 0.5)) {
           rating = 88;
-        } else if (random < 58.3 + 25.08 + 9.72 + 3.00 + 2.00 + 1.00 + 0.25) {
+        } else if (random < 58.3 + 25.08 + 9.72 + 3.00 + 2.00 + (1.00 + epicAvatarBonus * 0.5) + (0.25 + epicAvatarBonus * 0.3)) {
           rating = 89;
-        } else if (random < 58.3 + 25.08 + 9.72 + 3.00 + 2.00 + 1.00 + 0.25 + 0.1) {
+        } else if (random < 58.3 + 25.08 + 9.72 + 3.00 + 2.00 + (1.00 + epicAvatarBonus * 0.5) + (0.25 + epicAvatarBonus * 0.3) + (0.1 + epicAvatarBonus * 0.2)) {
           rating = 90;
-        } else if (random < 58.3 + 25.08 + 9.72 + 3.00 + 2.00 + 1.00 + 0.25 + 0.1 + 0.0000000005555) {
+        } else if (random < 58.3 + 25.08 + 9.72 + 3.00 + 2.00 + (1.00 + epicAvatarBonus * 0.5) + (0.25 + epicAvatarBonus * 0.3) + (0.1 + epicAvatarBonus * 0.2) + 0.0000000005555) {
           rating = 91;
         } else {
           rating = 92;
@@ -546,14 +550,21 @@ export async function drawCards(username: string, packType: string, count = 1) {
         }
         continue;
       } else if (isIcon) {
+        // God Avatar Bonus: 1.5% bessere Drop-Rate für Icon Packs (auf Rating 88-89 verteilt)
+        let godAvatarBonus = 0;
+        if (hasGodAvatar) {
+          godAvatarBonus = 1.5; // 1.5% Bonus
+          console.log(`👑 God Avatar Bonus applied: +${godAvatarBonus}% Icon Pack drop rate (Rating 88-89) for user ${username}`);
+        }
+        
         // Neue Draw Rates für Icon Packs (nur Backend, nicht im UI anzeigen)
         // 75–78: 5%
         // 79–84: 19,75%
         // 85: 22%
         // 86: 19%
         // 87: 16,5%
-        // 88: 10,5%
-        // 89: 4%
+        // 88: 10,5% + (godAvatarBonus * 0.5)% (0.75% Bonus)
+        // 89: 4% + (godAvatarBonus * 0.5)% (0.75% Bonus)
         // 90: 1,5%
         // 91: 0,75%
         // 92+: 0.000000000000000000000444444
@@ -568,13 +579,13 @@ export async function drawCards(username: string, packType: string, count = 1) {
           rating = 86;
         } else if (random < 5 + 19.75 + 22 + 19 + 16.5) {
           rating = 87;
-        } else if (random < 5 + 19.75 + 22 + 19 + 16.5 + 10.5) {
+        } else if (random < 5 + 19.75 + 22 + 19 + 16.5 + (10.5 + godAvatarBonus * 0.5)) {
           rating = 88;
-        } else if (random < 5 + 19.75 + 22 + 19 + 16.5 + 10.5 + 4) {
+        } else if (random < 5 + 19.75 + 22 + 19 + 16.5 + (10.5 + godAvatarBonus * 0.5) + (4 + godAvatarBonus * 0.5)) {
           rating = 89;
-        } else if (random < 5 + 19.75 + 22 + 19 + 16.5 + 10.5 + 4 + 1.5) {
+        } else if (random < 5 + 19.75 + 22 + 19 + 16.5 + (10.5 + godAvatarBonus * 0.5) + (4 + godAvatarBonus * 0.5) + 1.5) {
           rating = 90;
-        } else if (random < 5 + 19.75 + 22 + 19 + 16.5 + 10.5 + 4 + 1.5 + 0.75) {
+        } else if (random < 5 + 19.75 + 22 + 19 + 16.5 + (10.5 + godAvatarBonus * 0.5) + (4 + godAvatarBonus * 0.5) + 1.5 + 0.75) {
           rating = 91;
         } else {
           rating = 92;
@@ -877,7 +888,10 @@ if (!clanError && clanData) {
         luckystar: userClanRole === "lucky_star",
         founder: userClanRole === "leader",
       },
-      // epicAvatarBonus: hasEpicAvatar, // Add Epic Avatar bonus information
+      avatarBonuses: {
+        epicAvatar: hasEpicAvatar,
+        godAvatar: hasGodAvatar,
+      },
     }
   } catch (error) {
     console.error("Error drawing cards:", error)

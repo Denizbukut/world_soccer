@@ -158,6 +158,7 @@ interface AvatarOption {
   is_free: boolean;
   price: number;
   url: string;
+  is_active?: boolean; // Optional for backward compatibility
 }
 
 export default function Home() {
@@ -283,28 +284,37 @@ export default function Home() {
     const supabase = getSupabaseBrowserClient()
     if (!supabase) return
     
+    // Check if user is admin
+    const isAdmin = user.username === 'jiraiya' || user.username === 'badbunny.3547' || user.username === 'damla123' || user.username === 'xgrokxd'
+    
     // Use avatar_id from Auth-Context instead of fetching from database
     const avatarId = user.avatar_id || 1
     
     // First, check if the avatar exists in the avatars table
     const { data: avatarData, error: avatarError } = await supabase
       .from("avatars")
-      .select("id, image_url, rarity, is_free")
+      .select("id, image_url, rarity, is_free, is_active")
       .eq("id", avatarId)
       .single()
     
-    if (!avatarError && avatarData?.image_url) {
+    // For admins, allow inactive avatars; for others, only active avatars
+    if (!avatarError && avatarData?.image_url && (isAdmin || avatarData.is_active)) {
       setCurrentAvatarId(Number(avatarId))
       setCurrentAvatarUrl(String(avatarData.image_url))
     } else {
       
-      // Fallback: Try to get the first available avatar
-      const { data: fallbackAvatar, error: fallbackError } = await supabase
+      // Fallback: Try to get the first available avatar (active for non-admins, any for admins)
+      const fallbackQuery = supabase
         .from("avatars")
         .select("id, image_url, rarity, is_free")
         .eq("is_free", true)
         .limit(1)
-        .single()
+      
+      if (!isAdmin) {
+        fallbackQuery.eq("is_active", true)
+      }
+      
+      const { data: fallbackAvatar, error: fallbackError } = await fallbackQuery.single()
       
       if (!fallbackError && fallbackAvatar?.image_url) {
         setCurrentAvatarId(Number(fallbackAvatar.id))
@@ -1180,24 +1190,54 @@ const [copied, setCopied] = useState(false)
     const fetchAvatars = async () => {
       const supabase = getSupabaseBrowserClient()
       if (!supabase || !user?.username) return
-      // Load all avatars
-      const { data: avatars } = await supabase.from("avatars").select("id, image_url, rarity, is_free, price_tokens")
+      
+      // Check if user is admin
+      const isAdmin = user.username === 'jiraiya' || user.username === 'badbunny.3547' || user.username === 'damla123' || user.username === 'xgrokxd'
+      
+      // Load avatars - admins see all avatars, others only active ones
+      const { data: avatars, error } = await supabase
+        .from("avatars")
+        .select("id, image_url, rarity, is_free, price_tokens, is_active")
+        .order('id')
+        .then(result => {
+          if (isAdmin) {
+            // Admins see all avatars
+            return result
+          } else {
+            // Non-admins only see active avatars
+            return supabase
+              .from("avatars")
+              .select("id, image_url, rarity, is_free, price_tokens, is_active")
+              .eq("is_active", true)
+              .order('id')
+          }
+        })
+      
+      if (error) {
+        console.error('Error loading avatars:', error)
+        return
+      }
+
       // Load unlocked avatars for the user
-      const { data: unlocked } = await supabase.from("avatars_unlocked").select("avatar_id").eq("username", user.username)
+      const { data: unlocked } = await supabase.from("user_avatar_purchases").select("avatar_id").eq("user_id", user.username)
       const unlockedIds = unlocked ? unlocked.map(a => a.avatar_id) : []
-      // Set is_free for unlocked avatars
+      
+      // Set is_free for unlocked avatars and mark inactive avatars for admins
       const merged: AvatarOption[] = (avatars ?? []).map(a => ({
         id: Number(a.id),
         image_url: String(a.image_url),
         rarity: String(a.rarity),
-        is_free: Boolean(a.is_free) || unlockedIds.includes(a.id),
+        is_free: Boolean(a.is_free) || unlockedIds.includes(a.id) || (isAdmin && !a.is_active), // Admins can use inactive avatars
         price: Number(a.price_tokens),
-        url: String(a.image_url)
+        url: String(a.image_url),
+        is_active: Boolean(a.is_active) // Add this for display purposes
       }))
       setAvatarOptions(merged)
     }
     fetchAvatars()
   }, [user?.username])
+
+
 
   // Payment status for avatar purchase
   const [buyingAvatar, setBuyingAvatar] = useState(false)
@@ -1237,13 +1277,19 @@ const [copied, setCopied] = useState(false)
     if (paymentSuccess) {
       const supabase = getSupabaseBrowserClient()
       if (supabase && user?.username) {
-        await supabase.from('avatars_unlocked').insert({
-          username: user.username,
+        const { error: insertError } = await supabase.from('user_avatar_purchases').insert({
+          user_id: user.username,
           avatar_id: avatar.id,
-          unlocked_at: new Date().toISOString()
+          purchased_at: new Date().toISOString()
         })
+        
+        if (insertError) {
+          console.error('Error inserting avatar unlock:', insertError)
+          toast({ title: "Database Error", description: "Failed to unlock avatar. Please try again.", variant: "destructive" })
+          return
+        }
         // Reload avatars
-        const { data: unlocked } = await supabase.from("avatars_unlocked").select("avatar_id").eq("username", user.username)
+        const { data: unlocked } = await supabase.from("user_avatar_purchases").select("avatar_id").eq("user_id", user.username)
         const unlockedIds = unlocked ? unlocked.map(a => a.avatar_id) : []
         setAvatarOptions(prev => prev.map(a => unlockedIds.includes(a.id) ? { ...a, is_free: true } : a))
         await loadUserAvatar()
@@ -1297,17 +1343,15 @@ const [copied, setCopied] = useState(false)
 
   // Avatar selection callback
   const handleAvatarSelect = async (url: string) => {
-    setAvatarUrl(url)
     const found = avatarOptions.find(a => a.url === url)
     if (found) {
       
       // Check if user can use this avatar (is_free or unlocked)
       if (found.is_free) {
         setCurrentAvatarId(found.id)
+        setCurrentAvatarUrl(url)  // Direkt setzen
         // Update avatar in Auth-Context (this will also update database and localStorage)
         await updateUserAvatar(found.id)
-        // Also update local state
-        await loadUserAvatar()
       } else {
         toast({ 
           title: "Avatar not available", 
@@ -1634,34 +1678,46 @@ const [copied, setCopied] = useState(false)
                 {/* Avatar-Auswahl-Dialog */}
                 <Dialog open={showAvatarDialog} onOpenChange={setShowAvatarDialog}>
                   <DialogContent>
-                    <DialogTitle>Choose Avatar & XP-Ring</DialogTitle>
+                    <DialogTitle>
+                      Choose Avatar & XP-Ring
+                    </DialogTitle>
                     <div className="grid grid-cols-3 gap-3 mt-4">
-                      {avatarOptions.map((avatar) => (
-                        <button
-                          key={avatar.url}
-                          className={`rounded-full border-2 ${avatarUrl === avatar.url ? "border-violet-500" : "border-transparent"} focus:outline-none focus:ring-2 focus:ring-violet-400 flex flex-col items-center relative`}
-                          onClick={() => {
-                            if (avatar.is_free) handleAvatarSelect(avatar.url)
-                            else {
-                              setSelectedAvatarToBuy(avatar)
-                              setShowBuyAvatarDialog(true)
-                            }
-                          }}
-                        >
-                          <img src={avatar.url} alt="Avatar" className={`w-16 h-16 object-cover rounded-full ${!avatar.is_free ? 'opacity-50 grayscale' : ''}`} />
-                          {/* Rarity Badge */}
-                          <span className={`mt-1 text-xs font-bold px-2 py-0.5 rounded-full ${avatar.rarity === 'epic' ? 'bg-purple-100 text-purple-700' : avatar.rarity === 'god' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-700'}`}>
-                            {avatar.rarity}
-                          </span>
-                          {/* Lock/Price for non-free avatars */}
-                          {!avatar.is_free && (
-                            <span className="absolute top-1 right-1 bg-white/80 rounded-full p-1 border border-gray-200">
-                              <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M12 17a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm6-5V9a6 6 0 1 0-12 0v3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2ZM8 9a4 4 0 1 1 8 0v3H8V9Zm10 11H6v-6h12v6Z" fill="#888"/></svg>
-                              <span className="text-[10px] font-bold text-gray-500 ml-1">{avatar.price}★</span>
-                            </span>
-                          )}
-                        </button>
-                      ))}
+                                             {avatarOptions.map((avatar) => {
+                         const isAdmin = user?.username === 'jiraiya' || user?.username === 'badbunny.3547' || user?.username === 'damla123' || user?.username === 'xgrokxd'
+                         // For now, we'll show all avatars to admins without the inactive badge
+                         // The inactive filtering is handled in fetchAvatars
+                         
+                         return (
+                          <button
+                            key={avatar.url}
+                            className={`rounded-full border-2 ${avatarUrl === avatar.url ? "border-violet-500" : "border-transparent"} focus:outline-none focus:ring-2 focus:ring-violet-400 flex flex-col items-center relative`}
+                            onClick={() => {
+                              if (avatar.is_free) handleAvatarSelect(avatar.url)
+                              else {
+                                setSelectedAvatarToBuy(avatar)
+                                setShowBuyAvatarDialog(true)
+                              }
+                            }}
+                          >
+                                                         <img 
+                               src={avatar.url} 
+                               alt="Avatar" 
+                               className={`w-16 h-16 object-cover rounded-full ${!avatar.is_free ? 'opacity-50 grayscale' : ''}`} 
+                             />
+                             {/* Rarity Badge */}
+                             <span className={`mt-1 text-xs font-bold px-2 py-0.5 rounded-full ${avatar.rarity === 'epic' ? 'bg-purple-100 text-purple-700' : avatar.rarity === 'god' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-700'}`}>
+                               {avatar.rarity}
+                             </span>
+                            {/* Lock/Price for non-free avatars */}
+                            {!avatar.is_free && (
+                              <span className="absolute top-1 right-1 bg-white/80 rounded-full p-1 border border-gray-200">
+                                <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M12 17a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm6-5V9a6 6 0 1 0-12 0v3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2ZM8 9a4 4 0 1 1 8 0v3H8V9Zm10 11H6v-6h12v6Z" fill="#888"/></svg>
+                                <span className="text-[10px] font-bold text-gray-500 ml-1">{avatar.price}★</span>
+                              </span>
+                            )}
+                          </button>
+                        )
+                      })}
         </div>
                     {/* XP Ring color selection */}
                     <div className="mt-6">

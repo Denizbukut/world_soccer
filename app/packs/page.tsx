@@ -77,6 +77,7 @@ export default function PacksPage() {
             .from('avatars')
             .select('rarity')
             .eq('id', user.avatar_id)
+            .eq('is_active', true)
             .single()
           
           if (!avatarError && avatarData?.rarity === "epic") {

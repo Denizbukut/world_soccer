@@ -10,11 +10,11 @@ export const WEEKLY_CONTEST_CONFIG = {
   
   // Prize Pool Configuration
   prizePool: [
-    { rank: "1st Place", reward: "$250 in WLD + Messi Lvl.3", icon: "🥇" },
-    { rank: "2nd Place", reward: "$150 in WLD + Messi Lvl. 2", icon: "🥈" },
-    { rank: "3rd Place", reward: "$100 in WLD + Messi Lvl. 1", icon: "🥉" },
-    { rank: "4th–6th Place", reward: "$50 in WLD + Wirtz Lvl. 3", icon: "🎖️" },
-    { rank: "7th–10th Place", reward:"$30 in WLD + Wirtz Lvl. 2", icon: "🎖️" },
+    { rank: "1st Place", reward: "$250 in WLD + Maradona Lvl.3", icon: "🥇" },
+    { rank: "2nd Place", reward: "$150 in WLD + Ibrahimovic Lvl. 2", icon: "🥈" },
+    { rank: "3rd Place", reward: "$100 in WLD + Cryuff Lvl. 1", icon: "🥉" },
+    { rank: "4th–6th Place", reward: "$50 in WLD + Mbappe Lvl. 3", icon: "🎖️" },
+    { rank: "7th–10th Place", reward:"$30 in WLD + Mbappe Lvl. 2", icon: "🎖️" },
   ]
 } as const
 

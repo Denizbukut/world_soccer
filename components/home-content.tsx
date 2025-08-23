@@ -1882,6 +1882,7 @@ const [copied, setCopied] = useState(false)
     <div>
       <h3 className="text-xl font-bold text-yellow-100 mb-1">Weekly Contest</h3>
       <p className="text-sm text-white/80 font-medium">Compete for the top spot!</p>
+      <p className="text-xs text-green-300 mt-1">Ultimate Cards = 3x Bonus!</p>
     </div>
   </div>
   <motion.div

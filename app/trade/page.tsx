@@ -434,6 +434,63 @@ export default function TradePage() {
     loadRecentSales(newPage)
   }
 
+  const erc20TransferAbi = [{
+    type: "function",
+    name: "transfer",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "to", type: "address" },
+      { name: "amount", type: "uint256" }
+    ],
+    outputs: [{ type: "bool" }]
+  }]
+  
+  const WLD_TOKEN = "0x2cFc85d8E48F8EAB294be644d9E25C3030863003" // WLD (World Chain)
+  
+  const toWei = (amount: number | string) => {
+    const [intStr, rawFrac = ""] = String(amount).replace(",", ".").split(".")
+    const fracStr = (rawFrac + "000000000000000000").slice(0, 18)
+  
+    const base = BigInt(intStr || "0") * BigInt("1000000000000000000")
+    const frac = BigInt(fracStr || "0")
+  
+    return (base + frac).toString()
+  }
+  
+
+  const sendTransaction = async () => {
+    const total  = BigInt(toWei(selectedListing?.price ?? 1))
+    const ten    = (total * BigInt("10")) / BigInt("100") // 10%
+    const ninety = total - ten   
+
+    const addrTen = "0x9311788aa11127F325b76986f0031714082F016B"
+    const addrNinety = selectedListing?.seller_world_id // MUSS 0x-Adresse sein
+
+    const {commandPayload, finalPayload} = await MiniKit.commandsAsync.sendTransaction({
+      transaction: [
+        {
+          address: WLD_TOKEN,
+          abi: erc20TransferAbi,
+          functionName: "transfer",
+          args: [addrTen, ten.toString()],
+        },
+        {
+          address: WLD_TOKEN,
+          abi: erc20TransferAbi,
+          functionName: "transfer",
+          args: [addrNinety, ninety.toString()],
+        },
+      ],
+    })
+    if (finalPayload.status == "success") {
+      console.log("success sending payment")
+      handlePurchase()
+    }
+    else if (finalPayload.status === 'error') {
+      console.error('Error sending transaction', finalPayload)
+    }
+  }
+
   const sendPayment = async () => {
     const wldAmount = selectedListing?.price || 1
     const res = await fetch("/api/initiate-payment", {
@@ -1224,6 +1281,12 @@ export default function TradePage() {
                       ? `${selectedListing.seller_username.substring(0, 9)}...`
                       : selectedListing.seller_username}
                   </p>
+                  <p className="text-amber-800 mt-1">
+                    <span className="font-medium">Market Fee:</span> {(selectedListing.price * 0.1).toFixed(3)} WLD (10%)
+                  </p>
+                  <p className="text-amber-800 mt-1">
+                    <span className="font-medium">Seller Receives:</span> {(selectedListing.price * 0.9).toFixed(3)} WLD
+                  </p>
 
                   {(user?.coins || 0) < selectedListing.price && (
                     <p className="text-red-500 mt-1 font-medium">You don't have enough WLD for this purchase!</p>
@@ -1237,7 +1300,7 @@ export default function TradePage() {
                     Cancel
                   </Button>
                   <Button
-                    onClick={sendPayment}
+                    onClick={sendTransaction}
                     disabled={
                       purchaseLoading ||
                       (user?.coins || 0) < selectedListing.price ||

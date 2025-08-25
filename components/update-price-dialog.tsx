@@ -205,6 +205,12 @@ useEffect(() => {
             <p className="text-gray-700 mt-1">
               <span className="font-medium">New Price:</span> {formatPrice(price)} WLD
             </p>
+            <p className="text-gray-700 mt-1">
+              <span className="font-medium">Market Fee:</span> {(parsedPrice * 0.1).toFixed(3)} WLD (10%)
+            </p>
+            <p className="text-gray-700 mt-1">
+              <span className="font-medium">You'll Receive:</span> {(parsedPrice * 0.9).toFixed(3)} WLD
+            </p>
           </div>
 
           {/* Action Buttons */}

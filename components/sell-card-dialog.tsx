@@ -517,10 +517,10 @@ export default function SellCardDialog({ isOpen, onClose, card, username, onSucc
               {/* Market Fee Info */}
               <div className="bg-gray-50 p-3 rounded-lg text-sm">
                 <p className="text-gray-700">
-                  <span className="font-medium">Market Fee:</span> 0 WLD (0%)
+                  <span className="font-medium">Market Fee:</span> {(parsedPrice * 0.1).toFixed(3)} WLD (10%)
                 </p>
                 <p className="text-gray-700 mt-1">
-                  <span className="font-medium">You'll Receive:</span> {formatPrice(price)} WLD
+                  <span className="font-medium">You'll Receive:</span> {(parsedPrice * 0.9).toFixed(3)} WLD
                 </p>
               </div>
 

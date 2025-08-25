@@ -31,6 +31,15 @@ export default function CollectionPage() {
   const [selectedEpoch, setSelectedEpoch] = useState<number | "all">("all")
   const [availableEpochs, setAvailableEpochs] = useState<number[]>([])
   const [showSquad, setShowSquad] = useState(false);
+
+  // Check URL parameters for direct squad access
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabParam = urlParams.get('tab');
+    if (tabParam === 'mysquad') {
+      setShowSquad(true);
+    }
+  }, []);
   // Squad-Positions-State
   const initialSquad: Record<string, any> = {
     GK: null,
@@ -588,17 +597,7 @@ export default function CollectionPage() {
   return (
     <div className="min-h-screen pb-20" style={{ backgroundImage: 'url(/hintergrung.png)', backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }}>
       {/* Header mit My Collection und My Squad */}
-      <div className="w-full max-w-lg mx-auto px-4 py-3 flex items-center justify-between sticky top-0 z-30 bg-black/80 border-b border-yellow-500 shadow-sm">
-        <h1 className="text-lg font-bold tracking-tight text-yellow-300 drop-shadow-md">
-          My Collection
-        </h1>
-        <button
-          onClick={() => setShowSquad(true)}
-          className="ml-4 px-4 py-2 rounded-full bg-gradient-to-r from-yellow-500 to-yellow-600 text-black font-semibold shadow hover:from-yellow-600 hover:to-yellow-700 transition"
-        >
-          My Squad
-        </button>
-      </div>
+      
 
       <main className="p-4 max-w-lg mx-auto">
         {/* Collection Stats */}

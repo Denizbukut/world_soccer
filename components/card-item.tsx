@@ -57,6 +57,7 @@ interface CardItemProps {
   isContest?: boolean
   hideOverlay?: boolean
   forceEager?: boolean
+  position?: string
   // props
 disableEffect?: boolean
 
@@ -85,6 +86,7 @@ export function CardItem({
   hideOverlay = false,
   forceEager = false,
   disableEffect = false,
+  position,
   hideName = false,
   hideLevel = false,
   hideQuantity = false,
@@ -135,6 +137,7 @@ export function CardItem({
   const rarityStyle = rarityStyles[rarity as keyof typeof rarityStyles] || rarityStyles.basic
   const placeholderUrl = "/placeholder.svg"
   const cardImageUrl = getCloudflareImageUrl(imageUrl)
+  
 
   const cardDetailUrl = isCollection ? `/cards/${id}-level-${level}` : `/cards/${id}`
 

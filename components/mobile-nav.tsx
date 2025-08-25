@@ -40,7 +40,15 @@ function NavItem({ href, icon, label, isActive }: NavItemProps) {
         isActive ? "text-violet-600" : "text-gray-500",
       )}
     >
-      <div className="h-5 w-5 mb-1">{icon}</div>
+      <div className="h-5 w-5 mb-1 relative">
+        {icon}
+        {/* NEW Badge for Kick Off */}
+        {href === "/ani" && (
+          <div className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] px-1 py-0.5 rounded-full font-bold animate-pulse">
+            NEW
+          </div>
+        )}
+      </div>
       <span>{label}</span>
 
       {isActive && (

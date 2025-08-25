@@ -370,9 +370,8 @@ export default function BattleArena({ stage, onBattleEnd }: BattleArenaProps) {
         await updateUserCoins(user!.coins + stage.reward_coins)
         await updateUserExp(stage.reward_exp)
 
-        setTimeout(() => {
-          setShowRewards(true)
-        }, 1500)
+        // Show rewards immediately instead of waiting 1.5 seconds
+        setShowRewards(true)
       } catch (error) {
         console.error("Error saving battle result:", error)
       }

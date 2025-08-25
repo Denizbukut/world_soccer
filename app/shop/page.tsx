@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/auth-context"
 import ProtectedRoute from "@/components/protected-route"
 import MobileNav from "@/components/mobile-nav"
 import { Button } from "@/components/ui/button"
-import { Ticket, Info, Check, Crown, Clock } from "lucide-react"
+import { Ticket, Info, Check, Crown, Clock, Sword, CircleDot } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
 import { motion } from "framer-motion"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -17,6 +17,7 @@ import { MiniKit, tokenToDecimals, Tokens, type PayCommandInput } from "@worldco
 import { useEffect } from "react"
 import { useWldPrice } from "@/contexts/WldPriceContext"
 import { getActiveTimeDiscount } from "@/app/actions/time-discount"
+import { getBattleLimitStatus } from "@/app/battle-limit-actions"
 
 
 export default function ShopPage() {
@@ -29,6 +30,13 @@ export default function ShopPage() {
   const [iconTickets, setIconTickets] = useState<number>(user?.icon_tickets ? Number(user.icon_tickets) : 0)
   const [userClanRole, setUserClanRole] = useState<string | null>(null)
   const [clanMemberCount, setClanMemberCount] = useState<number>(0)
+  const [battleLimit, setBattleLimit] = useState<{
+    battlesUsed: number
+    battlesRemaining: number
+    dailyLimit: number
+    canBattle: boolean
+  } | null>(null)
+  const [showPvpBattles, setShowPvpBattles] = useState(false)
 
   // Time-based discount state
   const [timeDiscount, setTimeDiscount] = useState<{
@@ -93,6 +101,29 @@ export default function ShopPage() {
 
   fetchUserClanRole()
 }, [user?.username])
+
+  // Fetch battle limit status
+  useEffect(() => {
+    const fetchBattleLimit = async () => {
+      if (!user?.username) return
+      
+      try {
+        const result = await getBattleLimitStatus(user.username)
+        if (result.success) {
+          setBattleLimit({
+            battlesUsed: result.battlesUsed,
+            battlesRemaining: result.battlesRemaining,
+            dailyLimit: result.dailyLimit,
+            canBattle: result.canBattle
+          })
+        }
+      } catch (error) {
+        console.error("Error fetching battle limit:", error)
+      }
+    }
+
+    fetchBattleLimit()
+  }, [user?.username])
 
   // Synchronisiere Ticket-States mit User-Objekt
   useEffect(() => {
@@ -178,6 +209,52 @@ export default function ShopPage() {
   return finalPrice
 }
 
+  const sendPvpBattlePayment = async (dollarPrice: number, packageId: string, battleAmount: number) => {
+    setIsLoading({ ...isLoading, [packageId]: true })
+
+    try {
+      const discountedPrice = getDiscountedPrice(dollarPrice)
+      const roundedWldAmount = Number.parseFloat((price ? discountedPrice / price : discountedPrice).toFixed(3))
+
+      const res = await fetch("/api/initiate-payment", { method: "POST" })
+      const { id } = await res.json()
+
+      const payload: PayCommandInput = {
+        reference: id,
+        to: "0x9311788aa11127F325b76986f0031714082F016B",
+        tokens: [
+          {
+            symbol: Tokens.WLD,
+            token_amount: tokenToDecimals(roundedWldAmount, Tokens.WLD).toString(),
+          },
+        ],
+        description: `${battleAmount} Additional PvP Battle${battleAmount > 1 ? 's' : ''}`,
+      }
+
+      const { finalPayload } = await MiniKit.commandsAsync.pay(payload)
+
+      if (finalPayload.status === "success") {
+        console.log("success sending payment")
+        await handleBuyPvpBattles(packageId, battleAmount)
+      } else {
+        toast({
+          title: "Payment Failed",
+          description: "Your payment could not be processed. Please try again.",
+          variant: "destructive",
+        })
+        setIsLoading({ ...isLoading, [packageId]: false })
+      }
+    } catch (error) {
+      console.error("Payment error:", error)
+      toast({
+        title: "Payment Error",
+        description: "An error occurred during payment. Please try again.",
+        variant: "destructive",
+      })
+      setIsLoading({ ...isLoading, [packageId]: false })
+    }
+  }
+
   const sendPayment = async (
   dollarPrice: number,
   packageId: string,
@@ -231,8 +308,130 @@ export default function ShopPage() {
 }
 
 
+  // Handle buying PvP battles
+  const handleBuyPvpBattles = async (packageId: string, battleAmount: number) => {
+    if (!user?.username) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to purchase PvP battles",
+        variant: "destructive",
+      })
+      setIsLoading({ ...isLoading, [packageId]: false })
+      return
+    }
+
+    try {
+      const supabase = getSupabaseBrowserClient()
+      if (!supabase) {
+        throw new Error("Could not connect to database")
+      }
+
+      // Get user UUID
+      const { data: userData, error: userError } = await supabase
+        .from("users")
+        .select("id")
+        .eq("username", user.username)
+        .single()
+
+      if (userError || !userData) {
+        throw new Error("Could not fetch user data")
+      }
+
+      const userId = userData.id
+
+      // Get current battle limit
+      const { data: battleLimitData, error: battleLimitError } = await supabase
+        .from("user_battle_limits")
+        .select("battles_used, last_reset_date")
+        .eq("user_id", userId)
+        .single()
+
+      let currentBattlesUsed = 0
+      let lastResetDate = new Date().toISOString().split('T')[0]
+
+      if (battleLimitError && battleLimitError.code !== 'PGRST116') {
+        throw new Error("Could not fetch battle limit")
+      } else if (battleLimitData) {
+        currentBattlesUsed = battleLimitData.battles_used || 0
+        lastResetDate = battleLimitData.last_reset_date || lastResetDate
+      }
+
+      // Check if we need to reset (new day)
+      const today = new Date().toISOString().split('T')[0]
+      if (lastResetDate !== today) {
+        currentBattlesUsed = 0
+        lastResetDate = today
+      }
+
+      // Add purchased battles (reduce battles_used)
+      const newBattlesUsed = Math.max(0, currentBattlesUsed - battleAmount)
+
+      console.log(`PvP Battle Purchase Debug:`, {
+        currentBattlesUsed,
+        battleAmount,
+        newBattlesUsed,
+        battlesRemaining: 5 - newBattlesUsed
+      })
+
+      // Update battle limit
+      const { error: updateError } = await supabase
+        .from("user_battle_limits")
+        .upsert({
+          user_id: userId,
+          battles_used: newBattlesUsed,
+          last_reset_date: lastResetDate,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id'
+        })
+
+      if (updateError) {
+        throw new Error("Failed to update battle limit")
+      }
+
+      // Log the PvP purchase
+      const originalPrice = pvpBattlePackages.find(p => p.id === packageId)?.price || 0
+      const discountedPrice = getDiscountedPrice(originalPrice)
+      const hasDiscount = discountedPrice < originalPrice
+      const discountPercentage = hasDiscount ? ((originalPrice - discountedPrice) / originalPrice) * 100 : 0
+
+      await supabase.from("pvp_purchases").insert({
+        user_id: userId,
+        username: user.username,
+        amount: battleAmount,
+        price_usd: discountedPrice,
+        price_wld: price ? (discountedPrice / price).toFixed(6) : null,
+        discounted: hasDiscount,
+        discount_percentage: hasDiscount ? discountPercentage : null,
+        clan_role: userClanRole,
+        clan_member_count: clanMemberCount
+      })
+
+      // Update local state
+      setBattleLimit({
+        battlesUsed: newBattlesUsed,
+        battlesRemaining: 5 - newBattlesUsed,
+        dailyLimit: 5,
+        canBattle: newBattlesUsed < 5
+      })
+
+      toast({
+        title: "Purchase Successful!",
+        description: `You've purchased ${battleAmount} additional PvP battle${battleAmount > 1 ? 's' : ''}!`,
+      })
+    } catch (error) {
+      console.error("Error buying PvP battles:", error)
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "An unexpected error occurred",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading({ ...isLoading, [packageId]: false })
+    }
+  }
+
   // Handle buying tickets
- // Handle buying tickets
   const handleBuyTickets = async (packageId: string, ticketAmount: number, ticketType: "regular" | "legendary" | "icon") => {
     if (!user?.username) {
       toast({
@@ -368,6 +567,12 @@ await supabase.from("ticket_purchases").insert({
     price: +(pkg.price * 1.2).toFixed(2),
   }))
 
+  // PvP Battle Packs (nur verfügbar wenn alle 5 Battles verbraucht)
+  const pvpBattlePackages = [
+    { id: "pvp-1", amount: 1, price: 0.25 },
+    { id: "pvp-5", amount: 5, price: 0.78 },
+  ]
+
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gradient-to-b from-[#181a20] to-[#23262f] pb-20 text-white">
@@ -430,34 +635,54 @@ await supabase.from("ticket_purchases").insert({
   </motion.div>
 )}
 
-          {/* Tabs for different ticket types */}
-<motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-  <Tabs defaultValue="regular" className="w-full">
-    <TabsList className="grid w-full grid-cols-3 h-12 rounded-2xl p-1 bg-gradient-to-r from-gray-900/60 via-gray-800/40 to-gray-900/60 mb-6 shadow-lg backdrop-blur-md">
-      <TabsTrigger
-        value="regular"
-        className="rounded-lg data-[state=active]:bg-white/10 data-[state=active]:border-2 data-[state=active]:border-yellow-300 data-[state=active]:text-yellow-200 data-[state=active]:shadow transition-all font-semibold tracking-wide"
-      >
-        <Ticket className="h-4 w-4 mr-2 text-yellow-300" />
-        Classic Tickets
-      </TabsTrigger>
-      <TabsTrigger
-        value="legendary"
-        className="rounded-lg data-[state=active]:bg-white/10 data-[state=active]:border-2 data-[state=active]:border-gray-400 data-[state=active]:text-gray-200 data-[state=active]:shadow transition-all font-semibold tracking-wide"
-      >
-        <Ticket className="h-4 w-4 mr-2 text-gray-300" />
-        Elite Tickets
-      </TabsTrigger>
-      <TabsTrigger
-        value="icon"
-        className="rounded-lg data-[state=active]:bg-white/10 data-[state=active]:border-2 data-[state=active]:border-yellow-200 data-[state=active]:text-yellow-100 data-[state=active]:shadow transition-all font-semibold tracking-wide"
-      >
-        <span className="font-extrabold text-yellow-200 mr-2">★</span>
-        Icon Tickets
-      </TabsTrigger>
-    </TabsList>
+                    {/* Main Shop Tabs */}
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
+            <Tabs defaultValue={typeof window !== 'undefined' && window.location.search.includes('tab=pvp') ? "pvp" : "tickets"} className="w-full">
+              <TabsList className="grid w-full grid-cols-2 h-12 rounded-2xl p-1 bg-gradient-to-r from-gray-900/60 via-gray-800/40 to-gray-900/60 mb-6 shadow-lg backdrop-blur-md">
+                <TabsTrigger
+                  value="tickets"
+                  className="rounded-lg data-[state=active]:bg-white/10 data-[state=active]:border-2 data-[state=active]:border-yellow-300 data-[state=active]:text-yellow-200 data-[state=active]:shadow transition-all font-semibold tracking-wide"
+                >
+                  <Ticket className="h-4 w-4 mr-2 text-yellow-300" />
+                  Tickets
+                </TabsTrigger>
+                <TabsTrigger
+                  value="pvp"
+                  className="rounded-lg data-[state=active]:bg-white/10 data-[state=active]:border-2 data-[state=active]:border-orange-400 data-[state=active]:text-orange-200 data-[state=active]:shadow transition-all font-semibold tracking-wide text-orange-300"
+                >
+                  <CircleDot className="h-4 w-4 mr-2 text-orange-300" />
+                  PvP
+                </TabsTrigger>
+              </TabsList>
 
-    {/* Classic Tickets Content */}
+              {/* Tickets Tab Content */}
+              <TabsContent value="tickets" className="mt-0">
+                <Tabs defaultValue="regular" className="w-full">
+                  <TabsList className="grid w-full grid-cols-3 h-12 rounded-2xl p-1 bg-gradient-to-r from-gray-900/60 via-gray-800/40 to-gray-900/60 mb-6 shadow-lg backdrop-blur-md">
+                    <TabsTrigger
+                      value="regular"
+                      className="rounded-lg data-[state=active]:bg-white/10 data-[state=active]:border-2 data-[state=active]:border-yellow-300 data-[state=active]:text-yellow-200 data-[state=active]:shadow transition-all font-semibold tracking-wide"
+                    >
+                      <Ticket className="h-4 w-4 mr-2 text-yellow-300" />
+                      Classic Tickets
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="legendary"
+                      className="rounded-lg data-[state=active]:bg-white/10 data-[state=active]:border-2 data-[state=active]:border-gray-400 data-[state=active]:text-gray-200 data-[state=active]:shadow transition-all font-semibold tracking-wide"
+                    >
+                      <Ticket className="h-4 w-4 mr-2 text-gray-300" />
+                      Elite Tickets
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="icon"
+                      className="rounded-lg data-[state=active]:bg-white/10 data-[state=active]:border-2 data-[state=active]:border-yellow-200 data-[state=active]:text-yellow-100 data-[state=active]:shadow transition-all font-semibold tracking-wide"
+                    >
+                      <span className="font-extrabold text-yellow-200 mr-2">★</span>
+                      Icon Tickets
+                    </TabsTrigger>
+                                    </TabsList>
+
+                  {/* Classic Tickets Content */}
     <TabsContent value="regular" className="mt-0 space-y-6">
       <div className="grid grid-cols-2 gap-3">
         {regularPackages.map((pkg) => {
@@ -680,8 +905,120 @@ await supabase.from("ticket_purchases").insert({
         })}
       </div>
     </TabsContent>
-  </Tabs>
-</motion.div>
+                </Tabs>
+              </TabsContent>
+
+              {/* PvP Tab Content */}
+              <TabsContent value="pvp" className="mt-0">
+                {battleLimit && (
+                  <div className="space-y-6">
+                    <div className="bg-gradient-to-r from-amber-800/40 to-orange-900/40 border border-amber-700/50 rounded-xl p-4">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <CircleDot className="h-6 w-6 text-orange-300" />
+                          <div>
+                            <h3 className="text-lg font-bold text-orange-200">Additional PvP Battles</h3>
+                            <p className="text-sm text-orange-100">
+                              {battleLimit.canBattle 
+                                ? `${battleLimit.battlesRemaining} battles remaining`
+                                : `All ${battleLimit.dailyLimit} battles used`
+                              }
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-xs text-orange-200/80">
+                            {battleLimit.battlesUsed}/{battleLimit.dailyLimit}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        {pvpBattlePackages.map((pkg) => {
+                          const originalPrice = pkg.price
+                          const discountedPrice = getDiscountedPrice(originalPrice)
+                          const hasDiscount = discountedPrice < originalPrice
+                          return (
+                            <motion.div
+                              key={pkg.id}
+                              whileHover={{ scale: 1.03, boxShadow: '0 0 32px 0 rgba(255,140,0,0.10)' }}
+                              className="relative"
+                            >
+                              <Card
+                                className="overflow-hidden border-2 border-orange-400/30 bg-gradient-to-br from-gray-900/60 to-gray-800/40 rounded-xl shadow-md backdrop-blur-md transition-all p-2"
+                              >
+                                {/* Shine Effekt */}
+                                <motion.div
+                                  className="absolute left-[-40%] top-0 w-1/2 h-full bg-gradient-to-r from-transparent via-orange-200/10 to-transparent skew-x-[-20deg] pointer-events-none"
+                                  animate={{ left: ['-40%', '120%'] }}
+                                  transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+                                />
+                                {hasDiscount && (
+                                  <div className="absolute top-0 right-0 bg-gradient-to-r from-orange-400 to-orange-600 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg z-10">
+                                    -{Math.round((1 - discountedPrice / originalPrice) * 100)}%
+                                  </div>
+                                )}
+                                <CardHeader className="p-2 pb-1 space-y-0">
+                                  <CardTitle className="text-base font-extrabold flex items-center text-orange-200 drop-shadow">
+                                    <span className="mr-1">{pkg.amount}</span>
+                                    <CircleDot className="h-4 w-4 text-orange-300 drop-shadow-lg mx-1" />
+                                    <span className="ml-1 text-xs">{pkg.amount === 1 ? "PvP Battle" : "PvP Battles"}</span>
+                                  </CardTitle>
+                                </CardHeader>
+                                <CardContent className="p-2 pt-0 pb-1">
+                                  <Separator className="my-2 border-orange-400/20" />
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex flex-col items-start">
+                                      {hasDiscount && (
+                                        <span className="text-xs text-orange-200/60 line-through">
+                                          {price ? `${(originalPrice / price).toFixed(3)} WLD` : `${originalPrice.toFixed(3)} WLD`}
+                                        </span>
+                                      )}
+                                      <span className="text-base font-bold text-orange-100">
+                                        {price
+                                          ? `${(discountedPrice / price).toFixed(3)} WLD`
+                                          : `${discountedPrice.toFixed(3)} WLD`}
+                                      </span>
+                                      <span className="text-xs text-orange-100/80">
+                                        (~${discountedPrice.toFixed(2)})
+                                      </span>
+                                    </div>
+                                  </div>
+                                </CardContent>
+                                <CardFooter className="p-2 pt-0">
+                                  <Button
+                                    size="sm"
+                                    className={`w-full font-bold border-0 transition backdrop-blur-md ${
+                                      battleLimit.canBattle
+                                        ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                                        : 'bg-gradient-to-r from-gray-800/80 to-orange-400/30 text-orange-100 hover:scale-105 hover:shadow-lg'
+                                    }`}
+                                    onClick={() => sendPvpBattlePayment(originalPrice, pkg.id, pkg.amount)}
+                                    disabled={isLoading[pkg.id] || battleLimit.canBattle}
+                                  >
+                                    {isLoading[pkg.id] ? (
+                                      <>
+                                        <div className="h-4 w-4 border-2 border-t-transparent border-orange-400 rounded-full animate-spin mr-2"></div>
+                                        Processing...
+                                      </>
+                                    ) : battleLimit.canBattle ? (
+                                      "Not Available"
+                                    ) : (
+                                      "Purchase"
+                                    )}
+                                  </Button>
+                                </CardFooter>
+                              </Card>
+                            </motion.div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
+          </motion.div>
 
 
           {/* Payment info section */}

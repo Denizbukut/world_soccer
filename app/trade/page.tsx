@@ -484,6 +484,29 @@ export default function TradePage() {
     })
     if (finalPayload.status == "success") {
       console.log("success sending payment")
+      
+      // Save market fees directly to database (client-side)
+      try {
+        const supabase = getSupabaseBrowserClient()
+        if (supabase && selectedListing?.id) {
+          const fees = selectedListing.price * 0.1
+          const { error } = await supabase
+            .from("market_fees")
+            .insert({
+              market_listing_id: selectedListing.id,
+              fees: fees
+            })
+          
+          if (error) {
+            console.error("Failed to save market fees:", error)
+          } else {
+            console.log("Market fees saved successfully")
+          }
+        }
+      } catch (error) {
+        console.error("Error saving market fees:", error)
+      }
+      
       handlePurchase()
     }
     else if (finalPayload.status === 'error') {

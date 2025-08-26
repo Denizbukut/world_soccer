@@ -7,6 +7,7 @@ import { getUserPvpStats } from "@/app/battle-actions"
 
 interface PvpStatsProps {
   username: string
+  refreshTrigger?: number
 }
 
 interface PvpStatsData {
@@ -22,31 +23,19 @@ interface PvpStatsData {
   }>
 }
 
-export default function PvpStats({ username }: PvpStatsProps) {
+export default function PvpStats({ username, refreshTrigger }: PvpStatsProps) {
   const [stats, setStats] = useState<PvpStatsData | null>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        setLoading(true)
-        const result = await getUserPvpStats(username)
-        
-        if (result.success && result.data) {
-          setStats(result.data)
-        } else {
-          // Show default stats if no data
-          setStats({
-            totalBattles: 0,
-            wins: 0,
-            losses: 0,
-            draws: 0,
-            winRate: 0,
-            recentBattles: []
-          })
-        }
-      } catch (err) {
-        // Show default stats on error
+  const fetchStats = async () => {
+    try {
+      setLoading(true)
+      const result = await getUserPvpStats(username)
+      
+      if (result.success && 'data' in result) {
+        setStats(result.data)
+      } else {
+        // Show default stats if no data
         setStats({
           totalBattles: 0,
           wins: 0,
@@ -55,17 +44,29 @@ export default function PvpStats({ username }: PvpStatsProps) {
           winRate: 0,
           recentBattles: []
         })
-      } finally {
-        setLoading(false)
       }
+    } catch (err) {
+      // Show default stats on error
+      setStats({
+        totalBattles: 0,
+        wins: 0,
+        losses: 0,
+        draws: 0,
+        winRate: 0,
+        recentBattles: []
+      })
+    } finally {
+      setLoading(false)
     }
+  }
 
+  useEffect(() => {
     if (username) {
       fetchStats()
     } else {
       setLoading(false)
     }
-  }, [username])
+  }, [username, refreshTrigger])
 
   if (loading) {
     return (

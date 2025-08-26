@@ -6,8 +6,7 @@ import { useAuth } from "@/contexts/auth-context"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { motion, AnimatePresence } from "framer-motion"
-import { ArrowLeft, Trophy, Star, Info, ChevronDown, ChevronUp } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { ArrowLeft, Trophy, Info, ChevronDown, ChevronUp } from "lucide-react"
 import PvpBattleSimulation from "./pvp-battle-simulation"
 import PvpStats from "./pvp-stats"
 import {
@@ -54,18 +53,17 @@ interface PvpBattleArenaProps {
 
 export default function PvpBattleArena({ onBackToBattle, onBattleEnd }: PvpBattleArenaProps) {
   const { user } = useAuth()
-  const router = useRouter()
   const [userTeam, setUserTeam] = useState<UserTeam | null>(null)
   const [userCards, setUserCards] = useState<Card[]>([])
   const [opponentTeam, setOpponentTeam] = useState<UserTeam | null>(null)
   const [opponentCards, setOpponentCards] = useState<Card[]>([])
   const [loading, setLoading] = useState(true)
   const [battleResult, setBattleResult] = useState<BattleResult | null>(null)
-  const [battleInProgress, setBattleInProgress] = useState(false)
   const [showSimulation, setShowSimulation] = useState(false)
   const [showInfoDialog, setShowInfoDialog] = useState(false)
-  const [userTeamExpanded, setUserTeamExpanded] = useState(false)
-  const [opponentTeamExpanded, setOpponentTeamExpanded] = useState(false)
+  const [showUserTeam, setShowUserTeam] = useState(false)
+  const [showOpponentTeam, setShowOpponentTeam] = useState(false)
+  const [statsRefreshTrigger, setStatsRefreshTrigger] = useState(0)
 
   useEffect(() => {
     if (user?.username) {
@@ -134,54 +132,54 @@ export default function PvpBattleArena({ onBackToBattle, onBattleEnd }: PvpBattl
     }
   }
 
-     const loadTeamCards = async (team: UserTeam, setCards: React.Dispatch<React.SetStateAction<Card[]>>) => {
-     try {
-       const supabase = getSupabaseBrowserClient()
-       if (!supabase) return
+  const loadTeamCards = async (team: UserTeam, setCards: React.Dispatch<React.SetStateAction<Card[]>>) => {
+    try {
+      const supabase = getSupabaseBrowserClient()
+      if (!supabase) return
 
-       const cardIds = Object.entries(team)
-         .filter(([key, value]) => key.startsWith('slot_') && typeof value === 'string' && value)
-         .map(([key, value]) => value as string)
+      const cardIds = Object.entries(team)
+        .filter(([key, value]) => key.startsWith('slot_') && typeof value === 'string' && value)
+        .map(([key, value]) => value as string)
 
-       if (cardIds.length === 0) {
-         setCards([])
-         return
-       }
+      if (cardIds.length === 0) {
+        setCards([])
+        return
+      }
 
-       const { data: cardsData, error } = await supabase
-         .from("cards")
-         .select("id, name, overall_rating, rarity")
-         .in("id", cardIds)
+      const { data: cardsData, error } = await supabase
+        .from("cards")
+        .select("id, name, overall_rating, rarity")
+        .in("id", cardIds)
 
-       if (error) {
-         console.error("Error fetching team cards:", error)
-         setCards([])
-       } else {
-         setCards((cardsData as Card[]) || [])
-       }
-     } catch (error) {
-       console.error("Error loading team cards:", error)
-       setCards([])
-     }
-   }
-
-       const loadDefaultOpponentCards = async (setCards: React.Dispatch<React.SetStateAction<Card[]>>, opponentUsername?: string) => {
-      // Create default opponent cards with realistic ratings
-      const defaultCards: Card[] = [
-        { id: "default-gk", name: "Neuer", overall_rating: 88, rarity: "legendary" },
-        { id: "default-df1", name: "Van Dijk", overall_rating: 89, rarity: "legendary" },
-        { id: "default-df2", name: "Dias", overall_rating: 87, rarity: "epic" },
-        { id: "default-df3", name: "Alaba", overall_rating: 86, rarity: "epic" },
-        { id: "default-df4", name: "Walker", overall_rating: 85, rarity: "epic" },
-        { id: "default-mf1", name: "De Bruyne", overall_rating: 91, rarity: "legendary" },
-        { id: "default-mf2", name: "Modric", overall_rating: 88, rarity: "legendary" },
-        { id: "default-mf3", name: "Kimmich", overall_rating: 87, rarity: "epic" },
-        { id: "default-mf4", name: "Silva", overall_rating: 86, rarity: "epic" },
-        { id: "default-fw1", name: "Haaland", overall_rating: 91, rarity: "legendary" },
-        { id: "default-fw2", name: "Mbappé", overall_rating: 91, rarity: "legendary" }
-      ]
-      setCards(defaultCards)
+      if (error) {
+        console.error("Error fetching team cards:", error)
+        setCards([])
+      } else {
+        setCards((cardsData as Card[]) || [])
+      }
+    } catch (error) {
+      console.error("Error loading team cards:", error)
+      setCards([])
     }
+  }
+
+  const loadDefaultOpponentCards = async (setCards: React.Dispatch<React.SetStateAction<Card[]>>, opponentUsername?: string) => {
+    // Create default opponent cards with realistic ratings
+    const defaultCards: Card[] = [
+      { id: "default-gk", name: "Neuer", overall_rating: 88, rarity: "legendary" },
+      { id: "default-df1", name: "Van Dijk", overall_rating: 89, rarity: "legendary" },
+      { id: "default-df2", name: "Dias", overall_rating: 87, rarity: "epic" },
+      { id: "default-df3", name: "Alaba", overall_rating: 86, rarity: "epic" },
+      { id: "default-df4", name: "Walker", overall_rating: 85, rarity: "epic" },
+      { id: "default-mf1", name: "De Bruyne", overall_rating: 91, rarity: "legendary" },
+      { id: "default-mf2", name: "Modric", overall_rating: 88, rarity: "legendary" },
+      { id: "default-mf3", name: "Kimmich", overall_rating: 87, rarity: "epic" },
+      { id: "default-mf4", name: "Silva", overall_rating: 86, rarity: "epic" },
+      { id: "default-fw1", name: "Haaland", overall_rating: 91, rarity: "legendary" },
+      { id: "default-fw2", name: "Mbappé", overall_rating: 91, rarity: "legendary" }
+    ]
+    setCards(defaultCards)
+  }
 
   const calculateTeamRating = (cards: Card[]) => {
     if (cards.length === 0) return 0
@@ -202,79 +200,6 @@ export default function PvpBattleArena({ onBackToBattle, onBattleEnd }: PvpBattl
   const handleBattleEnd = async (result: any) => {
     const opponentUsername = localStorage.getItem('pvp_opponent') || "damla123"
     
-    // Check battle limit AFTER the battle is completed
-    try {
-      const battleLimitResponse = await fetch('/api/check-battle-limit', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          username: user!.username
-        })
-      })
-
-      if (battleLimitResponse.ok) {
-        const battleLimitResult = await battleLimitResponse.json()
-        if (!battleLimitResult.success || !battleLimitResult.canBattle) {
-          console.log('Battle limit reached after battle completion')
-        }
-      }
-    } catch (error) {
-      console.error('Error checking battle limit:', error)
-    }
-    
-    try {
-      if (result.winner === 'draw') {
-        // Handle draw - no points change
-        const selectedMode = JSON.parse(localStorage.getItem('selected_battle_mode') || '{"id": 1, "name": "PvP Battle"}')
-        const response = await fetch('/api/update-prestige-points', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            winnerUsername: user!.username,
-            loserUsername: opponentUsername,
-            isDraw: true,
-            battleModeId: selectedMode.id
-          })
-        })
-
-        if (response.ok) {
-          const data = await response.json()
-          console.log('Draw - no prestige points changed:', data)
-        }
-      } else {
-        // Handle win/loss
-        const winnerUsername = result.winner === 'user' ? user!.username : opponentUsername
-        const loserUsername = result.winner === 'user' ? opponentUsername : user!.username
-        
-        const selectedMode = JSON.parse(localStorage.getItem('selected_battle_mode') || '{"id": 1, "name": "PvP Battle"}')
-        const response = await fetch('/api/update-prestige-points', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            winnerUsername,
-            loserUsername,
-            isDraw: false,
-            battleModeId: selectedMode.id
-          })
-        })
-
-        if (response.ok) {
-          const data = await response.json()
-          console.log('Prestige points updated:', data)
-        } else {
-          console.error('Failed to update prestige points')
-        }
-      }
-    } catch (error) {
-      console.error('Error updating prestige points:', error)
-    }
-    
     setBattleResult({
       winner: result.winner === 'user' ? user!.username : result.winner === 'opponent' ? opponentUsername : 'Draw',
       score: result.score,
@@ -286,6 +211,9 @@ export default function PvpBattleArena({ onBackToBattle, onBattleEnd }: PvpBattl
     if (onBattleEnd) {
       onBattleEnd()
     }
+    
+    // Update PvP stats without reloading the page
+    setStatsRefreshTrigger(prev => prev + 1)
   }
 
   const handleBackFromSimulation = () => {
@@ -391,113 +319,115 @@ export default function PvpBattleArena({ onBackToBattle, onBattleEnd }: PvpBattl
               </Button>
             </div>
 
-            {/* Team Comparison */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-              {/* User Team */}
-              <Card className="bg-gradient-to-br from-green-900/40 to-black/60 border-green-500/30">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-bold text-white">Your Team</h3>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setUserTeamExpanded(!userTeamExpanded)}
-                      className="text-white hover:bg-white/20 p-2"
-                    >
-                      {userTeamExpanded ? (
-                        <ChevronUp className="w-5 h-5" />
-                      ) : (
-                        <ChevronDown className="w-5 h-5" />
-                      )}
-                    </Button>
-                  </div>
-                  
-                  <div className="flex items-center justify-center gap-2 mb-4">
-                    <Trophy className="w-5 h-5 text-yellow-400" />
-                    <span className="text-lg text-white font-semibold">
-                      Rating: {calculateTeamRating(userCards)}
-                    </span>
-                  </div>
-                  
-                  <AnimatePresence>
-                    {userTeamExpanded && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.3 }}
-                        className="overflow-hidden"
-                      >
-                        <div className="space-y-2 pt-2 border-t border-green-500/30">
-                          {userCards.map((card, index) => (
-                            <div key={card.id} className="flex justify-between items-center bg-white/10 p-2 rounded">
-                              <span className="text-white text-sm">{card.name}</span>
-                              <span className="text-yellow-400 text-sm font-semibold">{card.overall_rating}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </CardContent>
-              </Card>
+                         {/* Team Comparison - Individual Collapsible Menus */}
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+               {/* User Team - Collapsible */}
+               <Card className="bg-gradient-to-br from-green-900/40 to-black/60 border-green-500/30">
+                 <CardContent className="p-4">
+                   <Button
+                     onClick={() => setShowUserTeam(!showUserTeam)}
+                     variant="ghost"
+                     className="w-full flex justify-between items-center text-white hover:bg-white/10 p-0 h-auto"
+                   >
+                     <div className="flex items-center gap-4">
+                       <Trophy className="w-5 h-5 text-yellow-400" />
+                       <span className="text-lg font-bold">Your Team</span>
+                     </div>
+                     {showUserTeam ? (
+                       <ChevronUp className="w-5 h-5 text-white" />
+                     ) : (
+                       <ChevronDown className="w-5 h-5 text-white" />
+                     )}
+                   </Button>
+                   
+                   <AnimatePresence>
+                     {showUserTeam && (
+                       <motion.div
+                         initial={{ opacity: 0, height: 0 }}
+                         animate={{ opacity: 1, height: "auto" }}
+                         exit={{ opacity: 0, height: 0 }}
+                         transition={{ duration: 0.3 }}
+                         className="overflow-hidden"
+                       >
+                         <div className="mt-4">
+                           <div className="flex items-center justify-center gap-2 mb-4">
+                             <Trophy className="w-4 h-4 text-yellow-400" />
+                             <span className="text-white font-semibold">
+                               Rating: {calculateTeamRating(userCards)}
+                             </span>
+                           </div>
+                           <div className="space-y-2">
+                             {userCards.map((card, index) => (
+                               <div key={card.id} className="flex justify-between items-center bg-white/10 p-2 rounded">
+                                 <span className="text-white text-sm">{card.name}</span>
+                                 <span className="text-yellow-400 text-sm font-semibold">{card.overall_rating}</span>
+                               </div>
+                             ))}
+                           </div>
+                         </div>
+                       </motion.div>
+                     )}
+                   </AnimatePresence>
+                 </CardContent>
+               </Card>
 
-              {/* Opponent Team */}
-              <Card className="bg-gradient-to-br from-red-900/40 to-black/60 border-red-500/30">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-bold text-white">
-                      {(localStorage.getItem('pvp_opponent') || "damla123")}'s Team
-                    </h3>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setOpponentTeamExpanded(!opponentTeamExpanded)}
-                      className="text-white hover:bg-white/20 p-2"
-                    >
-                      {opponentTeamExpanded ? (
-                        <ChevronUp className="w-5 h-5" />
-                      ) : (
-                        <ChevronDown className="w-5 h-5" />
-                      )}
-                    </Button>
-                  </div>
-                  
-                  <div className="flex items-center justify-center gap-2 mb-4">
-                    <Trophy className="w-5 h-5 text-yellow-400" />
-                    <span className="text-lg text-white font-semibold">
-                      Rating: {calculateTeamRating(opponentCards)}
-                    </span>
-                  </div>
-                  
-                  <AnimatePresence>
-                    {opponentTeamExpanded && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.3 }}
-                        className="overflow-hidden"
-                      >
-                        <div className="space-y-2 pt-2 border-t border-red-500/30">
-                          {opponentCards.map((card, index) => (
-                            <div key={card.id} className="flex justify-between items-center bg-white/10 p-2 rounded">
-                              <span className="text-white text-sm">{card.name}</span>
-                              <span className="text-yellow-400 text-sm font-semibold">{card.overall_rating}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </CardContent>
-              </Card>
-            </div>
+               {/* Opponent Team - Collapsible */}
+               <Card className="bg-gradient-to-br from-red-900/40 to-black/60 border-red-500/30">
+                 <CardContent className="p-4">
+                   <Button
+                     onClick={() => setShowOpponentTeam(!showOpponentTeam)}
+                     variant="ghost"
+                     className="w-full flex justify-between items-center text-white hover:bg-white/10 p-0 h-auto"
+                   >
+                     <div className="flex items-center gap-4">
+                       <Trophy className="w-5 h-5 text-yellow-400" />
+                       <span className="text-lg font-bold truncate">
+                         {(localStorage.getItem('pvp_opponent') || "damla123")}'s Team
+                       </span>
+                     </div>
+                     {showOpponentTeam ? (
+                       <ChevronUp className="w-5 h-5 text-white" />
+                     ) : (
+                       <ChevronDown className="w-5 h-5 text-white" />
+                     )}
+                   </Button>
+                   
+                   <AnimatePresence>
+                     {showOpponentTeam && (
+                       <motion.div
+                         initial={{ opacity: 0, height: 0 }}
+                         animate={{ opacity: 1, height: "auto" }}
+                         exit={{ opacity: 0, height: 0 }}
+                         transition={{ duration: 0.3 }}
+                         className="overflow-hidden"
+                       >
+                         <div className="mt-4">
+                           <div className="flex items-center justify-center gap-2 mb-4">
+                             <Trophy className="w-4 h-4 text-yellow-400" />
+                             <span className="text-white font-semibold">
+                               Rating: {calculateTeamRating(opponentCards)}
+                             </span>
+                           </div>
+                           <div className="space-y-2">
+                             {opponentCards.map((card, index) => (
+                               <div key={card.id} className="flex justify-between items-center bg-white/10 p-2 rounded">
+                                 <span className="text-white text-sm">{card.name}</span>
+                                 <span className="text-yellow-400 text-sm font-semibold">{card.overall_rating}</span>
+                               </div>
+                             ))}
+                           </div>
+                         </div>
+                       </motion.div>
+                     )}
+                   </AnimatePresence>
+                 </CardContent>
+               </Card>
+             </div>
 
-            {/* PvP Statistics */}
-            <div className="mb-8">
-              <PvpStats username={user?.username || ""} />
-            </div>
+                         {/* PvP Statistics */}
+             <div className="mb-8">
+               <PvpStats username={user?.username || ""} refreshTrigger={statsRefreshTrigger} />
+             </div>
           </>
         ) : (
           <>
@@ -537,16 +467,16 @@ export default function PvpBattleArena({ onBackToBattle, onBattleEnd }: PvpBattl
               </Card>
             </motion.div>
 
-            {/* PvP Statistics - also shown after battle */}
-            <div className="mb-8">
-              <PvpStats username={user?.username || ""} />
-            </div>
+                         {/* PvP Statistics - also shown after battle */}
+             <div className="mb-8">
+               <PvpStats username={user?.username || ""} refreshTrigger={statsRefreshTrigger} />
+             </div>
           </>
         )}
 
         {/* Info Dialog */}
         <Dialog open={showInfoDialog} onOpenChange={setShowInfoDialog}>
-          <DialogContent className="bg-gradient-to-br from-blue-900 to-black border-blue-500/30 text-white">
+          <DialogContent className="bg-gradient-to-br from-blue-900 to-black border-blue-500/30 text-white max-w-4xl max-h-[95vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="text-xl font-bold text-center text-white">
                 <div className="flex items-center justify-center gap-2 mb-2">
@@ -555,34 +485,16 @@ export default function PvpBattleArena({ onBackToBattle, onBattleEnd }: PvpBattl
                 </div>
               </DialogTitle>
             </DialogHeader>
-            <div className="text-center space-y-4">
-              <div className="bg-blue-800/30 p-4 rounded-lg border border-blue-500/30">
-                <p className="text-lg font-semibold text-blue-200">
-                  The better the team rating and player levels, the better your team!!!
-                </p>
+            <div className="text-center space-y-4 max-h-[80vh] overflow-y-auto">
+              <div className="text-lg font-semibold text-white mb-6">
+                Card Level Bonuses
               </div>
-              <div className="text-sm text-gray-300">
-                <p>• Higher overall ratings increase your chances of winning</p>
-                <p>• Player levels provide additional bonuses</p>
-                <p>• Team chemistry and formation matter</p>
-                <p>• Only users with a complete team (11 players) can participate in PvP battles</p>
-                <p>• Battle limits reset daily at midnight - you get 5 new battles every day</p>
-                <p>• To start a battle: Click "Challenge" on a player, then select your battle mode</p>
-              </div>
-              
-              <div className="bg-orange-800/30 p-4 rounded-lg border border-orange-500/30 mt-4">
-                <p className="text-lg font-semibold text-orange-200">
-                  Collect as many prestige points as possible to qualify for the weekend league playoffs!
-                </p>
-                <p className="text-sm text-orange-300 mt-2">
-                  The top 30 users will qualify for the playoffs!!!
-                </p>
-                <p className="text-sm text-yellow-300 mt-2">
-                  🏆 Places 1 and 2 directly qualify for the weekend league!
-                </p>
-                <p className="text-sm text-green-300 mt-2 font-bold">
-                  🚀 Weekend League starts in 2 weeks!
-                </p>
+              <div className="text-sm text-gray-300 space-y-2">
+                <p>• Basic Cards: +0.1 rating per level</p>
+                <p>• Rare Cards: +0.15 rating per level</p>
+                <p>• Elite Cards: +0.2 rating per level</p>
+                <p>• Ultimate Cards: +0.35 rating per level</p>
+                <p>• GOAT Cards: +1.0 rating per level</p>
               </div>
             </div>
           </DialogContent>

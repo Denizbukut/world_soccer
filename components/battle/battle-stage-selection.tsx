@@ -116,7 +116,7 @@ export default function BattleStageSelection({ stages, loading, onStageSelect, u
               {expandedStage === stageIndex && !isLocked && (
                 <CardContent>
                   <div className="space-y-3">
-                    {stageGroup.map((level) => {
+                    {stageGroup.map((level: any) => {
                       const isLevelLocked = userLevel < level.enemy_level - 5
 
                       return (

@@ -63,6 +63,10 @@ export default function BattleArena({ stage, onBattleEnd }: BattleArenaProps) {
     setLoading(true)
     try {
       const supabase = getSupabaseBrowserClient()
+      if (!supabase) {
+        console.error("Supabase client not available")
+        return
+      }
       const { data, error } = await supabase
         .from("user_cards")
         .select(`
@@ -82,7 +86,7 @@ export default function BattleArena({ stage, onBattleEnd }: BattleArenaProps) {
             passive_ability
           )
         `)
-        .eq("user_id", user!.id)
+        .eq("user_id", user!.username)
         .order("id", { ascending: false })
         .limit(3)
 
@@ -95,10 +99,10 @@ export default function BattleArena({ stage, onBattleEnd }: BattleArenaProps) {
         })
       } else {
         // Transform data and add battle properties
-        const battleCards = data.map((card) => ({
+        const battleCards = data.map((card: any) => ({
           id: card.id,
           ...card.cards,
-          currentHp: card.cards.hp,
+          currentHp: (card.cards as any).hp,
           cooldowns: {},
           effects: [],
           isPlayer: true,
@@ -115,6 +119,10 @@ export default function BattleArena({ stage, onBattleEnd }: BattleArenaProps) {
   const prepareEnemyCards = async () => {
     try {
       const supabase = getSupabaseBrowserClient()
+      if (!supabase) {
+        console.error("Supabase client not available")
+        return
+      }
 
       // Get enemy cards from stage data
       const enemyCardIds = stage.enemy_cards.map((card: any) => card.card_id)
@@ -126,7 +134,7 @@ export default function BattleArena({ stage, onBattleEnd }: BattleArenaProps) {
         console.error("Error fetching enemy cards:", error)
       } else if (data) {
         // Map enemy cards with battle properties
-        const battleCards = data.map((card, index) => {
+        const battleCards = data.map((card: any, index) => {
           const stageCard = stage.enemy_cards[index]
           // Scale card stats based on enemy level
           const levelMultiplier = stageCard.level / 10 + 1
@@ -134,10 +142,10 @@ export default function BattleArena({ stage, onBattleEnd }: BattleArenaProps) {
           return {
             id: card.id,
             ...card,
-            currentHp: Math.floor(card.hp * levelMultiplier),
-            maxHp: Math.floor(card.hp * levelMultiplier),
-            attack: Math.floor(card.attack * levelMultiplier),
-            defense: Math.floor(card.defense * levelMultiplier),
+            currentHp: Math.floor((card.hp as number) * levelMultiplier),
+            maxHp: Math.floor((card.hp as number) * levelMultiplier),
+            attack: Math.floor((card.attack as number) * levelMultiplier),
+            defense: Math.floor((card.defense as number) * levelMultiplier),
             cooldowns: {},
             effects: [],
             isPlayer: false,
@@ -355,11 +363,11 @@ export default function BattleArena({ stage, onBattleEnd }: BattleArenaProps) {
       // Save battle result
       try {
         const battleData = {
-          userId: user!.id,
+          userId: user!.username,
           stageId: stage.id,
-          userCards: playerCards.map((card) => ({ id: card.id, finalHp: card.currentHp })),
-          opponentCards: enemyCards.map((card) => ({ id: card.id, finalHp: card.currentHp })),
-          result: "win",
+          userCards: playerCards.map((card: any) => ({ id: card.id, finalHp: card.currentHp })),
+          opponentCards: enemyCards.map((card: any) => ({ id: card.id, finalHp: card.currentHp })),
+          result: "win" as const,
           rewardCoins: stage.reward_coins,
           rewardExp: stage.reward_exp,
         }
@@ -381,11 +389,11 @@ export default function BattleArena({ stage, onBattleEnd }: BattleArenaProps) {
       // Save battle result
       try {
         const battleData = {
-          userId: user!.id,
+          userId: user!.username,
           stageId: stage.id,
-          userCards: playerCards.map((card) => ({ id: card.id, finalHp: card.currentHp })),
-          opponentCards: enemyCards.map((card) => ({ id: card.id, finalHp: card.currentHp })),
-          result: "loss",
+          userCards: playerCards.map((card: any) => ({ id: card.id, finalHp: card.currentHp })),
+          opponentCards: enemyCards.map((card: any) => ({ id: card.id, finalHp: card.currentHp })),
+          result: "loss" as const,
           rewardCoins: 0,
           rewardExp: Math.floor(stage.reward_exp / 4), // Consolation exp
         }

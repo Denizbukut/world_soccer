@@ -15,7 +15,7 @@ import { getSupabaseBrowserClient } from "@/lib/supabase"
 import { motion } from "framer-motion"
 import { toast } from "@/components/ui/use-toast"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Info } from "lucide-react"
+import { ArrowLeft, Info, X } from "lucide-react"
 import { useRouter } from "next/navigation"
 import {
   Dialog,
@@ -131,6 +131,8 @@ export default function BattlePage() {
     }
   }
 
+
+
   const handlePvpBattleStart = async (opponentUsername?: string) => {
     if (!user?.username) return
 
@@ -150,7 +152,7 @@ export default function BattlePage() {
     }
 
     // Don't check battle limit here - it will be checked when the battle ends
-    setPvpBattleStarted(true)
+            setPvpBattleStarted(true)
     // Store opponent username and battle mode for the battle
     if (opponentUsername) {
       localStorage.setItem('pvp_opponent', opponentUsername)
@@ -180,6 +182,11 @@ export default function BattlePage() {
       await fetchBattleLimit()
       await fetchPrestigePoints()
       await fetchAvailablePlayers() // Update opponent prestige points
+      
+      // Force a small delay to ensure database updates are processed
+      setTimeout(async () => {
+        await fetchPrestigePoints()
+      }, 500)
     }
   }
 
@@ -469,7 +476,7 @@ export default function BattlePage() {
                 className="text-white hover:bg-white/20 p-2"
                 disabled={pvpBattleStarted || battleStarted}
               >
-                <ArrowLeft className={`w-5 h-5 ${(pvpBattleStarted || battleStarted) ? 'opacity-50' : ''}`} />
+                                  <ArrowLeft className={`w-5 h-5 ${(pvpBattleStarted || battleStarted) ? 'opacity-50' : ''}`} />
               </Button>
               <h1 className="text-2xl font-bold">Battle Arena</h1>
             </div>
@@ -660,16 +667,26 @@ export default function BattlePage() {
 
         {/* Info Dialog */}
         <Dialog open={showInfoDialog} onOpenChange={setShowInfoDialog}>
-          <DialogContent className="bg-gradient-to-br from-blue-900 to-black border-blue-500/30 text-white">
-            <DialogHeader>
-              <DialogTitle className="text-xl font-bold text-center text-white">
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <Info className="w-6 h-6 text-blue-400" />
-                  <span>Battle Info</span>
-                </div>
-              </DialogTitle>
+          <DialogContent className="bg-gradient-to-br from-blue-900 to-black border-blue-500/30 text-white max-w-4xl max-h-[90vh] overflow-hidden [&>button]:hidden">
+            <DialogHeader className="sticky top-0 bg-gradient-to-br from-blue-900 to-black z-10 pb-4">
+              <div className="flex justify-between items-start">
+                <DialogTitle className="text-xl font-bold text-white">
+                  <div className="flex items-center gap-2">
+                    <Info className="w-6 h-6 text-blue-400" />
+                    <span>Battle Info</span>
+                  </div>
+                </DialogTitle>
+                <Button
+                  onClick={() => setShowInfoDialog(false)}
+                  variant="ghost"
+                  size="sm"
+                  className="text-white hover:bg-white/20 p-1 h-auto"
+                >
+                  <X className="w-5 h-5" />
+                </Button>
+              </div>
             </DialogHeader>
-            <div className="text-center space-y-4">
+            <div className="text-center space-y-4 overflow-y-auto max-h-[70vh] px-4 pb-4 scrollbar-thin scrollbar-thumb-blue-500 scrollbar-track-transparent">
               <div className="bg-blue-800/30 p-4 rounded-lg border border-blue-500/30">
                 <p className="text-lg font-semibold text-blue-200">
                   The better the team rating and player levels, the better your team!!!
@@ -681,6 +698,11 @@ export default function BattlePage() {
                 <p>• Only users with a complete team (11 players) can participate in PvP battles</p>
                 <p>• Battle limits reset daily at midnight - you get 5 new battles every day</p>
                 <p>• To start a battle: Click "Challenge" on a player, then select your battle mode</p>
+                <p>• Basic Cards: +0.1 rating per level</p>
+                <p>• Rare Cards: +0.15 rating per level</p>
+                <p>• Elite Cards: +0.2 rating per level</p>
+                <p>• Ultimate Cards: +0.35 rating per level</p>
+                <p>• GOAT Cards: +1.0 rating per level</p>
               </div>
               
               <div className="bg-orange-800/30 p-4 rounded-lg border border-orange-500/30 mt-4">
@@ -697,6 +719,8 @@ export default function BattlePage() {
                   🚀 Weekend League starts in 2 weeks!
                 </p>
               </div>
+              
+
             </div>
           </DialogContent>
         </Dialog>

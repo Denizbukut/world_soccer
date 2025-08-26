@@ -52,8 +52,8 @@ export async function POST(request: NextRequest) {
       stage_id: null,
       is_pvp: true,
       opponent_id: opponentData.id,
-      user_cards: battleData.userCards,
-      opponent_cards: battleData.opponentCards,
+      user_cards: battleData.userCards.map((card: any) => ({ id: card.id, finalHp: 100 })),
+      opponent_cards: battleData.opponentCards.map((card: any) => ({ id: card.id, finalHp: 100 })),
       result: battleData.result,
       reward_coins: 0,
       reward_exp: 0,
@@ -74,6 +74,63 @@ export async function POST(request: NextRequest) {
     }
 
          console.log("✅ PvP battle result saved successfully:", data)
+
+     // Update battle limits for both users
+     try {
+       // Get current battle limits for both users
+       const { data: userBattleLimits, error: userLimitsError } = await supabase
+         .from('user_battle_limits')
+         .select('*')
+         .or(`user_id.eq.${userData.id},user_id.eq.${opponentData.id}`)
+
+       if (userLimitsError) {
+         console.error("❌ Error fetching battle limits:", userLimitsError)
+       } else {
+         // Update or create battle limits for both users
+         const today = new Date().toISOString().split('T')[0]
+         
+         for (const userId of [userData.id, opponentData.id]) {
+           const existingLimit = userBattleLimits?.find(limit => limit.user_id === userId)
+           
+           if (existingLimit) {
+             // Check if we need to reset (new day)
+             if (existingLimit.last_reset_date !== today) {
+               // Reset for new day
+               await supabase
+                 .from('user_battle_limits')
+                 .update({
+                   battles_used: 1,
+                   last_reset_date: today,
+                   updated_at: new Date().toISOString()
+                 })
+                 .eq('user_id', userId)
+             } else {
+               // Increment existing count
+               await supabase
+                 .from('user_battle_limits')
+                 .update({
+                   battles_used: existingLimit.battles_used + 1,
+                   updated_at: new Date().toISOString()
+                 })
+                 .eq('user_id', userId)
+             }
+           } else {
+             // Create new entry
+             await supabase
+               .from('user_battle_limits')
+               .insert({
+                 user_id: userId,
+                 battles_used: 1,
+                 last_reset_date: today
+               })
+           }
+         }
+         
+         console.log("🎯 Battle limits updated for both users")
+       }
+     } catch (error) {
+       console.error("❌ Error updating battle limits:", error)
+     }
 
      // Simple solution: Always update prestige points for non-draw results
      // No complex duplicate checking - just update once per API call
@@ -98,13 +155,13 @@ export async function POST(request: NextRequest) {
           .eq('username', loserUsername)
           .single()
         
-        // Calculate new prestige points
-        const currentWinnerPoints = winnerData?.prestige_points || 100
-        const currentLoserPoints = loserData?.prestige_points || 100
-        
-                 // Use the values from battle_modes table: +10 for winner, -5 for loser
-         const newWinnerPoints = Math.max(0, currentWinnerPoints + 10)
-         const newLoserPoints = Math.max(0, currentLoserPoints - 5)
+                                      // Calculate new prestige points
+                     const currentWinnerPoints = winnerData?.prestige_points || 100
+                     const currentLoserPoints = loserData?.prestige_points || 100
+                     
+                     // Winner gets +20 points, loser gets -10 points
+                     const newWinnerPoints = Math.max(0, currentWinnerPoints + 20)
+                     const newLoserPoints = Math.max(0, currentLoserPoints - 10)
         
         // Update both users
         await supabase

@@ -2435,7 +2435,8 @@ const [copied, setCopied] = useState(false)
     </DialogTitle>
     <DialogDescription className="text-sm text-yellow-200">
       Share your referral link and earn bonus tickets when they reach level 5!<br />
-      <span className="text-xs text-red-400 font-semibold">Note: Only enter the username in the field, not the complete link!</span>
+      <span className="text-xs text-red-400 font-semibold">Note: Only enter the username in the field, not the complete link!</span><br />
+      <span className="text-xs text-red-400 font-semibold">⚠️ Anyone who abuses the referral system and tries to cheat will be banned!</span>
     </DialogDescription>
     {/* Your referral link */}
     <div className="mt-6">
@@ -2465,11 +2466,11 @@ const [copied, setCopied] = useState(false)
       <ul className="text-sm text-yellow-200 space-y-2">
         <li className="flex items-center gap-2">
           <span className="w-2 h-2 bg-yellow-400 rounded-full"></span>
-          <strong className="text-yellow-100">+10</strong> Classic Tickets
+          <strong className="text-yellow-100">+5</strong> Classic Tickets
         </li>
         <li className="flex items-center gap-2">
           <span className="w-2 h-2 bg-yellow-400 rounded-full"></span>
-          <strong className="text-yellow-100">+10</strong> Elite Tickets
+          <strong className="text-yellow-100">+3</strong> Elite Tickets
         </li>
         <li className="flex items-center gap-2">
           <span className="w-2 h-2 bg-yellow-400 rounded-full"></span>

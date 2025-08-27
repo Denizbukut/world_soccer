@@ -10,7 +10,7 @@ import PvpBattleArena from "@/components/battle/pvp-battle-arena"
 import BattleModeSelector from "@/components/battle/battle-mode-selector"
 import PvpLeaderboard from "@/components/battle/pvp-leaderboard"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { checkAndUpdateBattleLimit, getBattleLimitStatus } from "../battle-limit-actions"
+import { checkBattleLimit, incrementBattleCount, getBattleLimitStatus } from "../battle-limit-actions"
 import { getSupabaseBrowserClient } from "@/lib/supabase"
 import { motion } from "framer-motion"
 import { toast } from "@/components/ui/use-toast"
@@ -115,7 +115,8 @@ export default function BattlePage() {
     }
   }
 
-  const handleStageSelect = (stage: any) => {
+  const handleStageSelect = async (stage: any) => {
+    // Story mode is disabled - no battle limit check needed
     setSelectedStage(stage)
     setBattleStarted(true)
   }
@@ -133,10 +134,30 @@ export default function BattlePage() {
 
 
 
-  const handlePvpBattleStart = async (opponentUsername?: string) => {
+    const handlePvpBattleStart = async (opponentUsername?: string) => {
     if (!user?.username) return
 
     if (!selectedBattleMode) {
+      // Check battle limit before showing mode selector
+      const battleLimitCheck = await checkBattleLimit(user.username)
+      if (!battleLimitCheck.success) {
+        toast({
+          title: "Error",
+          description: battleLimitCheck.error || "Failed to check battle limit",
+          variant: "destructive",
+        })
+        return
+      }
+
+      if (!battleLimitCheck.canBattle) {
+        toast({
+          title: "Daily Battle Limit Reached",
+          description: `You have used all ${battleLimitCheck.dailyLimit} daily battles. Come back tomorrow!`,
+          variant: "destructive",
+        })
+        return
+      }
+
       // Store the opponent for later use
       if (opponentUsername) {
         setSelectedOpponent(opponentUsername)
@@ -151,13 +172,8 @@ export default function BattlePage() {
       return
     }
 
-    // Don't check battle limit here - it will be checked when the battle ends
-            setPvpBattleStarted(true)
-    // Store opponent username and battle mode for the battle
-    if (opponentUsername) {
-      localStorage.setItem('pvp_opponent', opponentUsername)
-    }
-    localStorage.setItem('selected_battle_mode', JSON.stringify(selectedBattleMode))
+    // Battle limit already checked above, no need to increment here
+    // Battle will be started in handleBattleModeSelect when mode is selected
   }
 
   const handleBattleModeSelect = async (mode: any) => {
@@ -166,7 +182,17 @@ export default function BattlePage() {
     
     // If we have a selected opponent, start the battle immediately
     if (selectedOpponent) {
-      // Don't check battle limit here - it will be checked when the battle ends
+      // Battle limit already checked above, now increment the count
+      const incrementResult = await incrementBattleCount(user!.username)
+      if (!incrementResult.success) {
+        toast({
+          title: "Error",
+          description: incrementResult.error || "Failed to increment battle count",
+          variant: "destructive",
+        })
+        return
+      }
+
       setPvpBattleStarted(true)
       localStorage.setItem('pvp_opponent', selectedOpponent)
       localStorage.setItem('selected_battle_mode', JSON.stringify(mode))

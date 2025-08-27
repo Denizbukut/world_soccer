@@ -86,47 +86,10 @@ export async function POST(request: NextRequest) {
        if (userLimitsError) {
          console.error("❌ Error fetching battle limits:", userLimitsError)
        } else {
-         // Update or create battle limits for both users
-         const today = new Date().toISOString().split('T')[0]
+         // Battle limits are now handled by incrementBattleCount when battle starts
+         // No need to update battle limits here anymore
          
-         for (const userId of [userData.id, opponentData.id]) {
-           const existingLimit = userBattleLimits?.find(limit => limit.user_id === userId)
-           
-           if (existingLimit) {
-             // Check if we need to reset (new day)
-             if (existingLimit.last_reset_date !== today) {
-               // Reset for new day
-               await supabase
-                 .from('user_battle_limits')
-                 .update({
-                   battles_used: 1,
-                   last_reset_date: today,
-                   updated_at: new Date().toISOString()
-                 })
-                 .eq('user_id', userId)
-             } else {
-               // Increment existing count
-               await supabase
-                 .from('user_battle_limits')
-                 .update({
-                   battles_used: existingLimit.battles_used + 1,
-                   updated_at: new Date().toISOString()
-                 })
-                 .eq('user_id', userId)
-             }
-           } else {
-             // Create new entry
-             await supabase
-               .from('user_battle_limits')
-               .insert({
-                 user_id: userId,
-                 battles_used: 1,
-                 last_reset_date: today
-               })
-           }
-         }
-         
-         console.log("🎯 Battle limits updated for both users")
+         console.log("🎯 Battle limits already handled by incrementBattleCount")
        }
      } catch (error) {
        console.error("❌ Error updating battle limits:", error)

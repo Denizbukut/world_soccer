@@ -2434,7 +2434,7 @@ const [copied, setCopied] = useState(false)
       Invite Friends & Earn Rewards
     </DialogTitle>
     <DialogDescription className="text-sm text-yellow-200">
-      Share your referral link and earn bonus tickets when they reach level 5!<br />
+      Share your referral link and earn bonus tickets when they reach level 10!<br />
       <span className="text-xs text-red-400 font-semibold">Note: Only enter the username in the field, not the complete link!</span><br />
       <span className="text-xs text-red-400 font-semibold">⚠️ Anyone who abuses the referral system and tries to cheat will be banned!</span>
     </DialogDescription>
@@ -2474,7 +2474,7 @@ const [copied, setCopied] = useState(false)
         </li>
         <li className="flex items-center gap-2">
           <span className="w-2 h-2 bg-yellow-400 rounded-full"></span>
-          Once your friend reaches <strong className="text-yellow-100">Level 5</strong>
+          Once your friend reaches <strong className="text-yellow-100">Level 10</strong>
         </li>
       </ul>
     </div>
@@ -2498,7 +2498,7 @@ const [copied, setCopied] = useState(false)
               </span>
               {ref.reward_claimed ? (
                 <CheckCircle className="h-4 w-4 text-green-400" />
-              ) : ref.level >= 5 ? (
+              ) : ref.level >= 10 ? (
                 <Button
                   size="sm"
                   className="bg-green-500 hover:bg-green-600 text-white font-bold text-xs border border-green-400"

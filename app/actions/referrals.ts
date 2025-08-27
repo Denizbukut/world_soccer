@@ -43,7 +43,7 @@ export async function claimReferralRewardForUser(referrerUsername: string, refer
   try {
     const supabase = createSupabaseServer()
 
-    // Check if referred user reached level 5
+    // Check if referred user reached level 10
     const { data: referredUser, error: referredUserError } = await supabase
       .from("users")
       .select("level")
@@ -55,8 +55,8 @@ export async function claimReferralRewardForUser(referrerUsername: string, refer
       return { success: false, error: "Failed to fetch referred user data." }
     }
 
-    if (!referredUser || referredUser.level < 5) {
-      return { success: false, error: "User has not reached level 5 yet." }
+    if (!referredUser || referredUser.level < 10) {
+      return { success: false, error: "User has not reached level 10 yet." }
     }
 
     // Get referral record

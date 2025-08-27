@@ -1882,6 +1882,7 @@ const [copied, setCopied] = useState(false)
     <div>
       <h3 className="text-xl font-bold text-yellow-100 mb-1">Weekly Contest</h3>
       <p className="text-sm text-white/80 font-medium">Compete for the top spot!</p>
+      <p className="text-xs text-red-400 font-bold mt-1">🐐 GOAT Packs 2x Points!</p>
 
     </div>
   </div>

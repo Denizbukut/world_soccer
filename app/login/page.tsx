@@ -113,7 +113,7 @@ export default function LoginPage() {
         .select("username")
         .eq("username", referralCode)
         .single()
-        await incrementLegendaryDraw(referralCode.trim().toLowerCase(), 5)
+        await incrementLegendaryDraw(referralCode.trim().toLowerCase(), 0)
 
       if (referrer && !referrerError) {
         await supabase.from("referrals").insert({

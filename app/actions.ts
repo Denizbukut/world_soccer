@@ -865,7 +865,7 @@ if (!clanError && clanData) {
     // Get updated ticket counts
     const { data: updatedUser, error: updatedUserError } = await supabase
       .from("users")
-      .select("tickets, legendary_tickets, score")
+      .select("tickets, elite_tickets, icon_tickets, score")
       .eq("username", username)
       .single()
 
@@ -876,9 +876,9 @@ if (!clanError && clanData) {
     return {
       success: true,
       drawnCards,
-      newTicketCount: !isLegendary && !isIcon ? newTicketCount : userData.tickets,
-      newEliteTicketCount: isLegendary ? newTicketCount : userData.elite_tickets,
-      newIconTicketCount: isIcon ? newTicketCount : userData.icon_tickets,
+      newTicketCount: !isLegendary && !isIcon ? newTicketCount : updatedUser?.tickets || userData.tickets,
+      newEliteTicketCount: isLegendary ? newTicketCount : updatedUser?.elite_tickets || userData.elite_tickets,
+      newIconTicketCount: isIcon ? newTicketCount : updatedUser?.icon_tickets || userData.icon_tickets,
       scoreAdded: totalScoreToAdd,
       newScore: updatedUser?.score || newScore,
       removedZeroQuantityCards: removedCards?.length || 0,

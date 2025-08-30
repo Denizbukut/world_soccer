@@ -8,9 +8,8 @@ import { getSupabaseBrowserClient } from "@/lib/supabase"
 type User = {
   username: string
   tickets: number
-  legendary_tickets: number
+  elite_tickets: number
   icon_tickets: number // NEW: icon tickets
-  elite_tickets: number // NEU: elite tickets
   coins: number
   level: number
   experience: number
@@ -77,7 +76,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
       const dataPromise = supabase
         .from("users")
-        .select("username, tickets, legendary_tickets, icon_tickets, elite_tickets, coins, level, world_id, experience, next_level_exp, has_premium, score, clan_id, avatar_id")
+        .select("username, tickets, elite_tickets, icon_tickets, coins, level, world_id, experience, next_level_exp, has_premium, score, clan_id, avatar_id")
         .eq("username", username)
         .single();
 
@@ -96,9 +95,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         const userData: User = {
           username: String(typedData.username || ""),
           tickets: Number(typedData.tickets || 0),
-          legendary_tickets: Number(typedData.legendary_tickets || 0),
+          elite_tickets: Number(typedData.elite_tickets || 0),
           icon_tickets: Number(typedData.icon_tickets || 0), // NEW
-          elite_tickets: Number(typedData.elite_tickets || 0), // NEU
           coins: Number(typedData.coins || 0),
           level: Number(typedData.level || 1),
           clan_id: Number(typedData.clan_id || null),
@@ -232,10 +230,9 @@ if (!isHumanVerified) {
       // Create default user data
       const newUserData: User = {
         username,
-        tickets: 5,
-        legendary_tickets: 2,
-        icon_tickets: 0, // NEW
-        elite_tickets: 0, // NEU
+                  tickets: 5,
+          elite_tickets: 2,
+          icon_tickets: 0, // NEW
         coins: 1000,
         level: 1,
         experience: 0,
@@ -248,7 +245,7 @@ if (!isHumanVerified) {
       const { error } = await supabase.from("users").insert({
         username: username,
         tickets: newUserData.tickets,
-        legendary_tickets: newUserData.legendary_tickets,
+        elite_tickets: newUserData.elite_tickets,
         coins: newUserData.coins,
         level: newUserData.level,
         experience: newUserData.experience,
@@ -256,7 +253,6 @@ if (!isHumanVerified) {
         has_premium: newUserData.has_premium,
         score: newUserData.score, // Score in die Datenbank einfügen
         icon_tickets: newUserData.icon_tickets,
-        elite_tickets: newUserData.elite_tickets,
       })
       
 

@@ -4,11 +4,12 @@ export const BANNED_USERS = [
   "kielcoraggio1",
   "jesus24win1",
   "ytph999",
+  "kielcoraggio2",
   // Add more banned usernames here as needed
 ]
 
 // Helper function to check if a user is banned
-export const isUserBanned = (username: string): boolean => {
+export const isUserBanned = (username:string): boolean => {
   return BANNED_USERS.includes(username)
 }
 

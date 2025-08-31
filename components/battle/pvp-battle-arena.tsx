@@ -38,6 +38,7 @@ interface Card {
   name: string;
   overall_rating: number;
   rarity: string;
+  level?: number;
 }
 
 interface BattleResult {
@@ -88,7 +89,7 @@ export default function PvpBattleArena({ onBackToBattle, onBattleEnd }: PvpBattl
         console.error("Error fetching user team:", userError)
       } else if (userTeamData) {
         setUserTeam(userTeamData as unknown as UserTeam)
-        await loadTeamCards(userTeamData as unknown as UserTeam, setUserCards)
+        await loadTeamCards(userTeamData as unknown as UserTeam, setUserCards, user!.username)
       }
 
       // Get opponent username from localStorage
@@ -123,7 +124,7 @@ export default function PvpBattleArena({ onBackToBattle, onBattleEnd }: PvpBattl
         await loadDefaultOpponentCards(setOpponentCards, opponentUsername)
       } else if (opponentTeamData) {
         setOpponentTeam(opponentTeamData as unknown as UserTeam)
-        await loadTeamCards(opponentTeamData as unknown as UserTeam, setOpponentCards)
+        await loadTeamCards(opponentTeamData as unknown as UserTeam, setOpponentCards, opponentUsername)
       }
     } catch (error) {
       console.error("Error loading teams:", error)
@@ -132,7 +133,7 @@ export default function PvpBattleArena({ onBackToBattle, onBattleEnd }: PvpBattl
     }
   }
 
-  const loadTeamCards = async (team: UserTeam, setCards: React.Dispatch<React.SetStateAction<Card[]>>) => {
+  const loadTeamCards = async (team: UserTeam, setCards: React.Dispatch<React.SetStateAction<Card[]>>, username?: string) => {
     try {
       const supabase = getSupabaseBrowserClient()
       if (!supabase) return
@@ -146,17 +147,64 @@ export default function PvpBattleArena({ onBackToBattle, onBattleEnd }: PvpBattl
         return
       }
 
-      const { data: cardsData, error } = await supabase
+      // First get the card details from cards table
+      const { data: cardsData, error: cardsError } = await supabase
         .from("cards")
         .select("id, name, overall_rating, rarity")
         .in("id", cardIds)
 
-      if (error) {
-        console.error("Error fetching team cards:", error)
+      if (cardsError) {
+        console.error("Error fetching cards:", cardsError)
         setCards([])
-      } else {
-        setCards((cardsData as Card[]) || [])
+        return
       }
+
+      // Then get the level information from user_cards table
+      let userCardsData: any[] = []
+      try {
+        console.log("Querying user_cards for username:", username)
+        const { data: userCardsResult, error: userCardsError } = await supabase
+          .from("user_cards")
+          .select("card_id, level")
+          .eq("user_id", username || "")
+
+        console.log("user_cards query result:", userCardsResult)
+        console.log("user_cards query error:", userCardsError)
+
+        if (userCardsError) {
+          console.error("Error fetching user cards:", userCardsError)
+          // Continue with default level 1 for all cards
+        } else {
+          userCardsData = userCardsResult || []
+          console.log("Loaded user_cards data:", userCardsData)
+        }
+      } catch (error) {
+        console.error("Error in user_cards query:", error)
+        // Continue with default level 1 for all cards
+      }
+
+             // Combine the data
+       const cardsWithLevels = cardsData.map((card: any) => {
+         const userCards = userCardsData.filter((uc: any) => uc.card_id === card.id)
+         console.log(`Card ${card.name}: found ${userCards.length} user cards:`, userCards)
+         
+         // Find the highest level card for this card_id
+         let cardLevel = 1
+         if (userCards.length > 0) {
+           // Sort by level descending to get the highest level
+           const sortedCards = userCards.sort((a: any, b: any) => (b.level || 1) - (a.level || 1))
+           cardLevel = sortedCards[0].level || 1
+           console.log(`Card ${card.name}: highest level found = ${cardLevel}`)
+         }
+         
+         console.log(`Card ${card.name}: finalLevel=${cardLevel}`)
+         return {
+           ...card,
+           level: cardLevel
+         }
+       })
+
+      setCards(cardsWithLevels as Card[])
     } catch (error) {
       console.error("Error loading team cards:", error)
       setCards([])
@@ -166,20 +214,41 @@ export default function PvpBattleArena({ onBackToBattle, onBattleEnd }: PvpBattl
   const loadDefaultOpponentCards = async (setCards: React.Dispatch<React.SetStateAction<Card[]>>, opponentUsername?: string) => {
     // Create default opponent cards with realistic ratings
     const defaultCards: Card[] = [
-      { id: "default-gk", name: "Neuer", overall_rating: 88, rarity: "legendary" },
-      { id: "default-df1", name: "Van Dijk", overall_rating: 89, rarity: "legendary" },
-      { id: "default-df2", name: "Dias", overall_rating: 87, rarity: "epic" },
-      { id: "default-df3", name: "Alaba", overall_rating: 86, rarity: "epic" },
-      { id: "default-df4", name: "Walker", overall_rating: 85, rarity: "epic" },
-      { id: "default-mf1", name: "De Bruyne", overall_rating: 91, rarity: "legendary" },
-      { id: "default-mf2", name: "Modric", overall_rating: 88, rarity: "legendary" },
-      { id: "default-mf3", name: "Kimmich", overall_rating: 87, rarity: "epic" },
-      { id: "default-mf4", name: "Silva", overall_rating: 86, rarity: "epic" },
-      { id: "default-fw1", name: "Haaland", overall_rating: 91, rarity: "legendary" },
-      { id: "default-fw2", name: "Mbappé", overall_rating: 91, rarity: "legendary" }
+      { id: "default-gk", name: "Neuer", overall_rating: 88, rarity: "legendary", level: 1 },
+      { id: "default-df1", name: "Van Dijk", overall_rating: 89, rarity: "legendary", level: 1 },
+      { id: "default-df2", name: "Dias", overall_rating: 87, rarity: "epic", level: 1 },
+      { id: "default-df3", name: "Alaba", overall_rating: 86, rarity: "epic", level: 1 },
+      { id: "default-df4", name: "Walker", overall_rating: 85, rarity: "epic", level: 1 },
+      { id: "default-mf1", name: "De Bruyne", overall_rating: 91, rarity: "legendary", level: 1 },
+      { id: "default-mf2", name: "Modric", overall_rating: 88, rarity: "legendary", level: 1 },
+      { id: "default-mf3", name: "Kimmich", overall_rating: 87, rarity: "epic", level: 1 },
+      { id: "default-mf4", name: "Silva", overall_rating: 86, rarity: "epic", level: 1 },
+      { id: "default-fw1", name: "Haaland", overall_rating: 91, rarity: "legendary", level: 1 },
+      { id: "default-fw2", name: "Mbappé", overall_rating: 91, rarity: "legendary", level: 1 }
     ]
     setCards(defaultCards)
   }
+
+  // Calculate level bonus based on rarity
+  const getLevelBonus = (rarity: string, level: number = 1) => {
+    const levelMultiplier = {
+      'basic': 0.1,
+      'rare': 0.15,
+      'elite': 0.2,
+      'ultimate': 0.35,
+      'goat': 1.0
+    };
+    
+    const multiplier = levelMultiplier[rarity.toLowerCase() as keyof typeof levelMultiplier] || 0.1;
+    return (level - 1) * multiplier; // -1 because level 1 has no bonus
+  };
+
+  // Calculate individual card rating with level bonus
+  const getCardRatingWithBonus = (card: Card) => {
+    const levelBonus = getLevelBonus(card.rarity, card.level);
+    const adjustedRating = card.overall_rating + levelBonus;
+    return Math.round(adjustedRating * 10) / 10;
+  };
 
   const calculateTeamRating = (cards: Card[]) => {
     if (cards.length === 0) return 0
@@ -188,13 +257,66 @@ export default function PvpBattleArena({ onBackToBattle, onBattleEnd }: PvpBattl
     
     if (validCards.length === 0) return 0
     
-    const totalRating = validCards.reduce((sum, card) => sum + card.overall_rating, 0)
+    const totalRating = validCards.reduce((sum, card) => {
+      const levelBonus = getLevelBonus(card.rarity, card.level);
+      return sum + card.overall_rating + levelBonus;
+    }, 0)
     const averageRating = totalRating / validCards.length
     return Math.round(averageRating * 10) / 10
   }
 
-  const simulateBattle = () => {
-    setShowSimulation(true)
+  const simulateBattle = async () => {
+    console.log("simulateBattle called")
+    
+    // Check battle limit before starting the actual battle
+    try {
+      console.log("Checking battle limit for user:", user!.username)
+      
+      const response = await fetch('/api/check-battle-limit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username: user!.username }),
+      })
+
+      const battleLimitCheck = await response.json()
+      console.log("Battle limit check result:", battleLimitCheck)
+      
+      if (!battleLimitCheck.success) {
+        alert("Error checking battle limit: " + (battleLimitCheck.error || "Unknown error"))
+        return
+      }
+
+      if (!battleLimitCheck.canBattle) {
+        alert(`Daily Battle Limit Reached! You have used ${battleLimitCheck.battlesUsed}/${battleLimitCheck.dailyLimit} daily battles. Come back tomorrow!`)
+        return
+      }
+
+      // Increment battle count now that we're actually starting the battle
+      console.log("Incrementing battle count...")
+      const incrementResponse = await fetch('/api/increment-battle-count', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username: user!.username }),
+      })
+
+      const incrementResult = await incrementResponse.json()
+      console.log("Increment result:", incrementResult)
+      
+      if (!incrementResult.success) {
+        alert("Error incrementing battle count: " + (incrementResult.error || "Unknown error"))
+        return
+      }
+
+      console.log("Starting simulation...")
+      setShowSimulation(true)
+    } catch (error) {
+      console.error("Error in simulateBattle:", error)
+      alert("Error starting battle. Please try again.")
+    }
   }
 
   const handleBattleEnd = async (result: any) => {
@@ -352,17 +474,26 @@ export default function PvpBattleArena({ onBackToBattle, onBattleEnd }: PvpBattl
                          <div className="mt-4">
                            <div className="flex items-center justify-center gap-2 mb-4">
                              <Trophy className="w-4 h-4 text-yellow-400" />
-                             <span className="text-white font-semibold">
-                               Rating: {calculateTeamRating(userCards)}
-                             </span>
+                                                           <span className="text-white font-semibold">
+                                Rating: {calculateTeamRating(userCards)} (Base: {Math.round(userCards.reduce((sum, card) => sum + card.overall_rating, 0) / userCards.length * 10) / 10} + <span className="text-red-100 font-bold bg-red-800/70 px-1 rounded border border-red-400/50">{Math.round((calculateTeamRating(userCards) - userCards.reduce((sum, card) => sum + card.overall_rating, 0) / userCards.length) * 10) / 10}</span>)
+                              </span>
                            </div>
                            <div className="space-y-2">
-                             {userCards.map((card, index) => (
-                               <div key={card.id} className="flex justify-between items-center bg-white/10 p-2 rounded">
-                                 <span className="text-white text-sm">{card.name}</span>
-                                 <span className="text-yellow-400 text-sm font-semibold">{card.overall_rating}</span>
-                               </div>
-                             ))}
+                                                           {userCards.map((card, index) => {
+                                const levelBonus = getLevelBonus(card.rarity, card.level);
+                                const hasBonus = levelBonus > 0;
+                                return (
+                                  <div key={card.id} className="flex justify-between items-center bg-white/10 p-2 rounded">
+                                    <span className="text-white text-sm">{card.name}</span>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-yellow-400 text-sm font-semibold">{card.overall_rating}</span>
+                                      {hasBonus && (
+                                        <span className="text-red-100 text-sm font-bold bg-red-800/70 px-2 py-1 rounded border border-red-400/50">+{levelBonus.toFixed(1)}</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
                            </div>
                          </div>
                        </motion.div>
@@ -404,17 +535,26 @@ export default function PvpBattleArena({ onBackToBattle, onBattleEnd }: PvpBattl
                          <div className="mt-4">
                            <div className="flex items-center justify-center gap-2 mb-4">
                              <Trophy className="w-4 h-4 text-yellow-400" />
-                             <span className="text-white font-semibold">
-                               Rating: {calculateTeamRating(opponentCards)}
-                             </span>
+                                                           <span className="text-white font-semibold">
+                                Rating: {calculateTeamRating(opponentCards)} (Base: {Math.round(opponentCards.reduce((sum, card) => sum + card.overall_rating, 0) / opponentCards.length * 10) / 10} + <span className="text-red-100 font-bold bg-red-800/70 px-1 rounded border border-red-400/50">{Math.round((calculateTeamRating(opponentCards) - opponentCards.reduce((sum, card) => sum + card.overall_rating, 0) / opponentCards.length) * 10) / 10}</span>)
+                              </span>
                            </div>
                            <div className="space-y-2">
-                             {opponentCards.map((card, index) => (
-                               <div key={card.id} className="flex justify-between items-center bg-white/10 p-2 rounded">
-                                 <span className="text-white text-sm">{card.name}</span>
-                                 <span className="text-yellow-400 text-sm font-semibold">{card.overall_rating}</span>
-                               </div>
-                             ))}
+                                                           {opponentCards.map((card, index) => {
+                                const levelBonus = getLevelBonus(card.rarity, card.level);
+                                const hasBonus = levelBonus > 0;
+                                return (
+                                  <div key={card.id} className="flex justify-between items-center bg-white/10 p-2 rounded">
+                                    <span className="text-white text-sm">{card.name}</span>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-yellow-400 text-sm font-semibold">{card.overall_rating}</span>
+                                      {hasBonus && (
+                                        <span className="text-red-100 text-sm font-bold bg-red-800/70 px-2 py-1 rounded border border-red-400/50">+{levelBonus.toFixed(1)}</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
                            </div>
                          </div>
                        </motion.div>

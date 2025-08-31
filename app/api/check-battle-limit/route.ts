@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSupabaseServerClient } from '@/lib/supabase'
+import { createClient } from '@/utils/supabase/server'
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    const supabase = getSupabaseServerClient()
+    const supabase = createClient()
 
     // Get user UUID
     const { data: userData, error: userError } = await supabase
@@ -55,36 +55,15 @@ export async function POST(request: NextRequest) {
       lastResetDate = today
     }
 
-    // Increment battle count
-    const newBattlesUsed = currentBattlesUsed + 1
+    // Check if battle is possible (don't increment yet)
     const dailyLimit = 5
-    const canBattle = newBattlesUsed <= dailyLimit
-
-    // Update or create battle limit record
-    const { error: upsertError } = await supabase
-      .from("user_battle_limits")
-      .upsert({
-        user_id: userId,
-        battles_used: newBattlesUsed,
-        last_reset_date: lastResetDate,
-        updated_at: new Date().toISOString()
-      }, {
-        onConflict: 'user_id'
-      })
-
-    if (upsertError) {
-      console.error('Error updating battle limit:', upsertError)
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Failed to update battle limit' 
-      }, { status: 500 })
-    }
+    const canBattle = currentBattlesUsed < dailyLimit
 
     return NextResponse.json({
       success: true,
       canBattle,
-      battlesUsed: newBattlesUsed,
-      battlesRemaining: Math.max(0, dailyLimit - newBattlesUsed),
+      battlesUsed: currentBattlesUsed,
+      battlesRemaining: Math.max(0, dailyLimit - currentBattlesUsed),
       dailyLimit
     })
 

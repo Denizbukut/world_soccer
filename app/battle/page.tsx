@@ -138,26 +138,6 @@ export default function BattlePage() {
     if (!user?.username) return
 
     if (!selectedBattleMode) {
-      // Check battle limit before showing mode selector
-      const battleLimitCheck = await checkBattleLimit(user.username)
-      if (!battleLimitCheck.success) {
-        toast({
-          title: "Error",
-          description: battleLimitCheck.error || "Failed to check battle limit",
-          variant: "destructive",
-        })
-        return
-      }
-
-      if (!battleLimitCheck.canBattle) {
-        toast({
-          title: "Daily Battle Limit Reached",
-          description: `You have used all ${battleLimitCheck.dailyLimit} daily battles. Come back tomorrow!`,
-          variant: "destructive",
-        })
-        return
-      }
-
       // Store the opponent for later use
       if (opponentUsername) {
         setSelectedOpponent(opponentUsername)
@@ -172,8 +152,8 @@ export default function BattlePage() {
       return
     }
 
-    // Battle limit already checked above, no need to increment here
-    // Battle will be started in handleBattleModeSelect when mode is selected
+    // If battle mode is already selected, start the battle immediately
+    // Battle limit check and increment will happen in handleBattleModeSelect
   }
 
   const handleBattleModeSelect = async (mode: any) => {
@@ -182,17 +162,6 @@ export default function BattlePage() {
     
     // If we have a selected opponent, start the battle immediately
     if (selectedOpponent) {
-      // Battle limit already checked above, now increment the count
-      const incrementResult = await incrementBattleCount(user!.username)
-      if (!incrementResult.success) {
-        toast({
-          title: "Error",
-          description: incrementResult.error || "Failed to increment battle count",
-          variant: "destructive",
-        })
-        return
-      }
-
       setPvpBattleStarted(true)
       localStorage.setItem('pvp_opponent', selectedOpponent)
       localStorage.setItem('selected_battle_mode', JSON.stringify(mode))
@@ -318,9 +287,9 @@ export default function BattlePage() {
       const actualUserPrestige = (currentUserData?.prestige_points as number) || 100
       console.log(`Actual user prestige points from database: ${actualUserPrestige}`)
       
-      // Calculate range based on actual prestige points (30 points down, 30 points up)
-      const actualMinPrestige = Math.max(0, actualUserPrestige - 30)
-      const actualMaxPrestige = actualUserPrestige + 30
+              // Calculate range based on actual prestige points (40 points down, 40 points up)
+        const actualMinPrestige = Math.max(0, actualUserPrestige - 40)
+        const actualMaxPrestige = actualUserPrestige + 40
       
       console.log(`Looking for users with prestige points between ${actualMinPrestige}-${actualMaxPrestige} (actual user: ${actualUserPrestige})`)
       
@@ -720,7 +689,7 @@ export default function BattlePage() {
               </div>
               <div className="text-sm text-gray-300">
                 <p>• Higher overall ratings increase your chances of winning</p>
-                <p>• Player levels provide additional bonuses</p>
+                <p>• Card levels provide additional bonuses</p>
                 <p>• Only users with a complete team (11 players) can participate in PvP battles</p>
                 <p>• Battle limits reset daily at midnight - you get 5 new battles every day</p>
                 <p>• To start a battle: Click "Challenge" on a player, then select your battle mode</p>

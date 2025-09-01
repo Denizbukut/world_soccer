@@ -20,9 +20,24 @@ import { MiniKit, Tokens, type PayCommandInput, tokenToDecimals } from "@worldco
 import { useWldPrice } from "@/contexts/WldPriceContext"
 import { Info } from "lucide-react"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
-import { isUserBanned } from "@/lib/banned-users"
+// import { isUserBanned } from "@/lib/banned-users" // Lokale Version verwendet
 import { getActiveGodPackDiscount } from "@/app/actions/god-pack-discount"
 
+// Gebannte Benutzernamen - diese können keine Packs ziehen
+const BANNED_USERNAMES = [
+  "kielcoraggio",
+  "kielcoraggio1", 
+  "jesus24win1",
+  "ytph999",
+  "kielcoraggio2",
+  "leonandino",
+  // Füge hier weitere gebannte Benutzernamen hinzu
+]
+
+// Hilfsfunktion um zu prüfen ob ein Benutzer gebannt ist
+const isUserBanned = (username: string): boolean => {
+  return BANNED_USERNAMES.includes(username)
+}
 
 // Rarität definieren - UPDATED: Added godlike
 type CardRarity = "common" | "rare" | "epic" | "legendary" | "godlike"

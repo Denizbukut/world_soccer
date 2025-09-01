@@ -5,6 +5,8 @@ export const BANNED_USERS = [
   "jesus24win1",
   "ytph999",
   "kielcoraggio2",
+  "leonandino",
+
   // Add more banned usernames here as needed
 ]
 

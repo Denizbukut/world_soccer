@@ -22,7 +22,7 @@ export interface User {
   active: boolean
   purchased_at: string
   expires_at?: string
-  last_legendary_claim?: string
+  last_elite_claim?: string
 }
 
 export interface XpPass {

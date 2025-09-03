@@ -63,8 +63,8 @@ const [xpPassExpiryDate, setXpPassExpiryDate] = useState<Date | null>(null)
   const [showClaimPopup, setShowClaimPopup] = useState(false)
   const [claimedRewardsInfo, setClaimedRewardsInfo] = useState<{
     standardTickets: number
-    legendaryTickets: number
-  }>({ standardTickets: 0, legendaryTickets: 0 })
+    eliteTickets: number
+  }>({ standardTickets: 0, eliteTickets: 0 })
 
   // State for collapsible sections
   const [benefitsExpanded, setBenefitsExpanded] = useState(true)
@@ -387,8 +387,8 @@ const handlePurchaseXpPass = async () => {
               setPremiumExpiryDate(expiryDate)
             }
 
-            if (premiumData.last_legendary_claim) {
-              const lastClaim = new Date(premiumData.last_legendary_claim as string)
+            if (premiumData.last_elite_claim) {
+              const lastClaim = new Date(premiumData.last_elite_claim as string)
               setLastLegendaryClaim(lastClaim)
 
               // Check if 24 hours have passed since last claim
@@ -537,7 +537,7 @@ const handlePurchaseXpPass = async () => {
       // Update last claim time
       const { error: updateError } = await supabase
         .from("premium_passes")
-        .update({ last_legendary_claim: new Date().toISOString() })
+        .update({ last_elite_claim: new Date().toISOString() })
         .eq("user_id", user.username)
         .eq("active", true)
 
@@ -551,12 +551,12 @@ const handlePurchaseXpPass = async () => {
         return
       }
 
-      // Update user's legendary tickets in the database
+      // Update user's elite tickets in the database
       const newEliteTicketCount = (eliteTickets || 0) + 1
 
       const { error: ticketUpdateError } = await supabase
         .from("users")
-        .update({ legendary_tickets: newEliteTicketCount })
+        .update({ elite_tickets: newEliteTicketCount })
         .eq("username", user.username)
 
       if (ticketUpdateError) {
@@ -684,7 +684,7 @@ const handlePurchaseXpPass = async () => {
           .from("users")
           .update({
             tickets: newTicketCount,
-            legendary_tickets: newEliteTicketCount,
+            elite_tickets: newEliteTicketCount,
           })
           .eq("username", user.username)
 
@@ -712,7 +712,7 @@ const handlePurchaseXpPass = async () => {
         // Show claim popup
         setClaimedRewardsInfo({
           standardTickets: standardTicketsToAdd,
-          legendaryTickets: eliteTicketsToAdd,
+          eliteTickets: eliteTicketsToAdd,
         })
         setShowClaimPopup(true)
       } else {
@@ -1133,7 +1133,7 @@ const handlePurchaseXpPass = async () => {
                           <BarChart3 className="h-3 w-3 text-blue-600" />
                         </div>
                         <span className="text-sm">
-                          Improved <b>Regular Pack</b> Drop Rates
+                          Improved <b>Classic Pack</b> Drop Rates
                         </span>
                       </div>
 
@@ -1624,14 +1624,14 @@ const handlePurchaseXpPass = async () => {
                 </div>
               )}
 
-              {claimedRewardsInfo.legendaryTickets > 0 && (
+              {claimedRewardsInfo.eliteTickets > 0 && (
                 <div className="flex items-center gap-3 bg-blue-50 p-3 rounded-lg w-full">
                   <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
                     <Ticket className="h-5 w-5 text-blue-500" />
                   </div>
                   <div className="flex-1">
                     <h4 className="font-medium">Elite Tickets</h4>
-                    <p className="text-sm text-blue-600 font-bold">+{claimedRewardsInfo.legendaryTickets}</p>
+                    <p className="text-sm text-blue-600 font-bold">+{claimedRewardsInfo.eliteTickets}</p>
                   </div>
                 </div>
               )}

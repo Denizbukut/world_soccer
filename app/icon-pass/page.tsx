@@ -27,21 +27,9 @@ export default function IconPassPage() {
   const { price } = useWldPrice();
   const [buying, setBuying] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [claiming, setClaiming] = useState(false);
-  const [claimedToday, setClaimedToday] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const lastClaim = localStorage.getItem('icon_ticket_last_claim');
-      if (lastClaim) {
-        const last = new Date(lastClaim);
-        const now = new Date();
-        const diff = now.getTime() - last.getTime();
-        return diff < 24 * 60 * 60 * 1000; // 24 hours
-      }
-    }
-    return false;
-  });
-  const [claimingClassic, setClaimingClassic] = useState(false);
-  const [claimingElite, setClaimingElite] = useState(false);
+
+  const [claimedToday, setClaimedToday] = useState(false);
+
   const [claimingIcon, setClaimingIcon] = useState(false);
   const [nextClaimTime, setNextClaimTime] = useState<string>('');
   const [hasIconPass, setHasIconPass] = useState(false);
@@ -183,22 +171,74 @@ export default function IconPassPage() {
     return () => clearInterval(interval);
   }, [iconPassData]);
 
-  // Check claimed status on page load
+  // Check claimed status on page load and continuously update
   useEffect(() => {
-    const checkClaimedStatus = () => {
-      const lastClaim = localStorage.getItem('icon_ticket_last_claim');
-      if (lastClaim) {
-        const last = new Date(lastClaim);
-        const now = new Date();
-        const diff = now.getTime() - last.getTime();
-        const isClaimed = diff < 24 * 60 * 60 * 1000; // 24 hours
-        setClaimedToday(isClaimed);
-        console.log('Claimed status check:', { lastClaim, isClaimed, diff });
+    const checkClaimedStatus = async () => {
+      if (!user?.username) return;
+      
+      try {
+        const response = await fetch('/api/icon-pass/status', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ username: user.username }),
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.hasActivePass) {
+          console.log('🔍 Status check response:', data);
+          
+          // Set claimedToday based on server response
+          const shouldBeClaimed = !data.claimStatus.canClaim;
+          console.log('🔍 Setting claimedToday to:', shouldBeClaimed, 'because canClaim is:', data.claimStatus.canClaim);
+          setClaimedToday(shouldBeClaimed);
+          
+          // Update next claim time
+          if (data.claimStatus.timeUntilNextClaim) {
+            console.log('🔍 Setting nextClaimTime from timeUntilNextClaim:', data.claimStatus.timeUntilNextClaim);
+            setNextClaimTime(data.claimStatus.timeUntilNextClaim);
+          } else if (data.claimStatus.nextClaimTime) {
+            // Calculate time until next claim
+            const now = new Date();
+            const nextClaim = new Date(data.claimStatus.nextClaimTime);
+            const diff = nextClaim.getTime() - now.getTime();
+            
+            if (diff > 0) {
+              const hours = Math.floor(diff / (1000 * 60 * 60));
+              const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+              const timeString = `${hours}h ${minutes}m`;
+              console.log('🔍 Calculated nextClaimTime:', timeString);
+              setNextClaimTime(timeString);
+            } else {
+              console.log('🔍 No time difference, clearing nextClaimTime');
+              setNextClaimTime('');
+            }
+          } else {
+            console.log('🔍 No timeUntilNextClaim or nextClaimTime found');
+          }
+        } else {
+          console.log('🔍 No active pass or error in response');
+          setClaimedToday(false);
+          setNextClaimTime('');
+        }
+      } catch (error) {
+        console.error('Error checking claim status:', error);
+        // Don't change claimedToday on error - keep current state
       }
     };
 
-    checkClaimedStatus();
-  }, []);
+    if (!authLoading && user?.username) {
+      // Check immediately
+      checkClaimedStatus();
+      
+      // Then check every 30 seconds to keep status updated
+      const interval = setInterval(checkClaimedStatus, 30000);
+      
+      return () => clearInterval(interval);
+    }
+  }, [user?.username, authLoading]);
 
   // Fetch claimed rewards and generate level rewards
   useEffect(() => {
@@ -262,37 +302,7 @@ export default function IconPassPage() {
     }
   }, [user?.username, user?.level, authLoading]);
 
-  // Calculate next claim time
-  const calculateNextClaimTime = () => {
-    const lastClaim = localStorage.getItem('icon_ticket_last_claim');
-    if (!lastClaim) return '';
-    
-    const last = new Date(lastClaim);
-    const next = new Date(last.getTime() + 24 * 60 * 60 * 1000); // 24 hours later
-    const now = new Date();
-    
-    if (next <= now) return '';
-    
-    const diff = next.getTime() - now.getTime();
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    
-    return `${hours}h ${minutes}m`;
-  };
-
-  // Update next claim time every minute
-  useEffect(() => {
-    const updateTime = () => {
-      const time = calculateNextClaimTime();
-      setNextClaimTime(time);
-      console.log('Next claim time:', time, 'Claimed today:', claimedToday);
-    };
-    
-    updateTime();
-    const interval = setInterval(updateTime, 60000); // Update every minute
-    
-    return () => clearInterval(interval);
-  }, [claimedToday]);
+  // Continuous status update timer - updates every 30 seconds to keep UI in sync
 
   const handleBuy = async () => {
     if (!user) return;
@@ -461,84 +471,9 @@ export default function IconPassPage() {
     }
   };
 
-  const handleClaim = async () => {
-    if (!user) return;
-    
-    setClaiming(true);
-    
-    try {
-      const newIconTickets = (user.icon_tickets || 0) + 1;
-      await updateUserTickets(user.tickets, user.elite_tickets, newIconTickets);
-      await refreshUserData?.();
-      
-      // Save claim time to localStorage
-      localStorage.setItem('icon_ticket_last_claim', new Date().toISOString());
-      setClaimedToday(true);
-      
-      toast({ 
-        title: 'Claimed!', 
-        description: 'You have claimed your daily icon ticket.' 
-      });
-    } catch (e) {
-      toast({ 
-        title: 'Error', 
-        description: 'Failed to claim icon ticket.', 
-        variant: 'destructive' 
-      });
-    } finally {
-      setClaiming(false);
-    }
-  };
 
-  const handleClaimClassic = async () => {
-    if (!user) return;
-    
-    setClaimingClassic(true);
-    
-    try {
-      const newTickets = (user.tickets || 0) + 1;
-      await updateUserTickets(newTickets, user.elite_tickets, user.icon_tickets);
-      await refreshUserData?.();
-      
-      toast({ 
-        title: 'Claimed!', 
-        description: 'You have claimed 1 classic ticket.' 
-      });
-    } catch (e) {
-      toast({ 
-        title: 'Error', 
-        description: 'Failed to claim classic ticket.', 
-        variant: 'destructive' 
-      });
-    } finally {
-      setClaimingClassic(false);
-    }
-  };
 
-  const handleClaimElite = async () => {
-    if (!user) return;
-    
-    setClaimingElite(true);
-    
-    try {
-      const newEliteTickets = (user.elite_tickets || 0) + 1;
-      await updateUserTickets(user.tickets, newEliteTickets, user.icon_tickets);
-      await refreshUserData?.();
-      
-      toast({ 
-        title: 'Claimed!', 
-        description: 'You have claimed 1 elite ticket.' 
-      });
-    } catch (e) {
-      toast({ 
-        title: 'Error', 
-        description: 'Failed to claim elite ticket.', 
-        variant: 'destructive' 
-      });
-    } finally {
-      setClaimingElite(false);
-    }
-  };
+
 
   const handleClaimIcon = async () => {
     if (!user) return;
@@ -546,19 +481,78 @@ export default function IconPassPage() {
     setClaimingIcon(true);
     
     try {
-      const newIconTickets = (user.icon_tickets || 0) + 1;
-      await updateUserTickets(user.tickets, user.elite_tickets, newIconTickets);
-      await refreshUserData?.();
-      
-      // Save claim time to localStorage
-      localStorage.setItem('icon_ticket_last_claim', new Date().toISOString());
-      setClaimedToday(true);
-      
-      toast({ 
-        title: 'Claimed!', 
-        description: 'You have claimed your daily icon ticket.' 
+      // Use server-side validation for icon ticket claiming
+      const response = await fetch('/api/icon-pass/claim', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username: user.username }),
       });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        console.log('🎯 Claim successful:', data);
+        
+        // Update local state with server response
+        const newIconTickets = data.newTicketCount;
+        await updateUserTickets(user.tickets, user.elite_tickets, newIconTickets);
+        await refreshUserData?.();
+        
+        // Update UI state based on server response
+        console.log('🎯 Setting claimedToday to true');
+        setClaimedToday(true);
+        
+        // Calculate next claim time (24 hours from now)
+        const now = new Date();
+        const nextClaim = new Date(now.getTime() + (24 * 60 * 60 * 1000));
+        const hours = Math.floor((24 * 60 * 60 * 1000) / (1000 * 60 * 60));
+        const minutes = Math.floor(((24 * 60 * 60 * 1000) % (1000 * 60 * 60)) / (1000 * 60));
+        const timeString = `${hours}h ${minutes}m`;
+        console.log('🎯 Setting nextClaimTime to:', timeString);
+        setNextClaimTime(timeString);
+        
+        toast({ 
+          title: 'Claimed!', 
+          description: 'You have claimed your daily icon ticket.' 
+        });
+      } else {
+        // Show server error message
+        const errorMessage = data.error || 'Failed to claim icon ticket.';
+        toast({ 
+          title: 'Error', 
+          description: errorMessage, 
+          variant: 'destructive' 
+        });
+        
+        // If it's a cooldown error, update the UI accordingly
+        if (data.error && data.error.includes('Already claimed today')) {
+          console.log('⏰ Cooldown error detected:', data);
+          console.log('⏰ Setting claimedToday to true');
+          setClaimedToday(true);
+          
+          if (data.nextClaimIn) {
+            console.log('⏰ Setting nextClaimTime from nextClaimIn:', data.nextClaimIn);
+            setNextClaimTime(data.nextClaimIn);
+          } else if (data.nextClaimAvailable) {
+            // Calculate time until next claim
+            const now = new Date();
+            const nextClaim = new Date(data.nextClaimAvailable);
+            const diff = nextClaim.getTime() - now.getTime();
+            
+            if (diff > 0) {
+              const hours = Math.floor(diff / (1000 * 60 * 60));
+              const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+              const timeString = `${hours}h ${minutes}m`;
+              console.log('⏰ Calculated nextClaimTime from nextClaimAvailable:', timeString);
+              setNextClaimTime(timeString);
+            }
+          }
+        }
+      }
     } catch (e) {
+      console.error('Claim error:', e);
       toast({ 
         title: 'Error', 
         description: 'Failed to claim icon ticket.', 
@@ -575,111 +569,41 @@ export default function IconPassPage() {
     setIsClaimingReward(true);
 
     try {
-      const { createClient } = await import('@supabase/supabase-js');
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
+      const response = await fetch('/api/icon-pass/claim-rewards', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username: user.username }),
+      });
 
-      if (!supabase) return;
+      const data = await response.json();
 
-      let iconTicketsToAdd = 0;
-      const updatedRewards = [...levelRewards];
-      const userLevel = user.level || 1;
-
-      // Process all unclaimed rewards up to the user's current level
-      for (let i = 0; i < updatedRewards.length; i++) {
-        const reward = updatedRewards[i];
-        if (reward.level <= userLevel) {
-          // Icon rewards
-          if (!reward.iconClaimed) {
-            // Double rewards for every 5 levels
-            iconTicketsToAdd += reward.isSpecialLevel ? 5 : 1;
-            updatedRewards[i] = { ...reward, iconClaimed: true };
-          }
-        }
-      }
-
-      // If there are rewards to claim
-      if (iconTicketsToAdd > 0) {
-        // Update claimed rewards in database
-        for (let i = 0; i < updatedRewards.length; i++) {
-          const reward = updatedRewards[i];
-          if (reward.level <= userLevel) {
-            // Check if reward for this level already exists
-            const { data: existingReward, error: existingRewardError } = await supabase
-              .from("claimed_rewards")
-              .select("*")
-              .eq("user_id", user.username)
-              .eq("level", reward.level)
-              .single();
-
-            if (existingRewardError && existingRewardError.code !== "PGRST116") {
-              console.error("Error checking existing reward:", existingRewardError);
-              continue;
-            }
-
-            if (existingReward) {
-              // Update existing reward
-              const updateData = {
-                icon_claimed: true,
-              };
-
-              await supabase
-                .from("claimed_rewards")
-                .update(updateData)
-                .eq("id", existingReward.id);
-            } else {
-              // Create new reward record
-              const insertData = {
-                user_id: user.username,
-                level: reward.level,
-                icon_claimed: true,
-                standard_claimed: false,
-                premium_claimed: false,
-              };
-
-              await supabase.from("claimed_rewards").insert(insertData);
-            }
-          }
-        }
-
-        // Calculate new ticket count
-        const newIconTicketCount = (user.icon_tickets || 0) + iconTicketsToAdd;
-
-        // Update user's tickets in the database
-        const { error: ticketUpdateError } = await supabase
-          .from("users")
-          .update({
-            icon_tickets: newIconTicketCount,
-          })
-          .eq("username", user.username);
-
-        if (ticketUpdateError) {
-          console.error("Error updating tickets:", ticketUpdateError);
-          toast({
-            title: "Error",
-            description: "Failed to update tickets",
-            variant: "destructive",
-          });
-          return;
-        }
-
-        // Update auth context
-        await updateUserTickets?.(user.tickets, user.elite_tickets, newIconTicketCount);
+      if (response.ok && data.success) {
+        // Update auth context with new ticket count
+        await updateUserTickets?.(user.tickets, user.elite_tickets, data.newTicketCount);
 
         // Update local state
+        const updatedRewards = [...levelRewards];
+        data.rewardsClaimed.forEach((claimedReward: { level: number; tickets: number }) => {
+          const rewardIndex = updatedRewards.findIndex(r => r.level === claimedReward.level);
+          if (rewardIndex !== -1) {
+            updatedRewards[rewardIndex] = { ...updatedRewards[rewardIndex], iconClaimed: true };
+          }
+        });
+
         setLevelRewards(updatedRewards);
         setUnclaimedRewards(0);
 
         toast({
           title: "Rewards Claimed!",
-          description: `You have claimed ${iconTicketsToAdd} icon ticket${iconTicketsToAdd > 1 ? 's' : ''}!`,
+          description: `You have claimed ${data.totalTicketsAdded} icon ticket${data.totalTicketsAdded > 1 ? 's' : ''}!`,
         });
       } else {
         toast({
-          title: "No rewards to claim",
-          description: "You have already claimed all available rewards.",
+          title: "Error",
+          description: data.error || "Failed to claim rewards",
+          variant: "destructive",
         });
       }
     } catch (error) {
@@ -800,28 +724,28 @@ export default function IconPassPage() {
               )}
               
               {/* Daily Icon Ticket Claim */}
-              <div className="bg-gradient-to-r from-yellow-100 to-yellow-200 rounded-lg p-4 border border-yellow-300 mb-4">
+              <div className="bg-gradient-to-r from-blue-100 to-blue-200 rounded-lg p-4 border border-blue-300 mb-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <Ticket className="h-6 w-6 text-blue-600" />
                     <div>
                       <div className="font-semibold text-yellow-800">Daily Icon Ticket Claim</div>
-                      <div className="text-sm text-yellow-700">
-                        {claimedToday ? (
-                          <span>Next claim available in: {nextClaimTime}</span>
-                        ) : (
-                          <span>Available to claim!</span>
-                        )}
-                      </div>
+                                               <div className="text-sm text-yellow-700">
+                           {claimedToday ? (
+                             <span>Next claim available in: <strong>{nextClaimTime}</strong></span>
+                           ) : (
+                             <span>Available to claim!</span>
+                           )}
+                         </div>
                     </div>
                   </div>
-                  <Button
-                    onClick={handleClaim}
-                    disabled={claiming || claimedToday || isExpired}
-                    className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg disabled:opacity-50"
-                  >
-                    {claiming ? 'Claiming...' : claimedToday ? 'Claimed' : isExpired ? 'Pass Expired' : 'Claim'}
-                  </Button>
+                                       <Button
+                       onClick={handleClaimIcon}
+                       disabled={claimingIcon || claimedToday || isExpired}
+                       className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg disabled:opacity-50"
+                     >
+                       {claimingIcon ? 'Claiming...' : claimedToday ? `Claimed (${nextClaimTime})` : isExpired ? 'Pass Expired' : 'Claim'}
+                     </Button>
                 </div>
               </div>
             </div>

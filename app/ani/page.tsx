@@ -14,6 +14,7 @@ import { useRouter, usePathname } from "next/navigation";
 import CardItem from "@/components/card-item";
 import SquadCardMenu from "@/components/squad-card-menu";
 import { toast } from "@/components/ui/use-toast";
+import WeekendLeagueCountdown from "@/components/weekend-league-countdown";
 
 interface UserTeam {
   id: string;
@@ -774,6 +775,11 @@ export default function KickOffPage() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Weekend League Countdown */}
+          <div className="mt-4">
+            <WeekendLeagueCountdown />
+          </div>
         </div>
 
         <MatchSimulation />

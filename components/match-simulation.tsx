@@ -16,6 +16,7 @@ import {
 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import WeekendLeagueCountdown from "@/components/weekend-league-countdown"
 
 const homeTeam = {
   username: "BarcaFan",
@@ -243,7 +244,7 @@ export default function MatchSimulation() {
             className="flex items-center gap-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-3 py-1.5 text-sm rounded-full hover:from-yellow-600 hover:to-orange-600 transition-all duration-200"
           >
             <Zap className="h-3 w-3" />
-            <span>Coming Soon - Weekend League System</span>
+            <span>Weekend League Countdown</span>
             {showRewards ? (
               <ChevronUp className="h-3 w-3" />
             ) : (
@@ -260,24 +261,7 @@ export default function MatchSimulation() {
                 exit={{ opacity: 0, y: -10, scale: 0.95 }}
                 className="mt-2 bg-gradient-to-br from-orange-900/40 to-black/60 backdrop-blur-md rounded-lg border border-orange-500/30 p-3"
               >
-                <h4 className="text-sm font-bold text-yellow-400 mb-2 flex items-center gap-1">
-                  <Gift className="h-4 w-4" />
-                  Epic Rewards Await!
-                </h4>
-                <div className="space-y-2 text-left">
-                  <div className="flex items-center gap-2 text-xs">
-                    <Coins className="h-3 w-3 text-yellow-400" />
-                    <span className="text-white">WLD Tokens for winners</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs">
-                    <CreditCard className="h-3 w-3 text-blue-400" />
-                    <span className="text-white">Premium card packs</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs">
-                    <Trophy className="h-3 w-3 text-purple-400" />
-                    <span className="text-white">Exclusive tournament tickets</span>
-                  </div>
-                </div>
+                <WeekendLeagueCountdown />
               </motion.div>
             )}
           </AnimatePresence>

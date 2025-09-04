@@ -168,6 +168,8 @@ function generateRandomCard(rarity: CardRarity): Card {
 // Funktion, um Punkte für eine Kartenrarität zu erhalten
 function getScoreForRarity(rarity: CardRarity): number {
   switch (rarity) {
+    case "ultimate":
+      return 200 // Ultimate-Karten geben doppelte Punkte (verdoppelt von 100)
     case "legendary":
       return 100 // Geändert von 500 auf 100
     case "epic":

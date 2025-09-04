@@ -16,6 +16,7 @@ import { motion } from "framer-motion"
 import { toast } from "@/components/ui/use-toast"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Info, X } from "lucide-react"
+import WeekendLeagueCountdown from "@/components/weekend-league-countdown"
 import { useRouter } from "next/navigation"
 import {
   Dialog,
@@ -710,10 +711,9 @@ export default function BattlePage() {
                 <p className="text-sm text-yellow-300 mt-2">
                   🏆 Places 1 and 2 directly qualify for the weekend league!
                 </p>
-                <p className="text-sm text-green-300 mt-2 font-bold">
-                  🚀 Weekend League starts in 2 weeks!
-                </p>
               </div>
+              
+              <WeekendLeagueCountdown />
               
 
             </div>

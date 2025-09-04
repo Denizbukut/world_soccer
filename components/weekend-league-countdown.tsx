@@ -92,7 +92,7 @@ export default function WeekendLeagueCountdown() {
               <div className="text-center mt-3">
           <div className="flex items-center justify-center gap-2 text-sm text-yellow-200">
             <Clock className="w-4 h-4" />
-            <span>Next Sunday at 20:00</span>
+            <span>Next Sunday at 8 PM</span>
           </div>
         </div>
     </div>

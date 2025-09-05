@@ -191,7 +191,7 @@ export default function DrawPage() {
   const [selectedEpoch, setSelectedEpoch] = useState<number>(1)
   const [availableEpochs, setAvailableEpochs] = useState<number[]>([1])
   const [godPacksLeft, setGodPacksLeft] = useState<number | null>(null)
-  const max_godpacks_daily = 300;
+  const max_godpacks_daily = 500;
   // God Pack Discount state
   const [godPackDiscount, setGodPackDiscount] = useState<{
     isActive: boolean
@@ -1174,7 +1174,7 @@ const [showInfo, setShowInfo] = useState(false)
                     <span className="text-lg">🏆</span>
                   </div>
                   <div className="text-xs">
-                    🚀 God Packs limit increased to <span className="font-bold">300 per day</span> for the final day!
+                    🚀 Goat Packs limit increased to <span className="font-bold">500 per day</span> for the final day!
                   </div>
                 </div>
 

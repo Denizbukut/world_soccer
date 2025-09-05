@@ -191,7 +191,7 @@ export default function DrawPage() {
   const [selectedEpoch, setSelectedEpoch] = useState<number>(1)
   const [availableEpochs, setAvailableEpochs] = useState<number[]>([1])
   const [godPacksLeft, setGodPacksLeft] = useState<number | null>(null)
-  const max_godpacks_daily = 100;
+  const max_godpacks_daily = 300;
   // God Pack Discount state
   const [godPackDiscount, setGodPackDiscount] = useState<{
     isActive: boolean
@@ -1165,6 +1165,18 @@ const [showInfo, setShowInfo] = useState(false)
                     <span className="font-bold">{godPacksLeft}</span> / {max_godpacks_daily}
                   </div>
                 )}
+
+                {/* Contest End Announcement */}
+                <div className="mb-4 text-center text-sm font-medium px-4 py-3 rounded-xl bg-gradient-to-r from-orange-500 to-red-500 text-white border border-orange-400 animate-pulse">
+                  <div className="flex items-center justify-center gap-2 mb-1">
+                    <span className="text-lg">🏆</span>
+                    <span className="font-bold">LAST DAY OF CONTEST!</span>
+                    <span className="text-lg">🏆</span>
+                  </div>
+                  <div className="text-xs">
+                    🚀 God Packs limit increased to <span className="font-bold">300 per day</span> for the final day!
+                  </div>
+                </div>
 
 
 

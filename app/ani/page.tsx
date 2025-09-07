@@ -763,15 +763,27 @@ export default function KickOffPage() {
                   </span>
                 </div>
 
-                <Button
-                  onClick={handleFindMatchClick}
-                  className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-bold py-3 px-6 rounded-lg border border-blue-400/30 transition-all duration-200"
-                >
-                  <span className="flex items-center gap-2">
-                    <Zap className="w-4 h-4" />
-                    Find Match
-                  </span>
-                </Button>
+                <div className="space-y-2">
+                  <Button
+                    onClick={handleFindMatchClick}
+                    className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-bold py-3 px-6 rounded-lg border border-blue-400/30 transition-all duration-200"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Zap className="w-4 h-4" />
+                      Find Match
+                    </span>
+                  </Button>
+                  
+                  <Button
+                    onClick={() => router.push("/ani/weekend-league")}
+                    className="w-full bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-600 hover:to-orange-700 text-white font-bold py-3 px-6 rounded-lg border border-yellow-400/30 transition-all duration-200"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Trophy className="w-4 h-4" />
+                      Weekend League
+                    </span>
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>

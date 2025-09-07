@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react"
 import MobileNav from "@/components/mobile-nav";
-import MatchSimulation from "@/components/match-simulation";
 import { useAuth } from "@/contexts/auth-context";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,6 +14,7 @@ import CardItem from "@/components/card-item";
 import SquadCardMenu from "@/components/squad-card-menu";
 import { toast } from "@/components/ui/use-toast";
 import WeekendLeagueCountdown from "@/components/weekend-league-countdown";
+import QualificationMatches from "@/components/qualification-matches";
 
 interface UserTeam {
   id: string;
@@ -782,7 +782,10 @@ export default function KickOffPage() {
           </div>
         </div>
 
-        <MatchSimulation />
+        {/* Qualification Matches */}
+        <div className="w-full max-w-3xl mx-auto px-4 py-2 mb-4">
+          <QualificationMatches />
+        </div>
       </div>
       
       {/* Mobile Navigation unten */}

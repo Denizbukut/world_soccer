@@ -12,6 +12,7 @@ interface LeaderboardUser {
   rank: number
   username: string
   prestige_points: number
+  teamRating?: number
 }
 
 interface QualificationMatch {
@@ -26,6 +27,7 @@ export default function QualificationMatches() {
   const [qualificationMatches, setQualificationMatches] = useState<QualificationMatch[]>([])
   const [loading, setLoading] = useState(true)
   const [userRank, setUserRank] = useState<number | null>(null)
+  const [squadRatings, setSquadRatings] = useState<{[key: string]: number}>({})
 
   useEffect(() => {
     fetchLeaderboard()
@@ -45,6 +47,9 @@ export default function QualificationMatches() {
           setUserRank(currentUser.rank)
         }
 
+        // Fetch squad ratings for all users
+        await fetchSquadRatings(data.data)
+
         // Generate qualification matches
         generateQualificationMatches(data.data)
       }
@@ -52,6 +57,29 @@ export default function QualificationMatches() {
       console.error("Error fetching leaderboard:", error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchSquadRatings = async (leaderboardData: LeaderboardUser[]) => {
+    try {
+      const usernames = leaderboardData.map(user => user.username)
+      const response = await fetch("/api/qualification/squad-ratings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ usernames })
+      })
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        const ratings: {[key: string]: number} = {}
+        data.data.forEach((item: any) => {
+          ratings[item.username] = item.teamRating
+        })
+        setSquadRatings(ratings)
+      }
+    } catch (error) {
+      console.error("Error fetching squad ratings:", error)
     }
   }
 
@@ -181,6 +209,9 @@ export default function QualificationMatches() {
                     <div className="text-green-400 font-bold text-sm">
                       {player.prestige_points}
                     </div>
+                    <div className="text-xs text-blue-400">
+                      Rating: {(squadRatings[player.username] || 70).toFixed(1)}
+                    </div>
                     <div className="text-xs text-green-300">Qualified</div>
                   </div>
                 </div>
@@ -218,9 +249,14 @@ export default function QualificationMatches() {
                       {match.player1.username}
                     </span>
                   </div>
-                  <span className="text-xs text-gray-400 ml-2">
-                    {match.player1.prestige_points}
-                  </span>
+                  <div className="text-right ml-2">
+                    <div className="text-xs text-gray-400">
+                      {match.player1.prestige_points}
+                    </div>
+                    <div className="text-xs text-blue-400">
+                      Rating: {(squadRatings[match.player1.username] || 70).toFixed(1)}
+                    </div>
+                  </div>
                 </div>
 
                 {/* VS */}
@@ -242,9 +278,14 @@ export default function QualificationMatches() {
                       {match.player2.username}
                     </span>
                   </div>
-                  <span className="text-xs text-gray-400 ml-2">
-                    {match.player2.prestige_points}
-                  </span>
+                  <div className="text-right ml-2">
+                    <div className="text-xs text-gray-400">
+                      {match.player2.prestige_points}
+                    </div>
+                    <div className="text-xs text-blue-400">
+                      Rating: {(squadRatings[match.player2.username] || 70).toFixed(1)}
+                    </div>
+                  </div>
                 </div>
                 
                 {isUserInMatch(match) && (

@@ -10,6 +10,7 @@ export default function WeekendLeagueCountdown() {
     minutes: 0,
     seconds: 0
   })
+  const [isToday, setIsToday] = useState(false)
 
   useEffect(() => {
     const calculateTimeLeft = () => {
@@ -27,16 +28,19 @@ export default function WeekendLeagueCountdown() {
         if (now < todayAt8PM) {
           // It's Sunday but before 8 PM, target is today at 8 PM
           targetDate.setTime(todayAt8PM.getTime())
+          setIsToday(true)
         } else {
           // It's Sunday but after 8 PM, target is next Sunday at 8 PM
           targetDate.setDate(now.getDate() + 7)
           targetDate.setHours(20, 0, 0, 0)
+          setIsToday(false)
         }
       } else {
         // Calculate days until next Sunday
         const daysUntilSunday = 7 - currentDay
         targetDate.setDate(now.getDate() + daysUntilSunday)
         targetDate.setHours(20, 0, 0, 0)
+        setIsToday(false)
       }
       
       const difference = targetDate.getTime() - now.getTime()
@@ -100,7 +104,7 @@ export default function WeekendLeagueCountdown() {
               <div className="text-center mt-3">
           <div className="flex items-center justify-center gap-2 text-sm text-yellow-200">
             <Clock className="w-4 h-4" />
-            <span>Next Sunday at 8 PM</span>
+            <span>{isToday ? "Today at 8 PM" : "Next Sunday at 8 PM"}</span>
           </div>
         </div>
     </div>

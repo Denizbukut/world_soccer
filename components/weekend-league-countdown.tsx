@@ -16,20 +16,28 @@ export default function WeekendLeagueCountdown() {
       const now = new Date()
       const currentDay = now.getDay() // 0 = Sunday, 1 = Monday, etc.
       
-      // Calculate days until next Sunday
-      let daysUntilSunday = 0
+      // Set target to next Sunday at 20:00:00
+      const targetDate = new Date()
+      
       if (currentDay === 0) {
-        // It's already Sunday, count to next Sunday (7 days)
-        daysUntilSunday = 7
+        // It's Sunday - check if it's before 20:00
+        const todayAt8PM = new Date()
+        todayAt8PM.setHours(20, 0, 0, 0)
+        
+        if (now < todayAt8PM) {
+          // It's Sunday but before 8 PM, target is today at 8 PM
+          targetDate.setTime(todayAt8PM.getTime())
+        } else {
+          // It's Sunday but after 8 PM, target is next Sunday at 8 PM
+          targetDate.setDate(now.getDate() + 7)
+          targetDate.setHours(20, 0, 0, 0)
+        }
       } else {
         // Calculate days until next Sunday
-        daysUntilSunday = 7 - currentDay
+        const daysUntilSunday = 7 - currentDay
+        targetDate.setDate(now.getDate() + daysUntilSunday)
+        targetDate.setHours(20, 0, 0, 0)
       }
-      
-             // Set target to next Sunday at 20:00:00
-       const targetDate = new Date()
-       targetDate.setDate(now.getDate() + daysUntilSunday)
-       targetDate.setHours(20, 0, 0, 0)
       
       const difference = targetDate.getTime() - now.getTime()
       

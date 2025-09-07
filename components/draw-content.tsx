@@ -191,7 +191,7 @@ export default function DrawPage() {
   const [selectedEpoch, setSelectedEpoch] = useState<number>(1)
   const [availableEpochs, setAvailableEpochs] = useState<number[]>([1])
   const [godPacksLeft, setGodPacksLeft] = useState<number | null>(null)
-  const max_godpacks_daily = 500;
+  const max_godpacks_daily = 100;
   // God Pack Discount state
   const [godPackDiscount, setGodPackDiscount] = useState<{
     isActive: boolean
@@ -661,6 +661,11 @@ const [showInfo, setShowInfo] = useState(false)
           await incrementLegendaryDraw(user.username, premierLeagueCards.length * 1)
         }
 
+        const bundesligaCards = result.drawnCards?.filter((card: any) => card.league_id === "cba80327-d67e-400d-81b7-9689ab27224c") || []
+        if (bundesligaCards.length > 0) {
+          await incrementLegendaryDraw(user.username, bundesligaCards.length * 1)
+        }
+
         const goatPacks = cardType === "god" ? count : 0;
         
         if (goatPacks > 0) {
@@ -669,7 +674,8 @@ const [showInfo, setShowInfo] = useState(false)
         
         const ultimateCards = result.drawnCards?.filter((card: any) => card.rarity=== "ultimate") || []
         if (ultimateCards.length > 0) {
-          await incrementLegendaryDraw(user.username, ultimateCards.length * 6)
+          await incrementLegendaryDraw(user.username, ultimateCards.length *5 )
+          
         }
 
 
@@ -1166,17 +1172,6 @@ const [showInfo, setShowInfo] = useState(false)
                   </div>
                 )}
 
-                {/* Contest End Announcement */}
-                <div className="mb-4 text-center text-sm font-medium px-4 py-3 rounded-xl bg-gradient-to-r from-orange-500 to-red-500 text-white border border-orange-400 animate-pulse">
-                  <div className="flex items-center justify-center gap-2 mb-1">
-                    <span className="text-lg">🏆</span>
-                    <span className="font-bold">LAST DAY OF CONTEST!</span>
-                    <span className="text-lg">🏆</span>
-                  </div>
-                  <div className="text-xs">
-                    🚀 Goat Packs limit increased to <span className="font-bold">500 per day</span> for the final day!
-                  </div>
-                </div>
 
 
 

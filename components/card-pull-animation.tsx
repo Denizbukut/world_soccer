@@ -589,7 +589,7 @@ export function CardPullAnimation({ isOpen, onClose, card, onComplete }: CardPul
                         id={card.id}
                         name={card.name}
                         character={card.character}
-                        imageUrl={card.imageUrl}
+                        imageUrl={card.image_url}
                         rarity={card.rarity}
                         owned={true}
                       />

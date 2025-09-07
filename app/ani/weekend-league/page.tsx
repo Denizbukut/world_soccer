@@ -274,10 +274,10 @@ export default function WeekendLeaguePage() {
                   <Zap className="w-6 h-6 text-yellow-400" />
                   <span className="text-lg font-bold text-yellow-400">Ready to Start Tournament</span>
                 </div>
-                <p className="text-sm text-gray-300 mb-6">
-                  All participants are ready. Click below to simulate the Weekend League tournament.
+                <p className="text-sm text-gray-300">
+                  All participants are ready. Tournament will be simulated automatically.
                 </p>
-                <Button
+                {/* <Button
                   onClick={simulateWeekendLeague}
                   className="bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-600 hover:to-orange-700 text-white font-bold py-3 px-6 rounded-lg border border-yellow-400/30 transition-all duration-200"
                 >
@@ -285,7 +285,7 @@ export default function WeekendLeaguePage() {
                     <Zap className="w-4 h-4" />
                     Start Tournament
                   </span>
-                </Button>
+                </Button> */}
               </div>
             ) : (
               <div className="space-y-6">
@@ -358,7 +358,7 @@ export default function WeekendLeaguePage() {
             <li>• <strong>Qualification Winners:</strong> 14 winners from qualification matches (places 3-30)</li>
             <li>• <strong>Tournament Format:</strong> Single elimination knockout system</li>
             <li>• <strong>Rounds:</strong> Round of 16 → Quarterfinals → Semifinals → Final</li>
-            <li>• <strong>Simulation:</strong> Matches are simulated based on team ratings and prestige points</li>
+            <li>• <strong>Simulation:</strong> Matches are simulated based on team ratings and level per card</li>
             <li>• <strong>Rewards:</strong> 
               <ul className="ml-4 mt-1 space-y-1">
                 <li>🥇 <strong>1st Place:</strong> 100 Icon Tickets + Level 5 Ultimate Neymar </li>

@@ -1,5 +1,13 @@
 "use client"
 
+// Weekend League Countdown - Currently disabled
+export default function WeekendLeagueCountdown() {
+  return null // Component is disabled, returns nothing
+}
+
+/* 
+Original countdown code (commented out):
+
 import { useState, useEffect } from "react"
 import { Clock, Trophy } from "lucide-react"
 
@@ -110,3 +118,4 @@ export default function WeekendLeagueCountdown() {
     </div>
   )
 }
+*/

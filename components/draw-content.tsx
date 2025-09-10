@@ -663,13 +663,13 @@ const [showInfo, setShowInfo] = useState(false)
 
         const bundesligaCards = result.drawnCards?.filter((card: any) => card.league_id === "cba80327-d67e-400d-81b7-9689ab27224c") || []
         if (bundesligaCards.length > 0) {
-          await incrementLegendaryDraw(user.username, bundesligaCards.length * 3)
+          await incrementLegendaryDraw(user.username, bundesligaCards.length * 1)
         }
 
         const goatPacks = cardType === "god" ? count : 0;
         
         if (goatPacks > 0) {
-          await incrementLegendaryDraw(user.username, goatPacks * 15);
+          await incrementLegendaryDraw(user.username, goatPacks * 20);
         }
         
         const ultimateCards = result.drawnCards?.filter((card: any) => card.rarity=== "ultimate") || []

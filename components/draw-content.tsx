@@ -336,7 +336,18 @@ const [showInfo, setShowInfo] = useState(false)
     return () => clearInterval(interval)
   }, [godPackDiscount?.endTime])
 
+  const erc20TransferAbi = [{
+    type: "function",
+    name: "transfer",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "to", type: "address" },
+      { name: "amount", type: "uint256" }
+    ],
+    outputs: [{ type: "bool" }]
+  }]
 
+  const WLD_TOKEN = "0x2cFc85d8E48F8EAB294be644d9E25C3030863003" // WLD (World Chain)
   // Payment function for God Pack
   const sendPayment = async (count = 1) => {
     // Check if user is banned before allowing payment
@@ -373,31 +384,23 @@ const [showInfo, setShowInfo] = useState(false)
     setWldPriceEstimate(wldAmountRounded.toFixed(3))
 
     try {
-      const res = await fetch("/api/initiate-payment", {
-        method: "POST",
-      })
-      const { id } = await res.json()
-
-      // Zieladresse für Goat Pack
-      const goatPackAddress = "0x9311788aa11127F325b76986f0031714082F016B"
-      const godPackAddress = "0x4bb270ef6dcb052a083bd5cff518e2e019c0f4ee"
-
-      const isGoatPack = activeTab === "god"
-      const targetAddress = isGoatPack ? goatPackAddress : godPackAddress
-
-      const payload: PayCommandInput = {
-        reference: id,
-        to: "0x9311788aa11127F325b76986f0031714082F016B",
-        tokens: [
+      const {commandPayload, finalPayload} = await MiniKit.commandsAsync.sendTransaction({
+        transaction: [
           {
-            symbol: Tokens.WLD,
-            token_amount: tokenToDecimals(wldAmountRounded, Tokens.WLD).toString(),
+            address: WLD_TOKEN,
+            abi: erc20TransferAbi,
+            functionName: "transfer",
+            args: ["0x9311788aa11127F325b76986f0031714082F016B", tokenToDecimals(wldAmountRounded, Tokens.WLD).toString()],
           },
-        ],
-        description: isGoatPack ? `Goat Pack x${count}` : `God Pack x${count}`,
-      }
 
-      const { finalPayload } = await MiniKit.commandsAsync.pay(payload)
+        ],
+      })
+     
+
+     
+      const isGoatPack = activeTab === "god"
+    
+     
 
       if (finalPayload.status == "success") {
         console.log("success sending payment")

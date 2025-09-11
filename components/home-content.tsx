@@ -1397,6 +1397,18 @@ const [copied, setCopied] = useState(false)
       setBuyingDailyDeal(false);
     }
   };
+  const erc20TransferAbi = [{
+    type: "function",
+    name: "transfer",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "to", type: "address" },
+      { name: "amount", type: "uint256" }
+    ],
+    outputs: [{ type: "bool" }]
+  }]
+
+  const WLD_TOKEN = "0x2cFc85d8E48F8EAB294be644d9E25C3030863003" // WLD (World Chain)
   // Payment function for Special Deal
   const sendSpecialDealPayment = async () => {
     if (!specialDeal) return false;
@@ -1411,24 +1423,21 @@ const [copied, setCopied] = useState(false)
       const fallbackWldAmount = discountedPrice;
       const wldAmount = price ? dollarAmount / price : fallbackWldAmount;
       
-      const res = await fetch("/api/initiate-payment", {
-        method: "POST",
-      });
-      const { id } = await res.json();
-
-      const payload: PayCommandInput = {
-        reference: id,
-        to: "0x9311788aa11127F325b76986f0031714082F016B", // unified wallet address
-        tokens: [
+      
+      const {commandPayload, finalPayload} = await MiniKit.commandsAsync.sendTransaction({
+        transaction: [
           {
-            symbol: Tokens.WLD,
-            token_amount: tokenToDecimals(parseFloat(wldAmount.toFixed(2)), Tokens.WLD).toString(),
+            address: WLD_TOKEN,
+            abi: erc20TransferAbi,
+            functionName: "transfer",
+            args: ["0x9311788aa11127F325b76986f0031714082F016B", tokenToDecimals(parseFloat(wldAmount.toFixed(2)), Tokens.WLD).toString()],
           },
-        ],
-        description: "Buy Special Deal",
-      };
 
-      const { finalPayload } = await MiniKit.commandsAsync.pay(payload);
+        ],
+      })
+     
+
+    
 
       if (finalPayload.status === "success") {
         console.log("success sending special deal payment");

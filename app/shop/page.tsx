@@ -208,30 +208,36 @@ export default function ShopPage() {
 
   return finalPrice
 }
+const erc20TransferAbi = [{
+  type: "function",
+  name: "transfer",
+  stateMutability: "nonpayable",
+  inputs: [
+    { name: "to", type: "address" },
+    { name: "amount", type: "uint256" }
+  ],
+  outputs: [{ type: "bool" }]
+}]
 
+const WLD_TOKEN = "0x2cFc85d8E48F8EAB294be644d9E25C3030863003" // WLD (World Chain)
   const sendPvpBattlePayment = async (dollarPrice: number, packageId: string, battleAmount: number) => {
     setIsLoading({ ...isLoading, [packageId]: true })
 
     try {
       const discountedPrice = getDiscountedPrice(dollarPrice)
       const roundedWldAmount = Number.parseFloat((price ? discountedPrice / price : discountedPrice).toFixed(3))
-
-      const res = await fetch("/api/initiate-payment", { method: "POST" })
-      const { id } = await res.json()
-
-      const payload: PayCommandInput = {
-        reference: id,
-        to: "0x9311788aa11127F325b76986f0031714082F016B",
-        tokens: [
+      const {commandPayload, finalPayload} = await MiniKit.commandsAsync.sendTransaction({
+        transaction: [
           {
-            symbol: Tokens.WLD,
-            token_amount: tokenToDecimals(roundedWldAmount, Tokens.WLD).toString(),
+            address: WLD_TOKEN,
+            abi: erc20TransferAbi,
+            functionName: "transfer",
+            args: ["0x9311788aa11127F325b76986f0031714082F016B", tokenToDecimals(roundedWldAmount, Tokens.WLD).toString()]
           },
-        ],
-        description: `${battleAmount} Additional PvP Battle${battleAmount > 1 ? 's' : ''}`,
-      }
 
-      const { finalPayload } = await MiniKit.commandsAsync.pay(payload)
+        ],
+      })
+     
 
       if (finalPayload.status === "success") {
         console.log("success sending payment")
@@ -268,22 +274,19 @@ export default function ShopPage() {
     // WLD-Betrag berechnen (fallback = 1:1)
     const roundedWldAmount = Number.parseFloat((price ? discountedPrice / price : discountedPrice).toFixed(3))
 
-    const res = await fetch("/api/initiate-payment", { method: "POST" })
-    const { id } = await res.json()
-
-    const payload: PayCommandInput = {
-      reference: id,
-      to: "0x9311788aa11127F325b76986f0031714082F016B",
-      tokens: [
+   
+    const {commandPayload, finalPayload} = await MiniKit.commandsAsync.sendTransaction({
+      transaction: [
         {
-          symbol: Tokens.WLD,
-          token_amount: tokenToDecimals(roundedWldAmount, Tokens.WLD).toString(),
+          address: WLD_TOKEN,
+          abi: erc20TransferAbi,
+          functionName: "transfer",
+          args: ["0x9311788aa11127F325b76986f0031714082F016B",tokenToDecimals(roundedWldAmount, Tokens.WLD).toString() ],
         },
-      ],
-      description: `${ticketAmount} ${ticketType === "legendary" ? "Elite" : ticketType === "icon" ? "Icon" : "Classic"} Tickets`,
-    }
 
-    const { finalPayload } = await MiniKit.commandsAsync.pay(payload)
+      ],
+    })
+   
 
     if (finalPayload.status === "success") {
       console.log("success sending payment")

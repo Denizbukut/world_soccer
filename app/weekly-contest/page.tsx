@@ -124,12 +124,12 @@ export default function WeeklyContestPage() {
             <p className="text-sm text-green-200 mt-1">All points earned today are doubled!</p>
           </div> */}
           
-          <div className="text-sm text-yellow-100 space-y-1">
-            <div>• Premier League Players = <span className="font-bold text-yellow-400">1 Point</span></div>
-            <div>• Bundesliga Cards = <span className="font-bold text-yellow-400">1 Point</span></div>
-            <div>• Ultimate Cards = <span className="font-bold text-yellow-400">10 Points</span> <span className="text-green-400 font-bold">2x Bonus!</span></div>
-            <div>• GOAT Packs = <span className="font-bold text-yellow-400">15 Points</span></div>
-          </div>
+            <div className="text-sm text-yellow-100 space-y-1">
+              <div>• Premier League Players = <span className="font-bold text-yellow-400">4 Points</span> <span className="text-green-400 font-bold">(4x Bonus!)</span></div>
+              <div>• Bundesliga Cards = <span className="font-bold text-yellow-400">4 Points</span> <span className="text-green-400 font-bold">(4x Bonus!)</span></div>
+              <div>• Ultimate Cards = <span className="font-bold text-yellow-400">15 Points</span> <span className="text-green-400 font-bold">(3x Bonus!)</span></div>
+              <div>• GOAT Packs = <span className="font-bold text-yellow-400">20 Points</span> <span className="text-green-400 font-bold">(1,3x Bonus!)</span></div>
+            </div>
         </div>
 
         <div className="bg-gradient-to-br from-[#232526] to-[#18181b] border-2 border-yellow-400 rounded-2xl shadow-xl p-6">

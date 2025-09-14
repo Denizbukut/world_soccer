@@ -106,7 +106,8 @@ export async function POST() {
       possession_player2: result.possession.player2,
       shots_player1: result.shots.player1,
       shots_player2: result.shots.player2,
-      events: result.events
+      events: result.events,
+      hidden: true // Set all matches as hidden by default
     }))
 
     // Clear existing matches and insert new ones

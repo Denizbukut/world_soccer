@@ -5,18 +5,42 @@ export async function GET() {
   const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
   try {
-    // Get all qualification match results
-    const { data, error } = await supabase
+    // Debug: Get all matches first
+    const { data: allMatches, error: allError } = await supabase
       .from("qualification_matches")
       .select("*")
       .order("created_at", { ascending: false })
 
+    console.log("🔍 DEBUG - All matches in DB:", allMatches?.length || 0)
+    if (allMatches && allMatches.length > 0) {
+      console.log("🔍 DEBUG - Hidden status:", allMatches.map(m => ({ id: m.match_id, hidden: m.hidden })))
+    }
+
+    // Get only visible qualification match results (hidden = false)
+    const { data, error } = await supabase
+      .from("qualification_matches")
+      .select("*")
+      .eq("hidden", false) // Only show matches that are NOT hidden
+      .order("created_at", { ascending: false })
+
+    console.log("🔍 DEBUG - Visible matches returned:", data?.length || 0)
+
     if (error) {
+      console.error("🔍 DEBUG - Error:", error)
       return NextResponse.json({ success: false, error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json({ success: true, data: data || [] })
+    return NextResponse.json({ 
+      success: true, 
+      data: data || [],
+      debug: {
+        totalMatches: allMatches?.length || 0,
+        visibleMatches: data?.length || 0,
+        timestamp: new Date().toISOString()
+      }
+    })
   } catch (error) {
+    console.error("🔍 DEBUG - Internal error:", error)
     return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 })
   }
 }

@@ -1284,8 +1284,8 @@ const [showInfo, setShowInfo] = useState(false)
                       </motion.div>
 
                       <div className="text-center mb-4">
-                        <h3 className="text-lg font-medium">
-                          {activeTab === "god" ? "GOAT" : activeTab === "legendary" ? "Ultimate" : activeTab === "icon" ? "ICON" : "Basic"} Card Pack
+                        <h3 className="text-lg font-medium text-white">
+                          {activeTab === "god" ? "GOAT" : activeTab === "legendary" ? "Elite" : activeTab === "icon" ? "ICON" : "Basic"} Card Pack
                         </h3>
                         <p className="text-sm text-gray-500">Contains 1 random card</p>
                         <div className="flex items-center justify-center gap-1 mt-1 text-xs text-violet-600">

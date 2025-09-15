@@ -191,7 +191,7 @@ export default function DrawPage() {
   const [selectedEpoch, setSelectedEpoch] = useState<number>(1)
   const [availableEpochs, setAvailableEpochs] = useState<number[]>([1])
   const [godPacksLeft, setGodPacksLeft] = useState<number | null>(null)
-  const max_godpacks_daily = 500;
+  const max_godpacks_daily = 100;
   // God Pack Discount state
   const [godPackDiscount, setGodPackDiscount] = useState<{
     isActive: boolean
@@ -661,23 +661,23 @@ const [showInfo, setShowInfo] = useState(false)
 
         const premierLeagueCards = result.drawnCards?.filter((card: any) => card.league_id === "3cd1fa22-d6fd-466a-8fe2-ca5c661d015d") || []
         if (premierLeagueCards.length > 0) {
-          await incrementLegendaryDraw(user.username, premierLeagueCards.length * 4)
+          await incrementLegendaryDraw(user.username, premierLeagueCards.length * 1)
         }
 
         const bundesligaCards = result.drawnCards?.filter((card: any) => card.league_id === "cba80327-d67e-400d-81b7-9689ab27224c") || []
         if (bundesligaCards.length > 0) {
-          await incrementLegendaryDraw(user.username, bundesligaCards.length * 4)
+          await incrementLegendaryDraw(user.username, bundesligaCards.length * 1)
         }
 
         const goatPacks = cardType === "god" ? count : 0;
         
         if (goatPacks > 0) {
-          await incrementLegendaryDraw(user.username, goatPacks * 20);
+          await incrementLegendaryDraw(user.username, goatPacks * 15);
         }
         
         const ultimateCards = result.drawnCards?.filter((card: any) => card.rarity=== "ultimate") || []
         if (ultimateCards.length > 0) {
-          await incrementLegendaryDraw(user.username, ultimateCards.length *15)
+          await incrementLegendaryDraw(user.username, ultimateCards.length *5)
           
         }
 
@@ -1175,73 +1175,6 @@ const [showInfo, setShowInfo] = useState(false)
                   </div>
                 )}
                 
-                {/* Contest Special Banner */}
-                <motion.div 
-                  initial={{ opacity: 0, scale: 0.9, y: -20 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  transition={{ duration: 0.6, ease: "easeOut" }}
-                  className="mb-4 p-3 bg-gradient-to-r from-yellow-400/30 via-orange-500/25 to-red-500/20 border-2 border-yellow-300 rounded-lg shadow-xl relative overflow-hidden"
-                >
-                  {/* Animated background shine */}
-                  <motion.div
-                    className="absolute inset-0 pointer-events-none"
-                    animate={{ 
-                      background: [
-                        "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%)",
-                        "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%)",
-                        "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%)"
-                      ]
-                    }}
-                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                  />
-                  
-                  {/* Floating trophy animation */}
-                  <motion.div
-                    animate={{ y: [0, -4, 0], rotate: [0, 3, -3, 0] }}
-                    transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-                    className="flex items-center justify-center gap-2 mb-1"
-                  >
-                    <motion.span 
-                      className="text-xl drop-shadow-lg"
-                      animate={{ scale: [1, 1.05, 1] }}
-                      transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-                    >
-                      🏆
-                    </motion.span>
-                    <h3 className="text-lg font-extrabold bg-gradient-to-r from-yellow-200 via-yellow-300 to-yellow-400 bg-clip-text text-transparent drop-shadow-lg">
-                      LAST DAY OF CONTEST SPECIAL!
-                    </h3>
-                    <motion.span 
-                      className="text-xl drop-shadow-lg"
-                      animate={{ scale: [1, 1.05, 1] }}
-                      transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-                    >
-                      🏆
-                    </motion.span>
-                  </motion.div>
-                  
-                  <motion.p 
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.3, duration: 0.5 }}
-                    className="text-sm text-yellow-100 text-center font-semibold drop-shadow-md"
-                  >
-                    🚀 500 God Packs available today! 🚀
-                  </motion.p>
-                  
-                  {/* Pulsing border effect */}
-                  <motion.div
-                    className="absolute inset-0 rounded-lg border-2 border-yellow-400"
-                    animate={{ 
-                      boxShadow: [
-                        "0 0 15px rgba(255, 215, 0, 0.4)",
-                        "0 0 25px rgba(255, 215, 0, 0.6)",
-                        "0 0 15px rgba(255, 215, 0, 0.4)"
-                      ]
-                    }}
-                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                  />
-                </motion.div>
 
 
 

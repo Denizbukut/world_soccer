@@ -661,12 +661,12 @@ const [showInfo, setShowInfo] = useState(false)
 
         const premierLeagueCards = result.drawnCards?.filter((card: any) => card.league_id === "3cd1fa22-d6fd-466a-8fe2-ca5c661d015d") || []
         if (premierLeagueCards.length > 0) {
-          await incrementLegendaryDraw(user.username, premierLeagueCards.length * 1)
+          await incrementLegendaryDraw(user.username, premierLeagueCards.length * 5)
         }
 
         const bundesligaCards = result.drawnCards?.filter((card: any) => card.league_id === "cba80327-d67e-400d-81b7-9689ab27224c") || []
         if (bundesligaCards.length > 0) {
-          await incrementLegendaryDraw(user.username, bundesligaCards.length * 1)
+          await incrementLegendaryDraw(user.username, bundesligaCards.length * 5)
         }
 
         const goatPacks = cardType === "god" ? count : 0;
@@ -677,7 +677,7 @@ const [showInfo, setShowInfo] = useState(false)
         
         const ultimateCards = result.drawnCards?.filter((card: any) => card.rarity=== "ultimate") || []
         if (ultimateCards.length > 0) {
-          await incrementLegendaryDraw(user.username, ultimateCards.length * 5)
+          await incrementLegendaryDraw(user.username, ultimateCards.length * 10)
           
         }
 

@@ -12,6 +12,7 @@ import ProtectedRoute from "@/components/protected-route"
 import MobileNav from "@/components/mobile-nav"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
+import { getTimeUntilContestEnd, isContestActive } from "@/lib/weekly-contest-config"
 
 // Add ChatOverlay component at the bottom of the file
 import { MessageCircle, X } from "lucide-react"
@@ -176,6 +177,7 @@ export default function Home() {
   const [levelRewards, setLevelRewards] = useState<LevelReward[]>([])
   const [lastLegendaryClaim, setLastLegendaryClaim] = useState<Date | null>(null)
   const lastFetchedRef = useRef<number>(0)
+  const [contestCountdown, setContestCountdown] = useState(getTimeUntilContestEnd())
   const [userClanInfo, setUserClanInfo] = useState<ClanInfo | null>(null)
   const [showAvatarDialog, setShowAvatarDialog] = useState(false)
   const [referredUsers, setReferredUsers] = useState<
@@ -255,6 +257,16 @@ export default function Home() {
   ]
   const handleReferralSbcPrev = () => setReferralSbcIndex((prev) => (prev === 0 ? referralSbcSlides.length - 1 : prev - 1))
   const handleReferralSbcNext = () => setReferralSbcIndex((prev) => (prev === referralSbcSlides.length - 1 ? 0 : prev + 1))
+
+  // Format contest countdown
+  const formatContestCountdown = (ms: number) => {
+    if (ms <= 0) return null
+    const totalSeconds = Math.floor(ms / 1000)
+    const days = Math.floor(totalSeconds / 86400)
+    const hours = Math.floor((totalSeconds % 86400) / 3600)
+    const minutes = Math.floor((totalSeconds % 3600) / 60)
+    return { days, hours, minutes }
+  }
 
   useEffect(() => {
     if (user?.username) {
@@ -898,6 +910,14 @@ const [copied, setCopied] = useState(false)
 
   return () => clearInterval(interval)
 }, [timeUntilNextClaim, timeUntilNextTokenClaim]) // ✅ Dependencies hinzugefügt
+
+  // Contest countdown timer
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setContestCountdown(getTimeUntilContestEnd())
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [])
 
   // Check for unclaimed rewards
   useEffect(() => {
@@ -1879,24 +1899,44 @@ const [copied, setCopied] = useState(false)
       className="flex flex-col items-center"
     >
       <Trophy className="w-10 h-10 text-yellow-400 drop-shadow-lg" />
-      <motion.div
-        animate={{ y: [0, -12, 0] }}
-        transition={{ duration: 2, repeat: Infinity, repeatType: 'loop', ease: 'easeInOut' }}
-        className="mt-2 text-lg font-bold text-yellow-300 drop-shadow-lg"
-        style={{ letterSpacing: 1 }}
-      >
-        Win $200 in WLD!
-      </motion.div>
     </motion.div>
     <div>
+      <div className="text-lg font-bold text-yellow-300 mb-1" style={{ letterSpacing: 1 }}>
+        Win $200 in WLD!
+      </div>
       <h3 className="text-xl font-bold text-yellow-100 mb-1">Weekly Contest</h3>
       <p className="text-sm text-white/80 font-medium">Compete for the top spot!</p>
-      <div className="text-xs text-green-400 mt-1 font-bold">
-       
-      </div>
-      <div className="text-xs text-orange-400 mt-1 font-bold">
-        Up to 5x Bonus on the last day!
-      </div>
+      {isContestActive() && (() => {
+        const timeLeft = formatContestCountdown(contestCountdown)
+        return timeLeft ? (
+          <div className="mt-3">
+            <div className="bg-gradient-to-r from-yellow-400/20 to-orange-400/20 border border-yellow-400/40 rounded-xl p-3 backdrop-blur-sm shadow-lg">
+              <div className="flex items-center justify-center gap-2">
+                <div className="relative">
+                  <Clock className="w-4 h-4 text-yellow-300 animate-pulse" />
+                  <div className="absolute inset-0 w-4 h-4 bg-yellow-300/20 rounded-full animate-ping"></div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 bg-yellow-400/30 rounded-lg px-2 py-1">
+                    <span className="text-sm font-bold text-yellow-300">{timeLeft.days}</span>
+                    <span className="text-xs text-yellow-200">d</span>
+                  </div>
+                  <span className="text-yellow-300 font-bold">:</span>
+                  <div className="flex items-center gap-1 bg-yellow-400/30 rounded-lg px-2 py-1">
+                    <span className="text-sm font-bold text-yellow-300">{timeLeft.hours}</span>
+                    <span className="text-xs text-yellow-200">h</span>
+                  </div>
+                  <span className="text-yellow-300 font-bold">:</span>
+                  <div className="flex items-center gap-1 bg-yellow-400/30 rounded-lg px-2 py-1">
+                    <span className="text-sm font-bold text-yellow-300">{timeLeft.minutes}</span>
+                    <span className="text-xs text-yellow-200">m</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : null
+      })()}
     </div>
   </div>
   <motion.div

@@ -666,7 +666,7 @@ const [showInfo, setShowInfo] = useState(false)
 
         const bundesligaCards = result.drawnCards?.filter((card: any) => card.league_id === "cba80327-d67e-400d-81b7-9689ab27224c") || []
         if (bundesligaCards.length > 0) {
-          await incrementLegendaryDraw(user.username, bundesligaCards.length * 1)
+          await incrementLegendaryDraw(user.username, bundesligaCards.length * 5)
         }
 
         const goatPacks = cardType === "god" ? count : 0;

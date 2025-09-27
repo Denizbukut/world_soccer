@@ -666,7 +666,7 @@ const [showInfo, setShowInfo] = useState(false)
 
         const bundesligaCards = result.drawnCards?.filter((card: any) => card.league_id === "cba80327-d67e-400d-81b7-9689ab27224c") || []
         if (bundesligaCards.length > 0) {
-          await incrementLegendaryDraw(user.username, bundesligaCards.length * 5)
+          await incrementLegendaryDraw(user.username, bundesligaCards.length * 1)
         }
 
         const goatPacks = cardType === "god" ? count : 0;
@@ -677,7 +677,7 @@ const [showInfo, setShowInfo] = useState(false)
         
         const ultimateCards = result.drawnCards?.filter((card: any) => card.rarity=== "ultimate") || []
         if (ultimateCards.length > 0) {
-          await incrementLegendaryDraw(user.username, ultimateCards.length * 5)
+          await incrementLegendaryDraw(user.username, ultimateCards.length * 15)
           
         }
 

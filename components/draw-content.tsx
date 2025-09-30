@@ -191,7 +191,7 @@ export default function DrawPage() {
   const [selectedEpoch, setSelectedEpoch] = useState<number>(1)
   const [availableEpochs, setAvailableEpochs] = useState<number[]>([1])
   const [godPacksLeft, setGodPacksLeft] = useState<number | null>(null)
-  const max_godpacks_daily = 100;
+  const max_godpacks_daily = 200;
   // God Pack Discount state
   const [godPackDiscount, setGodPackDiscount] = useState<{
     isActive: boolean
@@ -661,12 +661,12 @@ const [showInfo, setShowInfo] = useState(false)
 
         const premierLeagueCards = result.drawnCards?.filter((card: any) => card.league_id === "3cd1fa22-d6fd-466a-8fe2-ca5c661d015d") || []
         if (premierLeagueCards.length > 0) {
-          await incrementLegendaryDraw(user.username, premierLeagueCards.length * 1)
+          await incrementLegendaryDraw(user.username, premierLeagueCards.length * 3)
         }
 
         const bundesligaCards = result.drawnCards?.filter((card: any) => card.league_id === "cba80327-d67e-400d-81b7-9689ab27224c") || []
         if (bundesligaCards.length > 0) {
-          await incrementLegendaryDraw(user.username, bundesligaCards.length * 1)
+          await incrementLegendaryDraw(user.username, bundesligaCards.length * 3)
         }
 
         const goatPacks = cardType === "god" ? count : 0;
@@ -677,7 +677,7 @@ const [showInfo, setShowInfo] = useState(false)
         
         const ultimateCards = result.drawnCards?.filter((card: any) => card.rarity=== "ultimate") || []
         if (ultimateCards.length > 0) {
-          await incrementLegendaryDraw(user.username, ultimateCards.length * 15)
+          await incrementLegendaryDraw(user.username, ultimateCards.length * 20)
           
         }
 
@@ -1164,14 +1164,29 @@ const [showInfo, setShowInfo] = useState(false)
                   </div>
                 )}
                 
+                {/* Combined Last Day Banner + GOAT Packs Counter */}
                 {godPacksLeft !== null && (
-                  <div className={`mb-4 text-center text-sm font-medium px-4 py-2 rounded-xl ${
-                    godPacksLeft === 0
-                      ? "bg-black/70 text-yellow-200 border border-yellow-400"
-                      : "bg-black/70 text-red-400 border border-red-500"
-                  }`}>
-                    ⚡ Goat Packs opened today:{" "}
-                    <span className="font-bold">{godPacksLeft}</span> / {max_godpacks_daily}
+                  <div className="mb-4 space-y-3">
+                    {/* Last Day Banner - Always Visible */}
+                    <div className="p-4 bg-gradient-to-r from-red-600 to-orange-500 border-2 border-orange-400 rounded-xl text-center animate-pulse shadow-lg">
+                      <div className="flex items-center justify-center gap-2 text-white font-extrabold text-base">
+                        <span className="text-2xl animate-bounce">🔥</span>
+                        <span className="text-lg">LAST DAY!</span>
+                        <span className="text-2xl animate-bounce">🔥</span>
+                      </div>
+                      <p className="text-sm text-white mt-2 font-bold">GOAT Packs increased to 200 per day!</p>
+                      <p className="text-xs text-orange-100 mt-1">Last chance to compete in the Weekly Contest!</p>
+                    </div>
+                    
+                    {/* GOAT Packs Counter */}
+                    <div className={`text-center text-sm font-medium px-4 py-3 rounded-xl ${
+                      godPacksLeft === 0
+                        ? "bg-black/70 text-yellow-200 border-2 border-yellow-400"
+                        : "bg-black/70 text-red-400 border-2 border-red-500"
+                    }`}>
+                      ⚡ Goat Packs opened today:{" "}
+                      <span className="font-bold text-lg">{godPacksLeft}</span> / {max_godpacks_daily}
+                    </div>
                   </div>
                 )}
                 

@@ -3,18 +3,18 @@
 
 export const WEEKLY_CONTEST_CONFIG = {
   // Contest Start Date (Montag der Woche)
-  weekStart: "2025-09-23",
+  weekStart: "2025-10-01",
   
   // Contest End Date (Dienstag der nächsten Woche um 23:59:59 UTC)
-  contestEnd: "2025-09-30T23:59:59Z",
+  contestEnd: "2025-10-07T23:59:59Z",
   
   // Prize Pool Configuration
   prizePool: [
-    { rank: "1st Place", reward: "$200 in WLD + Cruyff Lvl.4", icon: "🥇" },
-    { rank: "2nd Place", reward: "$150 in WLD + Ibrahimovic Lvl. 2", icon: "🥈" },
-    { rank: "3rd Place", reward: "$75 in WLD + Puskas Lvl. 1", icon: "🥉" },
-    { rank: "4th–6th Place", reward: "$35 in WLD + Rodri Lvl. 4", icon: "🎖️" },
-    { rank: "7th–10th Place", reward:"$15 in WLD + Rodri  Lvl. 3", icon: "🎖️" },
+    { rank: "1st Place", reward: "$200 in WLD + 99 Ronaldo Lvl.10 + 500 Icon Tickets", icon: "🥇" },
+    { rank: "2nd Place", reward: "$150 in WLD + Pele Lvl. 4 + 250 Icon Tickets", icon: "🥈" },
+    { rank: "3rd Place", reward: "$75 in WLD + Ibrahimovic Lvl. 3 + 150 Icon Tickets", icon: "🥉" },
+    { rank: "4th–6th Place", reward: "Neymar Lvl. 5 + 50 Icon Tickets", icon: "🎖️" },
+    { rank: "7th–10th Place", reward:"Kante Lvl. 3 + 20 Icon Tickets", icon: "🎖️" },
   ]
 } as const
 

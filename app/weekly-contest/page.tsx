@@ -114,19 +114,9 @@ export default function WeeklyContestPage() {
             Earn as many <span className="text-yellow-400">Points</span> as possible!
           </div>
           
-          {/* Double Points Today Banner - UNCOMMENT FOR SPECIAL EVENTS */}
-          {/* <div className="mb-4 p-3 bg-gradient-to-r from-green-500/20 to-green-400/10 border border-green-400 rounded-lg">
-            <div className="flex items-center justify-center gap-2 text-green-300 font-bold">
-              <span className="text-xl">🎉</span>
-              <span>DOUBLE POINTS TODAY!</span>
-              <span className="text-xl">🎉</span>
-            </div>
-            <p className="text-sm text-green-200 mt-1">All points earned today are doubled!</p>
-          </div> */}
-          
             <div className="text-sm text-yellow-100 space-y-1">
               <div>• Bundesliga Cards = <span className="font-bold text-yellow-400">2 Points</span></div>
-              <div>• Premier League Cards = <span className="font-bold text-yellow-400">2 Points</span></div>
+              <div>• Premier League Cards = <span className="font-bold text-green-400">8 Points (4x Bonus!)</span></div>
               <div>• Ligue 1 Cards = <span className="font-bold text-yellow-400">2 Points</span></div>
               <div>• Ultimate Cards = <span className="font-bold text-yellow-400">5 Points</span></div>
               <div>• GOAT Packs = <span className="font-bold text-yellow-400">20 Points</span></div>

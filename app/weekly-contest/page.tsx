@@ -116,10 +116,10 @@ export default function WeeklyContestPage() {
           
             <div className="text-sm text-yellow-100 space-y-1">
               <div>• Bundesliga Cards = <span className="font-bold text-yellow-400">2 Points</span></div>
-              <div>• Premier League Cards = <span className="font-bold text-green-400">8 Points (4x Bonus!)</span></div>
+              <div>• Premier League Cards = <span className="font-bold text-yellow-400">4 Points</span></div>
               <div>• Ligue 1 Cards = <span className="font-bold text-yellow-400">2 Points</span></div>
               <div>• Ultimate Cards = <span className="font-bold text-yellow-400">5 Points</span></div>
-              <div>• GOAT Packs = <span className="font-bold text-yellow-400">20 Points</span></div>
+              <div>• GOAT Packs = <span className="font-bold text-green-400">35 Points (1.75x Bonus!)</span></div>
             </div>
         </div>
 

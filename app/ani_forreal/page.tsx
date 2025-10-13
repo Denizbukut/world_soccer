@@ -24,7 +24,6 @@ import { useWldPrice } from "@/contexts/WldPriceContext"
 import { getSupabaseBrowserClient } from "@/lib/supabase"
 import { useAuth } from "@/contexts/auth-context"
 import { toast } from "@/components/ui/use-toast"
-import AniBanner from "@/components/ani-banner"
 
 const discount = false // Set to true to show discounts, false to hide them
 
@@ -532,9 +531,45 @@ export default function AniPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-[#f6f8fa] p-4 pb-24">
       <div className="max-w-2xl mx-auto space-y-8 py-8">
-        {/* Banner Header */}
-        <AniBanner />
-       
+        {/* Ani Markets Banner */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-6"
+        >
+          <a
+            href="https://world.org/mini-app?app_id=app_658e727dcf9d6dba3dcb703043bd7df0"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block"
+          >
+            <Card className="bg-black border-2 border-gray-800 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] cursor-pointer overflow-hidden">
+              <CardContent className="p-6 text-white relative">
+                {/* Background decoration */}
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16"></div>
+                <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full -ml-12 -mb-12"></div>
+                
+                <div className="relative z-10 flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg overflow-hidden">
+                      <img 
+                        src="/WhatsApp Bild 2025-10-13 um 21.42.31_fd2f8a05.jpg" 
+                        alt="Ani Markets" 
+                        className="w-16 h-16 object-cover rounded-2xl"
+                      />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-bold mb-1">Ani Markets</h3>
+                      <p className="text-lg text-gray-300">Predict. Bet. Win WLD.</p>
+                    </div>
+                  </div>
+                  <ArrowRight className="h-8 w-8 text-gray-400" />
+                </div>
+              </CardContent>
+            </Card>
+          </a>
+        </motion.div>
+        
         {/* Wallet Connection Card */}
         {!walletAddress && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">

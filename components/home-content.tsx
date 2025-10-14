@@ -1906,7 +1906,10 @@ const [copied, setCopied] = useState(false)
       </div>
       <h3 className="text-xl font-bold text-yellow-100 mb-1">Weekly Contest</h3>
       <p className="text-sm text-white/80 font-medium">Compete for the top spot!</p>
-      <p className="text-xs text-green-400 font-semibold mt-1">🐐 GOAT Packs: 35 Points (1.75x Bonus!)</p>
+      <div className="mt-2 px-3 py-2 bg-gradient-to-r from-red-500/80 to-orange-500/80 border border-yellow-300 rounded-lg animate-pulse">
+        <p className="text-xs font-extrabold text-yellow-100">🏆 LAST DAY OF CONTEST!</p>
+        <p className="text-xs text-white font-semibold mt-0.5">2x BONUS ON EVERYTHING! 🔥</p>
+      </div>
       {isContestActive() && (() => {
         const timeLeft = formatContestCountdown(contestCountdown)
         return timeLeft ? (

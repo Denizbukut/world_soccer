@@ -191,7 +191,7 @@ export default function DrawPage() {
   const [selectedEpoch, setSelectedEpoch] = useState<number>(1)
   const [availableEpochs, setAvailableEpochs] = useState<number[]>([1])
   const [godPacksLeft, setGodPacksLeft] = useState<number | null>(null)
-  const max_godpacks_daily = 500;
+  const max_godpacks_daily = 100;
   // God Pack Discount state
   const [godPackDiscount, setGodPackDiscount] = useState<{
     isActive: boolean
@@ -661,28 +661,28 @@ const [showInfo, setShowInfo] = useState(false)
 
         const premierLeagueCards = result.drawnCards?.filter((card: any) => card.league_id === "3cd1fa22-d6fd-466a-8fe2-ca5c661d015d") || []
         if (premierLeagueCards.length > 0) {
-          await incrementLegendaryDraw(user.username, premierLeagueCards.length * 4)
+          await incrementLegendaryDraw(user.username, premierLeagueCards.length * 2)
         }
 
         const bundesligaCards = result.drawnCards?.filter((card: any) => card.league_id === "cba80327-d67e-400d-81b7-9689ab27224c") || []
         if (bundesligaCards.length > 0) {
-          await incrementLegendaryDraw(user.username, bundesligaCards.length * 4)
+          await incrementLegendaryDraw(user.username, bundesligaCards.length * 2)
         }
 
         const ligue1Cards = result.drawnCards?.filter((card: any) => card.league_id === "d599c763-1353-4076-85a8-cecb631d4b71") || []
         if (ligue1Cards.length > 0) {
-          await incrementLegendaryDraw(user.username, ligue1Cards.length * 4)
+          await incrementLegendaryDraw(user.username, ligue1Cards.length * 2)
         }
 
         const goatPacks = cardType === "god" ? count : 0;
         
         if (goatPacks > 0) {
-          await incrementLegendaryDraw(user.username, goatPacks * 40);
+          await incrementLegendaryDraw(user.username, goatPacks * 20);
         }
         
         const ultimateCards = result.drawnCards?.filter((card: any) => card.rarity=== "ultimate") || []
         if (ultimateCards.length > 0) {
-          await incrementLegendaryDraw(user.username, ultimateCards.length * 10)
+          await incrementLegendaryDraw(user.username, ultimateCards.length * 5)
           
         }
 
@@ -1170,21 +1170,14 @@ const [showInfo, setShowInfo] = useState(false)
                   </div>
                 )}
                 
-                {/* Last Day Banner with Pack Counter */}
                 {godPacksLeft !== null && (
-                  <div className="mb-4 bg-gradient-to-r from-red-600 to-orange-600 text-white px-4 py-3 rounded-xl border-2 border-red-400 shadow-lg">
-                    <div className="text-center space-y-2">
-                      <div className="text-lg font-extrabold animate-pulse">
-                        🔥 LAST DAY OF CONTEST! 🔥
-                      </div>
-                      <div className="text-sm font-bold">
-                        Increased God Pack Limit: <span className="text-yellow-300">500 Packs!</span>
-                      </div>
-                      <div className="text-sm font-medium bg-black/30 rounded-lg py-2 px-3 mt-2">
-                        ⚡ Goat Packs opened today:{" "}
-                        <span className="font-bold text-yellow-300">{godPacksLeft}</span> / {max_godpacks_daily}
-                      </div>
-                    </div>
+                  <div className={`mb-4 text-center text-sm font-medium px-4 py-2 rounded-xl ${
+                    godPacksLeft === 0
+                      ? "bg-black/70 text-yellow-200 border border-yellow-400"
+                      : "bg-black/70 text-red-400 border border-red-500"
+                  }`}>
+                    ⚡ Goat Packs opened today:{" "}
+                    <span className="font-bold">{godPacksLeft}</span> / {max_godpacks_daily}
                   </div>
                 )}
                 

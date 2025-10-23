@@ -1906,6 +1906,9 @@ const [copied, setCopied] = useState(false)
       </div>
       <h3 className="text-xl font-bold text-yellow-100 mb-1">Weekly Contest</h3>
       <p className="text-sm text-white/80 font-medium">Compete for the top spot!</p>
+      <div className="text-xs mt-1">
+        <div className="text-green-400 font-bold">4x Bonus on Bundesliga Cards!</div>
+      </div>
       {isContestActive() && (() => {
         const timeLeft = formatContestCountdown(contestCountdown)
         return timeLeft ? (

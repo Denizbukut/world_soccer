@@ -289,7 +289,8 @@ export async function POST() {
       player2_prestige_points: match.player2?.prestige_points || 0,
       player1_team_rating: match.player1?.teamRating || 0,
       player2_team_rating: match.player2?.teamRating || 0,
-      is_simulated: match.isSimulated
+      is_simulated: match.isSimulated,
+      hidden: true
     }))
 
     // Clear existing matches and insert new ones

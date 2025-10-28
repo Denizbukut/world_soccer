@@ -19,7 +19,7 @@ const EXCLUDED_USERNAMES = ["MejaEliana", "sasuke"]
 // Get current user's score and rank
 export async function getCurrentUserScore() {
   try {
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
     const supabase = createSupabaseServerClient(cookieStore)
 
     // Get the current user
@@ -76,7 +76,7 @@ export async function getCurrentUserScore() {
 // Get overall leaderboard - vereinfacht, um die vorberechneten Scores zu verwenden
 export async function getOverallLeaderboard() {
   try {
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
     const supabase = createSupabaseServerClient(cookieStore)
 
     // Get the current user's username for highlighting in the leaderboard

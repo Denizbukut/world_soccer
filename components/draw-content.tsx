@@ -191,7 +191,7 @@ export default function DrawPage() {
   const [selectedEpoch, setSelectedEpoch] = useState<number>(1)
   const [availableEpochs, setAvailableEpochs] = useState<number[]>([1])
   const [godPacksLeft, setGodPacksLeft] = useState<number | null>(null)
-  const max_godpacks_daily = 100;
+  const max_godpacks_daily = 500;
   // God Pack Discount state
   const [godPackDiscount, setGodPackDiscount] = useState<{
     isActive: boolean
@@ -366,11 +366,11 @@ const [showInfo, setShowInfo] = useState(false)
       return
     }
 
-    let dollarAmount = 0.91 * count
+    let dollarAmount = 0.93 * count
     
-    // Apply permanent 10% discount for 5 packs
+    // Apply permanent 15% discount for 5 packs
     if (count === 5) {
-      dollarAmount = dollarAmount * 0.90 // 10% discount
+      dollarAmount = dollarAmount * 0.85 // 15% discount
     }
     
     // Apply additional God Pack discount if active and user is on god pack tab
@@ -661,23 +661,23 @@ const [showInfo, setShowInfo] = useState(false)
 
         const premierLeagueCards = result.drawnCards?.filter((card: any) => card.league_id === "3cd1fa22-d6fd-466a-8fe2-ca5c661d015d") || []
         if (premierLeagueCards.length > 0) {
-          await incrementLegendaryDraw(user.username, premierLeagueCards.length * 2)
+          await incrementLegendaryDraw(user.username, premierLeagueCards.length * 4)
         }
 
         const bundesligaCards = result.drawnCards?.filter((card: any) => card.league_id === "cba80327-d67e-400d-81b7-9689ab27224c") || []
         if (bundesligaCards.length > 0) {
-          await incrementLegendaryDraw(user.username, bundesligaCards.length * 2)
+          await incrementLegendaryDraw(user.username, bundesligaCards.length * 4)
         }
 
         const ligue1Cards = result.drawnCards?.filter((card: any) => card.league_id === "d599c763-1353-4076-85a8-cecb631d4b71") || []
         if (ligue1Cards.length > 0) {
-          await incrementLegendaryDraw(user.username, ligue1Cards.length * 2)
+          await incrementLegendaryDraw(user.username, ligue1Cards.length * 4)
         }
 
         const goatPacks = cardType === "god" ? count : 0;
         
         if (goatPacks > 0) {
-          await incrementLegendaryDraw(user.username, goatPacks * 15);
+          await incrementLegendaryDraw(user.username, goatPacks * 40);
         }
         
         const ultimateCards = result.drawnCards?.filter((card: any) => card.rarity=== "ultimate") || []
@@ -1170,14 +1170,21 @@ const [showInfo, setShowInfo] = useState(false)
                   </div>
                 )}
                 
+                {/* Last Day Banner with Pack Counter */}
                 {godPacksLeft !== null && (
-                  <div className={`mb-4 text-center text-sm font-medium px-4 py-2 rounded-xl ${
-                    godPacksLeft === 0
-                      ? "bg-black/70 text-yellow-200 border border-yellow-400"
-                      : "bg-black/70 text-red-400 border border-red-500"
-                  }`}>
-                    ⚡ Goat Packs opened today:{" "}
-                    <span className="font-bold">{godPacksLeft}</span> / {max_godpacks_daily}
+                  <div className="mb-4 bg-gradient-to-r from-red-600 to-orange-600 text-white px-4 py-3 rounded-xl border-2 border-red-400 shadow-lg">
+                    <div className="text-center space-y-2">
+                      <div className="text-lg font-extrabold animate-pulse">
+                        🔥 LAST DAY OF CONTEST! 🔥
+                      </div>
+                      <div className="text-sm font-bold">
+                        Increased God Pack Limit: <span className="text-yellow-300">500 Packs!</span>
+                      </div>
+                      <div className="text-sm font-medium bg-black/30 rounded-lg py-2 px-3 mt-2">
+                        ⚡ Goat Packs opened today:{" "}
+                        <span className="font-bold text-yellow-300">{godPacksLeft}</span> / {max_godpacks_daily}
+                      </div>
+                    </div>
                   </div>
                 )}
                 
@@ -1388,11 +1395,11 @@ const [showInfo, setShowInfo] = useState(false)
                                     <span className="font-bold text-base">1 Pack</span>
                                     {godPackDiscount?.isActive ? (
                                       <span className="block text-sm">
-                                        <span className="line-through text-gray-300">{(0.91 / (price || 1)).toFixed(3)} WLD</span>
-                                        <span className="text-green-300 ml-2">{((0.91 * (1 - godPackDiscount.value)) / (price || 1)).toFixed(3)} WLD</span>
+                                        <span className="line-through text-gray-300">{(0.93 / (price || 1)).toFixed(3)} WLD</span>
+                                        <span className="text-green-300 ml-2">{((0.93 * (1 - godPackDiscount.value)) / (price || 1)).toFixed(3)} WLD</span>
                                       </span>
                                     ) : (
-                                      <span className="block text-sm">{(0.91 / (price || 1)).toFixed(3)} WLD</span>
+                                      <span className="block text-sm">{(0.93 / (price || 1)).toFixed(3)} WLD</span>
                                     )}
                                   </div>
                                 )}
@@ -1437,8 +1444,8 @@ const [showInfo, setShowInfo] = useState(false)
                                     <span className="block text-sm">
                                       <span className="text-white">
                                         {godPackDiscount?.isActive 
-                                          ? ((4.55 * 0.90 * (1 - godPackDiscount.value)) / (price || 1)).toFixed(3)
-                                          : ((4.55 * 0.90) / (price || 1)).toFixed(3)
+                                          ? ((4.65 * 0.85 * (1 - godPackDiscount.value)) / (price || 1)).toFixed(3)
+                                          : ((4.65 * 0.85) / (price || 1)).toFixed(3)
                                         } WLD
                                       </span>
                                     </span>
@@ -1446,7 +1453,7 @@ const [showInfo, setShowInfo] = useState(false)
                                 )}
                               </Button>
                               <div className="absolute -top-2 -right-2 bg-orange-500 text-white text-xs px-1.5 py-0.5 rounded-full font-bold">
-                                DISCOUNT (-10%)
+                                DISCOUNT (-15%)
                               </div>
                             </div>
                             </div>

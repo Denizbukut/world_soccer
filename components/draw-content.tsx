@@ -683,7 +683,7 @@ const [showInfo, setShowInfo] = useState(false)
         
         const ultimateCards = result.drawnCards?.filter((card: any) => card.rarity=== "ultimate") || []
         if (ultimateCards.length > 0) {
-          await incrementLegendaryDraw(user.username, ultimateCards.length * 10)
+          await incrementLegendaryDraw(user.username, ultimateCards.length * 20)
           
         }
 

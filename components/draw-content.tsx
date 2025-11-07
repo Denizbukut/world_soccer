@@ -14,6 +14,7 @@ import { motion, AnimatePresence, useAnimation, useMotionValue, useTransform } f
 // Removed Next.js Image import - using regular img tags
 import { incrementMission } from "@/app/actions/missions"
 import { incrementLegendaryDraw } from "@/app/actions/weekly-contest"
+import { getContestEndDate } from "@/lib/weekly-contest-config"
 import { getSupabaseBrowserClient } from "@/lib/supabase"
 import { incrementClanMission } from "@/app/actions/clan-missions"
 import { MiniKit, Tokens, type PayCommandInput, tokenToDecimals } from "@worldcoin/minikit-js"
@@ -192,7 +193,7 @@ export default function DrawPage() {
   const [selectedEpoch, setSelectedEpoch] = useState<number>(1)
   const [availableEpochs, setAvailableEpochs] = useState<number[]>([1])
   const [godPacksLeft, setGodPacksLeft] = useState<number | null>(null)
-  const max_godpacks_daily = 100;
+  const max_godpacks_daily = 500;
   // God Pack Discount state
   const [godPackDiscount, setGodPackDiscount] = useState<{
     isActive: boolean
@@ -304,10 +305,11 @@ const [showInfo, setShowInfo] = useState(false)
 
   const preventNavigation = useRef(false)
   const { price } = useWldPrice()
+
   useEffect(() => {
-  fetchGodPacksLeft()
-  fetchGodPackDiscount()
-}, [])
+    fetchGodPacksLeft()
+    fetchGodPackDiscount()
+  }, [])
 
   // God Pack Discount countdown
   useEffect(() => {
@@ -662,23 +664,23 @@ const [showInfo, setShowInfo] = useState(false)
 
         const premierLeagueCards = result.drawnCards?.filter((card: any) => card.league_id === "3cd1fa22-d6fd-466a-8fe2-ca5c661d015d") || []
         if (premierLeagueCards.length > 0) {
-          await incrementLegendaryDraw(user.username, premierLeagueCards.length * 2)
+          await incrementLegendaryDraw(user.username, premierLeagueCards.length * 4)
         }
 
         const bundesligaCards = result.drawnCards?.filter((card: any) => card.league_id === "cba80327-d67e-400d-81b7-9689ab27224c") || []
         if (bundesligaCards.length > 0) {
-          await incrementLegendaryDraw(user.username, bundesligaCards.length * 2)
+          await incrementLegendaryDraw(user.username, bundesligaCards.length * 4)
         }
 
         const ligue1Cards = result.drawnCards?.filter((card: any) => card.league_id === "d599c763-1353-4076-85a8-cecb631d4b71") || []
         if (ligue1Cards.length > 0) {
-          await incrementLegendaryDraw(user.username, ligue1Cards.length * 2)
+          await incrementLegendaryDraw(user.username, ligue1Cards.length * 4)
         }
 
         const goatPacks = cardType === "god" ? count : 0;
         
         if (goatPacks > 0) {
-          await incrementLegendaryDraw(user.username, goatPacks * 25);
+          await incrementLegendaryDraw(user.username, goatPacks * 50);
         }
         
         const ultimateCards = result.drawnCards?.filter((card: any) => card.rarity=== "ultimate") || []
@@ -1172,14 +1174,39 @@ const [showInfo, setShowInfo] = useState(false)
                 )}
                 
                 {godPacksLeft !== null && (
-                  <div className={`mb-4 text-center text-sm font-medium px-4 py-2 rounded-xl ${
-                    godPacksLeft === 0
-                      ? "bg-black/70 text-yellow-200 border border-yellow-400"
-                      : "bg-black/70 text-red-400 border border-red-500"
-                  }`}>
-                    ⚡ Goat Packs opened today: {" "}
-                    <span className="font-bold">{godPacksLeft}</span> / {max_godpacks_daily}
-                  </div>
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className={`relative mb-4 flex items-center justify-between overflow-hidden rounded-2xl border-2 px-5 py-4 shadow-lg ${
+                      godPacksLeft === 0
+                        ? "bg-gradient-to-r from-[#420000] via-[#590000] to-[#420000] border-red-700 text-red-100 shadow-red-900/40"
+                        : "bg-gradient-to-r from-[#720000] via-[#c30000] to-[#720000] border-red-500 text-white shadow-red-700/40"
+                    }`}
+                  >
+                    <div className="absolute inset-0 opacity-50 mix-blend-screen">
+                      <div className="absolute -top-9 left-1/2 h-36 w-[130%] -translate-x-1/2 rounded-full bg-red-300/25 blur-3xl" />
+                      <div className="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-red-900/40 to-transparent" />
+                    </div>
+                    <div className="relative z-10 flex items-center gap-3.5">
+                      <div className="leading-tight">
+                        <div className="text-[11px] font-semibold uppercase tracking-[0.32em] text-yellow-100">
+                          Last Day of Contest
+                        </div>
+                        <div className="text-base font-semibold text-white drop-shadow-sm">
+                          GOAT Packs = <span className="font-bold text-yellow-200 text-lg">50 pts</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="relative z-10 rounded-xl border border-white/15 bg-black/10 px-3.5 py-2.5 text-right backdrop-blur-sm shadow-inner shadow-red-900/20">
+                      <div className="text-[10px] font-semibold uppercase tracking-[0.25em] text-yellow-200">
+                        Today
+                      </div>
+                      <div className="text-base font-bold text-white">
+                        {godPacksLeft} <span className="text-yellow-200">/ {max_godpacks_daily}</span>
+                      </div>
+                    </div>
+                  </motion.div>
                 )}
                 
 

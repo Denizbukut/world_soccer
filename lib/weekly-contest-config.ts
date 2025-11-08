@@ -13,7 +13,7 @@ export const WEEKLY_CONTEST_CONFIG = {
     { rank: "1st Place", reward: "$200 in WLD + PELE Lvl.8 + 1000 Icon Tickets", icon: "🥇" },
     { rank: "2nd Place", reward: "$150 in WLD + Ronaldo Lvl. 4 + 500 Icon Tickets", icon: "🥈" },
     { rank: "3rd Place", reward: "$75 in WLD + Gullit Lvl. 2 + 300 Icon Tickets", icon: "🥉" },
-    { rank: "4th–6th Place", reward: "$35 in WLD + Haalnd Lvl. 6 + 50 Icon Tickets", icon: "🎖️" },
+    { rank: "4th–6th Place", reward: "$35 in WLD + Haaland Lvl. 6 + 50 Icon Tickets", icon: "🎖️" },
     { rank: "7th–10th Place", reward:"$10 in WLD Foden Lvl. 5 + 25 Icon Tickets", icon: "🎖️" },
   ]
 } as const

@@ -113,13 +113,13 @@ export default function WeeklyContestPage() {
           <div className="text-2xl font-extrabold bg-gradient-to-r from-yellow-200 via-yellow-400 to-yellow-600 bg-clip-text text-transparent animate-gradient-move mb-4">
             Earn as many <span className="text-yellow-400">Points</span> as possible!
           </div>
-          
+
             <div className="text-sm text-yellow-100 space-y-1">
-              <div>• Bundesliga Cards = <span className="font-bold text-yellow-400">4 Points</span> <span className="text-green-300 font-bold">2x Bonus!</span></div>
-              <div>• Premier League Cards = <span className="font-bold text-yellow-400">4 Points</span> <span className="text-green-300 font-bold">2x Bonus!</span></div>
-              <div>• Ligue 1 Cards = <span className="font-bold text-yellow-400">4 Points</span> <span className="text-green-300 font-bold">2x Bonus!</span></div>
-              <div>• Ultimate Cards = <span className="font-bold text-yellow-400">20 Points</span> <span className="text-green-300 font-bold">2x Bonus!</span></div>
-              <div>• GOAT Packs = <span className="font-bold text-yellow-400">50 Points</span> <span className="text-green-300 font-bold">2x Bonus!</span></div>
+              <div>• Bundesliga Cards = <span className="font-bold text-yellow-400">2 Points</span></div>
+              <div>• Premier League Cards = <span className="font-bold text-yellow-400">2 Points</span></div>
+              <div>• Ligue 1 Cards = <span className="font-bold text-yellow-400">2 Points</span></div>
+              <div>• Ultimate Cards = <span className="font-bold text-yellow-400">5 Points</span></div>
+              <div>• GOAT Packs = <span className="font-bold text-yellow-400">20 Points</span></div>
             </div>
         </div>
 

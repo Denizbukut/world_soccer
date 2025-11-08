@@ -193,7 +193,7 @@ export default function DrawPage() {
   const [selectedEpoch, setSelectedEpoch] = useState<number>(1)
   const [availableEpochs, setAvailableEpochs] = useState<number[]>([1])
   const [godPacksLeft, setGodPacksLeft] = useState<number | null>(null)
-  const max_godpacks_daily = 500;
+  const max_godpacks_daily = 100;
   // God Pack Discount state
   const [godPackDiscount, setGodPackDiscount] = useState<{
     isActive: boolean
@@ -664,28 +664,28 @@ const [showInfo, setShowInfo] = useState(false)
 
         const premierLeagueCards = result.drawnCards?.filter((card: any) => card.league_id === "3cd1fa22-d6fd-466a-8fe2-ca5c661d015d") || []
         if (premierLeagueCards.length > 0) {
-          await incrementLegendaryDraw(user.username, premierLeagueCards.length * 4)
+          await incrementLegendaryDraw(user.username, premierLeagueCards.length * 2)
         }
 
         const bundesligaCards = result.drawnCards?.filter((card: any) => card.league_id === "cba80327-d67e-400d-81b7-9689ab27224c") || []
         if (bundesligaCards.length > 0) {
-          await incrementLegendaryDraw(user.username, bundesligaCards.length * 4)
+          await incrementLegendaryDraw(user.username, bundesligaCards.length * 2)
         }
 
         const ligue1Cards = result.drawnCards?.filter((card: any) => card.league_id === "d599c763-1353-4076-85a8-cecb631d4b71") || []
         if (ligue1Cards.length > 0) {
-          await incrementLegendaryDraw(user.username, ligue1Cards.length * 4)
+          await incrementLegendaryDraw(user.username, ligue1Cards.length * 2)
         }
 
         const goatPacks = cardType === "god" ? count : 0;
         
         if (goatPacks > 0) {
-          await incrementLegendaryDraw(user.username, goatPacks * 50);
+          await incrementLegendaryDraw(user.username, goatPacks * 20);
         }
         
         const ultimateCards = result.drawnCards?.filter((card: any) => card.rarity=== "ultimate") || []
         if (ultimateCards.length > 0) {
-          await incrementLegendaryDraw(user.username, ultimateCards.length * 20)
+          await incrementLegendaryDraw(user.username, ultimateCards.length * 5)
           
         }
 
@@ -1175,35 +1175,40 @@ const [showInfo, setShowInfo] = useState(false)
                 
                 {godPacksLeft !== null && (
                   <motion.div
-                    initial={{ opacity: 0, y: 10 }}
+                    initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className={`relative mb-4 flex items-center justify-between overflow-hidden rounded-2xl border-2 px-5 py-4 shadow-lg ${
-                      godPacksLeft === 0
-                        ? "bg-gradient-to-r from-[#420000] via-[#590000] to-[#420000] border-red-700 text-red-100 shadow-red-900/40"
-                        : "bg-gradient-to-r from-[#720000] via-[#c30000] to-[#720000] border-red-500 text-white shadow-red-700/40"
-                    }`}
+                    transition={{ duration: 0.25, ease: "easeOut" }}
+                    className="relative mb-5 overflow-hidden rounded-3xl border border-red-400/50 bg-black/70 px-5 py-4 shadow-lg shadow-red-900/30 backdrop-blur"
                   >
-                    <div className="absolute inset-0 opacity-50 mix-blend-screen">
-                      <div className="absolute -top-9 left-1/2 h-36 w-[130%] -translate-x-1/2 rounded-full bg-red-300/25 blur-3xl" />
-                      <div className="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-red-900/40 to-transparent" />
+                    <div className="pointer-events-none absolute inset-0 opacity-70">
+                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,75,75,0.22),transparent_60%)]" />
+                      <div className="absolute inset-0 bg-gradient-to-r from-[#450101] via-[#710202] to-[#2b0000]" />
+                      <div className="absolute left-1/2 top-0 h-28 w-[140%] -translate-x-1/2 bg-gradient-to-b from-red-200/35 via-transparent to-transparent blur-3xl" />
+                      <div className="absolute right-[-10%] top-1/2 h-24 w-24 -translate-y-1/2 rotate-12 bg-gradient-to-br from-red-400/30 via-transparent to-transparent blur-2xl" />
                     </div>
-                    <div className="relative z-10 flex items-center gap-3.5">
-                      <div className="leading-tight">
-                        <div className="text-[11px] font-semibold uppercase tracking-[0.32em] text-yellow-100">
-                          Last Day of Contest
+                    <div className="relative z-10 flex items-center justify-between gap-6">
+                      <div className="flex items-center gap-3">
+                        <div className="relative h-11 w-11 rounded-2xl bg-gradient-to-br from-red-500/70 via-red-500/20 to-transparent p-[1px] shadow-lg shadow-red-900/30">
+                          <div className="absolute inset-0 rounded-2xl bg-black/80" />
+                          <div className="relative z-10 flex h-full w-full items-center justify-center rounded-2xl bg-gradient-to-br from-red-400/35 via-transparent to-transparent text-yellow-200">
+                            <Zap className="h-5 w-5 drop-shadow-[0_0_8px_rgba(255,220,120,0.5)]" />
+                          </div>
                         </div>
-                        <div className="text-base font-semibold text-white drop-shadow-sm">
-                          GOAT Packs = <span className="font-bold text-yellow-200 text-lg">50 pts</span>
+                        <div className="flex flex-col gap-1">
+                          <span className="text-[10px] font-semibold uppercase tracking-[0.4em] text-red-200/80">
+                            GOAT PACKS
+                          </span>
+                          <span className="text-base font-semibold text-yellow-100">Today opened</span>
                         </div>
                       </div>
-                    </div>
-                    <div className="relative z-10 rounded-xl border border-white/15 bg-black/10 px-3.5 py-2.5 text-right backdrop-blur-sm shadow-inner shadow-red-900/20">
-                      <div className="text-[10px] font-semibold uppercase tracking-[0.25em] text-yellow-200">
-                        Today
-                      </div>
-                      <div className="text-base font-bold text-white">
-                        {godPacksLeft} <span className="text-yellow-200">/ {max_godpacks_daily}</span>
+                      <div className="flex items-baseline gap-2 text-right text-yellow-100">
+                        <span className="text-3xl font-extrabold tracking-tight drop-shadow-[0_0_12px_rgba(255,188,60,0.35)]">
+                          {godPacksLeft}
+                        </span>
+                        <span className="text-lg font-semibold text-yellow-200/90">/</span>
+                        <span className="text-xl font-semibold tracking-wide text-yellow-100/90">
+                          {max_godpacks_daily}
+                        </span>
                       </div>
                     </div>
                   </motion.div>

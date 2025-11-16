@@ -193,7 +193,7 @@ export default function DrawPage() {
   const [selectedEpoch, setSelectedEpoch] = useState<number>(1)
   const [availableEpochs, setAvailableEpochs] = useState<number[]>([1])
   const [godPacksLeft, setGodPacksLeft] = useState<number | null>(null)
-  const max_godpacks_daily = 500;
+  const max_godpacks_daily = 100;
   // God Pack Discount state
   const [godPackDiscount, setGodPackDiscount] = useState<{
     isActive: boolean
@@ -664,28 +664,28 @@ const [showInfo, setShowInfo] = useState(false)
 
         const premierLeagueCards = result.drawnCards?.filter((card: any) => card.league_id === "3cd1fa22-d6fd-466a-8fe2-ca5c661d015d") || []
         if (premierLeagueCards.length > 0) {
-          await incrementLegendaryDraw(user.username, premierLeagueCards.length * 4)
+          await incrementLegendaryDraw(user.username, premierLeagueCards.length * 2)
         }
 
         const bundesligaCards = result.drawnCards?.filter((card: any) => card.league_id === "cba80327-d67e-400d-81b7-9689ab27224c") || []
         if (bundesligaCards.length > 0) {
-          await incrementLegendaryDraw(user.username, bundesligaCards.length * 4)
+          await incrementLegendaryDraw(user.username, bundesligaCards.length * 2)
         }
 
         const ligue1Cards = result.drawnCards?.filter((card: any) => card.league_id === "d599c763-1353-4076-85a8-cecb631d4b71") || []
         if (ligue1Cards.length > 0) {
-          await incrementLegendaryDraw(user.username, ligue1Cards.length * 4)
+          await incrementLegendaryDraw(user.username, ligue1Cards.length * 2)
         }
 
         const goatPacks = cardType === "god" ? count : 0;
         
         if (goatPacks > 0) {
-          await incrementLegendaryDraw(user.username, goatPacks * 40);
+          await incrementLegendaryDraw(user.username, goatPacks * 20);
         }
         
         const ultimateCards = result.drawnCards?.filter((card: any) => card.rarity=== "ultimate") || []
         if (ultimateCards.length > 0) {
-          await incrementLegendaryDraw(user.username, ultimateCards.length * 10)
+          await incrementLegendaryDraw(user.username, ultimateCards.length * 5)
           
         }
 
@@ -1186,41 +1186,29 @@ const [showInfo, setShowInfo] = useState(false)
                       <div className="absolute left-1/2 top-0 h-28 w-[140%] -translate-x-1/2 bg-gradient-to-b from-red-200/35 via-transparent to-transparent blur-3xl" />
                       <div className="absolute right-[-10%] top-1/2 h-24 w-24 -translate-y-1/2 rotate-12 bg-gradient-to-br from-red-400/30 via-transparent to-transparent blur-2xl" />
                     </div>
-                    <div className="relative z-10">
-                      <div className="mb-3 p-2.5 bg-gradient-to-r from-red-500/30 via-orange-500/30 to-yellow-500/30 border-2 border-red-400/60 rounded-xl">
-                        <div className="text-center">
-                          <div className="text-sm font-extrabold text-red-200 mb-0.5 animate-pulse">
-                            ⚠️ LAST DAY OF CONTEST ⚠️
+                    <div className="relative z-10 flex items-center justify-between gap-6">
+                      <div className="flex items-center gap-3">
+                        <div className="relative h-11 w-11 rounded-2xl bg-gradient-to-br from-red-500/70 via-red-500/20 to-transparent p-[1px] shadow-lg shadow-red-900/30">
+                          <div className="absolute inset-0 rounded-2xl bg-black/80" />
+                          <div className="relative z-10 flex h-full w-full items-center justify-center rounded-2xl bg-gradient-to-br from-red-400/35 via-transparent to-transparent text-yellow-200">
+                            <Zap className="h-5 w-5 drop-shadow-[0_0_8px_rgba(255,220,120,0.5)]" />
                           </div>
-                          <div className="text-xs font-bold text-yellow-200">
-                            GOAT Packs = 40 Points
-                          </div>
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <span className="text-[10px] font-semibold uppercase tracking-[0.4em] text-red-200/80">
+                            GOAT PACKS
+                          </span>
+                          <span className="text-base font-semibold text-yellow-100">Today opened</span>
                         </div>
                       </div>
-                      <div className="flex items-center justify-between gap-6">
-                        <div className="flex items-center gap-3">
-                          <div className="relative h-11 w-11 rounded-2xl bg-gradient-to-br from-red-500/70 via-red-500/20 to-transparent p-[1px] shadow-lg shadow-red-900/30">
-                            <div className="absolute inset-0 rounded-2xl bg-black/80" />
-                            <div className="relative z-10 flex h-full w-full items-center justify-center rounded-2xl bg-gradient-to-br from-red-400/35 via-transparent to-transparent text-yellow-200">
-                              <Zap className="h-5 w-5 drop-shadow-[0_0_8px_rgba(255,220,120,0.5)]" />
-                            </div>
-                          </div>
-                          <div className="flex flex-col gap-1">
-                            <span className="text-[10px] font-semibold uppercase tracking-[0.4em] text-red-200/80">
-                              GOAT PACKS
-                            </span>
-                            <span className="text-base font-semibold text-yellow-100">Today opened</span>
-                          </div>
-                        </div>
-                        <div className="flex items-baseline gap-2 text-right text-yellow-100">
-                          <span className="text-3xl font-extrabold tracking-tight drop-shadow-[0_0_12px_rgba(255,188,60,0.35)]">
-                            {godPacksLeft}
-                          </span>
-                          <span className="text-lg font-semibold text-yellow-200/90">/</span>
-                          <span className="text-xl font-semibold tracking-wide text-yellow-100/90">
-                            {max_godpacks_daily}
-                          </span>
-                        </div>
+                      <div className="flex items-baseline gap-2 text-right text-yellow-100">
+                        <span className="text-3xl font-extrabold tracking-tight drop-shadow-[0_0_12px_rgba(255,188,60,0.35)]">
+                          {godPacksLeft}
+                        </span>
+                        <span className="text-lg font-semibold text-yellow-200/90">/</span>
+                        <span className="text-xl font-semibold tracking-wide text-yellow-100/90">
+                          {max_godpacks_daily}
+                        </span>
                       </div>
                     </div>
                   </motion.div>

@@ -113,17 +113,13 @@ export default function WeeklyContestPage() {
           <div className="text-2xl font-extrabold bg-gradient-to-r from-yellow-200 via-yellow-400 to-yellow-600 bg-clip-text text-transparent animate-gradient-move mb-4">
             Earn as many <span className="text-yellow-400">Points</span> as possible!
           </div>
-          <div className="mb-4 p-3 bg-gradient-to-r from-green-500/20 to-emerald-500/20 border-2 border-green-400/50 rounded-xl">
-            <div className="text-lg font-extrabold text-green-300 mb-1">🔥 2× POINTS TODAY! 🔥</div>
-            <div className="text-xs text-green-200">Double points on everything for today only!</div>
-          </div>
 
             <div className="text-sm text-yellow-100 space-y-1">
-              <div>• Bundesliga Cards = <span className="font-bold text-yellow-400">4 Points</span> <span className="text-green-300 font-bold">2× Today!</span></div>
-              <div>• Premier League Cards = <span className="font-bold text-yellow-400">4 Points</span> <span className="text-green-300 font-bold">2× Today!</span></div>
-              <div>• Ligue 1 Cards = <span className="font-bold text-yellow-400">4 Points</span> <span className="text-green-300 font-bold">2× Today!</span></div>
-              <div>• Ultimate Cards = <span className="font-bold text-yellow-400">10 Points</span> <span className="text-green-300 font-bold">2× Today!</span></div>
-              <div>• GOAT Packs = <span className="font-bold text-yellow-400">40 Points</span> <span className="text-green-300 font-bold">2× Today!</span></div>
+              <div>• Bundesliga Cards = <span className="font-bold text-yellow-400">2 Points</span></div>
+              <div>• Premier League Cards = <span className="font-bold text-yellow-400">2 Points</span></div>
+              <div>• Ligue 1 Cards = <span className="font-bold text-yellow-400">2 Points</span></div>
+              <div>• Ultimate Cards = <span className="font-bold text-yellow-400">5 Points</span></div>
+              <div>• GOAT Packs = <span className="font-bold text-yellow-400">20 Points</span></div>
             </div>
         </div>
 

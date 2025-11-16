@@ -10,11 +10,11 @@ export const WEEKLY_CONTEST_CONFIG = {
   
   // Prize Pool Configuration
   prizePool: [
-    { rank: "1st Place", reward: "$200 in WLD + MESSI 98 Lvl 6 + 1000 Icon Tickets", icon: "🥇" },
-    { rank: "2nd Place", reward: "$150 in WLD + Ronaldo Lvl. 5 + 500 Icon Tickets", icon: "🥈" },
-    { rank: "3rd Place", reward: "$75 in WLD + PELE Lvl. 2 + 300 Icon Tickets", icon: "🥉" },
-    { rank: "4th–6th Place", reward: "$35 in WLD + Bellinham Lvl. 6 + 50 Icon Tickets", icon: "🎖️" },
-    { rank: "7th–10th Place", reward:"$10 in WLD Donarumma Lvl. 5 + 25 Icon Tickets", icon: "🎖️" },
+    { rank: "1st Place", reward: "200 WLD + MESSI 98 Lvl 6 + 1000 Icon Tickets", icon: "🥇" },
+    { rank: "2nd Place", reward: "150 WLD + Ronaldo Lvl. 5 + 500 Icon Tickets", icon: "🥈" },
+    { rank: "3rd Place", reward: "75 WLD + PELE Lvl. 2 + 300 Icon Tickets", icon: "🥉" },
+    { rank: "4th–6th Place", reward: "35 WLD + Bellinham Lvl. 6 + 50 Icon Tickets", icon: "🎖️" },
+    { rank: "7th–10th Place", reward:"10 WLD Donarumma Lvl. 5 + 25 Icon Tickets", icon: "🎖️" },
   ]
 } as const
 

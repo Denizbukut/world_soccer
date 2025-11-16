@@ -1902,7 +1902,7 @@ const [copied, setCopied] = useState(false)
     </motion.div>
     <div>
       <div className="text-lg font-bold text-yellow-300 mb-1" style={{ letterSpacing: 1 }}>
-        Win $200 in WLD!
+        Win 200 wld!
       </div>
       <h3 className="text-xl font-bold text-yellow-100 mb-1">Weekly Contest</h3>
       <p className="text-sm text-white/80 font-medium">Compete for the top spot!</p>

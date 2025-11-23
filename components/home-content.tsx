@@ -202,7 +202,10 @@ export default function Home() {
   const [sbcLoading, setSbcLoading] = useState(false)
   
   // Referrals/SBC Slide system
-  const [referralSbcIndex, setReferralSbcIndex] = useState<number>(1)
+  const [referralSbcIndex, setReferralSbcIndex] = useState<number>(0)
+  
+  // App Buttons Slide system
+  const [appButtonIndex, setAppButtonIndex] = useState<number>(0)
   
   // SBC Helper functions
   const isChallengeCompleted = (challengeId: number) => {
@@ -240,7 +243,7 @@ export default function Home() {
       action: () => setShowReferralDialog(true),
       color: 'text-yellow-100',
       dot: 'bg-yellow-500',
-      badge: 'NEW BONUS',
+      badge: 'BIG BONUS',
     },
     {
       key: 'sbc',
@@ -257,6 +260,26 @@ export default function Home() {
   ]
   const handleReferralSbcPrev = () => setReferralSbcIndex((prev) => (prev === 0 ? referralSbcSlides.length - 1 : prev - 1))
   const handleReferralSbcNext = () => setReferralSbcIndex((prev) => (prev === referralSbcSlides.length - 1 ? 0 : prev + 1))
+  
+  // App Buttons Slides
+  const appButtonSlides = [
+    {
+      key: 'crypto-tcg',
+      title: 'Crypto TCG',
+      logo: '/crypto%20tcg.jpeg',
+      href: 'https://world.org/mini-app?app_id=app_b4a7aaa5da2b8df0fa0e5b0f48b27cea',
+      color: 'emerald',
+    },
+    {
+      key: 'magic-towers',
+      title: 'Magic Towers',
+      logo: '/magic%20towers.png',
+      href: 'https://world.org/mini-app?app_id=app_2f2b4fe27805ca0d8fe407e1cedc37ea',
+      color: 'purple',
+    },
+  ]
+  const handleAppButtonPrev = () => setAppButtonIndex((prev) => (prev === 0 ? appButtonSlides.length - 1 : prev - 1))
+  const handleAppButtonNext = () => setAppButtonIndex((prev) => (prev === appButtonSlides.length - 1 ? 0 : prev + 1))
 
   // Format contest countdown
   const formatContestCountdown = (ms: number) => {
@@ -1654,6 +1677,77 @@ const [copied, setCopied] = useState(false)
 </header>
 
         <main className="w-full px-2 md:px-6 flex-1 overflow-y-auto overscroll-contain"> {/* Padding hinzugefügt */}
+          {/* App Buttons Slide System */}
+          <div className="w-full px-2 py-2 mb-3">
+            <div className="relative w-full">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={appButtonSlides[appButtonIndex].key}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <a
+                    href={appButtonSlides[appButtonIndex].href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full block"
+                  >
+                    <motion.div
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className={`bg-gradient-to-r ${
+                        appButtonSlides[appButtonIndex].color === 'emerald'
+                          ? 'from-emerald-400/70 to-emerald-500/70 hover:from-emerald-300/80 hover:to-emerald-400/80 border-emerald-400/60'
+                          : appButtonSlides[appButtonIndex].color === 'purple'
+                          ? 'from-purple-400/70 to-purple-500/70 hover:from-purple-300/80 hover:to-purple-400/80 border-purple-400/60'
+                          : 'from-blue-400/70 to-blue-500/70 hover:from-blue-300/80 hover:to-blue-400/80 border-blue-400/60'
+                      } backdrop-blur-md rounded-lg px-4 py-2.5 shadow-lg border-2 flex items-center justify-center gap-2 transition-all`}
+                    >
+                      <img 
+                        src={appButtonSlides[appButtonIndex].logo} 
+                        alt={appButtonSlides[appButtonIndex].title} 
+                        className="w-10 h-10 object-contain rounded-lg"
+                      />
+                      <span className="text-sm font-bold text-white">{appButtonSlides[appButtonIndex].title}</span>
+                      <ArrowRight className="w-4 h-4 text-white" />
+                    </motion.div>
+                  </a>
+                </motion.div>
+              </AnimatePresence>
+              
+              {/* Navigation Buttons */}
+              <button
+                onClick={handleAppButtonPrev}
+                className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm border-2 border-white/30 flex items-center justify-center hover:bg-black/70 transition-all z-10"
+                aria-label="Previous app"
+              >
+                <ChevronLeft className="w-4 h-4 text-white" />
+              </button>
+              <button
+                onClick={handleAppButtonNext}
+                className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm border-2 border-white/30 flex items-center justify-center hover:bg-black/70 transition-all z-10"
+                aria-label="Next app"
+              >
+                <ChevronRight className="w-4 h-4 text-white" />
+              </button>
+              
+              {/* Slide Indicators */}
+              <div className="flex items-center justify-center gap-1.5 mt-2">
+                {appButtonSlides.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setAppButtonIndex(index)}
+                    className={`w-2 h-2 rounded-full transition-all ${
+                      index === appButtonIndex ? 'bg-white w-6' : 'bg-white/30'
+                    }`}
+                    aria-label={`Go to slide ${index + 1}`}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
          
           <div className="grid grid-cols-6 gap-3 mt-2 pb-4">
             {/* Profile */}
@@ -1959,20 +2053,16 @@ const [copied, setCopied] = useState(false)
   />
 </motion.div>
       </div>
-            {/* $ANI Card (replaces Chat) */}
+            {/* Missions Card */}
             <div className="col-span-2">
-              <div
-                className="bg-gradient-to-br from-[#232526] to-[#414345] rounded-xl p-2 shadow-lg flex flex-col items-center justify-center min-h-[70px] h-full text-center cursor-pointer transition border-2 border-yellow-400"
-                onClick={() => router.push('/ani_forreal')}
-                role="button"
-                tabIndex={0}
-                aria-label="Go to $ANI page"
-              >
-                <div className="w-8 h-8 rounded-full bg-yellow-400 flex items-center justify-center mb-1 border border-yellow-300">
-                  <img src="https://ani-labs.xyz/ani-labs-logo-white.png" alt="$ANI Logo" className="w-8 h-8" />
+              <Link href="/missions" className="block w-full h-full">
+                <div className="bg-gradient-to-br from-[#232526] to-[#414345] rounded-xl p-2 shadow-lg flex flex-col items-center justify-center min-h-[70px] h-full text-center transition border-2 border-yellow-400">
+                  <div className="w-8 h-8 rounded-full bg-yellow-400 flex items-center justify-center mb-1 border border-yellow-300">
+                    <Trophy className="h-5 w-5 text-white" />
+                  </div>
+                  <div className="text-sm font-bold text-yellow-100">Missions</div>
                 </div>
-                <div className="text-sm font-bold text-yellow-100">$ANI</div>
-              </div>
+              </Link>
             </div>
             <div className="col-span-2 relative">
               {hasActiveDiscount && (
@@ -2425,14 +2515,14 @@ const [copied, setCopied] = useState(false)
                 <div className="text-base font-bold text-yellow-100">Friends</div>
               </div>
             </Link>
-            <Link href="/missions" className="block w-full h-full">
-              <div className="bg-gradient-to-br from-[#232526] to-[#414345] rounded-xl p-4 shadow-lg flex flex-col items-center justify-center min-h-[90px] h-full text-center transition border-2 border-yellow-400">
+            <div className="block w-full h-full" onClick={() => router.push('/ani_forreal')} role="button" tabIndex={0} aria-label="Go to $ANI page">
+              <div className="bg-gradient-to-br from-[#232526] to-[#414345] rounded-xl p-4 shadow-lg flex flex-col items-center justify-center min-h-[90px] h-full text-center cursor-pointer transition border-2 border-yellow-400">
                 <div className="w-10 h-10 rounded-full bg-yellow-400 flex items-center justify-center mb-2 border border-yellow-300">
-                  <Trophy className="h-5 w-5 text-white" />
+                  <img src="https://ani-labs.xyz/ani-labs-logo-white.png" alt="$ANI Logo" className="w-10 h-10" />
                 </div>
-                <div className="text-base font-bold text-yellow-100">Missions</div>
+                <div className="text-base font-bold text-yellow-100">$ANI</div>
               </div>
-            </Link>
+            </div>
           </div>
         </main>
 
@@ -2521,11 +2611,11 @@ const [copied, setCopied] = useState(false)
       <ul className="text-sm text-yellow-200 space-y-2">
         <li className="flex items-center gap-2">
           <span className="w-2 h-2 bg-yellow-400 rounded-full"></span>
-          <strong className="text-yellow-100">+5</strong> Classic Tickets
+          <strong className="text-yellow-100">+10</strong> Classic Tickets
         </li>
         <li className="flex items-center gap-2">
           <span className="w-2 h-2 bg-yellow-400 rounded-full"></span>
-          <strong className="text-yellow-100">+3</strong> Elite Tickets
+          <strong className="text-yellow-100">+10</strong> Elite Tickets
         </li>
         <li className="flex items-center gap-2">
           <span className="w-2 h-2 bg-yellow-400 rounded-full"></span>

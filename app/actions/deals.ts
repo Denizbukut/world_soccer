@@ -3,6 +3,7 @@
 import { createClient } from "@supabase/supabase-js"
 import { revalidatePath } from "next/cache"
 import { cache } from "react"
+import { WEEKLY_CONTEST_CONFIG, getContestEndDate } from "@/lib/weekly-contest-config"
 
 // Create a server-side Supabase client
 function createSupabaseServer() {
@@ -245,6 +246,53 @@ export async function purchaseDeal(username: string, dealId: number) {
     if (updateError) {
       console.error("Error updating user tickets:", updateError)
       return { success: false, error: "Failed to update user tickets" }
+    }
+
+    // 4. Add 15 contest points
+    const weekStart = WEEKLY_CONTEST_CONFIG.weekStart
+    const contestEnd = getContestEndDate()
+    const now = new Date()
+
+    if (now <= contestEnd) {
+      // Contest is still active, add points
+      const { data: contestEntry, error: contestError } = await supabase
+        .from('weekly_contest_entries')
+        .select('legendary_count')
+        .eq('user_id', username)
+        .eq('week_start_date', weekStart)
+        .single()
+
+      if (contestError && contestError.code === 'PGRST116') {
+        // No entry exists, create one with 15 points
+        const { error: insertContestError } = await supabase
+          .from('weekly_contest_entries')
+          .insert({
+            user_id: username,
+            week_start_date: weekStart,
+            legendary_count: 15,
+          })
+
+        if (insertContestError) {
+          console.error('Error adding contest points:', insertContestError)
+          // Don't fail the purchase, just log the error
+        }
+      } else if (!contestError) {
+        // Entry exists, increment by 15
+        const currentCount = contestEntry?.legendary_count || 0
+        const { error: updateContestError } = await supabase
+          .from('weekly_contest_entries')
+          .update({ 
+            legendary_count: currentCount + 15, 
+            updated_at: new Date().toISOString() 
+          })
+          .eq('user_id', username)
+          .eq('week_start_date', weekStart)
+
+        if (updateContestError) {
+          console.error('Error updating contest points:', updateContestError)
+          // Don't fail the purchase, just log the error
+        }
+      }
     }
 
     // Revalidate relevant paths

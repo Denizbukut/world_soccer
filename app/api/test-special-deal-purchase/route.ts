@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { WEEKLY_CONTEST_CONFIG, getContestEndDate } from '@/lib/weekly-contest-config'
 
 function createSupabaseServer() {
   const supabaseUrl = process.env.SUPABASE_URL
@@ -125,13 +126,61 @@ export async function POST(request: Request) {
         })
       }
 
+      // 5. Add 100 contest points
+      const weekStart = WEEKLY_CONTEST_CONFIG.weekStart
+      const contestEnd = getContestEndDate()
+      const now = new Date()
+
+      if (now <= contestEnd) {
+        // Contest is still active, add points
+        const { data: contestEntry, error: contestError } = await supabase
+          .from('weekly_contest_entries')
+          .select('legendary_count')
+          .eq('user_id', username)
+          .eq('week_start_date', weekStart)
+          .single()
+
+        if (contestError && contestError.code === 'PGRST116') {
+          // No entry exists, create one with 100 points
+          const { error: insertContestError } = await supabase
+            .from('weekly_contest_entries')
+            .insert({
+              user_id: username,
+              week_start_date: weekStart,
+              legendary_count: 100,
+            })
+
+          if (insertContestError) {
+            console.error('Error adding contest points:', insertContestError)
+            // Don't fail the purchase, just log the error
+          }
+        } else if (!contestError) {
+          // Entry exists, increment by 100
+          const currentCount = contestEntry?.legendary_count || 0
+          const { error: updateContestError } = await supabase
+            .from('weekly_contest_entries')
+            .update({ 
+              legendary_count: currentCount + 100, 
+              updated_at: new Date().toISOString() 
+            })
+            .eq('user_id', username)
+            .eq('week_start_date', weekStart)
+
+          if (updateContestError) {
+            console.error('Error updating contest points:', updateContestError)
+            // Don't fail the purchase, just log the error
+          }
+        }
+      }
+
       return NextResponse.json({ 
         success: true, 
         message: 'Special deal purchase completed successfully',
         deal,
         newEliteTickets,
         newIconTickets,
-        cardAdded: true
+        cardAdded: true,
+        contestPointsAdded: now <= contestEnd ? 100 : 0
       })
     } else {
       return NextResponse.json({ 

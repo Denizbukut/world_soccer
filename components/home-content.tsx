@@ -12,7 +12,7 @@ import ProtectedRoute from "@/components/protected-route"
 import MobileNav from "@/components/mobile-nav"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
-import { getTimeUntilContestEnd, isContestActive } from "@/lib/weekly-contest-config"
+import { getTimeUntilContestEnd, isContestActive, WEEKLY_CONTEST_CONFIG, getContestEndDate } from "@/lib/weekly-contest-config"
 
 // Add ChatOverlay component at the bottom of the file
 import { MessageCircle, X } from "lucide-react"
@@ -1586,6 +1586,54 @@ const [copied, setCopied] = useState(false)
               setEliteTickets(newEliteTickets);
               setIconTickets(newIconTickets);
 
+              // 3. Add 100 contest points
+              const weekStart = WEEKLY_CONTEST_CONFIG.weekStart;
+              const contestEnd = getContestEndDate();
+              const now = new Date();
+
+              if (now <= contestEnd) {
+                // Contest is still active, add points
+                const { data: contestEntry, error: contestError } = await supabase
+                  .from('weekly_contest_entries')
+                  .select('legendary_count')
+                  .eq('user_id', user.username)
+                  .eq('week_start_date', weekStart)
+                  .single();
+
+                if (contestError && contestError.code === 'PGRST116') {
+                  // No entry exists, create one with 100 points
+                  const { error: insertContestError } = await supabase
+                    .from('weekly_contest_entries')
+                    .insert({
+                      user_id: user.username,
+                      week_start_date: weekStart,
+                      legendary_count: 100,
+                    });
+
+                  if (insertContestError) {
+                    console.error('Error adding contest points:', insertContestError);
+                    // Don't fail the purchase, just log the error
+                  }
+                } else if (!contestError) {
+                  // Entry exists, increment by 100
+                  const currentCount = Number(contestEntry?.legendary_count) || 0;
+                  const newCount = currentCount + 100;
+                  const { error: updateContestError } = await supabase
+                    .from('weekly_contest_entries')
+                    .update({ 
+                      legendary_count: newCount, 
+                      updated_at: new Date().toISOString() 
+                    })
+                    .eq('user_id', user.username)
+                    .eq('week_start_date', weekStart);
+
+                  if (updateContestError) {
+                    console.error('Error updating contest points:', updateContestError);
+                    // Don't fail the purchase, just log the error
+                  }
+                }
+              }
+
               // Success Animation anzeigen
               setShowSpecialDealSuccess(true);
               
@@ -2000,6 +2048,7 @@ const [copied, setCopied] = useState(false)
       </div>
       <h3 className="text-xl font-bold text-yellow-100 mb-1">Weekly Contest</h3>
       <p className="text-sm text-white/80 font-medium">Compete for the top spot!</p>
+      <p className="text-xs text-green-400 font-semibold mt-1" style={{ textShadow: '0 0 10px rgba(74, 222, 128, 0.8)' }}>New points available!</p>
       {isContestActive() && (() => {
         const timeLeft = formatContestCountdown(contestCountdown)
         return timeLeft ? (

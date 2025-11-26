@@ -672,7 +672,7 @@ export default function KickOffPage() {
     <div
       className="relative w-full bg-black"
       style={{ 
-        backgroundImage: 'url(/hintergrung.png)', 
+        backgroundImage: 'url(/hintergrund.webp.webp)', 
         backgroundSize: 'cover', 
         backgroundPosition: 'center', 
         backgroundRepeat: 'no-repeat',

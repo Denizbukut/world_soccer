@@ -1666,7 +1666,7 @@ const [copied, setCopied] = useState(false)
       <div 
         className="flex flex-col h-screen text-white relative overflow-hidden"
         style={{
-          backgroundImage: 'url("/hintergrung.png")',
+          backgroundImage: 'url("/hintergrund.webp.webp")',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',

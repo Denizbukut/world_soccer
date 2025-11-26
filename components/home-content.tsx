@@ -2217,7 +2217,7 @@ const [copied, setCopied] = useState(false)
               <div
                 className="w-1/2 flex flex-col items-center rounded-xl p-3 h-full text-white cursor-pointer relative overflow-hidden"
                 style={{
-                  backgroundImage: 'url("/deal of the day.png")',
+                  backgroundImage: 'url("/deal of the day (1).webp")',
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',
                   backgroundRepeat: 'no-repeat'

@@ -111,10 +111,10 @@ export default function ShopPage() {
         const result = await getBattleLimitStatus(user.username)
         if (result.success) {
           setBattleLimit({
-            battlesUsed: result.battlesUsed,
-            battlesRemaining: result.battlesRemaining,
-            dailyLimit: result.dailyLimit,
-            canBattle: result.canBattle
+            battlesUsed: result.battlesUsed || 0,
+            battlesRemaining: result.battlesRemaining || 0,
+            dailyLimit: result.dailyLimit || 5,
+            canBattle: result.canBattle || false
           })
         }
       } catch (error) {
@@ -340,7 +340,7 @@ const WLD_TOKEN = "0x2cFc85d8E48F8EAB294be644d9E25C3030863003" // WLD (World Cha
         throw new Error("Could not fetch user data")
       }
 
-      const userId = userData.id
+      const userId = userData.id as string
 
       // Get current battle limit
       const { data: battleLimitData, error: battleLimitError } = await supabase
@@ -355,8 +355,8 @@ const WLD_TOKEN = "0x2cFc85d8E48F8EAB294be644d9E25C3030863003" // WLD (World Cha
       if (battleLimitError && battleLimitError.code !== 'PGRST116') {
         throw new Error("Could not fetch battle limit")
       } else if (battleLimitData) {
-        currentBattlesUsed = battleLimitData.battles_used || 0
-        lastResetDate = battleLimitData.last_reset_date || lastResetDate
+        currentBattlesUsed = (battleLimitData.battles_used as number) || 0
+        lastResetDate = (battleLimitData.last_reset_date as string) || lastResetDate
       }
 
       // Check if we need to reset (new day)

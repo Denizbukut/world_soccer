@@ -371,6 +371,11 @@ const [showInfo, setShowInfo] = useState(false)
 
     let dollarAmount = 0.93 * count
     
+    // Apply permanent 10% discount for 1 pack
+    if (count === 1) {
+      dollarAmount = dollarAmount * 0.90 // 10% discount
+    }
+    
     // Apply permanent 25% discount for 5 packs
     if (count === 5) {
       dollarAmount = dollarAmount * 0.75 // 25% discount
@@ -1422,10 +1427,13 @@ const [showInfo, setShowInfo] = useState(false)
                                     {godPackDiscount?.isActive ? (
                                       <span className="block text-sm">
                                         <span className="line-through text-gray-300">{(0.93 / (price || 1)).toFixed(3)} WLD</span>
-                                        <span className="text-green-300 ml-2">{((0.93 * (1 - godPackDiscount.value)) / (price || 1)).toFixed(3)} WLD</span>
+                                        <span className="text-green-300 ml-2">{((0.93 * 0.90 * (1 - godPackDiscount.value)) / (price || 1)).toFixed(3)} WLD</span>
                                       </span>
                                     ) : (
-                                      <span className="block text-sm">{(0.93 / (price || 1)).toFixed(3)} WLD</span>
+                                      <span className="block text-sm">
+                                        <span className="line-through text-gray-300">{(0.93 / (price || 1)).toFixed(3)} WLD</span>
+                                        <span className="text-green-300 ml-2">{((0.93 * 0.90) / (price || 1)).toFixed(3)} WLD</span>
+                                      </span>
                                     )}
                                   </div>
                                 )}

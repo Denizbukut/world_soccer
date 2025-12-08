@@ -680,7 +680,7 @@ const [showInfo, setShowInfo] = useState(false)
         const goatPacks = cardType === "god" ? count : 0;
         
         if (goatPacks > 0) {
-          await incrementLegendaryDraw(user.username, goatPacks * 60);
+          await incrementLegendaryDraw(user.username, goatPacks * 25);
         }
         
         const ultimateCards = result.drawnCards?.filter((card: any) => card.rarity=== "ultimate") || []

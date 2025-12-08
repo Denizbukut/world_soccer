@@ -371,9 +371,9 @@ const [showInfo, setShowInfo] = useState(false)
 
     let dollarAmount = 0.93 * count
     
-    // Apply permanent 20% discount for 5 packs
+    // Apply permanent 25% discount for 5 packs
     if (count === 5) {
-      dollarAmount = dollarAmount * 0.80 // 20% discount
+      dollarAmount = dollarAmount * 0.75 // 25% discount
     }
     
     // Apply additional God Pack discount if active and user is on god pack tab
@@ -1357,7 +1357,7 @@ const [showInfo, setShowInfo] = useState(false)
                               </div>
                               <div className="flex justify-between items-center text-sm">
                                 <span className="text-amber-500">Ultimate</span>
-                                <span className="text-amber-500">20%</span>
+                                <span className="text-amber-500">25%</span>
                               </div>
                             </div>
                             {/* Detaillierte Draw Rate Tabelle entfernt */}
@@ -1470,8 +1470,8 @@ const [showInfo, setShowInfo] = useState(false)
                                     <span className="block text-sm">
                                       <span className="text-white">
                                         {godPackDiscount?.isActive 
-                                          ? ((4.65 * 0.80 * (1 - godPackDiscount.value)) / (price || 1)).toFixed(3)
-                                          : ((4.65 * 0.80) / (price || 1)).toFixed(3)
+                                          ? ((4.65 * 0.75 * (1 - godPackDiscount.value)) / (price || 1)).toFixed(3)
+                                          : ((4.65 * 0.75) / (price || 1)).toFixed(3)
                                         } WLD
                                       </span>
                                     </span>
@@ -1479,7 +1479,7 @@ const [showInfo, setShowInfo] = useState(false)
                                 )}
                               </Button>
                               <div className="absolute -top-2 -right-2 bg-orange-500 text-white text-xs px-1.5 py-0.5 rounded-full font-bold">
-                                DISCOUNT (-20%)
+                                DISCOUNT (-25%)
                               </div>
                             </div>
                             </div>

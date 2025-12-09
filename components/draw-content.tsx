@@ -33,6 +33,7 @@ const BANNED_USERNAMES = [
   "kielcoraggio2",
   "leonandino",
   "bernar200918.8062",
+  "c369ttt321dd",
   // Füge hier weitere gebannte Benutzernamen hinzu
 ]
 

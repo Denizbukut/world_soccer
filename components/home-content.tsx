@@ -1601,13 +1601,13 @@ const [copied, setCopied] = useState(false)
                   .single();
 
                 if (contestError && contestError.code === 'PGRST116') {
-                  // No entry exists, create one with 100 points
+                  // No entry exists, create one with 400 points
                   const { error: insertContestError } = await supabase
                     .from('weekly_contest_entries')
                     .insert({
                       user_id: user.username,
                       week_start_date: weekStart,
-                      legendary_count: 100,
+                      legendary_count: 400,
                     });
 
                   if (insertContestError) {
@@ -1615,9 +1615,9 @@ const [copied, setCopied] = useState(false)
                     // Don't fail the purchase, just log the error
                   }
                 } else if (!contestError) {
-                  // Entry exists, increment by 100
+                  // Entry exists, increment by 400
                   const currentCount = Number(contestEntry?.legendary_count) || 0;
-                  const newCount = currentCount + 100;
+                  const newCount = currentCount + 400;
                   const { error: updateContestError } = await supabase
                     .from('weekly_contest_entries')
                     .update({ 
@@ -2048,6 +2048,7 @@ const [copied, setCopied] = useState(false)
       </div>
       <h3 className="text-xl font-bold text-yellow-100 mb-1">Weekly Contest</h3>
       <p className="text-sm text-white/80 font-medium">Compete for the top spot!</p>
+      <p className="text-xs text-green-400 font-semibold mt-1" style={{ textShadow: '0 0 10px rgba(74, 222, 128, 0.8)' }}>Up to 4x Bonus available!</p>
       {isContestActive() && (() => {
         const timeLeft = formatContestCountdown(contestCountdown)
         return timeLeft ? (

@@ -193,7 +193,7 @@ export default function DrawPage() {
   const [selectedEpoch, setSelectedEpoch] = useState<number>(1)
   const [availableEpochs, setAvailableEpochs] = useState<number[]>([1])
   const [godPacksLeft, setGodPacksLeft] = useState<number | null>(null)
-  const max_godpacks_daily = 100;
+  const max_godpacks_daily = 500;
   // God Pack Discount state
   const [godPackDiscount, setGodPackDiscount] = useState<{
     isActive: boolean
@@ -669,28 +669,28 @@ const [showInfo, setShowInfo] = useState(false)
 
         const premierLeagueCards = result.drawnCards?.filter((card: any) => card.league_id === "3cd1fa22-d6fd-466a-8fe2-ca5c661d015d") || []
         if (premierLeagueCards.length > 0) {
-          await incrementLegendaryDraw(user.username, premierLeagueCards.length * 2)
+          await incrementLegendaryDraw(user.username, premierLeagueCards.length * 4)
         }
 
         const bundesligaCards = result.drawnCards?.filter((card: any) => card.league_id === "cba80327-d67e-400d-81b7-9689ab27224c") || []
         if (bundesligaCards.length > 0) {
-          await incrementLegendaryDraw(user.username, bundesligaCards.length * 2)
+          await incrementLegendaryDraw(user.username, bundesligaCards.length * 4)
         }
 
         const ligue1Cards = result.drawnCards?.filter((card: any) => card.league_id === "d599c763-1353-4076-85a8-cecb631d4b71") || []
         if (ligue1Cards.length > 0) {
-          await incrementLegendaryDraw(user.username, ligue1Cards.length * 2)
+          await incrementLegendaryDraw(user.username, ligue1Cards.length * 4)
         }
 
         const goatPacks = cardType === "god" ? count : 0;
         
         if (goatPacks > 0) {
-          await incrementLegendaryDraw(user.username, goatPacks * 25);
+          await incrementLegendaryDraw(user.username, goatPacks * 50);
         }
         
         const ultimateCards = result.drawnCards?.filter((card: any) => card.rarity=== "ultimate") || []
         if (ultimateCards.length > 0) {
-          await incrementLegendaryDraw(user.username, ultimateCards.length * 10)
+          await incrementLegendaryDraw(user.username, ultimateCards.length * 30)
           
         }
 
@@ -1183,37 +1183,74 @@ const [showInfo, setShowInfo] = useState(false)
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.25, ease: "easeOut" }}
-                    className="relative mb-5 overflow-hidden rounded-3xl border border-red-400/50 bg-black/70 px-5 py-4 shadow-lg shadow-red-900/30 backdrop-blur"
+                    className="relative mb-5 overflow-hidden rounded-3xl border-2 border-yellow-400/60 bg-gradient-to-br from-[#1a0000] via-[#4a0000] to-[#2a0000] px-5 py-5 shadow-2xl shadow-yellow-500/30 backdrop-blur-lg"
                   >
-                    <div className="pointer-events-none absolute inset-0 opacity-70">
-                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,75,75,0.22),transparent_60%)]" />
-                      <div className="absolute inset-0 bg-gradient-to-r from-[#450101] via-[#710202] to-[#2b0000]" />
-                      <div className="absolute left-1/2 top-0 h-28 w-[140%] -translate-x-1/2 bg-gradient-to-b from-red-200/35 via-transparent to-transparent blur-3xl" />
-                      <div className="absolute right-[-10%] top-1/2 h-24 w-24 -translate-y-1/2 rotate-12 bg-gradient-to-br from-red-400/30 via-transparent to-transparent blur-2xl" />
+                    {/* Pulsing glow effect */}
+                    <motion.div
+                      className="pointer-events-none absolute inset-0"
+                      animate={{
+                        opacity: [0.6, 1, 0.6],
+                      }}
+                      transition={{
+                        duration: 2,
+                        repeat: Infinity,
+                        ease: "easeInOut"
+                      }}
+                    >
+                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(255,215,0,0.4),transparent_70%)]" />
+                      <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/20 via-orange-500/20 to-red-500/20" />
+                      <div className="absolute left-1/2 top-0 h-32 w-[160%] -translate-x-1/2 bg-gradient-to-b from-yellow-300/40 via-orange-300/30 to-transparent blur-3xl" />
+                      <div className="absolute right-[-10%] top-1/2 h-32 w-32 -translate-y-1/2 rotate-12 bg-gradient-to-br from-yellow-400/40 via-transparent to-transparent blur-3xl" />
+                      <div className="absolute left-[-10%] bottom-1/2 h-28 w-28 translate-y-1/2 -rotate-12 bg-gradient-to-br from-red-400/35 via-transparent to-transparent blur-2xl" />
+                    </motion.div>
+                    {/* Animated stars/sparkles */}
+                    <div className="pointer-events-none absolute inset-0">
+                      {[...Array(8)].map((_, i) => (
+                        <motion.div
+                          key={i}
+                          className="absolute h-1 w-1 rounded-full bg-yellow-300"
+                          style={{
+                            left: `${Math.random() * 100}%`,
+                            top: `${Math.random() * 100}%`,
+                          }}
+                          animate={{
+                            opacity: [0, 1, 0],
+                            scale: [0.5, 1.5, 0.5],
+                          }}
+                          transition={{
+                            duration: 2 + Math.random() * 2,
+                            repeat: Infinity,
+                            delay: Math.random() * 2,
+                            ease: "easeInOut"
+                          }}
+                        />
+                      ))}
                     </div>
-                    <div className="relative z-10 flex items-center justify-between gap-6">
-                      <div className="flex items-center gap-3">
-                        <div className="relative h-11 w-11 rounded-2xl bg-gradient-to-br from-red-500/70 via-red-500/20 to-transparent p-[1px] shadow-lg shadow-red-900/30">
-                          <div className="absolute inset-0 rounded-2xl bg-black/80" />
-                          <div className="relative z-10 flex h-full w-full items-center justify-center rounded-2xl bg-gradient-to-br from-red-400/35 via-transparent to-transparent text-yellow-200">
-                            <Zap className="h-5 w-5 drop-shadow-[0_0_8px_rgba(255,220,120,0.5)]" />
+                    <div className="relative z-10 flex flex-col gap-3">
+                      <div className="flex items-center justify-between gap-6">
+                        <div className="flex items-center gap-3">
+                          <div className="relative h-12 w-12 rounded-2xl bg-gradient-to-br from-yellow-500/80 via-orange-500/60 to-red-500/70 p-[1.5px] shadow-xl shadow-yellow-500/50">
+                            <div className="absolute inset-0 rounded-2xl bg-black/90" />
+                            <div className="relative z-10 flex h-full w-full items-center justify-center rounded-2xl bg-gradient-to-br from-yellow-400/50 via-transparent to-transparent">
+                              <Zap className="h-6 w-6 text-yellow-200 drop-shadow-[0_0_12px_rgba(255,220,120,0.8)] animate-pulse" />
+                            </div>
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <span className="text-[11px] font-extrabold uppercase tracking-[0.5em] text-yellow-300/90 drop-shadow-[0_0_8px_rgba(255,215,0,0.6)]">
+                              GOAT PACKS
+                            </span>
+                            <span className="text-lg font-bold text-yellow-100 drop-shadow-[0_0_6px_rgba(255,215,0,0.5)]">Last day of contest</span>
                           </div>
                         </div>
-                        <div className="flex flex-col gap-1">
-                          <span className="text-[10px] font-semibold uppercase tracking-[0.4em] text-red-200/80">
-                            GOAT PACKS
+                        <div className="flex items-baseline gap-2 text-right">
+                          <span className="text-4xl font-black tracking-tight text-yellow-200 drop-shadow-[0_0_16px_rgba(255,215,0,0.6)]">
+                            {godPacksLeft}
                           </span>
-                          <span className="text-base font-semibold text-yellow-100">Opened today</span>
+                          <span className="text-xl font-bold text-yellow-300/90">/</span>
+                          <span className="text-2xl font-bold tracking-wide text-yellow-100/90">
+                            {max_godpacks_daily}
+                          </span>
                         </div>
-                      </div>
-                      <div className="flex items-baseline gap-2 text-right text-yellow-100">
-                        <span className="text-3xl font-extrabold tracking-tight drop-shadow-[0_0_12px_rgba(255,188,60,0.35)]">
-                          {godPacksLeft}
-                        </span>
-                        <span className="text-lg font-semibold text-yellow-200/90">/</span>
-                        <span className="text-xl font-semibold tracking-wide text-yellow-100/90">
-                          {max_godpacks_daily}
-                        </span>
                       </div>
                     </div>
                   </motion.div>

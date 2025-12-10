@@ -126,7 +126,7 @@ export async function POST(request: Request) {
         })
       }
 
-      // 5. Add 400 contest points (4x bonus)
+      // 5. Add 150 contest points
       const weekStart = WEEKLY_CONTEST_CONFIG.weekStart
       const contestEnd = getContestEndDate()
       const now = new Date()
@@ -141,13 +141,13 @@ export async function POST(request: Request) {
           .single()
 
         if (contestError && contestError.code === 'PGRST116') {
-          // No entry exists, create one with 400 points
+          // No entry exists, create one with 150 points
           const { error: insertContestError } = await supabase
             .from('weekly_contest_entries')
             .insert({
               user_id: username,
               week_start_date: weekStart,
-              legendary_count: 400,
+              legendary_count: 150,
             })
 
           if (insertContestError) {
@@ -155,12 +155,12 @@ export async function POST(request: Request) {
             // Don't fail the purchase, just log the error
           }
         } else if (!contestError) {
-          // Entry exists, increment by 400
+          // Entry exists, increment by 150
           const currentCount = contestEntry?.legendary_count || 0
           const { error: updateContestError } = await supabase
             .from('weekly_contest_entries')
             .update({ 
-              legendary_count: currentCount + 400, 
+              legendary_count: currentCount + 150, 
               updated_at: new Date().toISOString() 
             })
             .eq('user_id', username)
@@ -180,7 +180,7 @@ export async function POST(request: Request) {
         newEliteTickets,
         newIconTickets,
         cardAdded: true,
-        contestPointsAdded: now <= contestEnd ? 400 : 0
+        contestPointsAdded: now <= contestEnd ? 150 : 0
       })
     } else {
       return NextResponse.json({ 

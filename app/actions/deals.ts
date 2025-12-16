@@ -248,7 +248,7 @@ export async function purchaseDeal(username: string, dealId: number) {
       return { success: false, error: "Failed to update user tickets" }
     }
 
-    // 4. Add 35 contest points
+    // 4. Add 50 contest points (3x bonus)
     const weekStart = WEEKLY_CONTEST_CONFIG.weekStart
     const contestEnd = getContestEndDate()
     const now = new Date()
@@ -263,13 +263,13 @@ export async function purchaseDeal(username: string, dealId: number) {
         .single()
 
       if (contestError && contestError.code === 'PGRST116') {
-        // No entry exists, create one with 35 points
+        // No entry exists, create one with 50 points
         const { error: insertContestError } = await supabase
           .from('weekly_contest_entries')
           .insert({
             user_id: username,
             week_start_date: weekStart,
-            legendary_count: 35,
+            legendary_count: 50,
           })
 
         if (insertContestError) {
@@ -277,12 +277,12 @@ export async function purchaseDeal(username: string, dealId: number) {
           // Don't fail the purchase, just log the error
         }
       } else if (!contestError) {
-        // Entry exists, increment by 35
+        // Entry exists, increment by 50
         const currentCount = contestEntry?.legendary_count || 0
         const { error: updateContestError } = await supabase
           .from('weekly_contest_entries')
           .update({ 
-            legendary_count: currentCount + 35, 
+            legendary_count: currentCount + 50, 
             updated_at: new Date().toISOString() 
           })
           .eq('user_id', username)

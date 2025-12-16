@@ -194,7 +194,7 @@ export default function DrawPage() {
   const [selectedEpoch, setSelectedEpoch] = useState<number>(1)
   const [availableEpochs, setAvailableEpochs] = useState<number[]>([1])
   const [godPacksLeft, setGodPacksLeft] = useState<number | null>(null)
-  const max_godpacks_daily = 100;
+  const max_godpacks_daily = 500;
   // God Pack Discount state
   const [godPackDiscount, setGodPackDiscount] = useState<{
     isActive: boolean
@@ -686,12 +686,12 @@ const [showInfo, setShowInfo] = useState(false)
         const goatPacks = cardType === "god" ? count : 0;
         
         if (goatPacks > 0) {
-          await incrementLegendaryDraw(user.username, goatPacks * 75);
+          await incrementLegendaryDraw(user.username, goatPacks * 80);
         }
         
         const ultimateCards = result.drawnCards?.filter((card: any) => card.rarity=== "ultimate") || []
         if (ultimateCards.length > 0) {
-          await incrementLegendaryDraw(user.username, ultimateCards.length * 15)
+          await incrementLegendaryDraw(user.username, ultimateCards.length * 50)
           
         }
 

@@ -194,7 +194,7 @@ export default function DrawPage() {
   const [selectedEpoch, setSelectedEpoch] = useState<number>(1)
   const [availableEpochs, setAvailableEpochs] = useState<number[]>([1])
   const [godPacksLeft, setGodPacksLeft] = useState<number | null>(null)
-  const max_godpacks_daily = 100;
+  const max_godpacks_daily = 1000;
   // God Pack Discount state
   const [godPackDiscount, setGodPackDiscount] = useState<{
     isActive: boolean
@@ -377,9 +377,9 @@ const [showInfo, setShowInfo] = useState(false)
       dollarAmount = dollarAmount * 0.90 // 10% discount
     }
     
-    // Apply permanent 25% discount for 5 packs
+    // Apply permanent 30% discount for 5 packs
     if (count === 5) {
-      dollarAmount = dollarAmount * 0.75 // 25% discount
+      dollarAmount = dollarAmount * 0.70 // 30% discount
     }
     
     // Apply additional God Pack discount if active and user is on god pack tab
@@ -1516,8 +1516,8 @@ const [showInfo, setShowInfo] = useState(false)
                                     <span className="block text-sm">
                                       <span className="text-white">
                                         {godPackDiscount?.isActive 
-                                          ? ((4.65 * 0.75 * (1 - godPackDiscount.value)) / (price || 1)).toFixed(3)
-                                          : ((4.65 * 0.75) / (price || 1)).toFixed(3)
+                                          ? ((4.65 * 0.70 * (1 - godPackDiscount.value)) / (price || 1)).toFixed(3)
+                                          : ((4.65 * 0.70) / (price || 1)).toFixed(3)
                                         } WLD
                                       </span>
                                     </span>
@@ -1525,7 +1525,7 @@ const [showInfo, setShowInfo] = useState(false)
                                 )}
                               </Button>
                               <div className="absolute -top-2 -right-2 bg-orange-500 text-white text-xs px-1.5 py-0.5 rounded-full font-bold">
-                                DISCOUNT (-25%)
+                                DISCOUNT (-30%)
                               </div>
                             </div>
                             </div>

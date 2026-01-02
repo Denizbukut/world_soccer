@@ -77,6 +77,7 @@ export default function WeeklyContestPage() {
 
   const time = formatCountdown(countdown)
   const contestEnded = countdown <= 0
+  const isLastDay = time && time.days === 0 && countdown > 0
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#18181b] to-[#232526] pb-24">
@@ -91,6 +92,18 @@ export default function WeeklyContestPage() {
       </header>
 
       <main className="max-w-md mx-auto p-4 space-y-6">
+        {/* Last Day of Contest Special Banner */}
+        {isLastDay && !contestEnded && (
+          <div className="relative overflow-hidden bg-gradient-to-br from-yellow-500/20 via-orange-500/20 to-red-500/20 rounded-xl p-5 border-2 border-yellow-400/50 shadow-lg backdrop-blur-sm">
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-yellow-400/10 to-transparent animate-shimmer"></div>
+            <div className="relative z-10 text-center">
+              <h3 className="text-xl font-bold bg-gradient-to-r from-yellow-200 via-yellow-400 to-yellow-200 bg-clip-text text-transparent">
+                LAST DAY OF CONTEST SPECIAL
+              </h3>
+            </div>
+          </div>
+        )}
+
         <div className="text-center text-lg font-bold">
           {contestEnded ? (
             <div className="text-red-500 text-2xl font-extrabold">The contest has ended</div>
@@ -212,6 +225,13 @@ export default function WeeklyContestPage() {
           0% { transform: translateY(0); }
           50% { transform: translateY(-10px); }
           100% { transform: translateY(0); }
+        }
+        .animate-shimmer {
+          animation: shimmer 4s linear infinite;
+        }
+        @keyframes shimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
         }
         .shadow-gold {
           box-shadow: 0 0 24px 4px #FFD70044, 0 0 8px 2px #FFD70099;

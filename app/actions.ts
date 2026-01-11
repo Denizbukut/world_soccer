@@ -37,7 +37,7 @@ interface XpPass {
   expires_at: string
 }
 
-  const max_godpacks_daily = 1000;
+  const max_godpacks_daily = 250;
 
 
 // Create a server-side Supabase client

@@ -156,7 +156,7 @@ export default function HomePage() {
             </div>
             <div className="flex items-center gap-1 bg-gray-100 px-3 py-1.5 rounded-full">
               <Crown className="h-4 w-4 text-yellow-500" />
-              <span className="font-bold text-black">{typeof user?.legendary_tickets === "number" ? user.legendary_tickets : 0}</span>
+              <span className="font-bold text-black">{typeof user?.elite_tickets === "number" ? user.elite_tickets : 0}</span>
             </div>
           </div>
         </div>
@@ -177,7 +177,7 @@ export default function HomePage() {
 
         {/* Weekly Contest */}
         <motion.div className="bg-white rounded-xl p-4 shadow-sm border-l-4 border-yellow-500">
-          <h3 className="font-bold text-yellow-600">Weekly Contest</h3>
+          <h3 className="font-bold text-yellow-600">2 Weeks Contest</h3>
           <p className="text-sm text-gray-700">Compete and win</p>
         </motion.div>
 

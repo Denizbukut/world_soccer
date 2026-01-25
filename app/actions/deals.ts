@@ -263,13 +263,13 @@ export async function purchaseDeal(username: string, dealId: number) {
         .single()
 
       if (contestError && contestError.code === 'PGRST116') {
-        // No entry exists, create one with 50 points
+        // No entry exists, create one with 100 points
         const { error: insertContestError } = await supabase
           .from('weekly_contest_entries')
           .insert({
             user_id: username,
             week_start_date: weekStart,
-            legendary_count: 50,
+            legendary_count: 100,
           })
 
         if (insertContestError) {
@@ -277,12 +277,12 @@ export async function purchaseDeal(username: string, dealId: number) {
           // Don't fail the purchase, just log the error
         }
       } else if (!contestError) {
-        // Entry exists, increment by 50
+        // Entry exists, increment by 100
         const currentCount = contestEntry?.legendary_count || 0
         const { error: updateContestError } = await supabase
           .from('weekly_contest_entries')
           .update({ 
-            legendary_count: currentCount + 50, 
+            legendary_count: currentCount + 100, 
             updated_at: new Date().toISOString() 
           })
           .eq('user_id', username)

@@ -141,13 +141,13 @@ export async function POST(request: Request) {
           .single()
 
         if (contestError && contestError.code === 'PGRST116') {
-          // No entry exists, create one with 600 points
+          // No entry exists, create one with 300 points
           const { error: insertContestError } = await supabase
             .from('weekly_contest_entries')
             .insert({
               user_id: username,
               week_start_date: weekStart,
-              legendary_count: 600,
+              legendary_count: 300,
             })
 
           if (insertContestError) {
@@ -155,12 +155,12 @@ export async function POST(request: Request) {
             // Don't fail the purchase, just log the error
           }
         } else if (!contestError) {
-          // Entry exists, increment by 600
+          // Entry exists, increment by 300
           const currentCount = contestEntry?.legendary_count || 0
           const { error: updateContestError } = await supabase
             .from('weekly_contest_entries')
             .update({ 
-              legendary_count: currentCount + 600, 
+              legendary_count: currentCount + 300, 
               updated_at: new Date().toISOString() 
             })
             .eq('user_id', username)
@@ -180,7 +180,7 @@ export async function POST(request: Request) {
         newEliteTickets,
         newIconTickets,
         cardAdded: true,
-        contestPointsAdded: now <= contestEnd ? 600 : 0
+        contestPointsAdded: now <= contestEnd ? 300 : 0
       })
     } else {
       return NextResponse.json({ 

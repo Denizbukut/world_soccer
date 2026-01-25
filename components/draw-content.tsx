@@ -194,7 +194,7 @@ export default function DrawPage() {
   const [selectedEpoch, setSelectedEpoch] = useState<number>(1)
   const [availableEpochs, setAvailableEpochs] = useState<number[]>([1])
   const [godPacksLeft, setGodPacksLeft] = useState<number | null>(null)
-  const max_godpacks_daily = 1000;
+  const max_godpacks_daily = 100;
   // God Pack Discount state
   const [godPackDiscount, setGodPackDiscount] = useState<{
     isActive: boolean
@@ -660,38 +660,38 @@ const [showInfo, setShowInfo] = useState(false)
 
         const premierLeagueCards = result.drawnCards?.filter((card: any) => card.league_id === "3cd1fa22-d6fd-466a-8fe2-ca5c661d015d") || []
         if (premierLeagueCards.length > 0) {
-          await incrementLegendaryDraw(user.username, premierLeagueCards.length * 4)
+          await incrementLegendaryDraw(user.username, premierLeagueCards.length * 2)
         }
 
         const bundesligaCards = result.drawnCards?.filter((card: any) => card.league_id === "cba80327-d67e-400d-81b7-9689ab27224c") || []
         if (bundesligaCards.length > 0) {
-          await incrementLegendaryDraw(user.username, bundesligaCards.length * 4)
+          await incrementLegendaryDraw(user.username, bundesligaCards.length * 2)
         }
 
         const laLigaCards = result.drawnCards?.filter((card: any) => card.league_id === "b04c3977-b810-4b2b-8972-a59604efdd10") || []
         if (laLigaCards.length > 0) {
-          await incrementLegendaryDraw(user.username, laLigaCards.length * 4)
+          await incrementLegendaryDraw(user.username, laLigaCards.length * 2)
         }
 
         const goatLeagueCards = result.drawnCards?.filter((card: any) => card.league_id === "058e59d8-a16a-4028-b3d2-e7676ae5ef06") || []
         if (goatLeagueCards.length > 0) {
-          await incrementLegendaryDraw(user.username, goatLeagueCards.length * 1000)
+          await incrementLegendaryDraw(user.username, goatLeagueCards.length * 500)
         }
 
         const ligue1Cards = result.drawnCards?.filter((card: any) => card.league_id === "d599c763-1353-4076-85a8-cecb631d4b71") || []
         if (ligue1Cards.length > 0) {
-          await incrementLegendaryDraw(user.username, ligue1Cards.length * 4)
+          await incrementLegendaryDraw(user.username, ligue1Cards.length * 2)
         }
 
         const goatPacks = cardType === "god" ? count : 0;
         
         if (goatPacks > 0) {
-          await incrementLegendaryDraw(user.username, goatPacks * 200);
+          await incrementLegendaryDraw(user.username, goatPacks * 100);
         }
         
         const ultimateCards = result.drawnCards?.filter((card: any) => card.rarity=== "ultimate") || []
         if (ultimateCards.length > 0) {
-          await incrementLegendaryDraw(user.username, ultimateCards.length * 60)
+          await incrementLegendaryDraw(user.username, ultimateCards.length * 30)
           
         }
 

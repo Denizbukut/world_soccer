@@ -3,16 +3,16 @@
 
 export const WEEKLY_CONTEST_CONFIG = {
   // Contest Start Date (Montag der Woche)
-  weekStart: "2026-01-25",
+  weekStart: "2026-02-02",
   
   // Contest End Date (Dienstag der nächsten Woche um 23:59:59 UTC)
-  contestEnd: "2026-02-02T20:00:00Z",
+  contestEnd: "2026-02-10T21:00:00Z",
   
   // Prize Pool Configuration
   prizePool: [
-    { rank: "1st Place", reward:  "200 WLD Ronaldo 99 Lvl. 15 + 2000 Icon Tickets", icon: "🥇" },
-    { rank: "2nd Place", reward: "100 WLD Messi 98 Lvl. 14 + 1000 Icon Tickets", icon: "🥈" },
-    { rank: "3rd Place", reward: "50 WLD Henry Lvl. 12 + 500 Icon Tickets", icon: "🥉" },
+    { rank: "1st Place", reward:  "Maradona 98 Lvl. 15 + 2000 Icon Tickets", icon: "🥇" },
+    { rank: "2nd Place", reward: "Henry 97 Lvl. 15 + 1000 Icon Tickets", icon: "🥈" },
+    { rank: "3rd Place", reward: "Zidane 95 Lvl. 13 + 500 Icon Tickets", icon: "🥉" },
     { rank: "4th–6th Place", reward: "Puskas Lvl. 7 + 300 Icon Tickets", icon: "🎖️" },
     { rank: "7th–10th Place", reward:"Beckenbauer Lvl. 6 + 150 Icon Tickets", icon: "🎖️" },
   ]

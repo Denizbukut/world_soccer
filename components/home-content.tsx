@@ -201,9 +201,6 @@ export default function Home() {
   const [sbcUserProgress, setSbcUserProgress] = useState<SBCUserProgress[]>([])
   const [sbcLoading, setSbcLoading] = useState(false)
   
-  // Referrals/SBC Slide system
-  const [referralSbcIndex, setReferralSbcIndex] = useState<number>(0)
-  
   // App Buttons Slide system
   const [appButtonIndex, setAppButtonIndex] = useState<number>(0)
   
@@ -231,35 +228,6 @@ export default function Home() {
     }
     return 'Easy'
   }
-  
-  const referralSbcSlides = [
-    {
-      key: 'referrals',
-      title: 'Referrals',
-      icon: <Gift className="h-8 w-8 text-yellow-600" />,
-      bg: 'from-[#232526] to-[#414345]',
-      border: 'border-yellow-400',
-      text: 'Invite friends & earn rewards!',
-      action: () => setShowReferralDialog(true),
-      color: 'text-yellow-100',
-      dot: 'bg-yellow-500',
-      badge: 'BIG BONUS',
-    },
-    {
-      key: 'sbc',
-      title: 'WBC',
-      icon: <img src="/sbc-logo.svg" alt="WBC Logo" className="h-8 w-8" />,
-      bg: 'from-purple-600 to-purple-800',
-      border: 'border-purple-400',
-      text: 'Complete squad challenges!',
-      action: () => router.push('/sbc'),
-      color: 'text-purple-100',
-      dot: 'bg-purple-500',
-      progress: sbcLoading ? 'Loading...' : `${sbcChallenges.filter(c => isChallengeCompleted(c.id)).length}/${sbcChallenges.length}`,
-    },
-  ]
-  const handleReferralSbcPrev = () => setReferralSbcIndex((prev) => (prev === 0 ? referralSbcSlides.length - 1 : prev - 1))
-  const handleReferralSbcNext = () => setReferralSbcIndex((prev) => (prev === referralSbcSlides.length - 1 ? 0 : prev + 1))
   
   // App Buttons Slides
   const appButtonSlides = [
@@ -2146,68 +2114,20 @@ const [copied, setCopied] = useState(false)
               </Link>
             </div>
             <div className="col-span-2 relative">
-              {/* Referrals/SBC Slide System */}
-              <div className="relative w-full h-full rounded-xl overflow-hidden">
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={referralSbcSlides[referralSbcIndex].key}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    transition={{ duration: 0.3 }}
-                    className={`w-full h-full rounded-xl bg-gradient-to-br ${referralSbcSlides[referralSbcIndex].bg} p-2 shadow-lg flex flex-col items-center justify-center min-h-[70px] text-center font-bold border-2 ${referralSbcSlides[referralSbcIndex].border} relative cursor-pointer`}
-                    onClick={referralSbcSlides[referralSbcIndex].action}
-                  >
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center mb-1 border`}>
-                      {referralSbcSlides[referralSbcIndex].icon}
-                    </div>
-                    <div className={`text-sm font-bold ${referralSbcSlides[referralSbcIndex].color}`}>
-                      {referralSbcSlides[referralSbcIndex].title}
-                    </div>
-                    {referralSbcSlides[referralSbcIndex].progress && (
-                      <div className="text-xs text-purple-200 mt-1">
-                        {referralSbcSlides[referralSbcIndex].progress}
-                      </div>
-                    )}
-                    {referralSbcSlides[referralSbcIndex].badge && (
-                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow">
-                        {referralSbcSlides[referralSbcIndex].badge}
-                      </span>
-                    )}
-                    
-                    {/* Navigation arrows */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleReferralSbcPrev()
-                      }}
-                      className="absolute top-1 left-1 w-4 h-4 bg-white/20 rounded-full flex items-center justify-center text-white text-xs hover:bg-white/30 transition"
-                    >
-                      ‹
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleReferralSbcNext()
-                      }}
-                      className="absolute top-1 right-1 w-4 h-4 bg-white/20 rounded-full flex items-center justify-center text-white text-xs hover:bg-white/30 transition"
-                    >
-                      ›
-                    </button>
-                    
-                    {/* Slide indicators */}
-                    <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 flex space-x-1">
-                      {referralSbcSlides.map((_, index) => (
-                        <div
-                          key={index}
-                          className={`w-1.5 h-1.5 rounded-full transition-colors ${
-                            index === referralSbcIndex ? 'bg-white' : 'bg-white/30'
-                          }`}
-                        />
-                      ))}
-                    </div>
-                  </motion.div>
-                </AnimatePresence>
+              {/* Referrals Button */}
+              <div 
+                className="w-full h-full rounded-xl bg-gradient-to-br from-[#232526] to-[#414345] p-2 shadow-lg flex flex-col items-center justify-center min-h-[70px] text-center font-bold border-2 border-yellow-400 relative cursor-pointer"
+                onClick={() => setShowReferralDialog(true)}
+              >
+                <div className="w-8 h-8 rounded-full flex items-center justify-center mb-1 border">
+                  <Gift className="h-8 w-8 text-yellow-600" />
+                </div>
+                <div className="text-sm font-bold text-yellow-100">
+                  Referrals
+                </div>
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow">
+                  BIG BONUS
+                </span>
               </div>
             </div>
             {/* Deals nebeneinander im Grid */}
@@ -2562,12 +2482,12 @@ const [copied, setCopied] = useState(false)
                 <div className="text-base font-bold text-yellow-100">Friends</div>
               </div>
             </Link>
-            <div className="block w-full h-full" onClick={() => router.push('/ani_forreal')} role="button" tabIndex={0} aria-label="Go to $ANI page">
+            <div className="block w-full h-full" onClick={() => router.push('/sbc')} role="button" tabIndex={0} aria-label="Go to WBC page">
               <div className="bg-gradient-to-br from-[#232526] to-[#414345] rounded-xl p-4 shadow-lg flex flex-col items-center justify-center min-h-[90px] h-full text-center cursor-pointer transition border-2 border-yellow-400">
                 <div className="w-10 h-10 rounded-full bg-yellow-400 flex items-center justify-center mb-2 border border-yellow-300">
-                  <img src="https://ani-labs.xyz/ani-labs-logo-white.png" alt="$ANI Logo" className="w-10 h-10" />
+                  <img src="/sbc-logo.svg" alt="WBC Logo" className="w-10 h-10" />
                 </div>
-                <div className="text-base font-bold text-yellow-100">$ANI</div>
+                <div className="text-base font-bold text-yellow-100">WBC</div>
               </div>
             </div>
           </div>

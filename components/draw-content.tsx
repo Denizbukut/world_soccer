@@ -675,7 +675,7 @@ const [showInfo, setShowInfo] = useState(false)
 
         const goatLeagueCards = result.drawnCards?.filter((card: any) => card.league_id === "058e59d8-a16a-4028-b3d2-e7676ae5ef06") || []
         if (goatLeagueCards.length > 0) {
-          await incrementLegendaryDraw(user.username, goatLeagueCards.length * 500)
+          await incrementLegendaryDraw(user.username, goatLeagueCards.length * 1000)
         }
 
         const ligue1Cards = result.drawnCards?.filter((card: any) => card.league_id === "d599c763-1353-4076-85a8-cecb631d4b71") || []

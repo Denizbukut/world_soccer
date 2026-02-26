@@ -2011,9 +2011,6 @@ const [copied, setCopied] = useState(false)
       <Trophy className="w-10 h-10 text-yellow-400 drop-shadow-lg" />
     </motion.div>
     <div>
-      <div className="text-lg font-bold text-yellow-300 mb-1" style={{ letterSpacing: 1 }}>
-        Win 200 WLD!
-      </div>
       <h3 className="text-xl font-bold text-yellow-100 mb-1">Weekly Contest</h3>
       <p className="text-sm text-white/80 font-medium">Compete for the top spot! GOAT League Cards = <span className="font-bold text-yellow-400">1000 Points</span> <span className="font-bold text-green-400" style={{ textShadow: '0 0 10px rgba(74, 222, 128, 0.8)' }}>2x Bonus</span></p>
       {isContestActive() && (() => {

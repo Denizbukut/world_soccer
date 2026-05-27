@@ -17,7 +17,9 @@ export const CARD_BASE_PRICE_USD: Record<string, number> = {
   common: 0.2,
   rare: 0.5,
   epic: 1.5,
+  elite: 2.0,
   legendary: 4.0,
+  ultimate: 6.0,
 }
 
 export const DEAL_DISCOUNT = 0.5 // 50% off the real price
@@ -68,7 +70,7 @@ export const DEAL_TIER_CONFIG: Record<
     descriptionPrefix: "Daily Deal",
   },
   special: {
-    rarities: ["epic", "legendary"],
+    rarities: ["epic", "elite", "legendary", "ultimate"],
     levelRange: [3, 5],
     classicTicketsRange: [50, 200],
     eliteTicketsRange: [50, 200],

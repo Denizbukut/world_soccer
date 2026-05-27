@@ -40,11 +40,29 @@ export async function runDealCron(tier: DealTier, table: "daily_deals" | "specia
     return NextResponse.json({ success: true, skipped: true, reason: "already exists", date: today, id: existing.id })
   }
 
-  const { data: cards, error: cardsError } = await supabase
+  let { data: cards, error: cardsError } = await supabase
     .from("cards")
     .select("id, rarity")
     .in("rarity", config.rarities)
     .eq("obtainable", true)
+
+  // Fallback for the high-tier pool: if none of the preferred rarities exist
+  // in the deployed DB, fall back to the rarest available obtainable card.
+  let usedFallback = false
+  if ((!cards || cards.length === 0) && tier === "special") {
+    const { data: allCards } = await supabase
+      .from("cards")
+      .select("id, rarity")
+      .eq("obtainable", true)
+
+    if (allCards && allCards.length > 0) {
+      const counts = new Map<string, number>()
+      for (const c of allCards) counts.set(c.rarity, (counts.get(c.rarity) ?? 0) + 1)
+      const rarestRarity = [...counts.entries()].sort((a, b) => a[1] - b[1])[0][0]
+      cards = allCards.filter((c) => c.rarity === rarestRarity)
+      usedFallback = true
+    }
+  }
 
   if (cardsError || !cards || cards.length === 0) {
     return NextResponse.json(
@@ -89,5 +107,5 @@ export async function runDealCron(tier: DealTier, table: "daily_deals" | "specia
     return NextResponse.json({ success: false, error: insertError.message }, { status: 500 })
   }
 
-  return NextResponse.json({ success: true, deal: inserted })
+  return NextResponse.json({ success: true, deal: inserted, usedFallback })
 }

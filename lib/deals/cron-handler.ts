@@ -73,14 +73,21 @@ export async function runDealCron(tier: DealTier, table: "daily_deals" | "specia
 
   const card = pickOne(cards)
   const cardLevel = randInt(config.levelRange[0], config.levelRange[1])
-  const classicTickets = randInt(config.classicTicketsRange[0], config.classicTicketsRange[1])
-  const eliteTickets = randInt(config.eliteTicketsRange[0], config.eliteTicketsRange[1])
+
+  const tickets: { classic?: number; elite?: number; icon?: number } = {}
+  for (const [type, range] of Object.entries(config.ticketRanges) as [
+    "classic" | "elite" | "icon",
+    [number, number],
+  ][]) {
+    tickets[type] = randInt(range[0], range[1])
+  }
 
   const { dealPrice, discountPercentage } = computeDealPrice({
     rarity: card.rarity,
     cardLevel,
-    classicTickets,
-    eliteTickets,
+    classicTickets: tickets.classic,
+    eliteTickets: tickets.elite,
+    iconTickets: tickets.icon,
   })
 
   // special_offer has no sequence on `id`, so we compute the next id manually.
@@ -94,12 +101,13 @@ export async function runDealCron(tier: DealTier, table: "daily_deals" | "specia
     date: today,
     card_id: card.id,
     card_level: cardLevel,
-    classic_tickets: classicTickets,
-    elite_tickets: eliteTickets,
     price: dealPrice,
     description: `${config.descriptionPrefix} - 50% off`,
     discount_percentage: discountPercentage,
   }
+  if (tickets.classic !== undefined) row.classic_tickets = tickets.classic
+  if (tickets.elite !== undefined) row.elite_tickets = tickets.elite
+  if (tickets.icon !== undefined) row.icon_tickets = tickets.icon
   if (nextId !== undefined) row.id = nextId
 
   const { data: inserted, error: insertError } = await supabase.from(table).insert(row).select().single()

@@ -10,6 +10,7 @@
 export const TICKET_PRICE_USD = {
   classic: 0.05,
   elite: 0.08,
+  icon: 0.15,
 } as const
 
 export const CARD_BASE_PRICE_USD: Record<string, number> = {
@@ -34,13 +35,15 @@ function cardValue(rarity: string, level: number) {
 export function computeDealPrice(opts: {
   rarity: string
   cardLevel: number
-  classicTickets: number
-  eliteTickets: number
+  classicTickets?: number
+  eliteTickets?: number
+  iconTickets?: number
 }) {
   const realPrice =
     cardValue(opts.rarity, opts.cardLevel) +
-    opts.classicTickets * TICKET_PRICE_USD.classic +
-    opts.eliteTickets * TICKET_PRICE_USD.elite
+    (opts.classicTickets ?? 0) * TICKET_PRICE_USD.classic +
+    (opts.eliteTickets ?? 0) * TICKET_PRICE_USD.elite +
+    (opts.iconTickets ?? 0) * TICKET_PRICE_USD.icon
 
   const dealPrice = realPrice * DEAL_DISCOUNT
   return {
@@ -57,23 +60,22 @@ export const DEAL_TIER_CONFIG: Record<
   {
     rarities: string[]
     levelRange: [number, number]
-    classicTicketsRange: [number, number]
-    eliteTicketsRange: [number, number]
+    // Which ticket types this tier grants. The actual DB column name matches
+    // each entry (e.g. classic -> classic_tickets, icon -> icon_tickets).
+    ticketRanges: Partial<Record<"classic" | "elite" | "icon", [number, number]>>
     descriptionPrefix: string
   }
 > = {
   daily: {
     rarities: ["basic", "common", "rare"],
     levelRange: [1, 3],
-    classicTicketsRange: [5, 10],
-    eliteTicketsRange: [3, 7],
+    ticketRanges: { classic: [5, 10], elite: [3, 7] },
     descriptionPrefix: "Daily Deal",
   },
   special: {
     rarities: ["epic", "elite", "legendary", "ultimate"],
     levelRange: [3, 5],
-    classicTicketsRange: [50, 200],
-    eliteTicketsRange: [50, 200],
+    ticketRanges: { elite: [50, 200], icon: [10, 30] },
     descriptionPrefix: "Special Offer",
   },
 }

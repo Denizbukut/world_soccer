@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 import { ArrowLeft, Trophy } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import CardItem from "@/components/card-item"
-import { WEEKLY_CONTEST_CONFIG, getContestEndTimestamp, getTimeUntilContestEnd } from "@/lib/weekly-contest-config"
+import { WEEKLY_CONTEST_CONFIG, LAST_DAY_SPECIAL, getContestEndTimestamp, getTimeUntilContestEnd } from "@/lib/weekly-contest-config"
 
 const WEEKLY_PRIZE_POOL = WEEKLY_CONTEST_CONFIG.prizePool
 
@@ -100,6 +100,12 @@ export default function WeeklyContestPage() {
               <h3 className="text-xl font-bold bg-gradient-to-r from-yellow-200 via-yellow-400 to-yellow-200 bg-clip-text text-transparent">
                 LAST DAY OF CONTEST SPECIAL
               </h3>
+              <div className="mt-3 space-y-1.5 text-sm text-yellow-100">
+                <div>🐐 <span className="font-bold text-yellow-300">{LAST_DAY_SPECIAL.goatPackDailyLimit} GOAT Packs</span> available today</div>
+                <div>🔥 <span className="font-bold text-green-400">{Math.round(LAST_DAY_SPECIAL.goatSinglePackDiscount * 100)}% OFF</span> a single GOAT Pack</div>
+                <div>🔥 <span className="font-bold text-green-400">{Math.round(LAST_DAY_SPECIAL.goatFivePackDiscount * 100)}% OFF</span> the 5x GOAT Pack bundle</div>
+                <div>🎟️ <span className="font-bold text-green-400">{Math.round(LAST_DAY_SPECIAL.ticketDiscount * 100)}% OFF</span> all tickets &amp; normal packs</div>
+              </div>
             </div>
           </div>
         )}

@@ -18,6 +18,7 @@ import { useEffect } from "react"
 import { useWldPrice } from "@/contexts/WldPriceContext"
 import { getActiveTimeDiscount } from "@/app/actions/time-discount"
 import { getBattleLimitStatus } from "@/app/battle-limit-actions"
+import { isContestLastDay, LAST_DAY_SPECIAL } from "@/lib/weekly-contest-config"
 
 
 export default function ShopPage() {
@@ -191,8 +192,14 @@ export default function ShopPage() {
   let finalPrice = originalPrice
   let discountApplied = false
 
-  // Zeitbasierter Rabatt (höchste Priorität)
-  if (timeDiscount?.isActive && timeDiscount.value > 0) {
+  // Last Day of Contest Special: 25% off all tickets (höchste Priorität)
+  if (isContestLastDay()) {
+    finalPrice = originalPrice * (1 - LAST_DAY_SPECIAL.ticketDiscount)
+    discountApplied = true
+  }
+
+  // Zeitbasierter Rabatt
+  if (!discountApplied && timeDiscount?.isActive && timeDiscount.value > 0) {
     finalPrice = originalPrice * (1 - timeDiscount.value)
     discountApplied = true
   }
@@ -601,8 +608,25 @@ await supabase.from("ticket_purchases").insert({
         </div>
 
         <main className="p-4 space-y-6 max-w-lg mx-auto">
+          {/* Last Day of Contest Special Banner */}
+          {isContestLastDay() && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-gradient-to-r from-yellow-500/80 via-orange-500/80 to-red-500/80 text-white rounded-xl p-3 text-center shadow-lg border border-yellow-300/40 backdrop-blur-md"
+            >
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <Clock className="h-4 w-4 text-yellow-100" />
+                <p className="font-bold text-sm tracking-wide">🐐 LAST DAY OF CONTEST SPECIAL!</p>
+              </div>
+              <p className="text-xs opacity-90">
+                {Math.round(LAST_DAY_SPECIAL.ticketDiscount * 100)}% off all tickets — pay less for every pack!
+              </p>
+            </motion.div>
+          )}
+
           {/* Time-based Discount Banner */}
-          {timeDiscount?.isActive && (
+          {!isContestLastDay() && timeDiscount?.isActive && (
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}

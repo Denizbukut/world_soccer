@@ -23,6 +23,7 @@ import { Info } from "lucide-react"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 // import { isUserBanned } from "@/lib/banned-users" // Lokale Version verwendet
 import { getActiveGodPackDiscount } from "@/app/actions/god-pack-discount"
+import { isContestLastDay, LAST_DAY_SPECIAL } from "@/lib/weekly-contest-config"
 
 // Gebannte Benutzernamen - diese können keine Packs ziehen
 const BANNED_USERNAMES = [
@@ -194,7 +195,16 @@ export default function DrawPage() {
   const [selectedEpoch, setSelectedEpoch] = useState<number>(1)
   const [availableEpochs, setAvailableEpochs] = useState<number[]>([1])
   const [godPacksLeft, setGodPacksLeft] = useState<number | null>(null)
-  const max_godpacks_daily = 100;
+  // Last Day of Contest Special: raised GOAT pack limit + GOAT pack discounts (30% on 1, 50% on 5)
+  const lastDaySpecial = isContestLastDay()
+  const max_godpacks_daily = lastDaySpecial ? LAST_DAY_SPECIAL.goatPackDailyLimit : 100;
+  // Discount applied to a GOAT pack purchase for a given count (last day special takes priority)
+  const getGoatDiscount = (count: number) => {
+    if (lastDaySpecial) {
+      return count >= 5 ? LAST_DAY_SPECIAL.goatFivePackDiscount : LAST_DAY_SPECIAL.goatSinglePackDiscount
+    }
+    return godPackDiscount?.isActive ? godPackDiscount.value : 0
+  }
   // God Pack Discount state
   const [godPackDiscount, setGodPackDiscount] = useState<{
     isActive: boolean
@@ -371,12 +381,16 @@ const [showInfo, setShowInfo] = useState(false)
     }
 
     let dollarAmount = 0.93 * count
-    
-    // Apply additional God Pack discount if active and user is on god pack tab
-    if (godPackDiscount?.isActive && activeTab === "god") {
-      dollarAmount = dollarAmount * (1 - godPackDiscount.value)
+
+    // Apply GOAT pack discount if active and user is on god pack tab
+    // (Last Day special: 30% on 1 pack, 50% on 5 packs; otherwise the admin god pack discount)
+    if (activeTab === "god") {
+      const goatDiscount = getGoatDiscount(count)
+      if (goatDiscount > 0) {
+        dollarAmount = dollarAmount * (1 - goatDiscount)
+      }
     }
-    
+
     const fallbackWldAmount = dollarAmount
     const wldAmount = price ? dollarAmount / price : fallbackWldAmount
     const wldAmountRounded = Number(wldAmount.toFixed(3))
@@ -1163,8 +1177,19 @@ const [showInfo, setShowInfo] = useState(false)
                 </div>
                 
                 
+                {/* Last Day of Contest Special Banner */}
+                {lastDaySpecial && activeTab === "god" && (
+                  <div className="mb-4 text-center text-sm font-bold px-4 py-3 rounded-xl bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500 text-white border border-yellow-300 shadow-lg animate-pulse">
+                    🐐 LAST DAY OF CONTEST SPECIAL
+                    <div className="text-xs font-semibold mt-1 space-y-0.5">
+                      <div>{Math.round(LAST_DAY_SPECIAL.goatSinglePackDiscount * 100)}% OFF 1 GOAT Pack · {Math.round(LAST_DAY_SPECIAL.goatFivePackDiscount * 100)}% OFF 5 GOAT Packs</div>
+                      <div>{LAST_DAY_SPECIAL.goatPackDailyLimit} GOAT Packs available today!</div>
+                    </div>
+                  </div>
+                )}
+
                 {/* God Pack Discount Banner */}
-                {godPackDiscount?.isActive && activeTab === "god" && (
+                {!lastDaySpecial && godPackDiscount?.isActive && activeTab === "god" && (
                   <div className="mb-4 text-center text-sm font-medium px-4 py-2 rounded-xl bg-gradient-to-r from-red-500 to-red-600 text-white border border-red-400 animate-pulse">
                     🔥 {Math.round(godPackDiscount.value * 100)}% OFF GOAT PACKS! 
                     <div className="flex items-center justify-center gap-2 mt-1 text-xs">
@@ -1462,10 +1487,10 @@ const [showInfo, setShowInfo] = useState(false)
                                   <div className="flex items-center gap-2">
                                     <Zap className="h-5 w-5" />
                                     <span className="font-bold text-base">1 Pack</span>
-                                    {godPackDiscount?.isActive ? (
+                                    {getGoatDiscount(1) > 0 ? (
                                       <span className="block text-sm">
                                         <span className="line-through text-gray-300">{(0.93 / (price || 1)).toFixed(3)} WLD</span>
-                                        <span className="text-green-300 ml-2">{((0.93 * (1 - godPackDiscount.value)) / (price || 1)).toFixed(3)} WLD</span>
+                                        <span className="text-green-300 ml-2">{((0.93 * (1 - getGoatDiscount(1))) / (price || 1)).toFixed(3)} WLD</span>
                                       </span>
                                     ) : (
                                       <span className="block text-sm text-green-300">
@@ -1513,11 +1538,11 @@ const [showInfo, setShowInfo] = useState(false)
                                     <Zap className="h-5 w-5" />
                                     <span className="font-bold text-base text-white">5 Packs</span>
                                     <span className="block text-sm">
-                                      <span className="text-white">
-                                        {godPackDiscount?.isActive 
-                                          ? ((4.65 * (1 - godPackDiscount.value)) / (price || 1)).toFixed(3)
-                                          : (4.65 / (price || 1)).toFixed(3)
-                                        } WLD
+                                      {getGoatDiscount(5) > 0 && (
+                                        <span className="line-through text-gray-300 mr-2">{(4.65 / (price || 1)).toFixed(3)} WLD</span>
+                                      )}
+                                      <span className={getGoatDiscount(5) > 0 ? "text-green-300" : "text-white"}>
+                                        {((4.65 * (1 - getGoatDiscount(5))) / (price || 1)).toFixed(3)} WLD
                                       </span>
                                     </span>
                                   </div>

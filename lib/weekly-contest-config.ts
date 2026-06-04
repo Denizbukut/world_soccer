@@ -23,10 +23,27 @@ export const WEEKLY_CONTEST_CONFIG = {
   ]
 } as const
 
+// Last Day of Contest Special promotions
+// These automatically go live during the final day of the contest.
+export const LAST_DAY_SPECIAL = {
+  goatPackDailyLimit: 500, // Raised daily GOAT pack limit for the last day
+  goatSinglePackDiscount: 0.3, // 30% off a single GOAT pack
+  goatFivePackDiscount: 0.5, // 50% off the 5x GOAT pack bundle
+  ticketDiscount: 0.25, // 25% off all tickets (and therefore the normal packs you buy with them)
+} as const
+
 // Helper functions
 export const getContestEndTimestamp = () => new Date(WEEKLY_CONTEST_CONFIG.contestEnd).getTime()
 
 export const getContestEndDate = () => new Date(WEEKLY_CONTEST_CONFIG.contestEnd)
+
+// True during the final 24h of the contest (the "last day"), before it ends
+export const isContestLastDay = () => {
+  const now = Date.now()
+  const endTime = getContestEndTimestamp()
+  if (now > endTime) return false
+  return endTime - now <= 24 * 60 * 60 * 1000
+}
 
 export const isContestActive = () => {
   const now = new Date()

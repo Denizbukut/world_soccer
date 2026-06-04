@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import { createClient } from "@supabase/supabase-js"
 import {  incrementMission } from "@/app/actions/missions"
 import { isUserBanned } from "@/lib/banned-users"
+import { isContestLastDay, LAST_DAY_SPECIAL } from "@/lib/weekly-contest-config"
 
 // Card rarity types
 type CardRarity = "common" | "rare" | "epic" | "legendary" | "basic" | "elite" | "ultimate" | "goat"
@@ -36,9 +37,6 @@ interface XpPass {
   purchased_at: string
   expires_at: string
 }
-
-  const max_godpacks_daily = 100;
-
 
 // Create a server-side Supabase client
 function createSupabaseServer() {
@@ -1095,6 +1093,9 @@ export async function drawGodPacks(username: string, count = 1) {
       .single()
 
     if (userError || !userData) return { success: false, error: "User not found" }
+
+    // Last Day of Contest Special: raise the daily GOAT pack limit
+    const max_godpacks_daily = isContestLastDay() ? LAST_DAY_SPECIAL.goatPackDailyLimit : 100
 
     let userClanRole = null
     if (userData.clan_id) {

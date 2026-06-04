@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache"
 import { createClient } from "@supabase/supabase-js"
 import {  incrementMission } from "@/app/actions/missions"
 import { isUserBanned } from "@/lib/banned-users"
-import { isContestLastDay, LAST_DAY_SPECIAL } from "@/lib/weekly-contest-config"
+import { isContestLastDay, LAST_DAY_SPECIAL, getDrawTicketCost } from "@/lib/weekly-contest-config"
 
 // Card rarity types
 type CardRarity = "common" | "rare" | "epic" | "legendary" | "basic" | "elite" | "ultimate" | "goat"
@@ -272,7 +272,10 @@ export async function drawCards(username: string, packType: string, count = 1) {
     const ticketField = isLegendary ? "elite_tickets" : isIcon ? "icon_tickets" : "tickets"
     const currentTickets = userData[ticketField] || 0
 
-    if (currentTickets < count) {
+    // Last Day of Contest Special: 5x/20x draws cost fewer tickets (but still draw `count` cards)
+    const ticketCost = getDrawTicketCost(count)
+
+    if (currentTickets < ticketCost) {
       return {
         success: false,
         error: `Not enough ${isLegendary ? "legendary " : isIcon ? "icon " : ""}tickets`,
@@ -280,7 +283,7 @@ export async function drawCards(username: string, packType: string, count = 1) {
     }
 
     // Tickets abziehen
-    const newTicketCount = currentTickets - count
+    const newTicketCount = currentTickets - ticketCost
 
     // Update-Daten vorbereiten
     const updateData: Record<string, any> = {}

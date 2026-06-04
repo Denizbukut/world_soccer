@@ -30,6 +30,7 @@ export const LAST_DAY_SPECIAL = {
   goatSinglePackDiscount: 0.3, // 30% off a single GOAT pack
   goatFivePackDiscount: 0.5, // 50% off the 5x GOAT pack bundle
   ticketDiscount: 0.25, // 25% off all tickets (and therefore the normal packs you buy with them)
+  drawTicketDiscount: 0.25, // 25% fewer tickets needed for the 5x and 20x multi draws
 } as const
 
 // Helper functions
@@ -43,6 +44,16 @@ export const isContestLastDay = () => {
   const endTime = getContestEndTimestamp()
   if (now > endTime) return false
   return endTime - now <= 24 * 60 * 60 * 1000
+}
+
+// Tickets required to draw `count` packs. On the contest's last day the 5x/20x
+// multi draws cost fewer tickets. Single draws are never discounted.
+// This is the single source of truth shared by the client UI and the server.
+export const getDrawTicketCost = (count: number) => {
+  if (isContestLastDay() && count >= 5) {
+    return Math.max(1, Math.round(count * (1 - LAST_DAY_SPECIAL.drawTicketDiscount)))
+  }
+  return count
 }
 
 export const isContestActive = () => {

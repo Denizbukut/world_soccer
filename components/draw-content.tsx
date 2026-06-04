@@ -23,7 +23,7 @@ import { Info } from "lucide-react"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 // import { isUserBanned } from "@/lib/banned-users" // Lokale Version verwendet
 import { getActiveGodPackDiscount } from "@/app/actions/god-pack-discount"
-import { isContestLastDay, LAST_DAY_SPECIAL } from "@/lib/weekly-contest-config"
+import { isContestLastDay, LAST_DAY_SPECIAL, getDrawTicketCost } from "@/lib/weekly-contest-config"
 
 // Gebannte Benutzernamen - diese können keine Packs ziehen
 const BANNED_USERNAMES = [
@@ -198,6 +198,9 @@ export default function DrawPage() {
   // Last Day of Contest Special: raised GOAT pack limit + GOAT pack discounts (30% on 1, 50% on 5)
   const lastDaySpecial = isContestLastDay()
   const max_godpacks_daily = lastDaySpecial ? LAST_DAY_SPECIAL.goatPackDailyLimit : 100;
+  // Discounted ticket cost for the 5x/20x multi draws (last day special)
+  const fivePackTicketCost = getDrawTicketCost(5)
+  const twentyPackTicketCost = getDrawTicketCost(20)
   // Discount applied to a GOAT pack purchase for a given count (last day special takes priority)
   const getGoatDiscount = (count: number) => {
     if (lastDaySpecial) {
@@ -617,7 +620,7 @@ const [showInfo, setShowInfo] = useState(false)
       // God pack doesn't require tickets, only payment
       if (cardType !== "god") {
         console.log("not god")
-        const requiredTickets = count
+        const requiredTickets = getDrawTicketCost(count)
         const availableTickets = cardType === "legendary" ? eliteTickets : cardType === "icon" ? iconTickets : tickets
 
         // Für Elite Packs (legendary) eliteTickets verwenden
@@ -1585,9 +1588,9 @@ const [showInfo, setShowInfo] = useState(false)
                                 onClick={() =>
                                   !isDrawing && handleSelectPack(activeTab === "legendary" ? "legendary" : activeTab === "icon" ? "icon" : "regular", 5)
                                 }
-                                disabled={isDrawing || (activeTab === "legendary" ? eliteTickets < 5 : activeTab === "icon" ? iconTickets < 5 : tickets < 5)}
+                                disabled={isDrawing || (activeTab === "legendary" ? eliteTickets < fivePackTicketCost : activeTab === "icon" ? iconTickets < fivePackTicketCost : tickets < fivePackTicketCost)}
                                 className={
-                                  isDrawing || (activeTab === "legendary" ? eliteTickets < 5 : activeTab === "icon" ? iconTickets < 5 : tickets < 5)
+                                  isDrawing || (activeTab === "legendary" ? eliteTickets < fivePackTicketCost : activeTab === "icon" ? iconTickets < fivePackTicketCost : tickets < fivePackTicketCost)
                                     ? "flex-1 bg-gray-300 text-gray-500 rounded-xl py-4 shadow-sm cursor-not-allowed opacity-60"
                                     : activeTab === "legendary"
                                       ? "flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl py-4 shadow-lg hover:shadow-xl transition-all duration-200 border-2 border-blue-400"
@@ -1602,9 +1605,17 @@ const [showInfo, setShowInfo] = useState(false)
                                     <span className="text-sm font-medium">Opening...</span>
                                   </div>
                                 ) : (
-                                  <div className="flex items-center gap-2">
-                                    <Ticket className="h-5 w-5" />
-                                    <span className="font-bold text-base">5 Packs</span>
+                                  <div className="flex flex-col items-center gap-0.5">
+                                    <div className="flex items-center gap-2">
+                                      <Ticket className="h-5 w-5" />
+                                      <span className="font-bold text-base">5 Packs</span>
+                                    </div>
+                                    {lastDaySpecial && fivePackTicketCost < 5 && (
+                                      <span className="text-xs">
+                                        <span className="line-through opacity-70 mr-1">5</span>
+                                        <span className="text-green-200 font-semibold">{fivePackTicketCost} tickets</span>
+                                      </span>
+                                    )}
                                   </div>
                                 )}
                               </Button>
@@ -1614,9 +1625,9 @@ const [showInfo, setShowInfo] = useState(false)
                               onClick={() =>
                                 !isDrawing && handleSelectPack(activeTab === "legendary" ? "legendary" : activeTab === "icon" ? "icon" : "regular", 20)
                               }
-                              disabled={isDrawing || (activeTab === "legendary" ? eliteTickets < 20 : activeTab === "icon" ? iconTickets < 20 : tickets < 20)}
+                              disabled={isDrawing || (activeTab === "legendary" ? eliteTickets < twentyPackTicketCost : activeTab === "icon" ? iconTickets < twentyPackTicketCost : tickets < twentyPackTicketCost)}
                               className={
-                                isDrawing || (activeTab === "legendary" ? eliteTickets < 20 : activeTab === "icon" ? iconTickets < 20 : tickets < 20)
+                                isDrawing || (activeTab === "legendary" ? eliteTickets < twentyPackTicketCost : activeTab === "icon" ? iconTickets < twentyPackTicketCost : tickets < twentyPackTicketCost)
                                   ? "w-full bg-gray-300 text-gray-500 rounded-xl py-4 shadow-sm cursor-not-allowed opacity-60"
                                   : activeTab === "legendary"
                                     ? "w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white rounded-xl py-4 shadow-lg hover:shadow-xl transition-all duration-200 border-2 border-purple-400"
@@ -1631,9 +1642,17 @@ const [showInfo, setShowInfo] = useState(false)
                                   <span className="text-sm font-medium">Opening...</span>
                                 </div>
                               ) : (
-                                <div className="flex items-center gap-2">
-                                  <Ticket className="h-5 w-5" />
-                                  <span className="font-bold text-base">20 Packs (Bulk)</span>
+                                <div className="flex flex-col items-center gap-0.5">
+                                  <div className="flex items-center gap-2">
+                                    <Ticket className="h-5 w-5" />
+                                    <span className="font-bold text-base">20 Packs (Bulk)</span>
+                                  </div>
+                                  {lastDaySpecial && twentyPackTicketCost < 20 && (
+                                    <span className="text-xs">
+                                      <span className="line-through opacity-70 mr-1">20</span>
+                                      <span className="text-green-100 font-semibold">{twentyPackTicketCost} tickets</span>
+                                    </span>
+                                  )}
                                 </div>
                               )}
                             </Button>

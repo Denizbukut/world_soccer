@@ -105,6 +105,7 @@ export default function WeeklyContestPage() {
                 <div>🔥 <span className="font-bold text-green-400">{Math.round(LAST_DAY_SPECIAL.goatSinglePackDiscount * 100)}% OFF</span> a single GOAT Pack</div>
                 <div>🔥 <span className="font-bold text-green-400">{Math.round(LAST_DAY_SPECIAL.goatFivePackDiscount * 100)}% OFF</span> the 5x GOAT Pack bundle</div>
                 <div>🎟️ <span className="font-bold text-green-400">{Math.round(LAST_DAY_SPECIAL.ticketDiscount * 100)}% OFF</span> all tickets &amp; normal packs</div>
+                <div>🎫 <span className="font-bold text-green-400">{Math.round(LAST_DAY_SPECIAL.drawTicketDiscount * 100)}% fewer tickets</span> for 5x &amp; 20x draws</div>
               </div>
             </div>
           </div>

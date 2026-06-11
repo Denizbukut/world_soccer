@@ -6,7 +6,7 @@ export const WEEKLY_CONTEST_CONFIG = {
   weekStart: "2026-06-05",
 
   // Contest End Date - 7 Tage später
-  contestEnd: "2026-06-12T21:00:00Z",
+  contestEnd: "2026-06-11T21:00:00Z",
 
   // Prize Pool Configuration
   // Card ids for this contest's payout (cards table):

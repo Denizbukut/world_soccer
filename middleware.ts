@@ -16,7 +16,10 @@ import { NextResponse, type NextRequest } from "next/server"
 // lets you through normally.
 // =====================================================================
 
-const MAINTENANCE = process.env.MAINTENANCE_MODE === "true"
+// Maintenance is ON by default. To bring the app back online, set the
+// env var MAINTENANCE_MODE=false (Vercel: Settings -> Environment
+// Variables -> Production) and redeploy.
+const MAINTENANCE = process.env.MAINTENANCE_MODE !== "false"
 const BYPASS_SECRET = process.env.MAINTENANCE_BYPASS_SECRET || ""
 const BYPASS_COOKIE = "maintenance_bypass"
 
